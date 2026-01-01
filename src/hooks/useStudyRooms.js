@@ -75,3 +75,25 @@ export const useDeleteRoom = () => {
         }
     });
 };
+
+export const useGenerateInviteLink = () => {
+    return useMutation({
+        mutationFn: async (roomId) => {
+            const { data } = await api.get(`/study-rooms/${roomId}/invite`);
+            return data;
+        }
+    });
+};
+
+export const useRemoveUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ roomId, userId }) => {
+            const { data } = await api.delete(`/study-rooms/${roomId}/remove/${userId}`);
+            return data;
+        },
+        onSuccess: (_, { roomId }) => {
+            queryClient.invalidateQueries({ queryKey: ['studyRoom', roomId] });
+        }
+    });
+};

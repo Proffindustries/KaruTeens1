@@ -64,6 +64,7 @@ function App() {
           <Route path="/events/:eventId" element={<ProtectedRoute><MainLayout><EventDetailPage /></MainLayout></ProtectedRoute>} />
           <Route path="/date" element={<ProtectedRoute><MainLayout><HookupPage /></MainLayout></ProtectedRoute>} />
           <Route path="/study-rooms" element={<ProtectedRoute><MainLayout><StudyRoomsPage /></MainLayout></ProtectedRoute>} />
+          <Route path="/study-rooms/:roomId" element={<ProtectedRoute><MainLayout><StudyRoomsPage /></MainLayout></ProtectedRoute>} />
           <Route path="/recall" element={<ProtectedRoute><MainLayout><RecallPage /></MainLayout></ProtectedRoute>} />
           <Route path="/ai-assistant" element={<ProtectedRoute><AiPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><MainLayout><NotificationsPage /></MainLayout></ProtectedRoute>} />
