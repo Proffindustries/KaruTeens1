@@ -1,5 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { PenTool, Mic, Video, Monitor, MessageSquare, Users, Trash2, PlusCircle, LogOut, Loader, Send, Eraser, Circle, Download, Upload, X } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { PenTool, Mic, Video, Monitor, MessageSquare, Users, Trash2, PlusCircle, LogOut, Loader, Send, Eraser, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/StudyRoomsPage.css';
 import { useStudyRooms, useCreateRoom, useJoinRoom, useLeaveRoom, useStudyRoom } from '../hooks/useStudyRooms';
@@ -172,10 +172,12 @@ const RoomLobby = () => {
 const ActiveRoom = ({ roomId }) => {
     const canvasRef = useRef(null);
     const chatEndRef = useRef(null);
+    const lastPosRef = useRef({ x: 0, y: 0 });
+
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentColor, setCurrentColor] = useState('#000000');
     const [lineWidth, setLineWidth] = useState(3);
-    const [tool, setTool] = useState('pen'); // pen, eraser
+    const [tool, setTool] = useState('pen');
     const [chatMessage, setChatMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [showChat, setShowChat] = useState(true);
@@ -189,11 +191,32 @@ const ActiveRoom = ({ roomId }) => {
     const { showToast } = useToast();
     const { user } = useAuth();
 
+    // Define drawLine with useCallback to prevent recreation
+    const drawLine = useCallback((x1, y1, x2, y2, color = '#000', width = 3) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }, []);
+
+    // Define clearCanvas with useCallback
+    const clearCanvas = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }, []);
+
     // Initialize Ably channels
     useEffect(() => {
         if (!ably || !roomId) return;
 
-        // Whiteboard channel
         const wbChannelName = `study-room:${roomId}:whiteboard`;
         const wbChannel = ably.channels.get(wbChannelName);
 
@@ -208,7 +231,6 @@ const ActiveRoom = ({ roomId }) => {
 
         setWhiteboardChannel(wbChannel);
 
-        // Chat channel
         const chatChannelName = `study-room:${roomId}:chat`;
         const cChannel = ably.channels.get(chatChannelName);
 
@@ -222,7 +244,7 @@ const ActiveRoom = ({ roomId }) => {
             wbChannel.unsubscribe();
             cChannel.unsubscribe();
         };
-    }, [ably, roomId]);
+    }, [ably, roomId, drawLine, clearCanvas]);
 
     // Auto-scroll chat
     useEffect(() => {
@@ -241,27 +263,13 @@ const ActiveRoom = ({ roomId }) => {
         ctx.strokeStyle = currentColor;
     }, [lineWidth, currentColor]);
 
-    const drawLine = (x1, y1, x2, y2, color = '#000', width = 3) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-    };
-
-    let lastX = 0;
-    let lastY = 0;
-
     const startDrawing = (e) => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        lastX = e.clientX - rect.left;
-        lastY = e.clientY - rect.top;
+        lastPosRef.current = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
         setIsDrawing(true);
     };
 
@@ -275,33 +283,23 @@ const ActiveRoom = ({ roomId }) => {
         const drawColor = tool === 'eraser' ? '#FFFFFF' : currentColor;
         const drawWidth = tool === 'eraser' ? 20 : lineWidth;
 
-        // Draw locally
-        drawLine(lastX, lastY, x, y, drawColor, drawWidth);
+        drawLine(lastPosRef.current.x, lastPosRef.current.y, x, y, drawColor, drawWidth);
 
-        // Publish to Ably
         if (whiteboardChannel) {
             whiteboardChannel.publish('draw', {
                 x, y,
-                prevX: lastX,
-                prevY: lastY,
+                prevX: lastPosRef.current.x,
+                prevY: lastPosRef.current.y,
                 color: drawColor,
                 width: drawWidth
             });
         }
 
-        lastX = x;
-        lastY = y;
+        lastPosRef.current = { x, y };
     };
 
     const stopDrawing = () => {
         setIsDrawing(false);
-    };
-
-    const clearCanvas = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
 
     const handleClearCanvas = () => {
@@ -369,7 +367,6 @@ const ActiveRoom = ({ roomId }) => {
             </div>
 
             <div className="study-grid-layout">
-                {/* Whiteboard Area */}
                 <div className="whiteboard-container card">
                     <div className="wb-toolbar">
                         <strong>📝 Shared Whiteboard</strong>
@@ -426,7 +423,6 @@ const ActiveRoom = ({ roomId }) => {
                     </div>
                 </div>
 
-                {/* Chat Sidebar */}
                 {showChat && (
                     <div className="chat-sidebar card">
                         <div className="chat-header">
