@@ -19,12 +19,14 @@ use futures::stream::StreamExt;
 #[derive(Deserialize)]
 pub struct CreateRoomRequest {
     pub name: String,
+    pub subject: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct RoomResponse {
     pub id: String,
     pub name: String,
+    pub subject: Option<String>,
     pub creator_id: String,
     pub participant_count: usize,
     pub max_participants: i32,
@@ -62,6 +64,7 @@ pub async fn create_room_handler(
     let new_room = StudyRoom {
         id: None,
         name: payload.name,
+        subject: payload.subject,
         creator_id: user.user_id,
         participants: vec![user.user_id],
         max_participants: 6,
@@ -93,6 +96,7 @@ pub async fn list_rooms_handler(
             rooms.push(RoomResponse {
                 id: r.id.unwrap().to_hex(),
                 name: r.name,
+                subject: r.subject,
                 creator_id: r.creator_id.to_hex(),
                 participant_count: r.participants.len(),
                 max_participants: r.max_participants,
@@ -120,6 +124,7 @@ pub async fn get_room_handler(
     let response = RoomResponse {
         id: room.id.unwrap().to_hex(),
         name: room.name,
+        subject: room.subject,
         creator_id: room.creator_id.to_hex(),
         participant_count: room.participants.len(),
         max_participants: room.max_participants,

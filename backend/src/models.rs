@@ -246,6 +246,7 @@ pub struct StudyRoom {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub name: String,
+    pub subject: Option<String>,
     pub creator_id: ObjectId,
     pub participants: Vec<ObjectId>,
     pub max_participants: i32,

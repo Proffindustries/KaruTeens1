@@ -1,20 +1,22 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { PenTool, Mic, Video, Monitor, MessageSquare, Users, Trash2, PlusCircle, LogOut, Loader } from 'lucide-react';
+import { PenTool, Mic, Video, Monitor, MessageSquare, Users, Trash2, PlusCircle, LogOut, Loader, Send, Eraser, Circle, Download, Upload, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/StudyRoomsPage.css';
 import { useStudyRooms, useCreateRoom, useJoinRoom, useLeaveRoom, useStudyRoom } from '../hooks/useStudyRooms';
 import { useAbly } from '../context/AblyContext';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../hooks/useAuth';
 import PremiumGate from '../components/PremiumGate';
+import Avatar from '../components/Avatar';
 
 const StudyRoomsPage = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { user } = useAuth();
     const { showToast } = useToast();
 
     // Check premium status
-    if (!user.is_premium && user.role !== 'premium') {
+    if (!user?.is_premium && user?.role !== 'premium') {
         return <PremiumGate feature="Study Rooms" />;
     }
 
@@ -31,6 +33,7 @@ const RoomLobby = () => {
     const { mutate: joinRoom } = useJoinRoom();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [roomName, setRoomName] = useState('');
+    const [roomSubject, setRoomSubject] = useState('');
     const navigate = useNavigate();
     const { showToast } = useToast();
 
@@ -40,10 +43,12 @@ const RoomLobby = () => {
             return;
         }
 
-        createRoom({ name: roomName }, {
+        createRoom({ name: roomName, subject: roomSubject }, {
             onSuccess: (data) => {
                 showToast('Room created!', 'success');
                 setShowCreateModal(false);
+                setRoomName('');
+                setRoomSubject('');
                 navigate(`/study-rooms/${data.id}`);
             },
             onError: (err) => {
@@ -67,7 +72,7 @@ const RoomLobby = () => {
         <div className="container study-rooms-page">
             <div className="lobby-header">
                 <div>
-                    <h1>Study Rooms</h1>
+                    <h1>📚 Study Rooms</h1>
                     <p>Collaborate with fellow students in real-time</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
@@ -89,9 +94,17 @@ const RoomLobby = () => {
                                     <h3>{room.name}</h3>
                                     <span className="live-badge">LIVE</span>
                                 </div>
+                                {room.subject && (
+                                    <div className="room-subject">
+                                        <span className="subject-tag">{room.subject}</span>
+                                    </div>
+                                )}
                                 <div className="room-info">
                                     <span className="participants-count">
                                         <Users size={16} /> {room.participant_count}/{room.max_participants}
+                                    </span>
+                                    <span className="room-time">
+                                        {new Date(room.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                                 <button
@@ -118,14 +131,14 @@ const RoomLobby = () => {
             {/* Create Room Modal */}
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
                         <div className="modal-header">
                             <h3>Create Study Room</h3>
                             <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label>Room Name</label>
+                                <label>Room Name *</label>
                                 <input
                                     type="text"
                                     className="form-input"
@@ -133,6 +146,16 @@ const RoomLobby = () => {
                                     value={roomName}
                                     onChange={(e) => setRoomName(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleCreateRoom()}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Subject/Topic (Optional)</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="e.g. Mathematics, Physics, etc."
+                                    value={roomSubject}
+                                    onChange={(e) => setRoomSubject(e.target.value)}
                                 />
                             </div>
                             <button className="btn btn-primary btn-full" onClick={handleCreateRoom}>
@@ -148,36 +171,63 @@ const RoomLobby = () => {
 
 const ActiveRoom = ({ roomId }) => {
     const canvasRef = useRef(null);
+    const chatEndRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [currentColor, setCurrentColor] = useState('#000000');
+    const [lineWidth, setLineWidth] = useState(3);
+    const [tool, setTool] = useState('pen'); // pen, eraser
+    const [chatMessage, setChatMessage] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [showChat, setShowChat] = useState(true);
+
     const { data: room } = useStudyRoom(roomId);
     const { mutate: leaveRoom } = useLeaveRoom();
     const navigate = useNavigate();
-    const { client: ablyClient } = useAbly();
+    const { ably } = useAbly();
     const [whiteboardChannel, setWhiteboardChannel] = useState(null);
+    const [chatChannel, setChatChannel] = useState(null);
     const { showToast } = useToast();
+    const { user } = useAuth();
 
-    // Initialize Ably whiteboard channel
+    // Initialize Ably channels
     useEffect(() => {
-        if (!ablyClient || !roomId) return;
+        if (!ably || !roomId) return;
 
-        const channelName = `study-room:${roomId}:whiteboard`;
-        const channel = ablyClient.channels.get(channelName);
+        // Whiteboard channel
+        const wbChannelName = `study-room:${roomId}:whiteboard`;
+        const wbChannel = ably.channels.get(wbChannelName);
 
-        channel.subscribe('draw', (message) => {
+        wbChannel.subscribe('draw', (message) => {
             const { x, y, prevX, prevY, color, width } = message.data;
             drawLine(prevX, prevY, x, y, color, width);
         });
 
-        channel.subscribe('clear', () => {
+        wbChannel.subscribe('clear', () => {
             clearCanvas();
         });
 
-        setWhiteboardChannel(channel);
+        setWhiteboardChannel(wbChannel);
+
+        // Chat channel
+        const chatChannelName = `study-room:${roomId}:chat`;
+        const cChannel = ably.channels.get(chatChannelName);
+
+        cChannel.subscribe('message', (message) => {
+            setMessages(prev => [...prev, message.data]);
+        });
+
+        setChatChannel(cChannel);
 
         return () => {
-            channel.unsubscribe();
+            wbChannel.unsubscribe();
+            cChannel.unsubscribe();
         };
-    }, [ablyClient, roomId]);
+    }, [ably, roomId]);
+
+    // Auto-scroll chat
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     // Canvas setup
     useEffect(() => {
@@ -187,9 +237,9 @@ const ActiveRoom = ({ roomId }) => {
         const ctx = canvas.getContext('2d');
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#000';
-    }, []);
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = currentColor;
+    }, [lineWidth, currentColor]);
 
     const drawLine = (x1, y1, x2, y2, color = '#000', width = 3) => {
         const canvas = canvasRef.current;
@@ -222,8 +272,11 @@ const ActiveRoom = ({ roomId }) => {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        const drawColor = tool === 'eraser' ? '#FFFFFF' : currentColor;
+        const drawWidth = tool === 'eraser' ? 20 : lineWidth;
+
         // Draw locally
-        drawLine(lastX, lastY, x, y);
+        drawLine(lastX, lastY, x, y, drawColor, drawWidth);
 
         // Publish to Ably
         if (whiteboardChannel) {
@@ -231,8 +284,8 @@ const ActiveRoom = ({ roomId }) => {
                 x, y,
                 prevX: lastX,
                 prevY: lastY,
-                color: '#000',
-                width: 3
+                color: drawColor,
+                width: drawWidth
             });
         }
 
@@ -253,10 +306,24 @@ const ActiveRoom = ({ roomId }) => {
 
     const handleClearCanvas = () => {
         clearCanvas();
-        // Broadcast clear to all participants
         if (whiteboardChannel) {
             whiteboardChannel.publish('clear', {});
         }
+    };
+
+    const handleSendMessage = () => {
+        if (!chatMessage.trim() || !chatChannel) return;
+
+        const message = {
+            username: user?.username || 'Anonymous',
+            content: chatMessage,
+            timestamp: new Date().toISOString(),
+            avatar: user?.avatar_url
+        };
+
+        chatChannel.publish('message', message);
+        setMessages(prev => [...prev, message]);
+        setChatMessage('');
     };
 
     const handleLeaveRoom = () => {
@@ -269,9 +336,9 @@ const ActiveRoom = ({ roomId }) => {
     };
 
     return (
-        <div className="container study-rooms-page">
+        <div className="study-rooms-page">
             <div className="study-header">
-                <div className="room-info">
+                <div className="room-info-header">
                     <h1>{room?.name || 'Loading...'}</h1>
                     <span className="live-badge">LIVE</span>
                     <span className="participants">
@@ -288,6 +355,13 @@ const ActiveRoom = ({ roomId }) => {
                     <button className="control-btn" title="Screen Share (Coming Soon)" disabled>
                         <Monitor size={20} />
                     </button>
+                    <button
+                        className={`control-btn ${showChat ? 'active' : ''}`}
+                        onClick={() => setShowChat(!showChat)}
+                        title="Toggle Chat"
+                    >
+                        <MessageSquare size={20} />
+                    </button>
                     <button className="btn btn-danger" onClick={handleLeaveRoom}>
                         <LogOut size={18} /> Leave
                     </button>
@@ -298,20 +372,49 @@ const ActiveRoom = ({ roomId }) => {
                 {/* Whiteboard Area */}
                 <div className="whiteboard-container card">
                     <div className="wb-toolbar">
-                        <strong>Shared Whiteboard</strong>
+                        <strong>📝 Shared Whiteboard</strong>
                         <div className="tools">
-                            <button className="tool-btn active">
+                            <button
+                                className={`tool-btn ${tool === 'pen' ? 'active' : ''}`}
+                                onClick={() => setTool('pen')}
+                                title="Pen"
+                            >
                                 <PenTool size={16} />
                             </button>
-                            <button className="tool-btn" onClick={handleClearCanvas}>
+                            <button
+                                className={`tool-btn ${tool === 'eraser' ? 'active' : ''}`}
+                                onClick={() => setTool('eraser')}
+                                title="Eraser"
+                            >
+                                <Eraser size={16} />
+                            </button>
+                            <input
+                                type="color"
+                                value={currentColor}
+                                onChange={(e) => setCurrentColor(e.target.value)}
+                                className="color-picker"
+                                title="Color"
+                            />
+                            <select
+                                value={lineWidth}
+                                onChange={(e) => setLineWidth(Number(e.target.value))}
+                                className="width-select"
+                                title="Line Width"
+                            >
+                                <option value="1">Thin</option>
+                                <option value="3">Normal</option>
+                                <option value="5">Thick</option>
+                                <option value="8">Very Thick</option>
+                            </select>
+                            <button className="tool-btn" onClick={handleClearCanvas} title="Clear All">
                                 <Trash2 size={16} />
                             </button>
                         </div>
                     </div>
                     <canvas
                         ref={canvasRef}
-                        width={800}
-                        height={500}
+                        width={1000}
+                        height={600}
                         className="drawing-canvas"
                         onMouseDown={startDrawing}
                         onMouseMove={draw}
@@ -319,9 +422,62 @@ const ActiveRoom = ({ roomId }) => {
                         onMouseLeave={stopDrawing}
                     />
                     <div className="canvas-tip">
-                        <p><strong>Pro Tip:</strong> All participants can see your drawings in real-time!</p>
+                        <p><strong>💡 Pro Tip:</strong> All participants can see your drawings in real-time!</p>
                     </div>
                 </div>
+
+                {/* Chat Sidebar */}
+                {showChat && (
+                    <div className="chat-sidebar card">
+                        <div className="chat-header">
+                            <h3>💬 Chat</h3>
+                            <button className="close-chat-btn" onClick={() => setShowChat(false)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="chat-messages">
+                            {messages.length === 0 ? (
+                                <div className="empty-chat">
+                                    <MessageSquare size={48} color="#ccc" />
+                                    <p>No messages yet. Start the conversation!</p>
+                                </div>
+                            ) : (
+                                messages.map((msg, idx) => (
+                                    <div key={idx} className="chat-message">
+                                        <Avatar src={msg.avatar} name={msg.username} size="sm" />
+                                        <div className="message-content">
+                                            <div className="message-header">
+                                                <strong>{msg.username}</strong>
+                                                <span className="message-time">
+                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <p>{msg.content}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                            <div ref={chatEndRef} />
+                        </div>
+                        <div className="chat-input-container">
+                            <input
+                                type="text"
+                                className="chat-input"
+                                placeholder="Type a message..."
+                                value={chatMessage}
+                                onChange={(e) => setChatMessage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            />
+                            <button
+                                className="send-btn"
+                                onClick={handleSendMessage}
+                                disabled={!chatMessage.trim()}
+                            >
+                                <Send size={18} />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
