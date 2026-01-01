@@ -1,0 +1,462 @@
+import React, { useState } from 'react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Music, FileText, Download, EyeOff, Flag, Link2, UserMinus, Eye, Trash2, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import '../styles/PostCard.css';
+import { useLikePost, useUnlikePost, useAddComment, useComments } from '../hooks/useContent.js';
+import { useToast } from '../context/ToastContext.jsx';
+import CustomVideoPlayer from './CustomVideoPlayer.jsx';
+import CustomAudioPlayer from './CustomAudioPlayer.jsx';
+import Comment from './Comment.jsx';
+import Avatar from './Avatar.jsx';
+import MapPreview from './MapPreview.jsx';
+
+const PostCard = ({ post }) => {
+    const [showComments, setShowComments] = useState(false);
+    const [commentText, setCommentText] = useState('');
+    const [saved, setSaved] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [isHidden, setIsHidden] = useState(false);
+    const { showToast } = useToast();
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const isOwner = currentUser?.username === post.user;
+    const cardRef = React.useRef(null);
+    const menuRef = React.useRef(null);
+
+    const { mutate: likePost } = useLikePost();
+    const { mutate: unlikePost } = useUnlikePost();
+    const { mutate: addComment, isPending: isSubmittingComment } = useAddComment();
+    const { data: comments, isLoading: isLoadingComments } = useComments(showComments ? post.id : null);
+
+    const handleLikeToggle = () => {
+        if (post.is_liked) {
+            unlikePost(post.id);
+        } else {
+            likePost(post.id);
+        }
+    };
+
+    // Auto-close comments when scrolled away
+    React.useEffect(() => {
+        if (!showComments) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting && entry.intersectionRatio === 0) {
+                    setShowComments(false);
+                }
+            },
+            { threshold: 0 }
+        );
+
+        if (cardRef.current) {
+            observer.observe(cardRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [showComments]);
+
+    // Handle click outside menu
+    React.useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setShowMenu(false);
+            }
+        };
+        if (showMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showMenu]);
+
+    const handleHidePost = () => {
+        setIsHidden(true);
+        setShowMenu(false);
+    };
+
+    const handleReportPost = () => {
+        showToast('Report submitted. Our team will review this post.', 'info');
+        setShowMenu(false);
+    };
+
+    const handleCopyLink = () => {
+        const url = `${window.location.origin}/post/${post.id || post._id}`;
+        navigator.clipboard.writeText(url);
+        setShowMenu(false);
+        showToast('Link copied to clipboard!', 'success');
+    };
+
+    const handleShare = async () => {
+        const url = `${window.location.origin}/post/${post.id || post._id}`;
+        const shareData = {
+            title: `Post by ${post.user} | Karu Teens`,
+            text: post.content ? (post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content) : 'Check out this post on Karu Teens!',
+            url: url,
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    handleCopyLink();
+                }
+            }
+        } else {
+            handleCopyLink();
+        }
+    };
+
+    const handleDeletePost = () => {
+        if (window.confirm('Are you sure you want to delete this post?')) {
+            showToast('Post deleted successfully', 'success');
+            setIsHidden(true); // Locally hide it
+        }
+        setShowMenu(false);
+    };
+
+    const handleBlockUser = () => {
+        showToast(`User @${post.user} has been blocked`, 'info');
+        setIsHidden(true);
+        setShowMenu(false);
+    };
+
+    const handleCommentSubmit = (e) => {
+        e.preventDefault();
+        if (!commentText.trim()) return;
+        addComment({ postId: post.id, content: commentText, parent_comment_id: null });
+        setCommentText('');
+    };
+
+    const handleReply = (parentCommentId, replyContent) => {
+        addComment({
+            postId: post.id,
+            content: replyContent,
+            parent_comment_id: parentCommentId
+        });
+    };
+
+    // Organize comments into nested structure
+    const organizeComments = (comments) => {
+        if (!comments) return [];
+
+        const commentMap = {};
+        const topLevelComments = [];
+
+        // First pass: create a map of all comments
+        comments.forEach(comment => {
+            commentMap[comment._id] = { ...comment, replies: [] };
+        });
+
+        // Second pass: organize into tree structure
+        comments.forEach(comment => {
+            if (comment.parent_comment_id) {
+                // This is a reply
+                const parent = commentMap[comment.parent_comment_id];
+                if (parent) {
+                    // Attach parent info to the reply for WhatsApp style preview
+                    commentMap[comment._id].parentInfo = {
+                        username: parent.username,
+                        content: parent.content
+                    };
+                    parent.replies.push(commentMap[comment._id]);
+                }
+            } else {
+                // This is a top-level comment
+                topLevelComments.push(commentMap[comment._id]);
+            }
+        });
+
+        return topLevelComments;
+    };
+
+    const renderContent = (content) => {
+        if (!content) return null;
+
+        // Regex to find hashtags
+        const parts = content.split(/(\#[a-zA-Z0-9_]+\b)/g);
+
+        return parts.map((part, i) => {
+            if (part.startsWith('#')) {
+                return <span key={i} className="hashtag" onClick={(e) => {
+                    e.stopPropagation();
+                    // Future: Navigate to search with this tag
+                    alert(`Filtering by ${part}`);
+                }}>{part}</span>;
+            }
+            return part;
+        });
+    };
+
+    const organizedComments = React.useMemo(() => organizeComments(comments), [comments]);
+
+    if (isHidden) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="post-card card post-hidden-overlay"
+            >
+                <EyeOff size={40} style={{ opacity: 0.3 }} />
+                <p>Post hidden from your feed</p>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button className="undo-hide-btn" onClick={() => setIsHidden(false)}>Undo</button>
+                    <button className="action-btn" onClick={handleReportPost}>Report</button>
+                </div>
+            </motion.div>
+        );
+    }
+
+    return (
+        <motion.div
+            ref={cardRef}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="post-card card"
+        >
+            {/* Post Header */}
+            <div className="post-header">
+                <div className="post-user-info">
+                    <Avatar
+                        src={post.user_avatar}
+                        name={post.user}
+                        className="post-avatar"
+                    />
+                    <div className="post-meta">
+                        <span className="post-username">
+                            <Link to={`/profile/${post.user}`} className="username-link" style={{ color: 'inherit', textDecoration: 'none' }}>{post.user}</Link>
+                            {post.group_name && (
+                                <>
+                                    <span style={{ fontWeight: 'normal', color: '#636e72', margin: '0 4px' }}>▶</span>
+                                    <Link to={`/groups/${post.group_id}`} style={{ color: 'var(--primary-color)', fontWeight: '600', textDecoration: 'none' }}>
+                                        {post.group_name}
+                                    </Link>
+                                </>
+                            )}
+                        </span>
+                        <span className="post-time">{new Date(post.created_at).toLocaleString()}</span>
+                    </div>
+                </div>
+                <div className="post-options-wrapper" ref={menuRef}>
+                    <button className="post-options-btn" onClick={() => setShowMenu(!showMenu)}>
+                        <MoreHorizontal size={20} />
+                    </button>
+                    {showMenu && (
+                        <div className="post-options-menu">
+                            <button className="menu-item" onClick={handleCopyLink}>
+                                <Link2 size={18} />
+                                Copy Link
+                            </button>
+                            {!isOwner && (
+                                <>
+                                    <button className="menu-item" onClick={handleHidePost}>
+                                        <EyeOff size={18} />
+                                        Not Interested
+                                    </button>
+                                    <button className="menu-item" onClick={() => { showToast(`Unfollowed @${post.user}`, 'info'); setShowMenu(false); }}>
+                                        <UserMinus size={18} />
+                                        Unfollow @{post.user}
+                                    </button>
+                                    <button className="menu-item" onClick={handleBlockUser}>
+                                        <UserMinus size={18} style={{ color: '#ff4757' }} />
+                                        Block @{post.user}
+                                    </button>
+                                    <button className="menu-item danger" onClick={handleReportPost}>
+                                        <Flag size={18} />
+                                        Report Post
+                                    </button>
+                                </>
+                            )}
+                            {isOwner && (
+                                <>
+                                    <button className="menu-item" onClick={() => setShowMenu(false)}>
+                                        <FileText size={18} />
+                                        Edit Post
+                                    </button>
+                                    <button className="menu-item danger" onClick={handleDeletePost}>
+                                        <Trash2 size={18} />
+                                        Delete Post
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Post Content */}
+            <div className="post-content">
+                {post.content && <p className="post-text">{renderContent(post.content)}</p>}
+
+                {post.location && (
+                    <div className="post-location-preview">
+                        <MapPreview location={post.location} />
+                    </div>
+                )}
+
+                {/* Media Attachments */}
+                {post.media_urls && post.media_urls.length > 0 && (
+                    <div className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''}`}>
+                        {post.media_urls.map((url, idx) => {
+                            const isVideo = url.match(/\.(mp4|webm|ogg|mov)$/) || post.post_type === 'video';
+                            const isAudio = url.match(/\.(mp3|wav|ogg|m4a)$/) || post.post_type === 'audio';
+                            const isPDF = url.match(/\.pdf$/);
+                            const isFile = !isVideo && !isAudio && (url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)$/) || post.post_type === 'file');
+
+                            // Extract filename from URL
+                            const getFilename = (url) => {
+                                try {
+                                    const parts = url.split('/');
+                                    const filename = parts[parts.length - 1];
+                                    return decodeURIComponent(filename);
+                                } catch {
+                                    return 'Document';
+                                }
+                            };
+
+                            return (
+                                <div key={idx} className="media-item">
+                                    {isVideo ? (
+                                        <CustomVideoPlayer src={url} />
+                                    ) : isAudio ? (
+                                        <CustomAudioPlayer src={url} filename={`Audio ${idx + 1}`} />
+                                    ) : isPDF ? (
+                                        <div className="pdf-attachment">
+                                            <div className="pdf-preview">
+                                                <iframe
+                                                    src={url}
+                                                    className="pdf-iframe"
+                                                    title={getFilename(url)}
+                                                />
+                                            </div>
+                                            <a href={url} target="_blank" rel="noopener noreferrer" className="file-attachment-link pdf-link">
+                                                <FileText size={20} />
+                                                <span className="file-name">{getFilename(url)}</span>
+                                                <Download size={16} />
+                                            </a>
+                                        </div>
+                                    ) : isFile ? (
+                                        <a href={url} target="_blank" rel="noopener noreferrer" className="file-attachment-link">
+                                            <FileText size={20} />
+                                            <span className="file-name">{getFilename(url)}</span>
+                                            <Download size={16} />
+                                        </a>
+                                    ) : (
+                                        <img src={url} alt={`Post content ${idx + 1}`} className="post-image" loading="lazy" />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Post Stats */}
+            <div className="post-stats">
+                <span>{post.likes} Likes</span>
+                <span onClick={() => setShowComments(!showComments)} style={{ cursor: 'pointer' }}>
+                    {post.comments} Comments
+                </span>
+            </div>
+
+            <div className="post-actions-divider"></div>
+
+            {/* Action Buttons */}
+            <div className="post-actions">
+                <button
+                    className={`action-btn ${post.is_liked ? 'liked' : ''}`}
+                    onClick={handleLikeToggle}
+                    style={{ color: post.is_liked ? '#ff4757' : 'inherit' }}
+                >
+                    <Heart size={20} fill={post.is_liked ? "currentColor" : "none"} />
+                    <span>Like</span>
+                </button>
+
+                <button className="action-btn" onClick={() => setShowComments(!showComments)}>
+                    <MessageCircle size={20} />
+                    <span>Comment</span>
+                </button>
+
+                <button className="action-btn" onClick={handleShare}>
+                    <Share2 size={20} />
+                    <span>Share</span>
+                </button>
+
+                <button
+                    className={`action-btn ${saved ? 'active-save' : ''}`}
+                    onClick={() => setSaved(!saved)}
+                >
+                    <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
+                    <span>Save</span>
+                </button>
+            </div>
+
+            {/* Comments Section */}
+            {showComments && (
+                <div className="comments-section">
+                    {!currentUser?.is_verified ? (
+                        <div className="verification-notice-card" style={{
+                            padding: '1.5rem',
+                            textAlign: 'center',
+                            background: 'rgba(var(--primary), 0.05)',
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: '1rem',
+                            border: '1px dashed rgba(var(--primary), 0.2)'
+                        }}>
+                            <Shield size={32} color="#2ed573" style={{ marginBottom: '0.75rem' }} />
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: '500' }}>
+                                Verification required to join the conversation.
+                            </p>
+                            <Link to="/verification" style={{
+                                color: 'rgb(var(--primary))',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                textDecoration: 'underline',
+                                marginTop: '0.5rem',
+                                display: 'inline-block'
+                            }}>
+                                Verify now for Ksh 20
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="comment-form" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <Avatar src={currentUser?.avatar_url} name={currentUser?.username} size="sm" />
+                            <form onSubmit={handleCommentSubmit} style={{ flex: 1 }}>
+                                <input
+                                    placeholder="Write a comment..."
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                />
+                                <button type="submit" disabled={isSubmittingComment}>
+                                    {isSubmittingComment ? '...' : 'Post'}
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="comments-list">
+                        {isLoadingComments ? (
+                            <p className="loading-text">Loading comments...</p>
+                        ) : (
+                            organizedComments.map(comment => (
+                                <Comment
+                                    key={comment._id}
+                                    comment={comment}
+                                    onReply={handleReply}
+                                    level={0}
+                                    replies={comment.replies}
+                                />
+                            ))
+                        )}
+                        {comments?.length === 0 && !isLoadingComments && (
+                            <p className="no-comments">No comments yet. Be the first!</p>
+                        )}
+                    </div>
+                </div>
+            )}
+        </motion.div>
+    );
+};
+
+export default PostCard;

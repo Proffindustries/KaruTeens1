@@ -1,0 +1,144 @@
+/* Notifications Page */
+.notifications-page {
+    padding: 2rem 1rem;
+    max-width: 700px;
+}
+
+.notifications-list {
+    padding: 0;
+    overflow: hidden;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(var(--border), 0.5);
+    gap: 1rem;
+    background: white;
+    transition: background 0.2s;
+}
+
+.notification-item:hover {
+    background: rgba(var(--primary), 0.02);
+}
+
+.notification-item.unread {
+    background: rgba(var(--primary), 0.05);
+    /* Highlight unread */
+}
+
+.notif-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(var(--border), 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notif-content {
+    flex: 1;
+}
+
+.notif-content p {
+    font-size: 0.95rem;
+    color: rgb(var(--text-main));
+    margin-bottom: 0.25rem;
+}
+
+.notif-time {
+    font-size: 0.75rem;
+    color: rgb(var(--text-muted));
+}
+
+.unread-dot {
+    width: 10px;
+    height: 10px;
+    background: rgb(var(--primary));
+    border-radius: 50%;
+}
+
+/* Settings Page */
+.settings-page {
+    padding: 2rem 1rem;
+    max-width: 700px;
+}
+
+.settings-header {
+    margin-bottom: 2rem;
+}
+
+.settings-list {
+    padding: 0;
+    overflow: hidden;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(var(--border), 0.5);
+    gap: 1.25rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.settings-item:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.settings-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(var(--border), 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(var(--text-main));
+}
+
+.settings-info h3 {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+    color: rgb(var(--text-main));
+}
+
+.settings-info p {
+    font-size: 0.85rem;
+    color: rgb(var(--text-muted));
+}
+
+.settings-arrow {
+    color: rgb(var(--text-muted));
+    opacity: 0.5;
+}
+
+.settings-item.logout {
+    margin-top: 1rem;
+    border-top: 1px solid rgba(var(--border), 0.5);
+}
+
+.settings-icon.danger {
+    background: rgba(255, 71, 87, 0.1);
+    color: #ff4757;
+}
+
+.danger-text {
+    color: #ff4757 !important;
+}
+
+.settings-footer {
+    text-align: center;
+    margin-top: 3rem;
+    font-size: 0.85rem;
+    color: rgb(var(--text-muted));
+}
+
+.legal-links a {
+    color: rgb(var(--primary));
+    text-decoration: none;
+}

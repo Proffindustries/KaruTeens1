@@ -1,0 +1,55 @@
+Ok i am building a web app that is foccused on being fast and responsive and i want to use the best technologies to build it.
+so i want to use rust for the backend and react for the frontend.
+
+i want to use axum for the backend and vite for the frontend.
+i want to use postgresql for the database.
+i want to use redis for the cache.
+i want to use Atlas mongoDB for the database.
+i want to use render for hosting the backend.
+i want to use vercel for hosting the frontend.
+i want to use cloudinary for the images.
+i want to use r2 clouflare storage for the files and videos.
+i want to use safaricom mpesa for the payments.
+i want use ably for the real time notifications.
+i want to use forest admin for the admin panel.
+i want to use sentry for the error tracking.
+i want to use cloudfare for the cdn,security and ddos protection.
+i want to use cookiebot for the cookies.
+i want to use helpscout for the support.
+i want to use crisp for the chat.
+i want to use mailchimp for the newsletter.
+i want to use formspree for the anonymous contact form.
+i want to use openrouter for the AI.
+i want to use brevo for sending reset passwords and otps.
+
+now since i cant draw here these are the pages 
+keep in mind i need the pages to be fast and responsive and i want to use the best technologies to build it plus i want to use the best practices to build it.
+the site will be for the university students to engage and feel free and safe sharing their experiences and knowledge with each other.
+the site is to be friendly and welcoming for the students, thats why i need it to be fast also it should be easy to interact with and navigate.
+the site should be mobile first and responsive, also there is high chanses for me to make have an app of the site soon after the website is up and running.
+i trust you to build it as aestheticaly pleasing as possible fill it with interactibles and make it fun to use.
+
+the following are the pages i want you to build:
+ 1. home page / the hero page where students will be taken to upon getting to the site the page will contain aesthetically pleasing design with interactibles and make it fun to use so that students will want to stay on the site and explore it that is getting hooked to the site. the page will contain the following .. a logo, a tagline, a call to action button,a navigation bar, a footer, and a hero section, an image of student chatting and being Happy,the what we offfer, why us, how it works, faq, contact us, about us, privacy policy, terms of service, cookies policy, disclaimer,sort of quotes that make them eager to know more about the site.
+ 2. the login page  this page will contain the following .. the logo, the place where users will enter their emails/username,a place for the password (they will be able to see the password and or hide it default is hide),the login button, the forget password button, the dont have an account register link, the navigation bar, the footer,the quotes about understanding and sharing knowledge and the basic links to pages like about,contacts,cookiepolicy and other esentials
+ 3. the register page this page will have the following .. the logo,the form with tha place for the full name,email,username,password,confirm password,next button,then taking the user to the next step with the following form legal name, age, gender,bio,school of(like school of education,school of bussiness etc),year of study, profile picture upload , the quotes about understanding and sharing knowledge and the basic links to pages like about,contacts,cookiepolicy and other esentials
+ 4. the profile page with the following .. the logo, the place for editing your profile details (once per semester), the navigation bar, the footer, the profile picture, the name, the bio, the school, the year of study, the gender, the age, the full name, the email, the username, social links, the quotes about understanding and sharing knowledge and the basic links to pages like about,contacts,cookiepolicy and other esentials
+ 5. the feed page with the following .. the logo, the navigation bar, the footer, the quotes about understanding and sharing knowledge and the basic links to pages like about,contacts,cookiepolicy and other esentials, the posts, the comments, the likes, the shares, the saves, the edit, , the saves in a post, the shares in a post, the likes in a posts, the comments in a posts, the posts, the user profile picture,the user year of study,the user username, the user quotes about understanding and sharing knowledge , a place where the users can upload their posts with attachments photos,videos,files also they can choose to post a post as texts onlya good ui in the feed page, great video watching ui great audio listening ui greate pdf ui with the contents of the first page being visible, and the basic links to pages like about,contacts,cookiepolicy and other esentials 
+ 6. messages page with the following .. the logo, the navigation bar, the footer, and  the messages previously exchanged, the users previously chatted, the search for the users, the chats,in the chats the user should be able to send images,videos,files,links,documents,photos,audios and texts, the messages should apear in real time and have a push notification to the phone or the laptop if understanding
+ 7. status page with the following .. the logo, the navigation bar, the footer, and  the status, the search for the users,the statuses to be viewed on the top ,previous and next icons, message bar at the bottom with a pipe like design
+ 8. the market place page with the following .. the logo, the navigation bar, the footer, and  the market place with grid like design where users can view the items and see the price, usage/new/3 months used /like new/old,getitem where the user is reddirected to the sellers inbox , the search for the items, when an item is sold the buyer or the seller can mark the item as sold and the item will be removed from the market place and there will be a fee for posting an item 
+ 9. the hookup page where the users will need to login or signup for an account (alias)but with any desired username and password and a profile picture and they will fill in  a bio and a gender and a age and a location and a school and a year of study and their kinks,what they are intrested in with their partners(a charge of 20 per account created will be a must so as to prevent misuse of the hookup page), after logging in the users will be shown their potential matches with a probability shown if the uses match in their description and are of opposite gender or of both of the users required/preferred gender if they match they can agree on moving the chat to the site messages page with their real names and everything else real
+ 10. the about page this page wil explain about the Karuteens its aim,mission,vission creators,social links,and other esentials things users might need to know about the site,their safety the usage policy and others
+ 11. the contacts page which will contain the creators informations and other security and emergency contacts of the school which will be editable from the admin panel
+ 12. the fogot password page where the users who forget their password can reset it by entering their email and getting a link to reset their password and a new password
+ 13. the verification page where users will be taken to registering and they will be asked to verify identities of being humans and not bots by paying a one time fee of ksh20
+ 14. the ai page where users will be able to ask ais to help in answering questions and getting help with their studies and other esentials. it will have a classic dark theme 
+ 15. the revision materials page thet will be manageged bt admin and users can upload and download materials for revision and they will be required to pay a fee to acces the materials nd we will need to make the materials to be unsharable in such a way the users can only access the materials in their phones alone cannot screenshot or share the materials
+ 16. the study rooms page where users can create study rooms and invite their friends to join the video confrences where they can chat and share materials ,study together, and they will have a white board that they will be able to write in and share it so the admin of the confrence can share it with the users and in some cases where thr users are all equal the user will share the digital whiteboard and it will be shown in the screen automaticaly and the others will que in line untill the one being seen is moved by anyone in the rooms
+ 17. the the creatin post  page  where users will be able to create posts for the feed here the page allows one to add activity,location(using google maps intergration)tag a user,tag a group tag a page,add a hashtag,tag an event and others also the user will be able to add all other attachments they want (((this is an extension of the module in the feeed page )))
+ 18. the notification page where users will be able to see the notifications they have received and they will be able to mark them as read and they will be able to delete them
+ 19. the get an account page where the users will be required to pay ksh50 to get an account then thy will be given an accounts login details .. the acount they will be given will be the i will create and feed them in the admin dashboard
+ 20. the settings page that will contain the accounts center,privacy,profle,posts,blocking,taging,location,terms of service,privacypolicy,cookoepolicy,community standards,about esentials
+ 21. the donate page where users will be able to donate to the site and the admin will be able to manage the donations
+ 22. the premium module where users will be able to subscribe to the premium module and get access to all the features of the site and the admin will be able to manage the subscriptions also the subscription will remove all the google ads not the local ones managed in the admin dashboardbut for starters the basic subscription feeds will be 10 weekly 40 monthly and 220 semi anually and a custom amount that will calculate how many days one will have of the premium service
+ 23. the admin dashboard where the admin will be able to manage the site and the users and the posts and the groups and the pages and the events and the ads and the notifications and the settings and the donations and the subscriptions and the premium module and the accounts and the privacy and the profile and the posts and the blocking and the taging and the location and the terms of service and the privacypolicy and the cookoepolicy and the community standards and the about esentials

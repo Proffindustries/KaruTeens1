@@ -1,0 +1,90 @@
+.gif-picker-overlay {
+    position: absolute;
+    bottom: 80px;
+    right: 20px;
+    width: 350px;
+    height: 450px;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.gif-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.gif-picker-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #333;
+}
+
+.gif-search-form {
+    display: flex;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    background: #f8f9fa;
+}
+
+.gif-search-form input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.gif-results-grid {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.gif-item {
+    cursor: pointer;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: transform 0.2s;
+    background: #f0f0f0;
+}
+
+.gif-item:hover {
+    transform: scale(1.02);
+}
+
+.gif-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+}
+
+.gif-loading {
+    grid-column: span 2;
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}

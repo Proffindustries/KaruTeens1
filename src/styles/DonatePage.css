@@ -1,0 +1,292 @@
+/* Donate Page */
+.donate-page {
+    padding: 2rem 1rem;
+}
+
+.donate-hero {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.donate-hero h1 {
+    font-size: 2.5rem;
+    color: rgb(var(--text-main));
+    margin-bottom: 0.5rem;
+}
+
+.donate-hero p {
+    color: rgb(var(--text-muted));
+    font-size: 1.1rem;
+}
+
+.donate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.donate-card h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    color: rgb(var(--text-main));
+}
+
+.preset-amounts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.preset-amounts button {
+    padding: 0.75rem;
+    border: 1px solid rgba(var(--border), 0.8);
+    background: white;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-amounts button:hover {
+    border-color: rgb(var(--primary));
+    color: rgb(var(--primary));
+}
+
+.custom-amount {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(var(--border), 0.8);
+    border-radius: var(--radius-md);
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+    background: white;
+}
+
+.custom-amount span {
+    font-weight: 600;
+    color: rgb(var(--text-muted));
+    margin-right: 0.5rem;
+}
+
+.custom-amount input {
+    flex: 1;
+    border: none;
+    padding: 1rem 0;
+    font-size: 1.25rem;
+    font-weight: bold;
+    outline: none;
+}
+
+.donate-secure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: rgb(var(--text-muted));
+}
+
+/* Progress */
+.progress-card {
+    margin-bottom: 1.5rem;
+}
+
+.progress-card h3 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: rgb(var(--text-main));
+}
+
+.progress-bar-container {
+    height: 12px;
+    background: rgba(var(--border), 0.3);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: rgb(var(--primary));
+    border-radius: 6px;
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: rgb(var(--text-muted));
+    font-weight: 500;
+}
+
+.recent-donors-card h3 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.donor-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(var(--border), 0.3);
+}
+
+.donor-row:last-child {
+    border-bottom: none;
+}
+
+.donor-name {
+    font-weight: 500;
+}
+
+.donor-amount {
+    color: rgb(var(--success));
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.donor-time {
+    font-size: 0.8rem;
+    color: rgb(var(--text-muted));
+}
+
+/* Premium Page */
+.premium-page {
+    padding: 3rem 1rem;
+}
+
+.premium-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.premium-header svg {
+    margin-bottom: 1rem;
+}
+
+.premium-header h1 {
+    font-size: 2.5rem;
+    color: rgb(var(--text-main));
+    margin-bottom: 0.5rem;
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.pricing-card {
+    padding: 2rem;
+    position: relative;
+    border: 1px solid rgba(var(--border), 0.5);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pricing-card:hover:not(.selected) {
+    transform: translateY(-5px);
+    border-color: rgba(var(--primary), 0.5);
+}
+
+.pricing-card.selected {
+    border: 3px solid rgb(var(--primary));
+    background: rgba(var(--primary), 0.03);
+    box-shadow: 0 10px 25px rgba(var(--primary), 0.1);
+}
+
+.pricing-card.featured {
+    border: 2px solid rgb(var(--primary));
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(var(--primary), 0.15);
+}
+
+.pricing-card.featured.selected {
+    border-width: 4px;
+    background: rgba(var(--primary), 0.05);
+}
+
+.upgrade-action-card {
+    padding: 2.5rem;
+    border: 1px solid rgba(var(--border), 0.8);
+    background: white;
+    box-shadow: var(--shadow-lg);
+}
+
+.best-value {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgb(var(--primary));
+    color: white;
+    padding: 0.25rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    z-index: 10;
+}
+
+.pricing-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.pricing-header h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: rgb(var(--text-main));
+}
+
+.price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: rgb(var(--text-muted));
+}
+
+.features-list {
+    list-style: none;
+    margin-bottom: 2rem;
+}
+
+.features-list li {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    align-items: center;
+    color: rgb(var(--text-main));
+}
+
+.features-list svg {
+    color: rgb(var(--success));
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .donate-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pricing-card.featured {
+        transform: none;
+    }
+
+    .pricing-grid {
+        grid-template-columns: 1fr;
+    }
+}

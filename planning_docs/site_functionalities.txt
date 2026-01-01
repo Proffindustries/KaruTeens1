@@ -1,0 +1,414 @@
+the backend and functionalities
+since i an abit under developed in expressing myself throug words i will try my best to explain the functionalities and might somehow forget some so please do your best to add the missing features
+belew are the functionalities i want to add to the webapp all you need are the api keys, secrets and the database for our webapp to be functional(i will provide them as we continue ) now lets go
+now we make the webapp functional that when a button is clicked an action is trigered
+we need the following functionalities:
+1.for the accounts
+  login functional
+  logout
+  password reset
+  change password
+  2FA after what seems like a brute force attack
+  remember device
+  login alerts
+  account recovery
+  deatctivate account
+  switch account
+  profile lock and any other proposed functions you see first
+
+2. user profile functions
+  create profile 
+  edit profile
+  profile picture upload
+  bio/about section
+  add school info,location,education(ie year,course,school of),relationship status,hobbies and intrests,show profile as public or private,
+  blue badge on the profile pic to show user verification(and boost profile discovery), 
+  profile ranking,
+  pin featured posts and photos 
+
+3.social systems
+follow/unfollow a group,page,event etc
+view followers(groups/pages/events)
+
+4. post creation
+  create a text post
+  create a photo post
+  create a video post
+  create a poll post
+  create a quote post
+  create a link post
+  create a multi media post
+  use hashtags in posts
+  use emojis in posts
+  tag people in posts 
+  add location to posts
+  set audiance all freshers,2nd year,3rd year,4th year,alumni,staff,all users
+  schedule posts
+  edit post
+  delete post
+  pin post to profile(like posts in the profile page)
+  turn off coments for your post
+  
+5. post interactions
+  like /react to a post
+  comment on a post
+  share a post
+  save a post
+  report a post
+  flag a post  
+  reply to a comment
+  edit coments
+  reply to comment
+  edit/delete your comment
+  share to group
+  share to page
+  share to event
+  hide post 
+  see post insights 
+  reply to a reply of a comment
+
+6. feed functions
+  personalised feed
+  chronological feed
+  trending hashtags feed
+  alogorithm ranked feed
+  infinite scrolling
+  refresh feed
+  hide post
+  snooze a user for 30 days/other time
+  unfollow a group/page/event
+  follow a group/page/events
+  see most recent postssee ads in feed
+  *focus on interactivity
+  the feed should be content driven
+  rapid content testing
+
+7. stories functions
+  create story(image,video,quote,link,text)
+  add music to story
+  add polls to story
+  tag users in stories
+  set story privacy (which years to see the stories)
+  edit story
+  delete story
+  pin story
+  view storyreact to story
+  reply to storysee viewers of your story
+  delete story
+  highlight story on profile
+  story highlights
+  reorder highlights
+  share story
+
+8. messaging system
+  create a chat
+  send text message
+  send image message
+  send video message
+  send file message
+  send poll message
+  send quote message
+  send link message
+  send location message
+  send contact message
+  send sticker message
+  send emoji message
+  send reaction message
+  send voice notes
+ have message reactions
+ have message alerts
+ reply to message 
+ forward a message
+ delete message(for me/ for everyone)
+ read reciepts
+ online status
+ mute a conversation
+ block user
+ search messages
+ create groupchat
+ add users to groupchat
+ remove users from groupchat
+ admin roles in group chat
+ video calls
+ voice calls  
+ view once media(photos that you can only view once and never again)
+ *focus on interactivity
+ photo reactions
+ message effects
+ reel sharing in dms
+ story replies in dms
+ self-destructing messages
+ encrypted voice calls
+ encrypted video calls
+ end to end encryption for all chats (this is the most important feature)
+ disapearing messages feature
+
+9. notifications system
+  real time allerts for all notifications
+  see notifications
+  mark notification as read
+  mark notification as unread
+  delete notification
+  see notification settings
+  edit notification settings
+  see like notifications
+  see comment notification  
+  group activity notifications
+  page activity notification
+  push notifications
+  message notification
+  tag notifications
+  mentioned notifications
+  email notification 
+  notification settings
+
+10. groups system
+  create group
+  edit group info
+  delete group
+  join group
+  invite to group
+  aproove member to join group functionality
+  group posts(in feed page)
+  group rules
+  group insights
+  leave group
+  group privacy
+  group settings
+  group members
+  group admin(multiple admins allowed)
+  scheduled posts 
+  group permissions
+  group may be made public or private
+  silent posts are posible
+  forwarding messages to and from groups
+  group ban
+  group mute
+  group kick
+  group invite
+  group search
+  group discovery
+  group trends
+  group ranking
+    one should be able to dm and message a group (the message will be sent to all of the groups admin)
+
+11. pages system
+  create page
+  edit page info
+  delete page
+  join page
+  invite to page
+  page posts(in feed page)
+  page insights
+  leave page
+  page privacy
+  page settings
+  page members
+  scheduled posts 
+  page permissions
+  page may be made public or private
+  silent posts are posible
+  forwarding messages to and from pages
+  page ban
+  page mute
+  page kick
+  page invite
+  page search
+  page discovery
+  page trends
+  page ranking
+  page stories
+  page analytics 
+  page ads
+  page verification(ksh50)
+  *foccuses on interactivity
+  one should be able to dm and message a page (the message will be sent to the page admin)
+
+12. events system
+    create event
+    edit event info
+    delete event
+    join event
+    invite to event
+    event posts(in feed page)
+    event insights
+    leave event
+    event privacy
+    event settings
+    event members
+    scheduled posts 
+    event permissions
+    event may be made public or private
+    silent posts are posible
+    forwarding messages to and from events
+    event ban
+    event mute
+    event kick
+    event invite
+    event search
+    event discovery
+    event trends
+    event ranking
+    event stories
+    event analytics 
+    event ads
+    event verification(ksh50)
+    *foccuses on interactivity
+    one should be able to dm and message an event (the message will be sent to the event admin)
+
+13. search system
+    search users
+    search groups
+    search pages
+    search events
+    search posts
+    search comments
+    search stories
+    search reels
+    search ads
+    search videos
+    search filters
+    search suggestions
+    content discovery and grouping
+    exploration search
+
+14. media management
+    upload media
+    edit media
+    delete media
+    manage media
+    create albums
+    tag people in media
+    download media
+    media privacy settings
+    speed control for video media(one can change the speed of the media , the doble tap 10 seconds skip )
+    autoplay videos(can be turned on and off)
+    video analytics (played 200 saved 29 shared 123 )
+    looping videos
+    explicit media (nsfw content) hidding with some sort of gliter or funny /admin chosen picture and shows the real media when clicked
+    auto captioning
+
+15. privacy and security
+    end to end encryption
+    two factor authentication(only after suspicious activity)
+    who can see posts
+    blocked users list
+    activity logs
+    login history
+    device management
+    data download 
+    data deletion requests
+    
+16.reporting and moderation functions
+    report user
+    report group
+    report page
+    report event
+    report post
+    report comment
+    report story
+    report reel
+    report ad
+    report video
+    report media
+    content review system on reported content
+    manual admin moderation
+    warning system 
+    account review system
+    account banning
+    account suspension
+
+17. ads system and monetisation
+    create ads
+    edit ads
+    delete ads
+    manage ads(in the admin dashboard)
+    ad analytics
+    ad targeting(which year?all freshers 2nd year 3rd year etc)
+    ad placement
+    ad revenue
+    ad budget
+    ad conversion tracking
+    google ads will only be visible to users who havent subscribed to premium membership
+    in app purchase system
+    payement systems for all payements in the app is mpesa
+    for one to post their own custum/local add they need to pay ksh50/a custum amount to be set by the admin and the add will be visible to all users
+    the ads will have a sort of way to not be too overwhelming or scarse for the users
+
+18.settings system
+    account settings
+    notification settings
+    privacy settings
+    security settings
+    data settings
+    themes
+    language settings
+    
+
+19. Admin system
+    admin dashboard
+    content moderation dashboard
+    user management
+    group management
+    page management
+    event management
+    post management
+    comment management
+    story management
+    reel management
+    ad management
+    video management
+    media management
+    analytics
+    reporting
+    moderation
+    settings
+    system logs
+    user activity logs
+    ip blocking
+    abuse detection
+    hashtag virality scrolling
+
+
+20.marketplace system
+    posting items for sale
+    listing items for sale
+    grouping items (books, clothes, electronics etc)
+    seller trust ranking based on reviews and delivery
+    chating with the seller after being intrested in the item(either through dm or group chat/whatsapp or their own personal numbers)
+    sold out items should be lebbeled sold out then removed from the marketplace
+
+
+21. online meetings and discussions
+creating
+joining
+inviting
+digital whiteboard
+leave
+mute mucrophone
+share screen
+chat + media upload
+remove user from meeting
+
+
+my plan on hosting and apis
+i want to use axum for the backend and vite for the frontend.
+i want to use postgresql for the database.
+i want to use redis for the cache.
+i want to use Atlas mongoDB for the database.
+i want to use render for hosting the backend.
+i want to use vercel for hosting the frontend.
+i want to use cloudinary for the images.
+i want to use r2 clouflare storage for the files and videos.
+i want to use safaricom mpesa for the payments.
+i want use ably for the real time notifications.
+i want to use forest admin for the admin panel.
+i want to use sentry for the error tracking.
+i want to use cloudfare for the cdn,security and ddos protection.
+i want to use cookiebot for the cookies.
+i want to use helpscout for the support.
+i want to use crisp for the chat.
+i want to use mailchimp for the newsletter.
+i want to use formspree for the anonymous contact form.
+i want to use openrouter for the AI.
+i want to use brevo for sending reset passwords and otps.

@@ -1,0 +1,100 @@
+.explore-page {
+    padding: 3rem 1rem;
+}
+
+.explore-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.explore-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: rgb(var(--text-main));
+}
+
+.explore-header p {
+    color: rgb(var(--text-muted));
+    font-size: 1.1rem;
+}
+
+.explore-section {
+    margin-bottom: 3rem;
+}
+
+.explore-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: rgb(var(--text-muted));
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(var(--border), 0.5);
+    padding-bottom: 0.5rem;
+}
+
+.links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.explore-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(var(--border), 0.5);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.explore-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    border-color: rgb(var(--primary));
+}
+
+.explore-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.explore-info h3 {
+    font-size: 1rem;
+    color: rgb(var(--text-main));
+    margin: 0 0 0.25rem 0;
+}
+
+.explore-info p {
+    font-size: 0.8rem;
+    color: rgb(var(--text-muted));
+    margin: 0;
+}
+
+.admin-card {
+    background: #2f3640;
+    border-color: #2f3640;
+}
+
+.admin-card .explore-icon {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.admin-card h3,
+.admin-card p {
+    color: white;
+}
+
+@media (max-width: 600px) {
+    .links-grid {
+        grid-template-columns: 1fr;
+    }
+}
