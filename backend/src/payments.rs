@@ -203,7 +203,10 @@ pub async fn initiate_verification_payment(
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let password = general_purpose::STANDARD.encode(format!("{}{}{}", shortcode, passkey, timestamp));
 
-    let callback_url = format!("{}/api/payments/callback", std::env::var("BASE_URL").unwrap_or_else(|_| "https://your-domain.com".to_string()));
+    let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let callback_url = format!("{}/api/payments/callback", base_url.trim_end_matches('/'));
+    
+    tracing::info!("Using callback URL: {}", callback_url);
 
     let client = reqwest::Client::new();
     let mpesa_env = std::env::var("MPESA_ENV").unwrap_or_else(|_| "sandbox".to_string()).trim().to_lowercase();

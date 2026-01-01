@@ -73,12 +73,14 @@ export const WebsocketProvider = ({ children }) => {
         if (import.meta.env.VITE_WS_URL) {
             wsUrl = import.meta.env.VITE_WS_URL;
         } else if (import.meta.env.VITE_API_URL) {
-            // Derive WS from API URL: http://app.com/api -> ws://app.com/ws
-            wsUrl = import.meta.env.VITE_API_URL
-                .replace(/^http/, 'ws')
-                .replace(/\/api$/, '/ws');
+            // Robust derivation: ensure protocol is ws/wss and path ends in /ws
+            let base = import.meta.env.VITE_API_URL.replace(/\/$/, ""); // Remove trailing slash
+            if (base.endsWith("/api")) {
+                base = base.slice(0, -4);
+            }
+            wsUrl = base.replace(/^http/, "ws") + "/ws";
         } else {
-            const host = window.location.host === 'localhost:5173' ? 'localhost:3000' : window.location.host;
+            const host = window.location.host === "localhost:5173" ? "localhost:3000" : window.location.host;
             wsUrl = `${protocol}//${host}/ws`;
         }
 

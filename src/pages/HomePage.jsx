@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Book, Users, Shield, ArrowRight, Instagram, Twitter, Mail } from 'lucide-react';
-import '../styles/HomePage.css'; // We'll create this next
+import '../styles/HomePage.css';
 import { useAuth } from '../hooks/useAuth';
 
 const HomePage = () => {
@@ -149,7 +149,7 @@ const HomePage = () => {
                         <a href="#" className="social-icon"><Instagram size={20} /></a>
                         <a href="mailto:support@karuteens.com" className="social-icon"><Mail size={20} /></a>
                     </div>
-                    <p className="copyright">© 2025 KaruTeens. Built for Students.</p>
+                    <p className="copyright">© 2026 KaruTeens. Built for Students.</p>
                 </div>
             </footer>
         </div>

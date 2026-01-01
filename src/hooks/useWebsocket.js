@@ -18,11 +18,13 @@ export const useWebsocket = (onWebRTCMessage) => {
         if (import.meta.env.VITE_WS_URL) {
             wsUrl = import.meta.env.VITE_WS_URL;
         } else if (import.meta.env.VITE_API_URL) {
-            wsUrl = import.meta.env.VITE_API_URL
-                .replace(/^http/, 'ws')
-                .replace(/\/api$/, '/ws');
+            let base = import.meta.env.VITE_API_URL.replace(/\/$/, "");
+            if (base.endsWith("/api")) {
+                base = base.slice(0, -4);
+            }
+            wsUrl = base.replace(/^http/, "ws") + "/ws";
         } else {
-            const host = window.location.host === 'localhost:5173' ? 'localhost:3000' : window.location.host;
+            const host = window.location.host === "localhost:5173" ? "localhost:3000" : window.location.host;
             wsUrl = `${protocol}//${host}/ws`;
         }
 

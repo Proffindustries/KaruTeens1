@@ -2,10 +2,12 @@ import React, { useState, useRef } from 'react';
 import { X, MapPin, Users, Hash, Image as ImageIcon, Video, FileText, Smile, Music, Loader2, Shield, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import '../styles/CreatePostModal.css';
 import { useCreatePost } from '../hooks/useContent.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useUpload } from '../context/UploadContext.jsx';
+import { useAuth } from '../hooks/useAuth.js';
 import Avatar from './Avatar.jsx';
 
 const CreatePostModal = ({ isOpen, onClose }) => {
@@ -13,6 +15,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     const [location, setLocation] = useState(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
+    const [showLocationOptions, setShowLocationOptions] = useState(false);
     const fileInputRef = useRef(null);
     const videoInputRef = useRef(null);
     const audioInputRef = useRef(null);
@@ -21,7 +24,8 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     const { mutate: createPost } = useCreatePost();
     const { uploadImage, uploadFile } = useMediaUpload();
     const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } = useUpload();
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { user, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
 
     // Disable body scroll when modal is open
     React.useEffect(() => {
@@ -168,8 +172,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
         });
     };
 
-    const [showLocationOptions, setShowLocationOptions] = useState(false);
-
     if (!isOpen) return null;
 
     return (
@@ -194,7 +196,24 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="modal-body">
-                        {!user.is_verified ? (
+                        {!isAuthenticated ? (
+                            <div className="verification-gate-overlay">
+                                <div className="gate-content">
+                                    <Shield size={64} className="gate-shield" />
+                                    <h3>Login Required</h3>
+                                    <p>You need to be logged in to share updates with the KaruTeens community.</p>
+                                    <button
+                                        className="btn btn-primary btn-full"
+                                        onClick={() => {
+                                            onClose();
+                                            navigate('/login');
+                                        }}
+                                    >
+                                        Log In / Sign Up
+                                    </button>
+                                </div>
+                            </div>
+                        ) : !user?.is_verified ? (
                             <div className="verification-gate-overlay">
                                 <div className="gate-content">
                                     <Shield size={64} className="gate-shield" />
@@ -209,7 +228,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                                         className="btn btn-primary btn-full"
                                         onClick={() => {
                                             onClose();
-                                            window.location.href = '/verification';
+                                            navigate('/verification');
                                         }}
                                     >
                                         Verify My Account Now
@@ -358,7 +377,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="modal-footer">
-                        {user.is_verified && (
+                        {user?.is_verified && (
                             <button
                                 className="btn btn-primary btn-full"
                                 disabled={!text && selectedFiles.length === 0}
