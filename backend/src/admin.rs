@@ -9,10 +9,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use crate::db::AppState;
-use crate::models::{User, Profile, Post};
+use crate::models::{User, Profile, Post, Transaction, Story, ContentModeration};
 use crate::auth::AuthUser;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
+use chrono::{Utc, Duration};
 
 // --- Admin Middleware ---
 
@@ -61,6 +62,10 @@ pub struct PlatformStats {
     pub total_posts: i64,
     pub total_events: i64,
     pub total_groups: i64,
+    pub active_users: i64,
+    pub total_revenue: f64,
+    pub total_stories: i64,
+    pub total_reports: i64,
 }
 
 #[derive(Deserialize)]
@@ -98,6 +103,41 @@ pub async fn get_platform_stats_handler(
     
     let groups_collection = state.mongo.collection::<mongodb::bson::Document>("groups");
     let total_groups = groups_collection.count_documents(doc! {}, None).await.unwrap_or(0) as i64;
+    
+    // Calculate Active Users (last seen in 30 days)
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+    let active_threshold = Utc::now() - Duration::days(30);
+    let active_users = profiles_collection.count_documents(doc! { 
+        "last_seen_at": { "$gte": DateTime::from_chrono(active_threshold) } 
+    }, None).await.unwrap_or(0) as i64;
+
+    // Calculate Revenue
+    let transactions_collection = state.mongo.collection::<Transaction>("transactions");
+    let mut revenue_cursor = transactions_collection.aggregate(vec![
+        doc! { "$match": { "status": "completed" } },
+        doc! { "$group": { "_id": null, "total": { "$sum": "$amount" } } }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut total_revenue = 0.0;
+    if let Some(result) = revenue_cursor.next().await {
+        if let Ok(doc) = result {
+            if let Ok(amount) = doc.get_f64("total") {
+                total_revenue = amount;
+            } else if let Ok(amount_i) = doc.get_i32("total") { // sometimes comes as int if round
+                total_revenue = amount_i as f64;
+            } else if let Ok(amount_d) = doc.get_f64("total") { // double check
+                total_revenue = amount_d;
+            }
+        }
+    }
+
+    // Connect Stories
+    let stories_collection = state.mongo.collection::<Story>("stories");
+    let total_stories = stories_collection.count_documents(doc! {}, None).await.unwrap_or(0) as i64;
+    
+    // Connect Reports (Content Moderation Queue)
+    let reports_collection = state.mongo.collection::<ContentModeration>("content_moderation");
+    let total_reports = reports_collection.count_documents(doc! { "status": "pending" }, None).await.unwrap_or(0) as i64;
 
     let stats = PlatformStats {
         total_users,
@@ -107,6 +147,10 @@ pub async fn get_platform_stats_handler(
         total_posts,
         total_events,
         total_groups,
+        active_users,
+        total_revenue,
+        total_stories,
+        total_reports,
     };
 
     Ok((StatusCode::OK, Json(stats)))

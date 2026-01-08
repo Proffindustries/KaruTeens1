@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../api/client';
 import {
     Users, FileText, DollarSign, Activity, Settings, LogOut, TrendingUp,
     Shield, Calendar, MessageSquare, Eye, EyeOff, Video, Image,
@@ -10,15 +11,35 @@ import {
 import '../styles/AdminDashboard.css';
 import '../styles/UserManagementTab.css';
 import '../styles/ContentModerationTab.css';
+import '../styles/GroupManagementTab.css';
+import '../styles/PageManagementTab.css';
+import '../styles/EventManagementTab.css';
+import '../styles/PostManagementTab.css';
+import '../styles/CommentManagementTab.css';
+import '../styles/StoryManagementTab.css';
+import '../styles/ReelManagementTab.css';
+import '../styles/AdManagementTab.css';
+import '../styles/VideoManagementTab.css';
+import '../styles/MediaManagementTab.css';
 import UserManagementTab from './UserManagementTab';
 import ContentModerationTab from './ContentModerationTab';
+import GroupManagementTab from './GroupManagementTab';
+import PageManagementTab from './PageManagementTab';
+import EventManagementTab from './EventManagementTab';
+import PostManagementTab from './PostManagementTab';
+import CommentManagementTab from './CommentManagementTab';
+import StoryManagementTab from './StoryManagementTab';
+import ReelManagementTab from './ReelManagementTab';
+import AdManagementTab from './AdManagementTab';
+import VideoManagementTab from './VideoManagementTab';
+import MediaManagementTab from './MediaManagementTab';
 import { useToast } from '../context/ToastContext';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
+
     // Check admin access
     if (user.role !== 'admin' && user.role !== 'superadmin') {
         return (
@@ -68,7 +89,7 @@ const AdminDashboard = () => {
                         <span className="admin-role">{user.role === 'superadmin' ? 'Super Admin' : 'Admin'}</span>
                     </div>
                 </div>
-                
+
                 <nav className="admin-nav">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
@@ -84,7 +105,7 @@ const AdminDashboard = () => {
                         );
                     })}
                 </nav>
-                
+
                 <div className="admin-logout">
                     <button className="logout-btn">
                         <LogOut size={20} />
@@ -97,7 +118,7 @@ const AdminDashboard = () => {
             <main className="admin-main">
                 <header className="admin-header">
                     <div className="header-left">
-                        <button 
+                        <button
                             className="sidebar-toggle"
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                         >
@@ -118,28 +139,7 @@ const AdminDashboard = () => {
                 </header>
 
                 <div className="admin-content">
-                    {activeTab === 'overview' && <OverviewTab />}
-                    {activeTab === 'users' && <UserManagementTab />}
-                    {activeTab === 'content' && <ContentModerationTab />}
-                    {activeTab === 'groups' && <GroupManagementTab />}
-                    {activeTab === 'pages' && <PageManagementTab />}
-                    {activeTab === 'events' && <EventManagementTab />}
-                    {activeTab === 'posts' && <PostManagementTab />}
-                    {activeTab === 'comments' && <CommentManagementTab />}
-                    {activeTab === 'stories' && <StoryManagementTab />}
-                    {activeTab === 'reels' && <ReelManagementTab />}
-                    {activeTab === 'ads' && <AdManagementTab />}
-                    {activeTab === 'videos' && <VideoManagementTab />}
-                    {activeTab === 'media' && <MediaManagementTab />}
-                    {activeTab === 'analytics' && <AnalyticsTab />}
-                    {activeTab === 'reports' && <ReportsTab />}
-                    {activeTab === 'moderation' && <ModerationTab />}
-                    {activeTab === 'settings' && <SettingsTab />}
-                    {activeTab === 'logs' && <SystemLogsTab />}
-                    {activeTab === 'activity' && <UserActivityTab />}
-                    {activeTab === 'security' && <SecurityTab />}
-                    {activeTab === 'abuse' && <AbuseDetectionTab />}
-                    {activeTab === 'hashtags' && <HashtagViralityTab />}
+                    {renderTabContent()}
                 </div>
             </main>
         </div>
@@ -148,15 +148,42 @@ const AdminDashboard = () => {
 
 // Overview Tab Component
 const OverviewTab = () => {
+    const [statsData, setStatsData] = useState({
+        total_users: 0,
+        active_users: 0,
+        total_posts: 0,
+        total_revenue: 0,
+        total_groups: 0,
+        total_events: 0,
+        total_stories: 0,
+        total_reports: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const { data } = await api.get('/admin/stats');
+                setStatsData(data);
+            } catch (error) {
+                console.error("Failed to fetch admin stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     const stats = [
-        { label: "Total Users", value: "12,450", icon: Users, change: "+12%", color: "#3498db" },
-        { label: "Active Users", value: "8,230", icon: Activity, change: "+8%", color: "#2ecc71" },
-        { label: "Total Posts", value: "45,200", icon: FileText, change: "+5%", color: "#9b59b6" },
-        { label: "Revenue", value: "Ksh 850k", icon: DollarSign, change: "+18%", color: "#f1c40f" },
-        { label: "Groups", value: "156", icon: Users, change: "+3%", color: "#e74c3c" },
-        { label: "Events", value: "89", icon: Calendar, change: "+15%", color: "#34495e" },
-        { label: "Stories", value: "2,150", icon: Eye, change: "+25%", color: "#95a5a6" },
-        { label: "Reports", value: "23", icon: FileSpreadsheet, change: "-10%", color: "#f39c12" }
+        { label: "Total Users", value: statsData.total_users?.toLocaleString() || "0", icon: Users, change: "+0%", color: "#3498db" },
+        { label: "Active Users", value: statsData.active_users?.toLocaleString() || "0", icon: Activity, change: "+0%", color: "#2ecc71" },
+        { label: "Total Posts", value: statsData.total_posts?.toLocaleString() || "0", icon: FileText, change: "+0%", color: "#9b59b6" },
+        { label: "Revenue", value: `Ksh ${statsData.total_revenue?.toLocaleString() || "0"}`, icon: DollarSign, change: "+0%", color: "#f1c40f" },
+        { label: "Groups", value: statsData.total_groups?.toLocaleString() || "0", icon: Users, change: "+0%", color: "#e74c3c" },
+        { label: "Events", value: statsData.total_events?.toLocaleString() || "0", icon: Calendar, change: "+0%", color: "#34495e" },
+        { label: "Stories", value: statsData.total_stories?.toLocaleString() || "0", icon: Eye, change: "+0%", color: "#95a5a6" },
+        { label: "Reports", value: statsData.total_reports?.toLocaleString() || "0", icon: FileSpreadsheet, change: "+0%", color: "#f39c12" }
     ];
 
     return (
@@ -209,24 +236,63 @@ const OverviewTab = () => {
 // Placeholder components for other tabs
 // UserManagementTab is now imported from './UserManagementTab'
 // ContentModerationTab is now imported from './ContentModerationTab'
-const GroupManagementTab = () => <div className="tab-content">Group Management Interface</div>;
-const PageManagementTab = () => <div className="tab-content">Page Management Interface</div>;
-const EventManagementTab = () => <div className="tab-content">Event Management Interface</div>;
-const PostManagementTab = () => <div className="tab-content">Post Management Interface</div>;
-const CommentManagementTab = () => <div className="tab-content">Comment Management Interface</div>;
-const StoryManagementTab = () => <div className="tab-content">Story Management Interface</div>;
-const ReelManagementTab = () => <div className="tab-content">Reel Management Interface</div>;
-const AdManagementTab = () => <div className="tab-content">Ad Management Interface</div>;
-const VideoManagementTab = () => <div className="tab-content">Video Management Interface</div>;
-const MediaManagementTab = () => <div className="tab-content">Media Management Interface</div>;
-const AnalyticsTab = () => <div className="tab-content">Analytics Dashboard</div>;
-const ReportsTab = () => <div className="tab-content">Reports Interface</div>;
-const ModerationTab = () => <div className="tab-content">Moderation Tools</div>;
-const SettingsTab = () => <div className="tab-content">Settings Interface</div>;
-const SystemLogsTab = () => <div className="tab-content">System Logs Interface</div>;
-const UserActivityTab = () => <div className="tab-content">User Activity Interface</div>;
-const SecurityTab = () => <div className="tab-content">Security Interface</div>;
-const AbuseDetectionTab = () => <div className="tab-content">Abuse Detection Interface</div>;
-const HashtagViralityTab = () => <div className="tab-content">Hashtag Virality Interface</div>;
+// GroupManagementTab is now imported from './GroupManagementTab'
+// PageManagementTab is now imported from './PageManagementTab'
+// EventManagementTab is now imported from './EventManagementTab'
+// PostManagementTab is now imported from './PostManagementTab'
+// CommentManagementTab is now imported from './CommentManagementTab'
+// StoryManagementTab is now imported from './StoryManagementTab'
+// ReelManagementTab is now imported from './ReelManagementTab'
+// Tab content switch
+const renderTabContent = () => {
+    switch (activeTab) {
+        case 'overview':
+            return <OverviewTab />;
+        case 'users':
+            return <UserManagementTab />;
+        case 'content':
+            return <ContentModerationTab />;
+        case 'groups':
+            return <GroupManagementTab />;
+        case 'pages':
+            return <PageManagementTab />;
+        case 'events':
+            return <EventManagementTab />;
+        case 'posts':
+            return <PostManagementTab />;
+        case 'comments':
+            return <CommentManagementTab />;
+        case 'stories':
+            return <StoryManagementTab />;
+        case 'reels':
+            return <ReelManagementTab />;
+        case 'ads':
+            return <AdManagementTab />;
+        case 'videos':
+            return <VideoManagementTab />;
+        case 'media':
+            return <MediaManagementTab />;
+        case 'analytics':
+            return <div className="tab-content">Analytics Dashboard</div>;
+        case 'reports':
+            return <div className="tab-content">Reports Interface</div>;
+        case 'moderation':
+            return <div className="tab-content">Moderation Tools</div>;
+        case 'settings':
+            return <div className="tab-content">Settings Interface</div>;
+        case 'logs':
+            return <div className="tab-content">System Logs Interface</div>;
+        case 'activity':
+            return <div className="tab-content">User Activity Interface</div>;
+        case 'security':
+            return <div className="tab-content">Security Interface</div>;
+        case 'abuse':
+            return <div className="tab-content">Abuse Detection Interface</div>;
+        case 'hashtags':
+            return <div className="tab-content">Hashtag Virality Interface</div>;
+        default:
+            return <OverviewTab />;
+    }
+};
 
 export default AdminDashboard;
