@@ -103,3 +103,25 @@ export const useResetPassword = () => {
         }
     });
 };
+
+export const useUpdateProfile = () => {
+    const { showToast } = useToast();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (profileData) => {
+            const { data } = await api.put('/users/update', profileData);
+            return data;
+        },
+        onSuccess: (data) => {
+            showToast(data.message || 'Profile updated successfully!', 'success');
+            queryClient.invalidateQueries(['profile']);
+            // Optionally update local storage user if certain fields changed
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            // Normally you'd want the updated user back from the server
+        },
+        onError: (err) => {
+            showToast(err.response?.data?.error || 'Failed to update profile', 'error');
+        }
+    });
+};

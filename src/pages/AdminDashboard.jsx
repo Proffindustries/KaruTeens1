@@ -139,7 +139,7 @@ const AdminDashboard = () => {
                 </header>
 
                 <div className="admin-content">
-                    {renderTabContent(setActiveTab)}
+                    {renderTabContent(activeTab, setActiveTab)}
                 </div>
             </main>
         </div>
@@ -329,7 +329,7 @@ const SettingsTab = () => {
 };
 
 // Tab content switch
-const renderTabContent = (setActiveTab) => {
+const renderTabContent = (activeTab, setActiveTab) => {
     switch (activeTab) {
         case 'overview':
             return <OverviewTab setActiveTab={setActiveTab} />;

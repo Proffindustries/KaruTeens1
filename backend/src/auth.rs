@@ -75,6 +75,12 @@ pub struct ResetPasswordRequest {
     pub new_password: String,
 }
 
+#[derive(Deserialize)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String, // User ID (ObjectId hex)
@@ -423,6 +429,42 @@ pub async fn reset_password_handler(
     }
 }
 
+pub async fn change_password_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<ChangePasswordRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let users_collection = state.mongo.collection::<User>("users");
+
+    let user_doc = users_collection.find_one(doc! { "_id": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "User not found"}))))?;
+
+    // Verify current password
+    let parsed_hash = PasswordHash::new(&user_doc.password_hash)
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Stored password format invalid"}))))?;
+    
+    if Argon2::default().verify_password(payload.current_password.as_bytes(), &parsed_hash).is_err() {
+        return Err((StatusCode::UNAUTHORIZED, Json(json!({"error": "Incorrect current password"}))));
+    }
+
+    // Hash new password
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Hashing failed"}))))?
+        .to_string();
+
+    // Update in Mongo
+    users_collection.update_one(
+        doc! { "_id": user.user_id },
+        doc! { "$set": { "password_hash": password_hash } },
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok(Json(json!({"message": "Password updated successfully"})))
+}
+
 pub async fn verify_free_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
@@ -458,6 +500,7 @@ pub fn auth_routes() -> Router<Arc<AppState>> {
         .route("/login", post(login_handler))
         .route("/forgot-password", post(forgot_password_handler))
         .route("/reset-password", post(reset_password_handler))
+        .route("/change-password", post(change_password_handler))
         .route("/verify-free", post(verify_free_handler))
 }
 
