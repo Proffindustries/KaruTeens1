@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Video, Image, Clock, Calendar, Eye, EyeOff, Trash2, ShieldCheck, XCircle, AlertTriangle,
-    User, TrendingUp, BarChart3, Filter, Search, RefreshCw,
+    Video, Image, Clock, MessageSquare, Eye, EyeOff, Trash2, ShieldCheck, XCircle, AlertTriangle,
+    User, Calendar, TrendingUp, BarChart3, Filter, Search, RefreshCw,
     Download, Upload, Plus, Edit, CheckCircle, Ban, Shield, Users,
-    MessageCircle, ThumbsUp, AlertCircle, Zap,
-    Globe, Repeat, FileCheck, FileClock, FileSearch,
-    Play, Pause, Share2, Heart, MessageSquare, Share,
-    Star, Crown, Sparkles, Timer, MapPin, Hash as Hashtag, AtSign,
-    Smartphone, Tablet, Laptop, Award, Trophy, Rocket, Flame as Fire, Sparkle, Gift
+    MessageCircle, ThumbsUp, MessageCircleMore, AlertCircle, Zap,
+    Globe, UserCheck, UserX, ChevronLeft, ChevronRight, Copy, Share2,
+    FileText, FileClock, FileSearch, FileCheck, FileSpreadsheet,
+    AudioLines, Tag, Star, Crown, Repeat, Sparkles
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -949,7 +948,7 @@ const StoryManagementTab = () => {
                                                             <small>Views</small>
                                                         </div>
                                                         <div className="metric-item">
-                                                            <MessageCircleIcon size={14} />
+                                                            <MessageCircle size={14} />
                                                             <span className="metric-value">{story.reply_count}</span>
                                                             <small>Replies</small>
                                                         </div>
@@ -959,7 +958,7 @@ const StoryManagementTab = () => {
                                                             <small>Engagement</small>
                                                         </div>
                                                         <div className="metric-item">
-                                                            <UsersIcon size={14} />
+                                                            <Users size={14} />
                                                             <span className="metric-value">{story.views.length}</span>
                                                             <small>Unique Viewers</small>
                                                         </div>
@@ -1054,7 +1053,7 @@ const StoryManagementTab = () => {
                                                         onClick={() => handleDeleteStory(story.id)}
                                                         title="Delete Story"
                                                     >
-                                                        <Trash2Icon2 size={16} />
+                                                        <Trash2 size={16} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -1235,7 +1234,7 @@ const StoryManagementTab = () => {
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
-                                                    <MessageCircleIcon size={20} />
+                                                    <MessageCircle size={20} />
                                                     <div>
                                                         <strong>{stats.total_replies}</strong>
                                                         <span>Replies</span>
@@ -1249,7 +1248,7 @@ const StoryManagementTab = () => {
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
-                                                    <UsersIcon size={20} />
+                                                    <Users size={20} />
                                                     <div>
                                                         <strong>{stats.avg_engagement_rate.toFixed(2)}%</strong>
                                                         <span>Engagement Rate</span>

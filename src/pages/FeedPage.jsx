@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Loader2 } from 'lucide-react';
+import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Loader2, Sparkles } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';

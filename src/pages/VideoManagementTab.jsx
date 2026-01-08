@@ -519,11 +519,11 @@ const VideoManagementTab = () => {
             case 'pending': return { color: 'yellow', text: 'Pending', icon: <Clock size={14} /> };
             case 'failed': return { color: 'red', text: 'Failed', icon: <XCircle size={14} /> };
             case 'uploading': return { color: 'blue', text: 'Uploading', icon: <Upload size={14} /> };
-            case 'uploaded': return { color: 'green', text: 'Uploaded', icon: <FileCheckIcon size={14} /> };
+            case 'uploaded': return { color: 'green', text: 'Uploaded', icon: <FileCheck size={14} /> };
             case 'transcoding': return { color: 'blue', text: 'Transcoding', icon: <RefreshCw size={14} /> };
             case 'transcoded': return { color: 'green', text: 'Transcoded', icon: <CheckCircle size={14} /> };
             case 'error': return { color: 'red', text: 'Error', icon: <AlertTriangle size={14} /> };
-            default: return { color: 'gray', text: status, icon: <FileTextIcon size={14} /> };
+            default: return { color: 'gray', text: status, icon: <FileText size={14} /> };
         }
     };
 
@@ -994,7 +994,7 @@ const VideoManagementTab = () => {
                         </div>
                         <div className="stat-card">
                             <div className="stat-icon total">
-                                <FileTextIcon size={24} />
+                                <FileText size={24} />
                             </div>
                             <div className="stat-content">
                                 <span className="stat-label">Success Rate</span>
@@ -1169,7 +1169,7 @@ const VideoManagementTab = () => {
 
                             <div className="metric-card">
                                 <div className="metric-icon">
-                                    <FileCheckIcon size={24} />
+                                    <FileCheck size={24} />
                                 </div>
                                 <div className="metric-content">
                                     <div className="metric-value">{formatFileSize(storageStats.used_storage)}</div>

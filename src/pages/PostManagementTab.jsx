@@ -803,7 +803,7 @@ const PostManagementTab = () => {
                                                             <small>Engagement</small>
                                                         </div>
                                                         <div className="metric-item">
-                                                            <ClockIcon size={14} />
+                                                            <Clock size={14} />
                                                             <span>{post.analytics.avg_reading_time || 0} min</span>
                                                             <small>Avg Time</small>
                                                         </div>
@@ -817,7 +817,7 @@ const PostManagementTab = () => {
                                                         onClick={() => window.open(`/post/${post.slug}`, '_blank')}
                                                         title="View Post"
                                                     >
-                                                        <EyeIcon size={16} />
+                                                        <Eye size={16} />
                                                     </button>
                                                     <button
                                                         className="action-btn analytics"
@@ -870,7 +870,7 @@ const PostManagementTab = () => {
                                                             onClick={() => handlePublishPost(post.id)}
                                                             title="Publish Post"
                                                         >
-                                                            <FileTextIcon size={16} />
+                                                            <FileText size={16} />
                                                         </button>
                                                     )}
                                                     <button

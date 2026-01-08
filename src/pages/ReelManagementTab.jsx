@@ -3,7 +3,7 @@ import {
     Video, Image, Clock, Calendar, Eye, EyeOff, Trash2, ShieldCheck, XCircle, AlertTriangle,
     User, TrendingUp, BarChart3, Filter, Search, RefreshCw,
     Download, Upload, Plus, Edit, CheckCircle, Ban, Shield, Users,
-    MessageCircle, ThumbsUp as ThumbsUpIcon, AlertCircle, Zap,
+    MessageCircle, ThumbsUp as ThumbsUp, AlertCircle, Zap,
     Globe, Repeat, FileCheck, FileClock, FileSearch,
     Play, Pause, RotateCcw, Share2, Heart, MessageSquare, Share,
     Star, Crown, Sparkles, Timer, MapPin, Hash, AtSign,
@@ -755,7 +755,7 @@ const ReelManagementTab = () => {
             case 'pending': return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
             case 'rejected': return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
             case 'spam': return { color: 'purple', text: 'Spam', icon: <AlertTriangle size={14} /> };
-            case 'removed': return { color: 'gray', text: 'Removed', icon: <Trash2Icon2 size={14} /> };
+            case 'removed': return { color: 'gray', text: 'Removed', icon: <Trash2 size={14} /> };
             default: return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
         }
     };
@@ -811,7 +811,7 @@ const ReelManagementTab = () => {
     const getReelTypeIcon = (hasMusic, hasEffects, hasFilters) => {
         if (hasMusic) return <Music size={16} className="music-icon" />;
         if (hasEffects) return <Scissors size={16} className="effects-icon" />;
-        if (hasFilters) return <SettingsIcon size={16} className="filters-icon" />;
+        if (hasFilters) return <Settings size={16} className="filters-icon" />;
         return <Film size={16} className="normal-icon" />;
     };
 
@@ -938,7 +938,7 @@ const ReelManagementTab = () => {
                         Refresh
                     </button>
                     <button className="btn-secondary" onClick={() => setShowStatsModal(true)}>
-                        <BarChart3Icon2 size={18} />
+                        <BarChart3 size={18} />
                         User Stats
                     </button>
                     <button className="btn-secondary" onClick={() => setShowTrendingModal(true)}>
@@ -1173,17 +1173,17 @@ const ReelManagementTab = () => {
                                                             <small>Views</small>
                                                         </div>
                                                         <div className="metric-item">
-                                                            <ThumbsUpIcon size={14} />
+                                                            <ThumbsUp size={14} />
                                                             <span className="metric-value">{reel.like_count.toLocaleString()}</span>
                                                             <small>Likes</small>
                                                         </div>
                                                         <div className="metric-item">
-                                                            <MessageCircleIcon size={14} />
+                                                            <MessageCircle size={14} />
                                                             <span className="metric-value">{reel.comment_count}</span>
                                                             <small>Comments</small>
                                                         </div>
                                                         <div className="metric-item">
-                                                            <Share2Icon size={14} />
+                                                            <Share2 size={14} />
                                                             <span className="metric-value">{reel.share_count}</span>
                                                             <small>Shares</small>
                                                         </div>
@@ -1307,7 +1307,7 @@ const ReelManagementTab = () => {
                                                         onClick={() => handleDeleteReel(reel.id)}
                                                         title="Delete Reel"
                                                     >
-                                                        <Trash2Icon2 size={16} />
+                                                        <Trash2 size={16} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -1509,21 +1509,21 @@ const ReelManagementTab = () => {
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
-                                                    <ThumbsUpIcon size={20} />
+                                                    <ThumbsUp size={20} />
                                                     <div>
                                                         <strong>{stats.total_likes.toLocaleString()}</strong>
                                                         <span>Total Likes</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
-                                                    <MessageCircleIcon size={20} />
+                                                    <MessageCircle size={20} />
                                                     <div>
                                                         <strong>{stats.total_comments}</strong>
                                                         <span>Comments</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
-                                                    <Share2Icon size={20} />
+                                                    <Share2 size={20} />
                                                     <div>
                                                         <strong>{stats.total_shares}</strong>
                                                         <span>Shares</span>
@@ -1585,7 +1585,7 @@ const ReelManagementTab = () => {
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
-                                                    <UsersIcon size={20} />
+                                                    <Users size={20} />
                                                     <div>
                                                         <strong>{stats.follower_growth}</strong>
                                                         <span>Follower Growth</span>

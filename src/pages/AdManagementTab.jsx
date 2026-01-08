@@ -820,7 +820,7 @@ const AdManagementTab = () => {
             case 'brand_awareness': return { color: 'blue', text: 'Awareness', icon: <Eye size={14} /> };
             case 'traffic': return { color: 'green', text: 'Traffic', icon: <Users size={14} /> };
             case 'engagement': return { color: 'purple', text: 'Engagement', icon: <MessageCircle size={14} /> };
-            case 'leads': return { color: 'orange', text: 'Leads', icon: <TargetIcon size={14} /> };
+            case 'leads': return { color: 'orange', text: 'Leads', icon: <Target size={14} /> };
             case 'conversions': return { color: 'red', text: 'Conversions', icon: <TrendingUp size={14} /> };
             default: return { color: 'gray', text: objective, icon: <AlertCircle size={14} /> };
         }
@@ -1232,7 +1232,7 @@ const AdManagementTab = () => {
                                                         <div className="targeting-info">
                                                             <div className="targeting-metrics">
                                                                 <div className="metric-item">
-                                                                    <TargetIcon size={14} />
+                                                                    <Target size={14} />
                                                                     <div>
                                                                         <strong>{campaign.optimization_goal}</strong>
                                                                         <small>Optimization Goal</small>
@@ -1300,7 +1300,7 @@ const AdManagementTab = () => {
                                                                 onClick={() => handleDeleteCampaign(campaign.id)}
                                                                 title="Delete Campaign"
                                                             >
-                                                                <Trash2Icon2 size={16} />
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -1613,7 +1613,7 @@ const AdManagementTab = () => {
                                                                 onClick={() => handleDeleteAdGroup(group.id)}
                                                                 title="Delete Ad Group"
                                                             >
-                                                                <Trash2Icon2 size={16} />
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -1926,7 +1926,7 @@ const AdManagementTab = () => {
                                                                 onClick={() => handleDeleteCreative(creative.id)}
                                                                 title="Delete Creative"
                                                             >
-                                                                <Trash2Icon2 size={16} />
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -2021,7 +2021,7 @@ const AdManagementTab = () => {
 
                         <div className="metric-card">
                             <div className="metric-icon">
-                                <TargetIcon size={24} />
+                                <Target size={24} />
                             </div>
                             <div className="metric-content">
                                 <div className="metric-value">

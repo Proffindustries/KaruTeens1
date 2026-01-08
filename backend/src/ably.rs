@@ -34,25 +34,27 @@ async fn get_ably_token_request(
     State(_state): State<Arc<AppState>>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let ably_api_key = std::env::var("ABLY_API_KEY").expect("ABLY_API_KEY must be set");
+    let ably_api_key = std::env::var("ABLY_API_KEY").unwrap_or_default();
+    if ably_api_key.is_empty() {
+        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "ABLY_API_KEY not set"}))).into_response();
+    }
     
-    // Ably key format is "key_name:key_secret"
     let parts: Vec<&str> = ably_api_key.split(':').collect();
     if parts.len() != 2 {
-        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Invalid ABLY_API_KEY"}))).into_response();
+        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Invalid ABLY_API_KEY format"}))).into_response();
     }
     
     let key_name = parts[0];
-    let key_secret = parts[1];
+    let key_secret = parts[1].trim();
     
     let client_id = user.user_id.to_hex();
     let timestamp = Utc::now().timestamp_millis();
-    let nonce = uuid::Uuid::new_v4().to_string();
-    let capability = json!({"*": ["*"]}).to_string();
+    let nonce = uuid::Uuid::new_v4().to_string().replace("-", "").to_lowercase();
+    let capability = "{\"*\":[\"*\"]}";
+    let ttl = "3600000"; // 1 hour in ms
     
     // Sign the token request
-    // The format is: keyName + "\n" + ttl + "\n" + capability + "\n" + clientId + "\n" + timestamp + "\n" + nonce + "\n"
-    let ttl = "3600000"; // 1 hour
+    // Format: keyName + "\n" + ttl + "\n" + capability + "\n" + clientId + "\n" + timestamp + "\n" + nonce + "\n"
     let sign_data = format!("{}\n{}\n{}\n{}\n{}\n{}\n", 
         key_name, 
         ttl, 
@@ -63,9 +65,9 @@ async fn get_ably_token_request(
     );
     
     type HmacSha256 = Hmac<Sha256>;
-    let mut mac = HmacSha256::new_from_slice(key_secret.as_bytes()).unwrap();
-    mac.update(sign_data.as_bytes());
-    let mac_hex = base64::engine::general_purpose::STANDARD.encode(mac.finalize().into_bytes());
+    let mut mac_hasher = HmacSha256::new_from_slice(key_secret.as_bytes()).unwrap();
+    mac_hasher.update(sign_data.as_bytes());
+    let mac_base64 = base64::engine::general_purpose::STANDARD.encode(mac_hasher.finalize().into_bytes());
 
     Json(json!({
         "keyName": key_name,
@@ -74,6 +76,6 @@ async fn get_ably_token_request(
         "capability": capability,
         "clientId": client_id,
         "ttl": 3600000,
-        "mac": mac_hex
+        "mac": mac_base64
     })).into_response()
 }
