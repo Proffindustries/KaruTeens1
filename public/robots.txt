@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /messages/
+Disallow: /auth/
+Disallow: /tmp/
+Disallow: /private/
+Disallow: /*?q=*
+Disallow: /*?query=*
+
+Sitemap: https://karuteens.com/sitemap.xml

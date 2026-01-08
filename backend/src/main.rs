@@ -23,7 +23,12 @@ mod hookup;
 mod study_rooms;
 mod events;
 mod groups;
+mod pages;
+mod posts;
+mod comments;
 mod stories;
+mod reels;
+mod ads;
 mod admin;
 
 use auth::auth_routes;
@@ -89,6 +94,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(health_check))
+        .route("/api/config", get(admin::get_public_settings_handler))
         .route("/ws", get(ws_handler))
         .nest("/api/auth", auth_routes())
         .nest("/api/posts", content_routes())
@@ -103,7 +109,13 @@ async fn main() {
         .nest("/api/hookup", hookup::hookup_routes())
         .nest("/api/study-rooms", study_rooms::study_room_routes())
         .nest("/api/events", events::event_routes())
+        .nest("/api/posts", posts::post_routes())
+        .nest("/api/comments", comments::comment_routes())
+        .nest("/api/stories", stories::story_routes())
+        .nest("/api/reels", reels::reel_routes())
         .nest("/api/groups", groups::group_routes())
+        .nest("/api/pages", pages::page_routes())
+        .nest("/api/events", events::event_routes())
         .nest("/api/stories", stories::story_routes())
         .nest("/api/admin", admin::admin_routes())
         .layer(

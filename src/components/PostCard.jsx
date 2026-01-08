@@ -24,16 +24,49 @@ const PostCard = ({ post }) => {
     const cardRef = React.useRef(null);
     const menuRef = React.useRef(null);
 
+    // Optimistic UI State
+    const [isLiked, setIsLiked] = useState(post.is_liked);
+    const [likesCount, setLikesCount] = useState(post.likes || 0);
+    const [commentsCount, setCommentsCount] = useState(post.comments || 0);
+
+    // Sync with props if they change (e.g., after a background refetch)
+    React.useEffect(() => {
+        setIsLiked(post.is_liked);
+        setLikesCount(post.likes);
+        setCommentsCount(post.comments);
+    }, [post.is_liked, post.likes, post.comments]);
+
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
     const { mutate: addComment, isPending: isSubmittingComment } = useAddComment();
     const { data: comments, isLoading: isLoadingComments } = useComments(showComments ? post.id : null);
 
     const handleLikeToggle = () => {
-        if (post.is_liked) {
-            unlikePost(post.id);
+        const previousLiked = isLiked;
+        const previousCount = likesCount;
+
+        // Optimistic Update
+        setIsLiked(!previousLiked);
+        setLikesCount(previousLiked ? previousCount - 1 : previousCount + 1);
+
+        if (previousLiked) {
+            unlikePost(post.id, {
+                onError: () => {
+                    // Rollback
+                    setIsLiked(true);
+                    setLikesCount(previousCount);
+                    showToast('Failed to unlike post', 'error');
+                }
+            });
         } else {
-            likePost(post.id);
+            likePost(post.id, {
+                onError: () => {
+                    // Rollback
+                    setIsLiked(false);
+                    setLikesCount(previousCount);
+                    showToast('Failed to like post', 'error');
+                }
+            });
         }
     };
 
@@ -125,15 +158,33 @@ const PostCard = ({ post }) => {
     const handleCommentSubmit = (e) => {
         e.preventDefault();
         if (!commentText.trim()) return;
-        addComment({ postId: post.id, content: commentText, parent_comment_id: null });
+
+        // Optimistic Count Update
+        const previousCount = commentsCount;
+        setCommentsCount(previousCount + 1);
+
+        addComment({ postId: post.id, content: commentText, parent_comment_id: null }, {
+            onError: () => {
+                setCommentsCount(previousCount);
+                showToast('Failed to post comment', 'error');
+            }
+        });
         setCommentText('');
     };
 
     const handleReply = (parentCommentId, replyContent) => {
+        const previousCount = commentsCount;
+        setCommentsCount(previousCount + 1);
+
         addComment({
             postId: post.id,
             content: replyContent,
             parent_comment_id: parentCommentId
+        }, {
+            onError: () => {
+                setCommentsCount(previousCount);
+                showToast('Failed to post reply', 'error');
+            }
         });
     };
 
@@ -345,9 +396,9 @@ const PostCard = ({ post }) => {
 
             {/* Post Stats */}
             <div className="post-stats">
-                <span>{post.likes} Likes</span>
+                <span>{likesCount} Likes</span>
                 <span onClick={() => setShowComments(!showComments)} style={{ cursor: 'pointer' }}>
-                    {post.comments} Comments
+                    {commentsCount} Comments
                 </span>
             </div>
 
@@ -356,11 +407,11 @@ const PostCard = ({ post }) => {
             {/* Action Buttons */}
             <div className="post-actions">
                 <button
-                    className={`action-btn ${post.is_liked ? 'liked' : ''}`}
+                    className={`action-btn ${isLiked ? 'liked' : ''}`}
                     onClick={handleLikeToggle}
-                    style={{ color: post.is_liked ? '#ff4757' : 'inherit' }}
+                    style={{ color: isLiked ? '#ff4757' : 'inherit' }}
                 >
-                    <Heart size={20} fill={post.is_liked ? "currentColor" : "none"} />
+                    <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
                     <span>Like</span>
                 </button>
 

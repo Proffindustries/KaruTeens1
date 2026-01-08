@@ -423,12 +423,42 @@ pub async fn reset_password_handler(
     }
 }
 
+pub async fn verify_free_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    // 1. Check if payments are disabled
+    let settings_collection = state.mongo.collection::<serde_json::Value>("settings");
+    let settings = settings_collection.find_one(doc! {}, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let is_payment_enabled = match settings {
+        Some(s) => s.get("is_payment_enabled").and_then(|v| v.as_bool()).unwrap_or(true),
+        None => true,
+    };
+
+    if is_payment_enabled {
+        return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Free verification is not available at this time. Please use M-Pesa."}))));
+    }
+
+    // 2. Verify the user
+    let users_collection = state.mongo.collection::<User>("users");
+    users_collection.update_one(
+        doc! { "_id": user.user_id },
+        doc! { "$set": { "is_verified": true } },
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok(Json(json!({"message": "Verification successful! You are now a verified KaruTeen."})))
+}
+
 pub fn auth_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/register", post(register_handler))
         .route("/login", post(login_handler))
         .route("/forgot-password", post(forgot_password_handler))
         .route("/reset-password", post(reset_password_handler))
+        .route("/verify-free", post(verify_free_handler))
 }
 
 pub fn decode_token(token: &str, secret: &str) -> Result<jsonwebtoken::TokenData<Claims>, jsonwebtoken::errors::Error> {

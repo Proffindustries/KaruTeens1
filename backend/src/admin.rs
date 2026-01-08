@@ -14,6 +14,19 @@ use crate::auth::AuthUser;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
 use chrono::{Utc, Duration};
+use mongodb::options::UpdateOptions;
+
+// --- DTOs za Mfumo ---
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SystemSettings {
+    pub is_payment_enabled: bool,
+    pub free_verification_limit: i64, // Just in case you want to limit
+}
+
+#[derive(Deserialize)]
+pub struct UpdateSettingsRequest {
+    pub is_payment_enabled: bool,
+}
 
 // --- Admin Middleware ---
 
@@ -311,6 +324,97 @@ pub async fn verify_user_handler(
     Ok((StatusCode::OK, Json(json!({"message": "User verified"}))))
 }
 
+// --- Content Moderation Handlers (Real Data) ---
+pub async fn list_moderation_items_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    let moderation_collection = state.mongo.collection::<ContentModeration>("content_moderation");
+    let mut cursor = moderation_collection.find(
+        doc! { "status": "pending" },
+        mongodb::options::FindOptions::builder().sort(doc! { "created_at": -1 }).limit(100).build()
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut items = Vec::new();
+    while let Some(item) = cursor.next().await {
+        if let Ok(i) = item {
+            items.push(i);
+        }
+    }
+
+    Ok((StatusCode::OK, Json(items)))
+}
+
+pub async fn update_moderation_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(id): Path<String>,
+    Json(payload): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    let oid = ObjectId::parse_str(&id)
+        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+
+    let status = payload.get("status").and_then(|v| v.as_str())
+        .ok_or((StatusCode::BAD_REQUEST, Json(json!({"error": "Missing status"}))))?;
+
+    let moderation_collection = state.mongo.collection::<ContentModeration>("content_moderation");
+    moderation_collection.update_one(
+        doc! { "_id": oid },
+        doc! { "$set": { 
+            "status": status,
+            "moderated_at": DateTime::now(),
+            "moderated_by": user.user_id
+        }},
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok((StatusCode::OK, Json(json!({"message": format!("Status set to {}", status)}))))
+}
+
+// --- System Settings Handlers (Payment Toggle) ---
+pub async fn get_settings_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    let settings_collection = state.mongo.collection::<SystemSettings>("settings");
+    let settings = settings_collection.find_one(doc! {}, None).await
+        .unwrap_or(None)
+        .unwrap_or(SystemSettings {
+            is_payment_enabled: true, // Default ni true
+            free_verification_limit: 1000,
+        });
+
+    Ok((StatusCode::OK, Json(settings)))
+}
+
+pub async fn update_settings_update(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<UpdateSettingsRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let role = require_admin(user.user_id, &state).await?;
+    
+    if role != "superadmin" {
+        return Err((StatusCode::FORBIDDEN, Json(json!({"error": "SuperAdmin only can change system settings"}))));
+    }
+
+    let settings_collection = state.mongo.collection::<mongodb::bson::Document>("settings");
+    settings_collection.update_one(
+        doc! {},
+        doc! { "$set": { "is_payment_enabled": payload.is_payment_enabled } },
+        UpdateOptions::builder().upsert(true).build()
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "System settings updated", "is_payment_enabled": payload.is_payment_enabled}))))
+}
+
+
 pub async fn delete_post_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
@@ -328,6 +432,23 @@ pub async fn delete_post_handler(
     Ok((StatusCode::OK, Json(json!({"message": "Post deleted"}))))
 }
 
+// --- Public System Status ---
+pub async fn get_public_settings_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let settings_collection = state.mongo.collection::<SystemSettings>("settings");
+    let settings = settings_collection.find_one(doc! {}, None).await
+        .unwrap_or(None)
+        .unwrap_or(SystemSettings {
+            is_payment_enabled: true,
+            free_verification_limit: 1000,
+        });
+
+    Ok((StatusCode::OK, Json(json!({
+        "is_payment_enabled": settings.is_payment_enabled
+    }))))
+}
+
 pub fn admin_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/stats", get(get_platform_stats_handler))
@@ -336,4 +457,7 @@ pub fn admin_routes() -> Router<Arc<AppState>> {
         .route("/users/:id/ban", put(ban_user_handler))
         .route("/users/:id/verify", put(verify_user_handler))
         .route("/posts/:id", delete(delete_post_handler))
+        .route("/moderation", get(list_moderation_items_handler))
+        .route("/moderation/:id", put(update_moderation_handler))
+        .route("/settings", get(get_settings_handler).put(update_settings_update))
 }

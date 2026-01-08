@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
     FileText, AlertTriangle, Eye, EyeOff, Shield, CheckCircle, XCircle,
     Search, Filter, Clock, User, Flag, MessageSquare, Image as ImageIcon,
     Video, Calendar, RefreshCw, Download, Upload, Plus, Edit, Trash2,
     TrendingUp, BarChart3, PieChart, Users, Globe
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+
+import api from '../api/client';
 
 const ContentModerationTab = () => {
     const [moderationQueue, setModerationQueue] = useState([]);
@@ -16,101 +18,52 @@ const ContentModerationTab = () => {
         dateRange: 'week',
         search: ''
     });
-    
+
     const [selectedItems, setSelectedItems] = useState([]);
     const [bulkAction, setBulkAction] = useState('');
     const [showAnalytics, setShowAnalytics] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const { showToast } = useToast();
 
-    // Mock data for moderation queue
-    const mockModerationQueue = [
-        {
-            id: 'post_001',
-            type: 'post',
-            content: 'This is a potentially inappropriate post content...',
-            author: 'user123',
-            reportedBy: ['user456', 'user789'],
-            reports: 3,
-            severity: 'high',
-            status: 'pending',
-            createdAt: '2024-01-15T10:30:00Z',
-            category: 'spam',
-            flaggedWords: ['spam', 'advertisement'],
-            media: null
-        },
-        {
-            id: 'comment_002',
-            type: 'comment',
-            content: 'Offensive comment content here...',
-            author: 'user_anon',
-            reportedBy: ['user123'],
-            reports: 1,
-            severity: 'medium',
-            status: 'pending',
-            createdAt: '2024-01-15T09:15:00Z',
-            category: 'harassment',
-            flaggedWords: ['offensive', 'hate'],
-            media: null
-        },
-        {
-            id: 'story_003',
-            type: 'story',
-            content: 'Story with inappropriate content',
-            author: 'user_premium',
-            reportedBy: ['user456', 'user789', 'user101'],
-            reports: 5,
-            severity: 'high',
-            status: 'pending',
-            createdAt: '2024-01-15T08:45:00Z',
-            category: 'inappropriate',
-            flaggedWords: ['inappropriate'],
-            media: 'https://example.com/story_image.jpg'
+    // Vuta data ya kweli kutoka backend
+    const fetchModerationQueue = async () => {
+        setIsLoading(true);
+        try {
+            const { data } = await api.get('/admin/moderation');
+            setModerationQueue(data);
+        } catch (error) {
+            console.error("Failed to fetch moderation queue:", error);
+            showToast('Failed to load reports', 'error');
+        } finally {
+            setIsLoading(false);
         }
-    ];
+    };
 
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setModerationQueue(mockModerationQueue);
-            setIsLoading(false);
-        }, 1000);
+        fetchModerationQueue();
     }, [filters]);
 
-    const handleModerationAction = (itemId, action) => {
-        const item = moderationQueue.find(q => q.id === itemId);
-        if (!item) return;
+    const handleModerationAction = async (itemId, action) => {
+        try {
+            // Ramani ya action kwenda status
+            const statusMap = {
+                'approve': 'approved',
+                'reject': 'rejected',
+                'warn': 'warned',
+                'ban': 'banned'
+            };
 
-        let message = '';
-        let type = 'success';
+            const status = statusMap[action];
+            await api.put(`/admin/moderation/${itemId}`, { status });
 
-        switch (action) {
-            case 'approve':
-                message = `Content ${itemId} approved`;
-                break;
-            case 'reject':
-                message = `Content ${itemId} rejected and removed`;
-                type = 'warning';
-                break;
-            case 'warn':
-                message = `Warning issued to ${item.author}`;
-                break;
-            case 'ban':
-                message = `User ${item.author} banned`;
-                type = 'danger';
-                break;
-            default:
-                return;
+            showToast(`Content ${action === 'approve' ? 'approved' : 'processed'} successfully`, 'success');
+
+            // Ondoa iliyokwishela process kwenye list
+            setModerationQueue(prev => prev.filter(item => (item.id || item._id) !== itemId));
+        } catch (error) {
+            showToast(error.response?.data?.error || 'Failed to process item', 'error');
         }
-
-        showToast(message, type);
-        
-        // Update the queue
-        setModerationQueue(prev => prev.map(q => 
-            q.id === itemId ? { ...q, status: action === 'approve' ? 'approved' : 'rejected' } : q
-        ));
     };
 
     const handleBulkAction = () => {
@@ -165,7 +118,7 @@ const ContentModerationTab = () => {
                     <p>Review and manage reported content</p>
                 </div>
                 <div className="header-actions">
-                    <button 
+                    <button
                         className="btn-secondary"
                         onClick={() => setShowAnalytics(!showAnalytics)}
                     >
@@ -292,14 +245,14 @@ const ContentModerationTab = () => {
                             type="text"
                             placeholder="Search content, authors, or reports..."
                             value={filters.search}
-                            onChange={(e) => setFilters({...filters, search: e.target.value})}
+                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
                     </div>
-                    
+
                     <div className="filter-group">
-                        <select 
+                        <select
                             value={filters.contentType}
-                            onChange={(e) => setFilters({...filters, contentType: e.target.value})}
+                            onChange={(e) => setFilters({ ...filters, contentType: e.target.value })}
                         >
                             <option value="all">All Content Types</option>
                             <option value="post">Posts</option>
@@ -308,20 +261,20 @@ const ContentModerationTab = () => {
                             <option value="reel">Reels</option>
                             <option value="image">Images</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.status}
-                            onChange={(e) => setFilters({...filters, status: e.target.value})}
+                            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                         >
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.severity}
-                            onChange={(e) => setFilters({...filters, severity: e.target.value})}
+                            onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
                         >
                             <option value="all">All Severity</option>
                             <option value="high">High</option>
@@ -332,7 +285,7 @@ const ContentModerationTab = () => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => {}}>
+                    <button className="refresh-btn" onClick={() => { }}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
@@ -346,7 +299,7 @@ const ContentModerationTab = () => {
                         {selectedItems.length} items selected
                     </div>
                     <div className="bulk-actions-controls">
-                        <select 
+                        <select
                             value={bulkAction}
                             onChange={(e) => setBulkAction(e.target.value)}
                         >
@@ -356,7 +309,7 @@ const ContentModerationTab = () => {
                             <option value="warn">Issue Warnings</option>
                             <option value="ban">Ban Users</option>
                         </select>
-                        <button 
+                        <button
                             className="btn-primary"
                             onClick={handleBulkAction}
                             disabled={!bulkAction}
@@ -387,18 +340,18 @@ const ContentModerationTab = () => {
                             {moderationQueue.map(item => {
                                 const Icon = getTypeIcon(item.type);
                                 return (
-                                    <div key={item.id} className={`moderation-item ${item.status}`}>
+                                    <div key={item._id} className={`moderation-item ${item.status}`}>
                                         <div className="item-header">
                                             <div className="item-type">
-                                                <Icon size={20} color={getSeverityColor(item.severity)} />
-                                                <span className="type-label">{item.type.toUpperCase()}</span>
-                                                <span 
+                                                <Icon size={20} color={getSeverityColor(item.severity || 'low')} />
+                                                <span className="type-label">{(item.content_type || 'post').toUpperCase()}</span>
+                                                <span
                                                     className="severity-badge"
-                                                    style={{ backgroundColor: `${getSeverityColor(item.severity)}20`, color: getSeverityColor(item.severity) }}
+                                                    style={{ backgroundColor: `${getSeverityColor(item.severity || 'low')}20`, color: getSeverityColor(item.severity || 'low') }}
                                                 >
-                                                    {item.severity.toUpperCase()}
+                                                    {(item.severity || 'low').toUpperCase()}
                                                 </span>
-                                                <span 
+                                                <span
                                                     className="status-badge"
                                                     style={{ backgroundColor: `${getStatusColor(item.status)}20`, color: getStatusColor(item.status) }}
                                                 >
@@ -406,67 +359,77 @@ const ContentModerationTab = () => {
                                                 </span>
                                             </div>
                                             <div className="item-actions">
-                                                <button 
+                                                <button
                                                     className="action-btn approve"
-                                                    onClick={() => handleModerationAction(item.id, 'approve')}
+                                                    onClick={() => handleModerationAction(item._id, 'approve')}
                                                 >
                                                     <CheckCircle size={16} />
                                                     Approve
                                                 </button>
-                                                <button 
+                                                <button
                                                     className="action-btn reject"
-                                                    onClick={() => handleModerationAction(item.id, 'reject')}
+                                                    onClick={() => handleModerationAction(item._id, 'reject')}
                                                 >
                                                     <XCircle size={16} />
                                                     Reject
                                                 </button>
-                                                <button 
+                                                <button
                                                     className="action-btn warn"
-                                                    onClick={() => handleModerationAction(item.id, 'warn')}
+                                                    onClick={() => handleModerationAction(item._id, 'warn')}
                                                 >
                                                     <AlertTriangle size={16} />
                                                     Warn
                                                 </button>
-                                                <button 
+                                                <button
                                                     className="action-btn ban"
-                                                    onClick={() => handleModerationAction(item.id, 'ban')}
+                                                    onClick={() => handleModerationAction(item._id, 'ban')}
                                                 >
                                                     <Shield size={16} />
                                                     Ban User
                                                 </button>
                                             </div>
                                         </div>
-                                        
+
+                                        <div className="item-main">
+                                            <div className="item-type-badge">{item.content_type}</div>
+                                            <p className="item-text">
+                                                {item.content_text ? (
+                                                    item.content_text.length > 100
+                                                        ? item.content_text.substring(0, 100) + '...'
+                                                        : item.content_text
+                                                ) : 'No content preview'}
+                                            </p>
+                                            <div className="item-reason">
+                                                <AlertTriangle size={14} />
+                                                <span>Reason: {item.reported_reason || 'Not specified'}</span>
+                                            </div>
+                                        </div>
+
                                         <div className="item-content">
                                             <div className="content-preview">
-                                                <p>{item.content}</p>
-                                                {item.media && (
+                                                {item.media_url && (
                                                     <div className="media-preview">
-                                                        <img src={item.media} alt="Content media" />
+                                                        <img src={item.media_url} alt="Content media" />
                                                     </div>
                                                 )}
                                             </div>
-                                            
+
                                             <div className="content-meta">
                                                 <div className="meta-item">
                                                     <User size={16} />
-                                                    <span>Author: {item.author}</span>
+                                                    <span>Content ID: {item.content_id || 'Unknown'}</span>
                                                 </div>
                                                 <div className="meta-item">
                                                     <Flag size={16} />
-                                                    <span>{item.reports} reports</span>
+                                                    <span>Reported by: {item.reported_by || 'System'}</span>
                                                 </div>
                                                 <div className="meta-item">
                                                     <Calendar size={16} />
-                                                    <span>{new Date(item.createdAt).toLocaleString()}</span>
-                                                </div>
-                                                <div className="meta-item">
-                                                    <MessageSquare size={16} />
-                                                    <span>Category: {item.category}</span>
+                                                    <span>{item.created_at ? new Date(item.created_at).toLocaleString() : 'Just now'}</span>
                                                 </div>
                                             </div>
-                                            
-                                            {item.flaggedWords.length > 0 && (
+
+                                            {item.flaggedWords && item.flaggedWords.length > 0 && (
                                                 <div className="flagged-words">
                                                     <strong>Flagged Words:</strong>
                                                     <div className="words-list">
@@ -476,15 +439,6 @@ const ContentModerationTab = () => {
                                                     </div>
                                                 </div>
                                             )}
-                                            
-                                            <div className="reported-by">
-                                                <strong>Reported by:</strong>
-                                                <div className="reporters">
-                                                    {item.reportedBy.map((reporter, index) => (
-                                                        <span key={index} className="reporter">{reporter}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 );

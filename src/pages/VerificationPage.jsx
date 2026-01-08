@@ -10,8 +10,21 @@ const VerificationPage = () => {
     const [phone, setPhone] = useState('');
     const [checkoutId, setCheckoutId] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [isPaymentEnabled, setIsPaymentEnabled] = useState(true);
     const { showToast } = useToast();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const { data } = await api.get('/config');
+                setIsPaymentEnabled(data.is_payment_enabled);
+            } catch (err) {
+                console.error('Failed to fetch config', err);
+            }
+        };
+        fetchConfig();
+    }, []);
 
     const handleInitiatePayment = async (e) => {
         e.preventDefault();
@@ -37,6 +50,25 @@ const VerificationPage = () => {
             showToast('STK Push sent to your phone!', 'success');
         } catch (err) {
             showToast(err.response?.data?.error || 'Failed to initiate payment', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFreeVerify = async () => {
+        setLoading(true);
+        try {
+            const { data } = await api.post('/auth/verify-free');
+            setStep('complete');
+            showToast(data.message, 'success');
+
+            // Update local storage user object
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                localStorage.setItem('user', JSON.stringify({ ...user, is_verified: true }));
+            }
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Failed to verify account', 'error');
         } finally {
             setLoading(false);
         }
@@ -79,7 +111,38 @@ const VerificationPage = () => {
                     <p>Unlock all features by verifying your student status.</p>
                 </div>
 
-                {step === 'pending' && (
+                {!isPaymentEnabled && step === 'pending' && (
+                    <div className="auth-body" style={{ textAlign: 'center' }}>
+                        <div className="verification-info" style={{ marginBottom: '2rem' }}>
+                            <div className="promo-badge" style={{
+                                background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                                color: '#fff',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '20px',
+                                display: 'inline-block',
+                                marginBottom: '1rem',
+                                fontWeight: 'bold',
+                                boxShadow: '0 4px 15px rgba(255, 165, 0, 0.3)'
+                            }}>
+                                🎁 LIMITED OFFER
+                            </div>
+                            <Shield size={64} color="#3742fa" style={{ marginBottom: '1rem', marginLeft: 'auto', marginRight: 'auto' }} />
+                            <h3>Verification is Currently FREE!</h3>
+                            <p>As part of our marketing campaign, you can verify your account for free today.</p>
+                        </div>
+
+                        <button
+                            onClick={handleFreeVerify}
+                            className="btn btn-primary btn-full pulse-anim"
+                            disabled={loading}
+                            style={{ padding: '1rem' }}
+                        >
+                            {loading ? <Loader className="spin-anim" /> : 'Claim Free Verification Now'}
+                        </button>
+                    </div>
+                )}
+
+                {isPaymentEnabled && step === 'pending' && (
                     <form className="auth-body" onSubmit={handleInitiatePayment}>
                         <div className="verification-info" style={{ textAlign: 'center', marginBottom: '2rem' }}>
                             <Shield size={64} color="#2ed573" style={{ marginBottom: '1rem', marginLeft: 'auto', marginRight: 'auto' }} />
@@ -133,8 +196,8 @@ const VerificationPage = () => {
                     </div>
                 )}
 
-                <div className="auth-footer">
-                    <p>Secure payments powered by Safaricom M-Pesa</p>
+                <div className="auth-footer" style={{ marginTop: '2rem' }}>
+                    <p>{isPaymentEnabled ? 'Secure payments powered by Safaricom M-Pesa' : 'KaruTeens Community Verification'}</p>
                 </div>
             </div>
         </div>

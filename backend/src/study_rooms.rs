@@ -13,7 +13,6 @@ use crate::models::{StudyRoom, User};
 use crate::auth::AuthUser;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
-use chrono::{Utc, Duration};
 
 // --- DTOs ---
 

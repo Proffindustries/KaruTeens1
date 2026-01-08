@@ -91,26 +91,47 @@ pub async fn create_post_handler(
 
     let new_post = Post {
         id: None,
-        user_id,
-        content: Some(payload.content),
-        media_urls: payload.media_urls,
+        title: "".to_string(),
+        content: payload.content,
+        excerpt: None,
+        slug: "".to_string(),
+        status: "published".to_string(),
         post_type: payload.post_type,
-        location: payload.location.map(|l| {
-            let expires_at = l.duration_minutes.map(|mins| {
-                let chrono_dt = chrono::Utc::now() + chrono::Duration::minutes(mins as i64);
-                mongodb::bson::DateTime::from_chrono(chrono_dt)
-            });
-            Location {
-                latitude: l.latitude,
-                longitude: l.longitude,
-                label: l.label,
-                is_live: l.is_live,
-                expires_at,
-            }
-        }),
+        category: "general".to_string(),
+        tags: None,
+        author_id: user_id,
+        author_name: "".to_string(),
+        featured_image: None,
+        gallery_images: None,
+        video_url: None,
+        audio_url: None,
+        scheduled_publish_date: None,
+        published_at: Some(mongodb::bson::DateTime::now()),
+        approved_at: None,
+        approved_by: None,
+        rejected_at: None,
+        rejected_by: None,
+        rejection_reason: None,
+        view_count: 0,
+        like_count: 0,
+        comment_count: 0,
+        share_count: 0,
+        reading_time: None,
+        language: "en".to_string(),
+        is_featured: false,
+        is_premium: false,
+        allow_comments: true,
+        allow_sharing: true,
+        seo_title: None,
+        seo_description: None,
+        seo_keywords: None,
+        meta_data: None,
+        source_url: None,
+        source_author: None,
+        plagiarism_score: None,
+        content_rating: None,
         created_at: mongodb::bson::DateTime::now(),
-        likes_count: 0,
-        comments_count: 0,
+        updated_at: mongodb::bson::DateTime::now(),
     };
 
     let result = collection
@@ -186,7 +207,7 @@ pub async fn get_feed_handler(
 
     if let Ok(mut cursor) = posts_cursor_result {
         while let Some(Ok(p)) = cursor.next().await {
-             let profile = profile_collection.find_one(doc! { "user_id": p.user_id }, None).await.unwrap_or(None);
+             let profile = profile_collection.find_one(doc! { "user_id": p.author_id }, None).await.unwrap_or(None);
              let username = profile.as_ref().map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string());
              
              let is_liked = if let Some(ref u) = user {
@@ -195,14 +216,14 @@ pub async fn get_feed_handler(
 
              all_items.push((p.created_at, PostResponse {
                  id: p.id.unwrap().to_hex(),
-                 content: p.content.unwrap_or_default(),
+                 content: p.content,
                  user: username,
                  user_avatar: profile.and_then(|pr| pr.avatar_url),
-                 likes: p.likes_count,
-                 comments: p.comments_count,
+                 likes: p.like_count,
+                 comments: p.comment_count,
                  created_at: p.created_at.to_chrono().to_rfc3339(),
-                 media_urls: p.media_urls,
-                 location: p.location,
+                 media_urls: vec![],
+                 location: None,
                  post_type: p.post_type,
                  is_liked,
                  group_id: None,
@@ -287,7 +308,7 @@ pub async fn get_post_handler(
     let profile_collection = state.mongo.collection::<Profile>("profiles");
     let likes_collection = state.mongo.collection::<crate::models::Like>("likes");
     
-    let profile = profile_collection.find_one(doc! { "user_id": p.user_id }, None).await.unwrap_or(None);
+    let profile = profile_collection.find_one(doc! { "user_id": p.author_id }, None).await.unwrap_or(None);
     let username = profile.as_ref().map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string());
 
     let mut is_liked = false;
@@ -299,14 +320,14 @@ pub async fn get_post_handler(
 
     Ok((StatusCode::OK, Json(PostResponse {
         id: p.id.unwrap().to_hex(),
-        content: p.content.unwrap_or_default(),
+        content: p.content,
         user: username,
         user_avatar: profile.and_then(|pr| pr.avatar_url),
-        likes: p.likes_count,
-        comments: p.comments_count,
+        likes: p.like_count,
+        comments: p.comment_count,
         created_at: p.created_at.to_chrono().to_rfc3339(),
-        media_urls: p.media_urls,
-        location: p.location,
+        media_urls: vec![],
+        location: None,
         post_type: p.post_type,
         is_liked,
         group_id: None,
@@ -344,14 +365,14 @@ pub async fn like_post_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     // Increment like count
-    posts_collection.update_one(doc! { "_id": post_oid }, doc! { "$inc": { "likes_count": 1 } }, None).await
+    posts_collection.update_one(doc! { "_id": post_oid }, doc! { "$inc": { "like_count": 1 } }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     // Fetch post to find author
     if let Ok(Some(post)) = posts_collection.find_one(doc! { "_id": post_oid }, None).await {
         let _ = create_notification(
             &state,
-            post.user_id,
+            post.author_id,
             user.user_id,
             "like",
             Some(post_oid),
@@ -381,7 +402,7 @@ pub async fn unlike_post_handler(
     }
 
     // Decrement like count
-    posts_collection.update_one(doc! { "_id": post_oid }, doc! { "$inc": { "likes_count": -1 } }, None).await
+    posts_collection.update_one(doc! { "_id": post_oid }, doc! { "$inc": { "like_count": -1 } }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Unliked"}))))
@@ -426,20 +447,36 @@ pub async fn add_comment_handler(
 
     let new_comment = crate::models::Comment {
         id: None,
-        post_id: post_oid,
+        content_id: post_oid,
+        content_type: "post".to_string(), // Defaulting to post
         user_id: user.user_id,
         username: profile.username,
+        user_avatar: profile.avatar_url,
+        parent_id: parent_oid,
         content: payload.content,
-        parent_comment_id: parent_oid,
+        status: "approved".to_string(), // Default approved for now, or "pending" depending on logic
+        spam_score: None,
+        sentiment_score: None,
+        reported_count: 0,
+        likes: 0,
         replies_count: 0,
+        edited_at: None,
+        deleted_at: None,
+        deleted_by: None,
+        deleted_reason: None,
+        moderation_notes: None,
+        ip_address: None, // Could capture from request parts if available
+        user_agent: None,
+        is_edited: false,
         created_at: mongodb::bson::DateTime::now(),
+        updated_at: mongodb::bson::DateTime::now(),
     };
 
     comments_collection.insert_one(new_comment, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     // Increment comment count on post
-    posts_collection.update_one(doc! { "_id": post_oid }, doc! { "$inc": { "comments_count": 1 } }, None).await
+    posts_collection.update_one(doc! { "_id": post_oid }, doc! { "$inc": { "comment_count": 1 } }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     // If this is a reply, increment the parent comment's replies_count
@@ -456,7 +493,7 @@ pub async fn add_comment_handler(
     if let Ok(Some(post)) = posts_collection.find_one(doc! { "_id": post_oid }, None).await {
         let _ = create_notification(
             &state,
-            post.user_id,
+            post.author_id,
             user.user_id,
             "comment",
             Some(post_oid),
@@ -498,11 +535,11 @@ pub async fn get_comments_handler(
             Ok(comment) => {
                 comments.push(CommentResponse {
                     _id: comment.id.unwrap().to_hex(),
-                    post_id: comment.post_id.to_hex(),
+                    post_id: comment.content_id.to_hex(),
                     user_id: comment.user_id.to_hex(),
                     username: comment.username,
                     content: comment.content,
-                    parent_comment_id: comment.parent_comment_id.map(|oid| oid.to_hex()),
+                    parent_comment_id: comment.parent_id.map(|oid| oid.to_hex()),
                     replies_count: comment.replies_count,
                     created_at: comment.created_at.to_chrono().to_rfc3339(),
                 });

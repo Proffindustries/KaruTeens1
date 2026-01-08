@@ -203,11 +203,27 @@
 @media (max-width: 768px) {
     .feed-layout {
         grid-template-columns: 1fr;
-        padding-top: 1rem;
+        padding-top: 0;
+        padding-bottom: 4rem;
+        /* Space for a future bottom bar or just breathing room */
+        gap: 0;
     }
 
-    .left-sidebar {
+    .feed-main {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .left-sidebar,
+    .right-sidebar {
         display: none;
+    }
+
+    .create-post-widget {
+        margin-bottom: 0.5rem;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
     }
 }
 

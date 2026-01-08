@@ -130,4 +130,14 @@
     .mobile-toggle {
         display: block;
     }
+
+    .navbar-content {
+        height: 3.5rem;
+        /* Reduced from 4.5rem */
+    }
+
+    .navbar-logo {
+        transform: scale(0.9);
+        margin-left: -10px;
+    }
 }

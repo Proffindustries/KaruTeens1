@@ -139,7 +139,7 @@ const AdminDashboard = () => {
                 </header>
 
                 <div className="admin-content">
-                    {renderTabContent()}
+                    {renderTabContent(setActiveTab)}
                 </div>
             </main>
         </div>
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
 };
 
 // Overview Tab Component
-const OverviewTab = () => {
+const OverviewTab = ({ setActiveTab }) => {
     const [statsData, setStatsData] = useState({
         total_users: 0,
         active_users: 0,
@@ -211,21 +211,21 @@ const OverviewTab = () => {
             <div className="quick-actions">
                 <h3>Quick Actions</h3>
                 <div className="action-grid">
-                    <button className="action-card">
+                    <button className="action-card" onClick={() => setActiveTab('users')}>
                         <Users size={24} />
                         <span>Manage Users</span>
                     </button>
-                    <button className="action-card">
+                    <button className="action-card" onClick={() => setActiveTab('content')}>
                         <FileText size={24} />
                         <span>Moderate Content</span>
                     </button>
-                    <button className="action-card">
-                        <Shield size={24} />
-                        <span>Security Logs</span>
-                    </button>
-                    <button className="action-card">
+                    <button className="action-card" onClick={() => setActiveTab('analytics')}>
                         <BarChart3 size={24} />
                         <span>View Analytics</span>
+                    </button>
+                    <button className="action-card" onClick={() => setActiveTab('settings')}>
+                        <Settings size={24} />
+                        <span>System Settings</span>
                     </button>
                 </div>
             </div>
@@ -243,11 +243,96 @@ const OverviewTab = () => {
 // CommentManagementTab is now imported from './CommentManagementTab'
 // StoryManagementTab is now imported from './StoryManagementTab'
 // ReelManagementTab is now imported from './ReelManagementTab'
+// Settings Tab Component
+const SettingsTab = () => {
+    const [settings, setSettings] = useState({ is_payment_enabled: true });
+    const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await api.get('/admin/settings');
+                setSettings(data);
+            } catch (error) {
+                console.error("Failed to fetch settings:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const togglePayment = async () => {
+        try {
+            const nextValue = !settings.is_payment_enabled;
+            await api.put('/admin/settings', { is_payment_enabled: nextValue });
+            setSettings({ ...settings, is_payment_enabled: nextValue });
+            showToast(`Payments ${nextValue ? 'Enabled' : 'Disabled'} successfuly!`, 'success');
+        } catch (error) {
+            showToast('Failed to update settings', 'error');
+        }
+    };
+
+    if (loading) return <div className="loading">Loading settings...</div>;
+
+    return (
+        <div className="settings-tab card" style={{ padding: '2rem' }}>
+            <h2>System Global Settings</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Control global platform behavior.</p>
+
+            <div className="settings-group" style={{ maxWidth: '600px' }}>
+                <div className="setting-item" style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '1.5rem',
+                    background: 'rgba(var(--primary), 0.05)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid rgba(var(--primary), 0.1)'
+                }}>
+                    <div>
+                        <h4 style={{ margin: 0 }}>Enable Monetization (M-Pesa)</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                            When disabled, verification and other premium features will be free.
+                        </p>
+                    </div>
+                    <button
+                        className={`toggle-btn ${settings.is_payment_enabled ? 'active' : ''}`}
+                        onClick={togglePayment}
+                        style={{
+                            width: '60px',
+                            height: '30px',
+                            borderRadius: '15px',
+                            border: 'none',
+                            background: settings.is_payment_enabled ? 'var(--primary-color)' : '#ccc',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        <div style={{
+                            width: '24px',
+                            height: '24px',
+                            background: 'white',
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: '3px',
+                            left: settings.is_payment_enabled ? '33px' : '3px',
+                            transition: 'all 0.3s'
+                        }}></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Tab content switch
-const renderTabContent = () => {
+const renderTabContent = (setActiveTab) => {
     switch (activeTab) {
         case 'overview':
-            return <OverviewTab />;
+            return <OverviewTab setActiveTab={setActiveTab} />;
         case 'users':
             return <UserManagementTab />;
         case 'content':
@@ -279,8 +364,9 @@ const renderTabContent = () => {
         case 'moderation':
             return <div className="tab-content">Moderation Tools</div>;
         case 'settings':
-            return <div className="tab-content">Settings Interface</div>;
+            return <SettingsTab />;
         case 'logs':
+
             return <div className="tab-content">System Logs Interface</div>;
         case 'activity':
             return <div className="tab-content">User Activity Interface</div>;
