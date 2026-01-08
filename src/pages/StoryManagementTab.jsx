@@ -6,7 +6,7 @@ import {
     MessageCircle, ThumbsUp, MessageCircleMore, AlertCircle, Zap,
     Globe, UserCheck, UserX, ChevronLeft, ChevronRight, Copy, Share2,
     FileText, FileClock, FileSearch, FileCheck, FileSpreadsheet,
-    AudioLines, Tag, Star, Crown, Repeat, Sparkles
+    AudioLines, Tag, Star, Crown, Repeat, Sparkles, Award, Play, MapPin, Timer
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 

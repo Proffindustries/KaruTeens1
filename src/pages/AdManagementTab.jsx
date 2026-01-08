@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
     DollarSign, TrendingUp, BarChart3, Users, Calendar, Clock, Eye, EyeOff,
     Video, Image, Edit, Trash2, Plus, Search, Filter, RefreshCw, Download, Upload,
-    Shield, AlertTriangle, Globe, Target, Settings, Play, Pause, StopCircle
+    Shield, AlertTriangle, Globe, Target, Settings, Play, Pause, StopCircle,
+    AlertCircle, ShoppingBag, Smartphone, MessageCircle, Network, Zap as ZapIcon, Music
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 

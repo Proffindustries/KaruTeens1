@@ -20,6 +20,10 @@ const PostCard = ({ post }) => {
     const [isHidden, setIsHidden] = useState(false);
     const { showToast } = useToast();
     const currentUser = JSON.parse(localStorage.getItem('user'));
+
+    // Support both id (Postgres/Normalized) and _id (MongoDB)
+    const postId = post.id || post._id;
+
     const isOwner = currentUser?.username === post.user;
     const cardRef = React.useRef(null);
     const menuRef = React.useRef(null);
@@ -39,7 +43,7 @@ const PostCard = ({ post }) => {
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
     const { mutate: addComment, isPending: isSubmittingComment } = useAddComment();
-    const { data: comments, isLoading: isLoadingComments } = useComments(showComments ? post.id : null);
+    const { data: comments, isLoading: isLoadingComments } = useComments(showComments ? postId : null);
 
     const handleLikeToggle = () => {
         const previousLiked = isLiked;
@@ -50,7 +54,7 @@ const PostCard = ({ post }) => {
         setLikesCount(previousLiked ? previousCount - 1 : previousCount + 1);
 
         if (previousLiked) {
-            unlikePost(post.id, {
+            unlikePost(postId, {
                 onError: () => {
                     // Rollback
                     setIsLiked(true);
@@ -59,7 +63,7 @@ const PostCard = ({ post }) => {
                 }
             });
         } else {
-            likePost(post.id, {
+            likePost(postId, {
                 onError: () => {
                     // Rollback
                     setIsLiked(false);
@@ -114,14 +118,14 @@ const PostCard = ({ post }) => {
     };
 
     const handleCopyLink = () => {
-        const url = `${window.location.origin}/post/${post.id || post._id}`;
+        const url = `${window.location.origin}/post/${postId}`;
         navigator.clipboard.writeText(url);
         setShowMenu(false);
         showToast('Link copied to clipboard!', 'success');
     };
 
     const handleShare = async () => {
-        const url = `${window.location.origin}/post/${post.id || post._id}`;
+        const url = `${window.location.origin}/post/${postId}`;
         const shareData = {
             title: `Post by ${post.user} | Karu Teens`,
             text: post.content ? (post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content) : 'Check out this post on Karu Teens!',
@@ -163,7 +167,7 @@ const PostCard = ({ post }) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
-        addComment({ postId: post.id, content: commentText, parent_comment_id: null }, {
+        addComment({ postId: postId, content: commentText, parent_comment_id: null }, {
             onError: () => {
                 setCommentsCount(previousCount);
                 showToast('Failed to post comment', 'error');
@@ -177,7 +181,7 @@ const PostCard = ({ post }) => {
         setCommentsCount(previousCount + 1);
 
         addComment({
-            postId: post.id,
+            postId: postId,
             content: replyContent,
             parent_comment_id: parentCommentId
         }, {
@@ -360,7 +364,7 @@ const PostCard = ({ post }) => {
 
                             // Handle navigation to post details
                             const handleMediaClick = () => {
-                                navigate(`/post/${post.id || post._id}`);
+                                navigate(`/post/${postId}`);
                             };
 
                             return (

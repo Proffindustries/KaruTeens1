@@ -113,7 +113,7 @@ const FeedPage = () => {
                                 </div>
                             )}
                             {allPosts.map(post => (
-                                <PostCard key={post.id} post={post} />
+                                <PostCard key={post.id || post._id} post={post} />
                             ))}
 
                             {/* Infinite Scroll Load Trigger */}

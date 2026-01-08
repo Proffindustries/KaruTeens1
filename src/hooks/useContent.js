@@ -16,7 +16,9 @@ export const useInfiniteFeed = () => {
         },
         getNextPageParam: (lastPage) => {
             if (lastPage && lastPage.length < 10) return undefined;
-            return lastPage.length > 0 ? lastPage[lastPage.length - 1].id : undefined;
+            if (!lastPage || lastPage.length === 0) return undefined;
+            const lastPost = lastPage[lastPage.length - 1];
+            return lastPost.id || lastPost._id;
         },
         initialPageParam: null,
     });
@@ -107,13 +109,47 @@ export const useAddComment = () => {
             });
             return data;
         },
+        onMutate: async (newComment) => {
+            // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+            await queryClient.cancelQueries({ queryKey: ['comments', newComment.postId] });
+
+            // Snapshot the previous value
+            const previousComments = queryClient.getQueryData(['comments', newComment.postId]);
+
+            // Optimistically update to the new value
+            const currentUser = JSON.parse(localStorage.getItem('user'));
+            const optimisticComment = {
+                _id: 'temp-' + Date.now(),
+                content: newComment.content,
+                postId: newComment.postId,
+                parent_comment_id: newComment.parent_comment_id,
+                username: currentUser?.username || 'You',
+                user_avatar: currentUser?.avatar_url,
+                created_at: new Date().toISOString(),
+                is_optimistic: true
+            };
+
+            queryClient.setQueryData(['comments', newComment.postId], (old) => {
+                return old ? [...old, optimisticComment] : [optimisticComment];
+            });
+
+            return { previousComments };
+        },
         onSuccess: (data, { postId }) => {
             queryClient.invalidateQueries({ queryKey: ['comments', postId] });
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             showToast('Comment added!', 'success');
         },
-        onError: (err) => {
+        onError: (err, newComment, context) => {
+            // Rollback on error
+            if (context?.previousComments) {
+                queryClient.setQueryData(['comments', newComment.postId], context.previousComments);
+            }
             showToast(err.response?.data?.error || 'Failed to add comment', 'error');
+        },
+        onSettled: (data, error, { postId }) => {
+            // Always refetch after error or success to ensure we are in sync with server
+            queryClient.invalidateQueries({ queryKey: ['comments', postId] });
         }
     });
 };

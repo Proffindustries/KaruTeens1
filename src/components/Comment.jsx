@@ -33,7 +33,7 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
 
     return (
         <div className={`comment-wrapper ${level > 0 ? 'is-reply' : ''}`} style={{ marginLeft: `${Math.min(level, maxNestingLevel) * 2}rem` }}>
-            <div className="comment-main">
+            <div className={`comment-main ${comment.is_optimistic ? 'is-optimistic' : ''}`}>
                 <div className="comment-content">
                     {/* Quoted parent reply - WhatsApp style */}
                     {comment.parentInfo && (

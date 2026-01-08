@@ -11,7 +11,7 @@ import {
     Film, Clapperboard, Scissors, Settings, Database, Cpu, Wifi, WifiOff,
     FileMinus, FilePlus, FileStack, FileWarning, FileX, FileSymlink,
     HardDrive, Cloud, Server, Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning,
-    Network, Zap as ZapIcon
+    Network, Zap as ZapIcon, Music
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
