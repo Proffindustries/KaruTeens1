@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Music, FileText, Download, EyeOff, Flag, Link2, UserMinus, Eye, Trash2, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../styles/PostCard.css';
 import { useLikePost, useUnlikePost, useAddComment, useComments } from '../hooks/useContent.js';
 import { useToast } from '../context/ToastContext.jsx';
@@ -12,6 +12,7 @@ import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
 
 const PostCard = ({ post }) => {
+    const navigate = useNavigate();
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [saved, setSaved] = useState(false);
@@ -297,53 +298,43 @@ const PostCard = ({ post }) => {
 
                 {/* Media Attachments */}
                 {post.media_urls && post.media_urls.length > 0 && (
-                    <div className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''}`}>
-                        {post.media_urls.map((url, idx) => {
+                    <div className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}>
+                        {post.media_urls.slice(0, 4).map((url, idx) => {
                             const isVideo = url.match(/\.(mp4|webm|ogg|mov)$/) || post.post_type === 'video';
                             const isAudio = url.match(/\.(mp3|wav|ogg|m4a)$/) || post.post_type === 'audio';
                             const isPDF = url.match(/\.pdf$/);
                             const isFile = !isVideo && !isAudio && (url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)$/) || post.post_type === 'file');
+                            const isLastVisible = idx === 3 && post.media_urls.length > 4;
+                            const remainingCount = post.media_urls.length - 3;
 
-                            // Extract filename from URL
-                            const getFilename = (url) => {
-                                try {
-                                    const parts = url.split('/');
-                                    const filename = parts[parts.length - 1];
-                                    return decodeURIComponent(filename);
-                                } catch {
-                                    return 'Document';
-                                }
+                            // Handle navigation to post details
+                            const handleMediaClick = () => {
+                                navigate(`/post/${post.id || post._id}`);
                             };
 
                             return (
-                                <div key={idx} className="media-item">
+                                <div key={idx} className="media-item" onClick={handleMediaClick} style={{ cursor: 'pointer' }}>
                                     {isVideo ? (
                                         <CustomVideoPlayer src={url} />
                                     ) : isAudio ? (
-                                        <CustomAudioPlayer src={url} filename={`Audio ${idx + 1}`} />
-                                    ) : isPDF ? (
-                                        <div className="pdf-attachment">
-                                            <div className="pdf-preview">
-                                                <iframe
-                                                    src={url}
-                                                    className="pdf-iframe"
-                                                    title={getFilename(url)}
-                                                />
-                                            </div>
-                                            <a href={url} target="_blank" rel="noopener noreferrer" className="file-attachment-link pdf-link">
-                                                <FileText size={20} />
-                                                <span className="file-name">{getFilename(url)}</span>
-                                                <Download size={16} />
-                                            </a>
+                                        <div className="audio-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Music size={32} color="var(--primary-color)" />
                                         </div>
-                                    ) : isFile ? (
-                                        <a href={url} target="_blank" rel="noopener noreferrer" className="file-attachment-link">
-                                            <FileText size={20} />
-                                            <span className="file-name">{getFilename(url)}</span>
-                                            <Download size={16} />
-                                        </a>
+                                    ) : isPDF || isFile ? (
+                                        <div className="file-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                            <FileText size={32} color="var(--primary-color)" />
+                                            {post.media_urls.length === 1 && <span style={{ color: 'white', fontSize: '10px' }}>Open Document</span>}
+                                        </div>
                                     ) : (
                                         <img src={url} alt={`Post content ${idx + 1}`} className="post-image" loading="lazy" />
+                                    )}
+
+                                    {/* Overlay ya '+ N More' kama picha ni mob */}
+                                    {isLastVisible && (
+                                        <div className="media-overlay">
+                                            <span className="overlay-count">+{remainingCount}</span>
+                                            <span className="overlay-text">See More</span>
+                                        </div>
                                     )}
                                 </div>
                             );
