@@ -27,23 +27,34 @@ const ExplorePage = () => {
             title: "Academic & Tools",
             links: [
                 { name: "Study Rooms", path: "/study-rooms", icon: <Video size={24} />, color: "#5352ed", desc: "Virtual collaboration" },
-                { name: "Revision Materials", path: "/recall", icon: <BookOpen size={24} />, color: "#ff6348", desc: "Notes & Papers" },
-                { name: "AI Assistant", path: "/ai-assistant", icon: <Bot size={24} />, color: "#2f3542", desc: "Study helper" },
+                { name: "Recall", path: "/recall", icon: <BookOpen size={24} />, color: "#ff6348", desc: "Notes & Question papers" },
+                { name: "Revision Materials", path: "/revision-materials", icon: <LayoutGrid size={24} />, color: "#1e90ff", desc: "Curated study resources" },
+                { name: "AI Assistant", path: "/ai-assistant", icon: <Bot size={24} />, color: "#2f3542", desc: "Advanced study helper" },
             ]
         },
         {
-            title: "Lifestyle",
+            title: "Lifestyle & Perks",
             links: [
-                { name: "Marketplace", path: "/marketplace", icon: <ShoppingBag size={24} />, color: "#20bf6b", desc: "Buy & Sell" },
-                { name: "Dating / Match", path: "/date", icon: <Heart size={24} />, color: "#fc5c65", desc: "Meet new people" },
+                { name: "Marketplace", path: "/marketplace", icon: <ShoppingBag size={24} />, color: "#20bf6b", desc: "Student marketplace" },
+                { name: "Dating / Match", path: "/date", icon: <Heart size={24} />, color: "#fc5c65", desc: "Meet your campus match" },
+                { name: "Premium", path: "/premium", icon: <Crown size={24} />, color: "#ffd32a", desc: "Get exclusive features" },
+                { name: "Donate", path: "/donate", icon: <DollarSign size={24} />, color: "#05c46b", desc: "Support the platform" },
             ]
         },
         {
             title: "Account & Settings",
             links: [
-                { name: "My Profile", path: "/profile", icon: <User size={24} />, color: "#1e90ff", desc: "Edit your bio" },
+                { name: "My Profile", path: "/profile", icon: <User size={24} />, color: "#1e90ff", desc: "Manage your presence" },
                 { name: "Settings", path: "/settings", icon: <Settings size={24} />, color: "#747d8c", desc: "App preferences" },
-                { name: "Notifications", path: "/notifications", icon: <Bell size={24} />, color: "#fa8231", desc: "Recent alerts" },
+                { name: "Notifications", path: "/notifications", icon: <Bell size={24} />, color: "#fa8231", desc: "Stay updated" },
+            ]
+        },
+        {
+            title: "Information & Support",
+            links: [
+                { name: "About KaruTeens", path: "/about", icon: <Info size={24} />, color: "#4b7bec", desc: "Learn about our mission" },
+                { name: "Contact Support", path: "/contact", icon: <MessageCircle size={24} />, color: "#eb3b5a", desc: "Get help from our team" },
+                { name: "Legal & Privacy", path: "/legal", icon: <Shield size={24} />, color: "#485460", desc: "Terms and conditions" },
             ]
         }
     ];

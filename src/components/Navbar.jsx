@@ -23,7 +23,6 @@ const Navbar = () => {
 
                 {/* Desktop Nav */}
                 <div className="nav-links desktop-only">
-                    <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} state={{ explicitHome: true }}>Home</NavLink>
                     <NavLink to="/feed" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Feed</NavLink>
                     <NavLink to="/explore" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Explore</NavLink>
                     <NavLink to="/marketplace" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Market</NavLink>
@@ -55,7 +54,6 @@ const Navbar = () => {
             {/* Mobile Menu */}
             {isOpen && (
                 <div className="mobile-menu">
-                    <Link to="/" className="mobile-link" onClick={toggleMenu} state={{ explicitHome: true }}>Home</Link>
                     <Link to="/feed" className="mobile-link" onClick={toggleMenu}>Feed</Link>
                     <Link to="/explore" className="mobile-link" onClick={toggleMenu}>Explore</Link>
                     <Link to="/marketplace" className="mobile-link" onClick={toggleMenu}>Marketplace</Link>
