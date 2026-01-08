@@ -189,15 +189,14 @@ const ActiveRoom = ({ roomId }) => {
     const [showParticipants, setShowParticipants] = useState(true);
     const [sharedFiles, setSharedFiles] = useState([]);
     const [uploadingFile, setUploadingFile] = useState(false);
-    
+
     // Chat enhancements
     const [isTyping, setIsTyping] = useState(false);
     const [typingUsers, setTypingUsers] = useState(new Set());
-    
+
     // Whiteboard improvements
     const [undoStack, setUndoStack] = useState([]);
     const [redoStack, setRedoStack] = useState([]);
-    const [shapes, setShapes] = useState([]);
     const [isDrawingShape, setIsDrawingShape] = useState(false);
     const [shapeStart, setShapeStart] = useState({ x: 0, y: 0 });
 
@@ -207,13 +206,22 @@ const ActiveRoom = ({ roomId }) => {
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     const [localStream, setLocalStream] = useState(null);
     const [screenStream, setScreenStream] = useState(null);
-    
+
     // New feature states
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
     const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [userToRemove, setUserToRemove] = useState(null);
+
+    // Whiteboard enhancement states
+    const [whiteboardHistory, setWhiteboardHistory] = useState([]);
+    const [currentStep, setCurrentStep] = useState(-1);
+    const [toolSize, setToolSize] = useState(3);
+    const [toolOpacity, setToolOpacity] = useState(1.0);
+    const [isFilling, setIsFilling] = useState(false);
+    const [shapes, setShapes] = useState([]);
+    const [currentShape, setCurrentShape] = useState(null);
 
     const { data: room } = useStudyRoom(roomId);
     const { mutate: leaveRoom } = useLeaveRoom();
@@ -250,6 +258,61 @@ const ActiveRoom = ({ roomId }) => {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }, []);
+
+    // Enhanced whiteboard functions
+    const saveCanvasState = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        // Update history
+        const newHistory = whiteboardHistory.slice(0, currentStep + 1);
+        newHistory.push(imageData);
+
+        setWhiteboardHistory(newHistory);
+        setCurrentStep(newHistory.length - 1);
+    }, [whiteboardHistory, currentStep]);
+
+    const undo = useCallback(() => {
+        if (currentStep > 0) {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const previousState = whiteboardHistory[currentStep - 1];
+
+            ctx.putImageData(previousState, 0, 0);
+            setCurrentStep(currentStep - 1);
+        }
+    }, [currentStep, whiteboardHistory]);
+
+    const redo = useCallback(() => {
+        if (currentStep < whiteboardHistory.length - 1) {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const nextState = whiteboardHistory[currentStep + 1];
+
+            ctx.putImageData(nextState, 0, 0);
+            setCurrentStep(currentStep + 1);
+        }
+    }, [currentStep, whiteboardHistory]);
+
+    const handleToolSizeChange = (size) => {
+        setToolSize(size);
+        setLineWidth(size);
+    };
+
+    const handleToolOpacityChange = (opacity) => {
+        setToolOpacity(opacity);
+    };
+
+    const handleFillToggle = () => {
+        setIsFilling(!isFilling);
+    };
 
     // Initialize Ably channels
     useEffect(() => {
@@ -387,24 +450,17 @@ const ActiveRoom = ({ roomId }) => {
         setIsDrawing(false);
     };
 
-    // Whiteboard improvements
-    const saveCanvasState = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        
-        const dataURL = canvas.toDataURL();
-        setUndoStack(prev => [...prev, dataURL]);
-        setRedoStack([]); // Clear redo stack when new action is performed
-    };
+    // Whiteboard logic consolidated to use the useCallback version above
+
 
     const handleUndo = () => {
         const canvas = canvasRef.current;
         if (!canvas || undoStack.length === 0) return;
-        
+
         const ctx = canvas.getContext('2d');
         const lastState = undoStack[undoStack.length - 1];
         const img = new Image();
-        
+
         img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
@@ -417,11 +473,11 @@ const ActiveRoom = ({ roomId }) => {
     const handleRedo = () => {
         const canvas = canvasRef.current;
         if (!canvas || redoStack.length === 0) return;
-        
+
         const ctx = canvas.getContext('2d');
         const nextState = redoStack[redoStack.length - 1];
         const img = new Image();
-        
+
         img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
@@ -442,7 +498,7 @@ const ActiveRoom = ({ roomId }) => {
     const handleSaveCanvas = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        
+
         const link = document.createElement('a');
         link.download = `whiteboard-${Date.now()}.png`;
         link.href = canvas.toDataURL();
@@ -463,7 +519,7 @@ const ActiveRoom = ({ roomId }) => {
         chatChannel.publish('message', message);
         setMessages(prev => [...prev, message]);
         setChatMessage('');
-        
+
         // Stop typing indicator
         setIsTyping(false);
         chatChannel.publish('stop-typing', { username: user?.username });
@@ -472,7 +528,7 @@ const ActiveRoom = ({ roomId }) => {
     const handleTyping = (e) => {
         const value = e.target.value;
         setChatMessage(value);
-        
+
         if (value.trim() && !isTyping) {
             setIsTyping(true);
             chatChannel.publish('typing', { username: user?.username });
@@ -561,11 +617,11 @@ const ActiveRoom = ({ roomId }) => {
                     video: true,
                     audio: false
                 });
-                
+
                 setScreenStream(screenStream);
                 setIsScreenSharing(true);
                 showToast('Screen sharing started', 'success');
-                
+
                 // Handle screen share end
                 screenStream.getVideoTracks()[0].addEventListener('ended', () => {
                     setIsScreenSharing(false);
@@ -878,6 +934,13 @@ const ActiveRoom = ({ roomId }) => {
                                         <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
                                     </svg>
                                 </button>
+                                <button className="tool-btn" onClick={handleSaveCanvas} title="Save Canvas">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                </button>
                                 <button className="tool-btn" onClick={handleClearCanvas} title="Clear All">
                                     <Trash2 size={16} />
                                 </button>
@@ -937,7 +1000,7 @@ const ActiveRoom = ({ roomId }) => {
                                     </div>
                                 ))
                             )}
-                            
+
                             {/* Typing indicators */}
                             {typingUsers.size > 0 && (
                                 <div className="typing-indicator">
@@ -951,7 +1014,7 @@ const ActiveRoom = ({ roomId }) => {
                                     </span>
                                 </div>
                             )}
-                            
+
                             <div ref={chatEndRef} />
                         </div>
                         <div className="chat-input-container">
