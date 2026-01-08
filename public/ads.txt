@@ -1,4 +1,4 @@
 # ads.txt file for KaruTeens
 # Please replace 'pub-0000000000000000' with your actual Google AdSense Publisher ID.
 
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+google.com, pub-3859153084736990, DIRECT, f08c47fec0942fa0
