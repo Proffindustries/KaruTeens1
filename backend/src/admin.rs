@@ -36,8 +36,8 @@ pub async fn require_admin(
 #[derive(Deserialize)]
 pub struct UserFilter {
     pub role: Option<String>,
-    pub verified: Option<bool>,
-    pub premium: Option<bool>,
+    pub verified: Option<String>,  // Changed from bool to String to handle "all"
+    pub premium: Option<String>,   // Changed from bool to String to handle "all"
     pub search: Option<String>,
 }
 
@@ -175,11 +175,19 @@ pub async fn list_users_handler(
     }
 
     if let Some(verified) = filter.verified {
-        query.insert("is_verified", verified);
+        if verified == "true" {
+            query.insert("is_verified", true);
+        } else if verified == "false" {
+            query.insert("is_verified", false);
+        }
     }
 
     if let Some(premium) = filter.premium {
-        query.insert("is_premium", premium);
+        if premium == "true" {
+            query.insert("is_premium", true);
+        } else if premium == "false" {
+            query.insert("is_premium", false);
+        }
     }
 
     let mut cursor = users_collection.find(
