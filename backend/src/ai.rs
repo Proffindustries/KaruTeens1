@@ -32,8 +32,7 @@ pub struct ModelInfo {
 }
 
 pub async fn fetch_free_models(state: Arc<AppState>) {
-    let client = reqwest::Client::new();
-    match client.get("https://openrouter.ai/api/v1/models").send().await {
+    match state.http_client.get("https://openrouter.ai/api/v1/models").send().await {
         Ok(res) => {
             if let Ok(json) = res.json::<serde_json::Value>().await {
                 if let Some(models) = json["data"].as_array() {
@@ -58,11 +57,11 @@ pub async fn fetch_free_models(state: Arc<AppState>) {
                     });
 
                     state.ai_models.insert("free".to_string(), free_models);
-                    println!("✅ Dynamic AI Models Updated: Found {} free models", state.ai_models.get("free").map(|m| m.len()).unwrap_or(0));
+                    tracing::info!("✅ Dynamic AI Models Updated: Found {} free models", state.ai_models.get("free").map(|m| m.len()).unwrap_or(0));
                 }
             }
         },
-        Err(e) => eprintln!("❌ Failed to fetch AI models: {}", e),
+        Err(e) => tracing::error!("❌ Failed to fetch AI models: {}", e),
     }
 }
 
@@ -78,7 +77,7 @@ pub async fn ping_all_models(state: Arc<AppState>) {
         return;
     };
 
-    println!("🔎 AI Diagnostic: Pinging {} models...", models_to_ping.len());
+    tracing::info!("🔎 AI Diagnostic: Pinging {} models...", models_to_ping.len());
 
     for m in models_to_ping {
         let model_id = match m["id"].as_str() {

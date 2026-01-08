@@ -2,7 +2,7 @@ use axum::{
     extract::{State, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, put, delete},
+    routing::{get, put},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -415,22 +415,7 @@ pub async fn update_settings_update(
 }
 
 
-pub async fn delete_post_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(post_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    require_admin(user.user_id, &state).await?;
 
-    let post_oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
-
-    let posts_collection = state.mongo.collection::<Post>("posts");
-    posts_collection.delete_one(doc! { "_id": post_oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::OK, Json(json!({"message": "Post deleted"}))))
-}
 
 // --- Public System Status ---
 pub async fn get_public_settings_handler(
@@ -456,7 +441,6 @@ pub fn admin_routes() -> Router<Arc<AppState>> {
         .route("/users/:id/role", put(update_user_role_handler))
         .route("/users/:id/ban", put(ban_user_handler))
         .route("/users/:id/verify", put(verify_user_handler))
-        .route("/posts/:id", delete(delete_post_handler))
         .route("/moderation", get(list_moderation_items_handler))
         .route("/moderation/:id", put(update_moderation_handler))
         .route("/settings", get(get_settings_handler).put(update_settings_update))
