@@ -69,19 +69,21 @@ export const WebsocketProvider = ({ children }) => {
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
+        // Development vs Production URL derivation
         let wsUrl;
         if (import.meta.env.VITE_WS_URL) {
             wsUrl = import.meta.env.VITE_WS_URL;
         } else if (import.meta.env.VITE_API_URL) {
-            // Robust derivation: ensure protocol is ws/wss and path ends in /ws
-            let base = import.meta.env.VITE_API_URL.replace(/\/$/, ""); // Remove trailing slash
+            let base = import.meta.env.VITE_API_URL.replace(/\/$/, "");
             if (base.endsWith("/api")) {
                 base = base.slice(0, -4);
             }
             wsUrl = base.replace(/^http/, "ws") + "/ws";
         } else {
-            const host = window.location.host === "localhost:5173" ? "localhost:3000" : window.location.host;
-            wsUrl = `${protocol}//${host}/ws`;
+            // Fallback for local development
+            const host = window.location.hostname; // Just use hostname to avoid port confusion
+            const wsPort = "3000"; // Backend default port
+            wsUrl = `ws://${host}:${wsPort}/ws`;
         }
 
         if (ws.current) ws.current.close();

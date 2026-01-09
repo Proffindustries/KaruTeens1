@@ -89,7 +89,11 @@ async fn main() {
     let origins: tower_http::cors::AllowOrigin = if frontend_url == "*" {
         tower_http::cors::Any.into()
     } else {
-        frontend_url.parse::<axum::http::HeaderValue>().unwrap().into()
+        let urls: Vec<axum::http::HeaderValue> = frontend_url
+            .split(',')
+            .map(|s| s.trim().parse::<axum::http::HeaderValue>().expect("Invalid FRONTEND_URL"))
+            .collect();
+        tower_http::cors::AllowOrigin::list(urls)
     };
 
     let app = Router::new()
