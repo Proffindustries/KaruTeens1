@@ -222,7 +222,12 @@ pub async fn get_feed_handler(
                  likes: p.like_count,
                  comments: p.comment_count,
                  created_at: p.created_at.to_chrono().to_rfc3339(),
-                 media_urls: vec![],
+                 media_urls: {
+                     let mut urls = Vec::new();
+                     if let Some(img) = p.featured_image { urls.push(img); }
+                     if let Some(mut imgs) = p.gallery_images { urls.append(&mut imgs); }
+                     urls
+                 },
                  location: None,
                  post_type: p.post_type,
                  is_liked,
@@ -326,7 +331,12 @@ pub async fn get_post_handler(
         likes: p.like_count,
         comments: p.comment_count,
         created_at: p.created_at.to_chrono().to_rfc3339(),
-        media_urls: vec![],
+        media_urls: {
+            let mut urls = Vec::new();
+            if let Some(img) = p.featured_image { urls.push(img); }
+            if let Some(mut imgs) = p.gallery_images { urls.append(&mut imgs); }
+            urls
+        },
         location: None,
         post_type: p.post_type,
         is_liked,
@@ -526,7 +536,7 @@ pub async fn get_comments_handler(
     let comments_collection = state.mongo.collection::<crate::models::Comment>("comments");
 
     let find_options = FindOptions::builder().sort(doc! { "created_at": 1 }).build();
-    let mut cursor = comments_collection.find(doc! { "post_id": post_oid }, find_options).await
+    let mut cursor = comments_collection.find(doc! { "content_id": post_oid }, find_options).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     let mut comments = Vec::new();
