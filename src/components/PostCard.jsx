@@ -355,10 +355,10 @@ const PostCard = ({ post }) => {
                 {post.media_urls && post.media_urls.length > 0 && (
                     <div className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}>
                         {post.media_urls.slice(0, 4).map((url, idx) => {
-                            const isVideo = url.match(/\.(mp4|webm|ogg|mov)$/) || post.post_type === 'video';
-                            const isAudio = url.match(/\.(mp3|wav|ogg|m4a)$/) || post.post_type === 'audio';
-                            const isPDF = url.match(/\.pdf$/);
-                            const isFile = !isVideo && !isAudio && (url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)$/) || post.post_type === 'file');
+                            const isVideo = url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv)$/i) || post.post_type === 'video';
+                            const isAudio = url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) || post.post_type === 'audio';
+                            const isPDF = url.match(/\.pdf$/i);
+                            const isImage = url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) || (!isVideo && !isAudio && !isPDF);
                             const isLastVisible = idx === 3 && post.media_urls.length > 4;
                             const remainingCount = post.media_urls.length - 3;
 
@@ -372,16 +372,20 @@ const PostCard = ({ post }) => {
                                     {isVideo ? (
                                         <CustomVideoPlayer src={url} />
                                     ) : isAudio ? (
-                                        <div className="audio-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Music size={32} color="var(--primary-color)" />
-                                        </div>
-                                    ) : isPDF || isFile ? (
+                                        <CustomAudioPlayer src={url} filename={`Audio ${idx + 1}`} />
+                                    ) : isPDF ? (
                                         <div className="file-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                             <FileText size={32} color="var(--primary-color)" />
                                             {post.media_urls.length === 1 && <span style={{ color: 'white', fontSize: '10px' }}>Open Document</span>}
                                         </div>
-                                    ) : (
+                                    ) : isImage ? (
                                         <img src={url} alt={`Post content ${idx + 1}`} className="post-image" loading="lazy" />
+                                    ) : (
+                                        // Fallback for unknown file types
+                                        <div className="file-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                            <FileText size={32} color="var(--primary-color)" />
+                                            <span style={{ color: 'white', fontSize: '10px' }}>File</span>
+                                        </div>
                                     )}
 
                                     {/* Overlay ya '+ N More' kama picha ni mob */}

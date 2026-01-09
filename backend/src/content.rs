@@ -256,6 +256,8 @@ pub async fn get_feed_handler(
                      let mut urls = Vec::new();
                      if let Some(img) = p.featured_image.clone() { urls.push(img); }
                      if let Some(mut imgs) = p.gallery_images.clone() { urls.append(&mut imgs); }
+                     if let Some(video) = p.video_url.clone() { urls.push(video); }
+                     if let Some(audio) = p.audio_url.clone() { urls.push(audio); }
                      urls
                  },
                  video_url: p.video_url,
@@ -367,6 +369,8 @@ pub async fn get_post_handler(
             let mut urls = Vec::new();
             if let Some(img) = p.featured_image.clone() { urls.push(img); }
             if let Some(mut imgs) = p.gallery_images.clone() { urls.append(&mut imgs); }
+            if let Some(video) = p.video_url.clone() { urls.push(video); }
+            if let Some(audio) = p.audio_url.clone() { urls.push(audio); }
             urls
         },
         video_url: p.video_url,
