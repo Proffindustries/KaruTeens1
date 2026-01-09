@@ -64,8 +64,6 @@ pub struct PostResponse {
     pub comments: i32,
     pub created_at: String,
     pub media_urls: Vec<String>,
-    pub video_url: Option<String>,
-    pub audio_url: Option<String>,
     pub location: Option<Location>,
     pub post_type: String,
     pub is_liked: bool,
@@ -91,25 +89,6 @@ pub async fn create_post_handler(
 
     let user_id = user.user_id; 
 
-    // Basic media sorting
-    let mut featured_image = None;
-    let mut gallery_images = Vec::new();
-    let mut video_url = None;
-    let mut audio_url = None;
-
-    for url in payload.media_urls {
-        let lower = url.to_lowercase();
-        if lower.contains("video") || lower.ends_with(".mp4") || lower.ends_with(".mov") || lower.ends_with(".webm") {
-            video_url = Some(url);
-        } else if lower.contains("audio") || lower.ends_with(".mp3") || lower.ends_with(".wav") || lower.ends_with(".m4a") {
-            audio_url = Some(url);
-        } else if featured_image.is_none() {
-            featured_image = Some(url);
-        } else {
-            gallery_images.push(url);
-        }
-    }
-
     let location = payload.location.map(|l| crate::models::Location {
         latitude: l.latitude,
         longitude: l.longitude,
@@ -130,10 +109,7 @@ pub async fn create_post_handler(
         tags: None,
         author_id: user_id,
         author_name: "".to_string(),
-        featured_image,
-        gallery_images: if gallery_images.is_empty() { None } else { Some(gallery_images) },
-        video_url,
-        audio_url,
+        media_urls: if payload.media_urls.is_empty() { None } else { Some(payload.media_urls) },
         location,
         scheduled_publish_date: None,
         published_at: Some(mongodb::bson::DateTime::now()),
@@ -252,16 +228,7 @@ pub async fn get_feed_handler(
                  likes: p.like_count,
                  comments: p.comment_count,
                  created_at: p.created_at.to_chrono().to_rfc3339(),
-                 media_urls: {
-                     let mut urls = Vec::new();
-                     if let Some(img) = p.featured_image.clone() { urls.push(img); }
-                     if let Some(mut imgs) = p.gallery_images.clone() { urls.append(&mut imgs); }
-                     if let Some(video) = p.video_url.clone() { urls.push(video); }
-                     if let Some(audio) = p.audio_url.clone() { urls.push(audio); }
-                     urls
-                 },
-                 video_url: p.video_url,
-                 audio_url: p.audio_url,
+                 media_urls: p.media_urls.clone().unwrap_or_default(),
                  location: p.location,
                  post_type: p.post_type,
                  is_liked,
@@ -365,16 +332,7 @@ pub async fn get_post_handler(
         likes: p.like_count,
         comments: p.comment_count,
         created_at: p.created_at.to_chrono().to_rfc3339(),
-        media_urls: {
-            let mut urls = Vec::new();
-            if let Some(img) = p.featured_image.clone() { urls.push(img); }
-            if let Some(mut imgs) = p.gallery_images.clone() { urls.append(&mut imgs); }
-            if let Some(video) = p.video_url.clone() { urls.push(video); }
-            if let Some(audio) = p.audio_url.clone() { urls.push(audio); }
-            urls
-        },
-        video_url: p.video_url,
-        audio_url: p.audio_url,
+        media_urls: p.media_urls.clone().unwrap_or_default(),
         location: p.location,
         post_type: p.post_type,
         is_liked,

@@ -496,13 +496,7 @@ pub struct Post {
     #[serde(default)]
     pub author_name: String,
     #[serde(default)]
-    pub featured_image: Option<String>,
-    #[serde(default)]
-    pub gallery_images: Option<Vec<String>>,
-    #[serde(default)]
-    pub video_url: Option<String>,
-    #[serde(default)]
-    pub audio_url: Option<String>,
+    pub media_urls: Option<Vec<String>>,
     #[serde(default)]
     pub location: Option<Location>,
     #[serde(default)]

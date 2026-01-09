@@ -101,10 +101,7 @@ pub struct PostResponse {
     pub tags: Option<Vec<String>>,
     pub author_id: String,
     pub author_name: String,
-    pub featured_image: Option<String>,
-    pub gallery_images: Option<Vec<String>>,
-    pub video_url: Option<String>,
-    pub audio_url: Option<String>,
+    pub media_urls: Option<Vec<String>>,
     pub scheduled_publish_date: Option<String>,
     pub published_at: Option<String>,
     pub approved_at: Option<String>,
@@ -297,6 +294,12 @@ pub async fn create_post_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Author profile not found"}))))?;
 
+    let mut media_urls = Vec::new();
+    if let Some(url) = payload.featured_image { media_urls.push(url); }
+    if let Some(urls) = payload.gallery_images { media_urls.extend(urls); }
+    if let Some(url) = payload.video_url { media_urls.push(url); }
+    if let Some(url) = payload.audio_url { media_urls.push(url); }
+
     let new_post = Post {
         id: None,
         title: payload.title,
@@ -309,10 +312,8 @@ pub async fn create_post_handler(
         tags: payload.tags,
         author_id: user.user_id,
         author_name: author_profile.username,
-        featured_image: payload.featured_image,
-        gallery_images: payload.gallery_images,
-        video_url: payload.video_url,
-        audio_url: payload.audio_url,
+        media_urls: if media_urls.is_empty() { None } else { Some(media_urls) },
+        location: None,
         scheduled_publish_date: payload.scheduled_publish_date.map(|s| chrono::DateTime::parse_from_rfc3339(&s).unwrap().into()),
         published_at: None,
         approved_at: None,
@@ -391,18 +392,6 @@ pub async fn update_post_handler(
     }
     if let Some(post_type) = payload.post_type {
         update_doc.insert("post_type", post_type);
-    }
-    if let Some(featured_image) = payload.featured_image {
-        update_doc.insert("featured_image", featured_image);
-    }
-    if let Some(gallery_images) = payload.gallery_images {
-        update_doc.insert("gallery_images", gallery_images);
-    }
-    if let Some(video_url) = payload.video_url {
-        update_doc.insert("video_url", video_url);
-    }
-    if let Some(audio_url) = payload.audio_url {
-        update_doc.insert("audio_url", audio_url);
     }
     if let Some(scheduled_publish_date) = payload.scheduled_publish_date {
         let dt = chrono::DateTime::parse_from_rfc3339(&scheduled_publish_date)
@@ -763,10 +752,7 @@ async fn build_post_response(
         tags: post.tags.clone(),
         author_id: post.author_id.to_hex(),
         author_name: post.author_name.clone(),
-        featured_image: post.featured_image.clone(),
-        gallery_images: post.gallery_images.clone(),
-        video_url: post.video_url.clone(),
-        audio_url: post.audio_url.clone(),
+        media_urls: post.media_urls.clone(),
         scheduled_publish_date: post.scheduled_publish_date.map(|dt| dt.to_chrono().to_rfc3339()),
         published_at: post.published_at.map(|dt| dt.to_chrono().to_rfc3339()),
         approved_at: post.approved_at.map(|dt| dt.to_chrono().to_rfc3339()),
