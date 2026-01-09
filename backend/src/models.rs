@@ -476,45 +476,85 @@ pub struct EventAnalytics {
 pub struct Post {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+    #[serde(default)]
     pub title: String,
+    #[serde(default)]
     pub content: String,
+    #[serde(default)]
     pub excerpt: Option<String>,
+    #[serde(default)]
     pub slug: String,
-    pub status: String, // draft, pending_review, approved, published, scheduled, rejected
-    pub post_type: String, // article, news, blog, announcement, story
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub post_type: String,
+    #[serde(default)]
     pub category: String,
+    #[serde(default)]
     pub tags: Option<Vec<String>>,
     pub author_id: ObjectId,
+    #[serde(default)]
     pub author_name: String,
+    #[serde(default)]
     pub featured_image: Option<String>,
+    #[serde(default)]
     pub gallery_images: Option<Vec<String>>,
+    #[serde(default)]
     pub video_url: Option<String>,
+    #[serde(default)]
     pub audio_url: Option<String>,
+    #[serde(default)]
+    pub location: Option<Location>,
+    #[serde(default)]
     pub scheduled_publish_date: Option<bson::DateTime>,
+    #[serde(default)]
     pub published_at: Option<bson::DateTime>,
+    #[serde(default)]
     pub approved_at: Option<bson::DateTime>,
+    #[serde(default)]
     pub approved_by: Option<ObjectId>,
+    #[serde(default)]
     pub rejected_at: Option<bson::DateTime>,
+    #[serde(default)]
     pub rejected_by: Option<ObjectId>,
+    #[serde(default)]
     pub rejection_reason: Option<String>,
+    #[serde(default)]
     pub view_count: i32,
+    #[serde(default)]
     pub like_count: i32,
+    #[serde(default)]
     pub comment_count: i32,
+    #[serde(default)]
     pub share_count: i32,
-    pub reading_time: Option<i32>, // in minutes
+    #[serde(default)]
+    pub reading_time: Option<i32>,
+    #[serde(default)]
     pub language: String,
+    #[serde(default)]
     pub is_featured: bool,
+    #[serde(default)]
     pub is_premium: bool,
+    #[serde(default)]
     pub allow_comments: bool,
+    #[serde(default)]
     pub allow_sharing: bool,
+    #[serde(default)]
     pub seo_title: Option<String>,
+    #[serde(default)]
     pub seo_description: Option<String>,
+    #[serde(default)]
     pub seo_keywords: Option<Vec<String>>,
+    #[serde(default)]
     pub meta_data: Option<serde_json::Value>,
-    pub source_url: Option<String>, // for imported content
+    #[serde(default)]
+    pub source_url: Option<String>,
+    #[serde(default)]
     pub source_author: Option<String>,
+    #[serde(default)]
     pub plagiarism_score: Option<f64>,
-    pub content_rating: Option<String>, // age rating
+    #[serde(default)]
+    pub content_rating: Option<String>,
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
 }
@@ -621,25 +661,44 @@ pub struct Comment {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub content_id: ObjectId, // post_id, story_id, etc.
+    #[serde(default)]
     pub content_type: String, // post, story, reel, etc.
     pub user_id: ObjectId,
+    #[serde(default)]
     pub username: String,
+    #[serde(default)]
     pub user_avatar: Option<String>,
+    #[serde(default)]
     pub parent_id: Option<ObjectId>, // for nested comments
+    #[serde(default)]
     pub content: String,
+    #[serde(default)]
     pub status: String, // pending, approved, rejected, spam, deleted
+    #[serde(default)]
     pub spam_score: Option<f64>, // AI spam detection score
+    #[serde(default)]
     pub sentiment_score: Option<f64>, // AI sentiment analysis score
+    #[serde(default)]
     pub reported_count: i32,
+    #[serde(default)]
     pub likes: i32,
+    #[serde(default)]
     pub replies_count: i32,
+    #[serde(default)]
     pub edited_at: Option<bson::DateTime>,
+    #[serde(default)]
     pub deleted_at: Option<bson::DateTime>,
+    #[serde(default)]
     pub deleted_by: Option<ObjectId>,
+    #[serde(default)]
     pub deleted_reason: Option<String>,
+    #[serde(default)]
     pub moderation_notes: Option<String>,
+    #[serde(default)]
     pub ip_address: Option<String>,
+    #[serde(default)]
     pub user_agent: Option<String>,
+    #[serde(default)]
     pub is_edited: bool,
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
