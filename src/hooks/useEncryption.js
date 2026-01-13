@@ -33,7 +33,10 @@ export const useEncryption = () => {
         if (!isReady || !keys || !theirPublicKeyJson) return null;
         try {
             const theirPublicKeyJwk = JSON.parse(theirPublicKeyJson);
-            const sharedKey = await encryptionService.deriveSharedKey(keys.privateKeyJwk, theirPublicKeyJwk);
+            const sharedKey = await encryptionService.deriveSharedKey(
+                keys.privateKeyJwk,
+                theirPublicKeyJwk,
+            );
             return await encryptionService.encrypt(text, sharedKey);
         } catch (err) {
             console.error('Encryption failed:', err);
@@ -45,11 +48,14 @@ export const useEncryption = () => {
         if (!isReady || !keys || !theirPublicKeyJson) return null;
         try {
             const theirPublicKeyJwk = JSON.parse(theirPublicKeyJson);
-            const sharedKey = await encryptionService.deriveSharedKey(keys.privateKeyJwk, theirPublicKeyJwk);
+            const sharedKey = await encryptionService.deriveSharedKey(
+                keys.privateKeyJwk,
+                theirPublicKeyJwk,
+            );
             return await encryptionService.decrypt(encryptedContent, iv, sharedKey);
         } catch (err) {
             console.error('Decryption failed:', err);
-            return "[Encrypted Message]";
+            return '[Encrypted Message]';
         }
     };
 

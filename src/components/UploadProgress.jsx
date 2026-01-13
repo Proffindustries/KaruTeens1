@@ -24,19 +24,27 @@ const UploadProgress = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'completed': return '#10b981';
-            case 'failed': return '#ef4444';
-            case 'cancelled': return '#f59e0b';
-            default: return '#3b82f6';
+            case 'completed':
+                return '#10b981';
+            case 'failed':
+                return '#ef4444';
+            case 'cancelled':
+                return '#f59e0b';
+            default:
+                return '#3b82f6';
         }
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'completed': return <Check size={16} />;
-            case 'failed': return <AlertCircle size={16} />;
-            case 'uploading': return <Loader2 size={16} className="spinner" />;
-            default: return null;
+            case 'completed':
+                return <Check size={16} />;
+            case 'failed':
+                return <AlertCircle size={16} />;
+            case 'uploading':
+                return <Loader2 size={16} className="spinner" />;
+            default:
+                return null;
         }
     };
 
@@ -45,7 +53,9 @@ const UploadProgress = () => {
             <div className="upload-progress-header">
                 <div className="header-info">
                     <span className="header-title">
-                        {activeUploadsCount > 0 ? `Uploading ${activeUploadsCount} file${activeUploadsCount > 1 ? 's' : ''}` : 'Uploads'}
+                        {activeUploadsCount > 0
+                            ? `Uploading ${activeUploadsCount} file${activeUploadsCount > 1 ? 's' : ''}`
+                            : 'Uploads'}
                     </span>
                 </div>
                 <div className="header-actions">
@@ -82,22 +92,31 @@ const UploadProgress = () => {
                                     className={`upload-item upload-${upload.status}`}
                                 >
                                     <div className="upload-item-header">
-                                        <div className="upload-status-icon" style={{ color: getStatusColor(upload.status) }}>
+                                        <div
+                                            className="upload-status-icon"
+                                            style={{ color: getStatusColor(upload.status) }}
+                                        >
                                             {getStatusIcon(upload.status)}
                                         </div>
                                         <div className="upload-info">
-                                            <span className="upload-filename">{upload.fileName}</span>
+                                            <span className="upload-filename">
+                                                {upload.fileName}
+                                            </span>
                                             <span className="upload-details">
                                                 {upload.status === 'uploading' && (
                                                     <>
-                                                        {formatFileSize(upload.uploadedBytes)} / {formatFileSize(upload.fileSize)}
+                                                        {formatFileSize(upload.uploadedBytes)} /{' '}
+                                                        {formatFileSize(upload.fileSize)}
                                                         {' • '}
                                                         {formatSpeed(speed)}
-                                                        {isFinite(eta) && eta > 0 && ` • ${Math.ceil(eta)}s left`}
+                                                        {isFinite(eta) &&
+                                                            eta > 0 &&
+                                                            ` • ${Math.ceil(eta)}s left`}
                                                     </>
                                                 )}
                                                 {upload.status === 'completed' && 'Upload complete'}
-                                                {upload.status === 'failed' && (upload.error || 'Upload failed')}
+                                                {upload.status === 'failed' &&
+                                                    (upload.error || 'Upload failed')}
                                                 {upload.status === 'cancelled' && 'Cancelled'}
                                             </span>
                                         </div>
@@ -115,7 +134,10 @@ const UploadProgress = () => {
                                         <div className="upload-progress-bar">
                                             <div
                                                 className="upload-progress-fill"
-                                                style={{ width: `${upload.progress}%`, backgroundColor: getStatusColor(upload.status) }}
+                                                style={{
+                                                    width: `${upload.progress}%`,
+                                                    backgroundColor: getStatusColor(upload.status),
+                                                }}
                                             />
                                         </div>
                                     )}

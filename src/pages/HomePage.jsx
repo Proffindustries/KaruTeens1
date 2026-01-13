@@ -33,7 +33,8 @@ const HomePage = () => {
                             Elevate Your <span className="highlight-text">Campus Life</span>
                         </h1>
                         <p className="hero-subtitle">
-                            Connect, share, and grow with KaruTeens. The ultimate platform for university students to engage, learn, and have fun safely.
+                            Connect, share, and grow with KaruTeens. The ultimate platform for
+                            university students to engage, learn, and have fun safely.
                         </p>
                         <div className="hero-cta">
                             <Link to="/register" className="btn btn-primary btn-lg">
@@ -94,31 +95,37 @@ const HomePage = () => {
                     </div>
 
                     <div className="features-grid">
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="feature-card card"
-                        >
-                            <div className="feature-icon icon-users"><Users size={32} /></div>
+                        <motion.div whileHover={{ y: -5 }} className="feature-card card">
+                            <div className="feature-icon icon-users">
+                                <Users size={32} />
+                            </div>
                             <h3>Community First</h3>
-                            <p>Join groups, attend events, and meet like-minded students from your school and beyond.</p>
+                            <p>
+                                Join groups, attend events, and meet like-minded students from your
+                                school and beyond.
+                            </p>
                         </motion.div>
 
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="feature-card card"
-                        >
-                            <div className="feature-icon icon-book"><Book size={32} /></div>
+                        <motion.div whileHover={{ y: -5 }} className="feature-card card">
+                            <div className="feature-icon icon-book">
+                                <Book size={32} />
+                            </div>
                             <h3>Academic Growth</h3>
-                            <p>Access revision materials, find study buddies, and use our AI helper to ace your exams.</p>
+                            <p>
+                                Access revision materials, find study buddies, and use our AI helper
+                                to ace your exams.
+                            </p>
                         </motion.div>
 
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="feature-card card"
-                        >
-                            <div className="feature-icon icon-shield"><Shield size={32} /></div>
+                        <motion.div whileHover={{ y: -5 }} className="feature-card card">
+                            <div className="feature-icon icon-shield">
+                                <Shield size={32} />
+                            </div>
                             <h3>Safe & Secure</h3>
-                            <p>A verified platform ensuring a safe environment for everyone. Real people, real connections.</p>
+                            <p>
+                                A verified platform ensuring a safe environment for everyone. Real
+                                people, real connections.
+                            </p>
                         </motion.div>
                     </div>
                 </div>
@@ -129,8 +136,15 @@ const HomePage = () => {
                 <div className="container">
                     <div className="cta-box">
                         <h2>Ready to get started?</h2>
-                        <p>Join thousands of students making the most of their university journey today.</p>
-                        {!isAuthenticated && <Link to="/register" className="btn btn-white btn-lg">Create Your Account</Link>}
+                        <p>
+                            Join thousands of students making the most of their university journey
+                            today.
+                        </p>
+                        {!isAuthenticated && (
+                            <Link to="/register" className="btn btn-white btn-lg">
+                                Create Your Account
+                            </Link>
+                        )}
                     </div>
                 </div>
             </section>
@@ -145,9 +159,15 @@ const HomePage = () => {
                         <Link to="/help">Help Center</Link>
                     </div>
                     <div className="footer-social">
-                        <a href="#" className="social-icon"><Twitter size={20} /></a>
-                        <a href="#" className="social-icon"><Instagram size={20} /></a>
-                        <a href="mailto:support@karuteens.com" className="social-icon"><Mail size={20} /></a>
+                        <a href="#" className="social-icon">
+                            <Twitter size={20} />
+                        </a>
+                        <a href="#" className="social-icon">
+                            <Instagram size={20} />
+                        </a>
+                        <a href="mailto:support@karuteens.com" className="social-icon">
+                            <Mail size={20} />
+                        </a>
                     </div>
                     <p className="copyright">© 2026 KaruTeens. Built for Students.</p>
                 </div>

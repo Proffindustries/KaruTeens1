@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause } from 'lucide-react';
+import { useInView } from 'react-intersection-observer'; // Import useInView
 import '../styles/CustomVideoPlayer.css';
 
-const CustomVideoPlayer = ({ src }) => {
+const CustomVideoPlayer = ({ src, poster = '/placeholder-video.jpg' }) => {
+    // Add poster prop with a default placeholder
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
@@ -10,9 +12,25 @@ const CustomVideoPlayer = ({ src }) => {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
 
+    const { ref, inView } = useInView({
+        // Use useInView hook
+        triggerOnce: true, // Load video only once when it enters view
+        threshold: 0.1, // Trigger when 10% of the video is visible
+    });
+
+    // Combine refs for the container and inView observer
+    const setRefs = React.useCallback(
+        (node) => {
+            containerRef.current = node;
+            ref(node);
+        },
+        [ref],
+    );
+
     useEffect(() => {
         const video = videoRef.current;
-        if (!video) return;
+        // Only attach event listeners if the video is loaded (inView)
+        if (!video || !inView) return;
 
         const updateProgress = () => {
             const progress = (video.currentTime / video.duration) * 100;
@@ -38,13 +56,13 @@ const CustomVideoPlayer = ({ src }) => {
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
             video.removeEventListener('ended', handleEnded);
         };
-    }, []);
+    }, [inView]); // Re-run effect when inView changes to attach/detach listeners
 
-    // Auto-pause when scrolled out of view
+    // Auto-pause when scrolled out of view (existing functionality, but now depends on inView for setup)
     useEffect(() => {
         const video = videoRef.current;
         const container = containerRef.current;
-        if (!video || !container) return;
+        if (!video || !container || !inView) return; // Only if in view
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -58,7 +76,7 @@ const CustomVideoPlayer = ({ src }) => {
             },
             {
                 threshold: 0.5, // Trigger when 50% of video is out of view
-            }
+            },
         );
 
         observer.observe(container);
@@ -66,7 +84,7 @@ const CustomVideoPlayer = ({ src }) => {
         return () => {
             observer.disconnect();
         };
-    }, []);
+    }, [inView]); // Re-run when inView changes
 
     const togglePlayPause = () => {
         const video = videoRef.current;
@@ -75,7 +93,7 @@ const CustomVideoPlayer = ({ src }) => {
         if (isPlaying) {
             video.pause();
         } else {
-            video.play().catch(err => {
+            video.play().catch((err) => {
                 console.error('Video play failed:', err);
             });
         }
@@ -98,30 +116,50 @@ const CustomVideoPlayer = ({ src }) => {
     };
 
     return (
-        <div className="custom-video-player" ref={containerRef}>
-            <video
-                ref={videoRef}
-                src={src}
-                className="video-element"
-                onClick={togglePlayPause}
-            />
-
-            {!isPlaying && (
-                <div className="play-overlay" onClick={togglePlayPause}>
-                    <div className="play-button">
-                        <Play size={48} fill="white" />
+        <div className="custom-video-player" ref={setRefs}>
+            {inView ? ( // Conditionally render video element when in view
+                <video
+                    ref={videoRef}
+                    src={src}
+                    poster={poster} // Add poster attribute
+                    preload="none" // Prevent automatic preloading
+                    className="video-element"
+                    onClick={togglePlayPause}
+                />
+            ) : (
+                // Placeholder when not in view, showing the poster image
+                <div
+                    className="video-placeholder"
+                    style={{ backgroundImage: `url(${poster})` }}
+                    onClick={togglePlayPause}
+                >
+                    <div className="play-overlay">
+                        <div className="play-button">
+                            <Play size={48} fill="white" />
+                        </div>
                     </div>
                 </div>
             )}
 
-            <div className="video-controls">
-                <div className="progress-bar" onClick={handleProgressClick}>
-                    <div className="progress-filled" style={{ width: `${progress}%` }} />
+            {!isPlaying &&
+                (inView || !src) && ( // Show play overlay only if video is loaded or if it's just a placeholder with no src
+                    <div className="play-overlay" onClick={togglePlayPause}>
+                        <div className="play-button">
+                            <Play size={48} fill="white" />
+                        </div>
+                    </div>
+                )}
+
+            {inView && ( // Only show controls if video is loaded
+                <div className="video-controls">
+                    <div className="progress-bar" onClick={handleProgressClick}>
+                        <div className="progress-filled" style={{ width: `${progress}%` }} />
+                    </div>
+                    <div className="time-display">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
                 </div>
-                <div className="time-display">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                </div>
-            </div>
+            )}
         </div>
     );
 };

@@ -34,7 +34,7 @@ class EncryptionService {
         const keyPair = await window.crypto.subtle.generateKey(
             { name: 'ECDH', namedCurve: 'P-256' },
             true,
-            ['deriveKey', 'deriveBits']
+            ['deriveKey', 'deriveBits'],
         );
 
         const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
@@ -49,21 +49,26 @@ class EncryptionService {
 
     async deriveSharedKey(myPrivateKeyJwk, theirPublicKeyJwk) {
         const privateKey = await window.crypto.subtle.importKey(
-            'jwk', myPrivateKeyJwk,
+            'jwk',
+            myPrivateKeyJwk,
             { name: 'ECDH', namedCurve: 'P-256' },
-            false, ['deriveKey']
+            false,
+            ['deriveKey'],
         );
         const publicKey = await window.crypto.subtle.importKey(
-            'jwk', theirPublicKeyJwk,
+            'jwk',
+            theirPublicKeyJwk,
             { name: 'ECDH', namedCurve: 'P-256' },
-            true, []
+            true,
+            [],
         );
 
         return window.crypto.subtle.deriveKey(
             { name: 'ECDH', public: publicKey },
             privateKey,
             { name: 'AES-GCM', length: 256 },
-            false, ['encrypt', 'decrypt']
+            false,
+            ['encrypt', 'decrypt'],
         );
     }
 
@@ -73,23 +78,31 @@ class EncryptionService {
         const encrypted = await window.crypto.subtle.encrypt(
             { name: 'AES-GCM', iv },
             sharedKey,
-            encoded
+            encoded,
         );
 
         return {
             content: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
-            iv: btoa(String.fromCharCode(...iv))
+            iv: btoa(String.fromCharCode(...iv)),
         };
     }
 
     async decrypt(encryptedB64, ivB64, sharedKey) {
-        const encrypted = new Uint8Array(atob(encryptedB64).split('').map(c => c.charCodeAt(0)));
-        const iv = new Uint8Array(atob(ivB64).split('').map(c => c.charCodeAt(0)));
+        const encrypted = new Uint8Array(
+            atob(encryptedB64)
+                .split('')
+                .map((c) => c.charCodeAt(0)),
+        );
+        const iv = new Uint8Array(
+            atob(ivB64)
+                .split('')
+                .map((c) => c.charCodeAt(0)),
+        );
 
         const decrypted = await window.crypto.subtle.decrypt(
             { name: 'AES-GCM', iv },
             sharedKey,
-            encrypted
+            encrypted,
         );
 
         return new TextDecoder().decode(decrypted);

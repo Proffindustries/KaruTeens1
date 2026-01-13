@@ -56,20 +56,34 @@ const ContactPage = () => {
                 <div className="contact-form-container card">
                     {status === 'sent' ? (
                         <div className="success-message">
-                            <div className="check-circle"><Send size={24} /></div>
+                            <div className="check-circle">
+                                <Send size={24} />
+                            </div>
                             <h3>Message Sent!</h3>
                             <p>We'll get back to you shortly.</p>
-                            <button className="btn btn-outline" onClick={() => setStatus('')}>Send Another</button>
+                            <button className="btn btn-outline" onClick={() => setStatus('')}>
+                                Send Another
+                            </button>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
                                 <label>Name</label>
-                                <input type="text" className="form-input" required placeholder="Your Name" />
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    required
+                                    placeholder="Your Name"
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Email</label>
-                                <input type="email" className="form-input" required placeholder="your.email@student.karu.ac.ke" />
+                                <input
+                                    type="email"
+                                    className="form-input"
+                                    required
+                                    placeholder="your.email@student.karu.ac.ke"
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Subject</label>
@@ -82,9 +96,16 @@ const ContactPage = () => {
                             </div>
                             <div className="form-group">
                                 <label>Message</label>
-                                <textarea className="form-input" rows="5" required placeholder="How can we help?"></textarea>
+                                <textarea
+                                    className="form-input"
+                                    rows="5"
+                                    required
+                                    placeholder="How can we help?"
+                                ></textarea>
                             </div>
-                            <button type="submit" className="btn btn-primary btn-full">Send Message</button>
+                            <button type="submit" className="btn btn-primary btn-full">
+                                Send Message
+                            </button>
                         </form>
                     )}
                 </div>

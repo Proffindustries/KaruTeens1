@@ -17,7 +17,9 @@ export const useMediaUpload = () => {
                 folder: 'karuteens_posts',
             };
 
-            const { data: { signature } } = await api.post('/media/signature/cloudinary', { params });
+            const {
+                data: { signature },
+            } = await api.post('/media/signature/cloudinary', { params });
 
             // 2. Upload to Cloudinary
             const formData = new FormData();
@@ -34,11 +36,13 @@ export const useMediaUpload = () => {
                 {
                     onUploadProgress: (progressEvent) => {
                         if (onProgress && progressEvent.total) {
-                            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            const percentCompleted = Math.round(
+                                (progressEvent.loaded * 100) / progressEvent.total,
+                            );
                             onProgress(percentCompleted, progressEvent.loaded);
                         }
-                    }
-                }
+                    },
+                },
             );
 
             return uploadRes.data.secure_url;
@@ -54,7 +58,9 @@ export const useMediaUpload = () => {
         setIsUploading(true);
         try {
             // 1. Get presigned URL from backend
-            const { data: { url, public_url } } = await api.post('/media/signature/r2', {
+            const {
+                data: { url, public_url },
+            } = await api.post('/media/signature/r2', {
                 file_name: file.name,
                 content_type: file.type,
             });
@@ -66,7 +72,9 @@ export const useMediaUpload = () => {
                 },
                 onUploadProgress: (progressEvent) => {
                     if (onProgress && progressEvent.total) {
-                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        const percentCompleted = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total,
+                        );
                         onProgress(percentCompleted, progressEvent.loaded);
                     }
                 },

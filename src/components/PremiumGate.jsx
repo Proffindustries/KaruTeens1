@@ -3,7 +3,7 @@ import { Crown, Lock, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/PremiumGate.css';
 
-const PremiumGate = ({ feature = "this feature" }) => {
+const PremiumGate = ({ feature = 'this feature' }) => {
     const navigate = useNavigate();
 
     return (

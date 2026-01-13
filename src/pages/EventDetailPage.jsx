@@ -35,15 +35,18 @@ const EventDetailPage = () => {
     }
 
     const handleRSVP = (status) => {
-        rsvpEvent({ eventId, status }, {
-            onSuccess: () => {
-                setCurrentRSVP(status);
-                showToast(`RSVP updated: ${status}`, 'success');
+        rsvpEvent(
+            { eventId, status },
+            {
+                onSuccess: () => {
+                    setCurrentRSVP(status);
+                    showToast(`RSVP updated: ${status}`, 'success');
+                },
+                onError: (err) => {
+                    showToast(err.response?.data?.error || 'Failed to RSVP', 'error');
+                },
             },
-            onError: (err) => {
-                showToast(err.response?.data?.error || 'Failed to RSVP', 'error');
-            }
-        });
+        );
     };
 
     const handleRemoveRSVP = () => {
@@ -51,7 +54,7 @@ const EventDetailPage = () => {
             onSuccess: () => {
                 setCurrentRSVP(null);
                 showToast('RSVP removed', 'info');
-            }
+            },
         });
     };
 
@@ -66,7 +69,10 @@ const EventDetailPage = () => {
 
             <div className="event-hero card">
                 <img
-                    src={event.image_url || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800"}
+                    src={
+                        event.image_url ||
+                        'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'
+                    }
                     alt={event.title}
                     className="event-hero-image"
                 />
@@ -74,7 +80,9 @@ const EventDetailPage = () => {
                     <span className="event-category-badge">{event.category}</span>
                     <h1>{event.title}</h1>
                     <div className="event-hero-meta">
-                        <span><Users size={16} /> {event.attendee_count} attending</span>
+                        <span>
+                            <Users size={16} /> {event.attendee_count} attending
+                        </span>
                         {event.max_attendees && <span>• Max: {event.max_attendees}</span>}
                     </div>
                 </div>
@@ -86,7 +94,14 @@ const EventDetailPage = () => {
                         <Calendar size={24} color="#3742fa" />
                         <div>
                             <strong>Date</strong>
-                            <p>{startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <p>
+                                {startDate.toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                })}
+                            </p>
                         </div>
                     </div>
 
@@ -94,7 +109,17 @@ const EventDetailPage = () => {
                         <Clock size={24} color="#3742fa" />
                         <div>
                             <strong>Time</strong>
-                            <p>{startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p>
+                                {startDate.toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}{' '}
+                                -{' '}
+                                {endDate.toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
+                            </p>
                         </div>
                     </div>
 
@@ -145,7 +170,11 @@ const EventDetailPage = () => {
                 </div>
 
                 {currentRSVP && (
-                    <button className="btn btn-outline btn-sm" onClick={handleRemoveRSVP} style={{ marginTop: '1rem' }}>
+                    <button
+                        className="btn btn-outline btn-sm"
+                        onClick={handleRemoveRSVP}
+                        style={{ marginTop: '1rem' }}
+                    >
                         Remove RSVP
                     </button>
                 )}

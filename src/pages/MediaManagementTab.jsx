@@ -1,13 +1,61 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    Image, File, FileText, FileAudio, FileVideo, FileImage, FileArchive, FileCode, FileSpreadsheet,
-    Upload, Download, Trash2, Edit, Eye, EyeOff, RefreshCw, Settings, Globe, Shield, Users,
-    TrendingUp, BarChart3, Filter, Search, Plus, Copy, Share2, FileCheck, AlertTriangle,
-    CheckCircle, XCircle, Clock, FileClock, FileCog, FileDiff,
-    FileMinus, FilePlus, FileSearch, FileStack, FileWarning, FileX, FileSymlink,
-    HardDrive, Database, Cloud, Server, Zap, Wifi, WifiOff,
-    Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning,
-    Network
+    Image,
+    File,
+    FileText,
+    FileAudio,
+    FileVideo,
+    FileImage,
+    FileArchive,
+    FileCode,
+    FileSpreadsheet,
+    Upload,
+    Download,
+    Trash2,
+    Edit,
+    Eye,
+    EyeOff,
+    RefreshCw,
+    Settings,
+    Globe,
+    Shield,
+    Users,
+    TrendingUp,
+    BarChart3,
+    Filter,
+    Search,
+    Plus,
+    Copy,
+    Share2,
+    FileCheck,
+    AlertTriangle,
+    CheckCircle,
+    XCircle,
+    Clock,
+    FileClock,
+    FileCog,
+    FileDiff,
+    FileMinus,
+    FilePlus,
+    FileSearch,
+    FileStack,
+    FileWarning,
+    FileX,
+    FileSymlink,
+    HardDrive,
+    Database,
+    Cloud,
+    Server,
+    Zap,
+    Wifi,
+    WifiOff,
+    Battery,
+    BatteryCharging,
+    BatteryFull,
+    BatteryLow,
+    BatteryMedium,
+    BatteryWarning,
+    Network,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -26,7 +74,7 @@ const MediaManagementTab = () => {
         storage_location: 'all',
         optimization_status: 'all',
         sort_by: 'upload_date',
-        sort_order: 'desc'
+        sort_order: 'desc',
     });
 
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -68,7 +116,7 @@ const MediaManagementTab = () => {
                 lens: '24-70mm f/2.8',
                 location: 'Studio A',
                 director: 'John Doe',
-                producer: 'Jane Smith'
+                producer: 'Jane Smith',
             },
             tags: ['product', 'demo', 'marketing'],
             categories: ['marketing', 'product'],
@@ -76,7 +124,7 @@ const MediaManagementTab = () => {
             downloads: 45,
             shares: 23,
             created_at: '2024-06-15T10:00:00Z',
-            updated_at: '2024-06-15T10:05:00Z'
+            updated_at: '2024-06-15T10:05:00Z',
         },
         {
             id: 'media_002',
@@ -101,7 +149,7 @@ const MediaManagementTab = () => {
                 camera: 'Nikon D850',
                 lens: '50mm f/1.8',
                 location: 'Outdoor',
-                photographer: 'Sarah Johnson'
+                photographer: 'Sarah Johnson',
             },
             tags: ['tutorial', 'beginner', 'photography'],
             categories: ['education', 'tutorial'],
@@ -109,7 +157,7 @@ const MediaManagementTab = () => {
             downloads: 23,
             shares: 8,
             created_at: '2024-06-16T14:30:00Z',
-            updated_at: '2024-06-16T14:35:00Z'
+            updated_at: '2024-06-16T14:35:00Z',
         },
         {
             id: 'media_003',
@@ -134,7 +182,7 @@ const MediaManagementTab = () => {
                 artist: 'Unknown Artist',
                 album: 'Background Music',
                 genre: 'Ambient',
-                bitrate: '320kbps'
+                bitrate: '320kbps',
             },
             tags: ['music', 'background', 'ambient'],
             categories: ['audio', 'music'],
@@ -142,7 +190,7 @@ const MediaManagementTab = () => {
             downloads: 0,
             shares: 0,
             created_at: '2024-06-17T09:15:00Z',
-            updated_at: '2024-06-17T09:15:00Z'
+            updated_at: '2024-06-17T09:15:00Z',
         },
         {
             id: 'media_004',
@@ -167,7 +215,7 @@ const MediaManagementTab = () => {
                 author: 'Report Author',
                 title: 'Monthly Report',
                 pages: 150,
-                created_date: '2024-06-01'
+                created_date: '2024-06-01',
             },
             tags: ['report', 'document', 'monthly'],
             categories: ['documents', 'reports'],
@@ -175,7 +223,7 @@ const MediaManagementTab = () => {
             downloads: 75,
             shares: 12,
             created_at: '2024-06-18T11:45:00Z',
-            updated_at: '2024-06-18T11:50:00Z'
+            updated_at: '2024-06-18T11:50:00Z',
         },
         {
             id: 'media_005',
@@ -200,7 +248,7 @@ const MediaManagementTab = () => {
                 author: 'Presentation Author',
                 title: 'Business Presentation',
                 slides: 50,
-                created_date: '2024-06-15'
+                created_date: '2024-06-15',
             },
             tags: ['presentation', 'business', 'slides'],
             categories: ['documents', 'presentations'],
@@ -208,8 +256,8 @@ const MediaManagementTab = () => {
             downloads: 0,
             shares: 0,
             created_at: '2024-06-19T16:20:00Z',
-            updated_at: '2024-06-19T16:25:00Z'
-        }
+            updated_at: '2024-06-19T16:25:00Z',
+        },
     ];
 
     // Mock data for optimization jobs
@@ -232,10 +280,10 @@ const MediaManagementTab = () => {
                 codec: 'h264',
                 bitrate: '5000k',
                 resolution: '1920x1080',
-                frame_rate: 30
+                frame_rate: 30,
             },
             error_message: null,
-            worker_node: 'opt-worker-01'
+            worker_node: 'opt-worker-01',
         },
         {
             id: 'opt_job_002',
@@ -254,10 +302,10 @@ const MediaManagementTab = () => {
             optimization_settings: {
                 format: 'webp',
                 quality: 85,
-                compression: 'lossy'
+                compression: 'lossy',
             },
             error_message: null,
-            worker_node: 'opt-worker-02'
+            worker_node: 'opt-worker-02',
         },
         {
             id: 'opt_job_003',
@@ -276,10 +324,10 @@ const MediaManagementTab = () => {
             optimization_settings: {
                 codec: 'aac',
                 bitrate: '192kbps',
-                sample_rate: 44100
+                sample_rate: 44100,
             },
             error_message: null,
-            worker_node: 'opt-worker-03'
+            worker_node: 'opt-worker-03',
         },
         {
             id: 'opt_job_004',
@@ -298,10 +346,10 @@ const MediaManagementTab = () => {
             optimization_settings: {
                 compression: 'high',
                 image_quality: 'medium',
-                remove_metadata: true
+                remove_metadata: true,
             },
             error_message: null,
-            worker_node: 'opt-worker-04'
+            worker_node: 'opt-worker-04',
         },
         {
             id: 'opt_job_005',
@@ -320,11 +368,11 @@ const MediaManagementTab = () => {
             optimization_settings: {
                 compression: 'high',
                 image_quality: 'medium',
-                remove_metadata: true
+                remove_metadata: true,
             },
             error_message: null,
-            worker_node: 'opt-worker-05'
-        }
+            worker_node: 'opt-worker-05',
+        },
     ];
 
     // Mock data for storage stats
@@ -337,51 +385,81 @@ const MediaManagementTab = () => {
         storage_locations: {
             primary: { capacity: 53687091200, used: 37580963840, utilization: 0.7 },
             archive: { capacity: 32212254720, used: 21474836480, utilization: 0.67 },
-            backup: { capacity: 21474836480, used: 16106127360, utilization: 0.75 }
+            backup: { capacity: 21474836480, used: 16106127360, utilization: 0.75 },
         },
         file_types: {
             video: { count: 2000, size: 53687091200 },
             image: { count: 8000, size: 21474836480 },
             audio: { count: 3000, size: 10737418240 },
-            document: { count: 2000, size: 21474836480 }
+            document: { count: 2000, size: 21474836480 },
         },
         optimization_stats: {
             total_optimized: 12000,
             optimization_rate: 0.8,
             avg_size_reduction: 35.2,
             total_space_saved: 26843545600, // 25GB
-            avg_optimization_time: 45
+            avg_optimization_time: 45,
         },
         cdn_stats: {
             total_files_synced: 14000,
             sync_rate: 0.93,
             avg_sync_time: 15,
             cdn_bandwidth_used: 536870912000, // 500GB
-            cdn_cost_estimate: 1250.00
-        }
+            cdn_cost_estimate: 1250.0,
+        },
     };
 
     // Mock data for CDN status
     const mockCDNStatus = {
         status: 'operational',
         nodes: [
-            { id: 'cdn-node-01', region: 'us-east-1', status: 'active', latency: 25, capacity: 0.6 },
-            { id: 'cdn-node-02', region: 'us-west-2', status: 'active', latency: 45, capacity: 0.4 },
-            { id: 'cdn-node-03', region: 'eu-west-1', status: 'active', latency: 60, capacity: 0.7 },
-            { id: 'cdn-node-04', region: 'ap-southeast-1', status: 'active', latency: 80, capacity: 0.5 },
-            { id: 'cdn-node-05', region: 'sa-east-1', status: 'maintenance', latency: null, capacity: null }
+            {
+                id: 'cdn-node-01',
+                region: 'us-east-1',
+                status: 'active',
+                latency: 25,
+                capacity: 0.6,
+            },
+            {
+                id: 'cdn-node-02',
+                region: 'us-west-2',
+                status: 'active',
+                latency: 45,
+                capacity: 0.4,
+            },
+            {
+                id: 'cdn-node-03',
+                region: 'eu-west-1',
+                status: 'active',
+                latency: 60,
+                capacity: 0.7,
+            },
+            {
+                id: 'cdn-node-04',
+                region: 'ap-southeast-1',
+                status: 'active',
+                latency: 80,
+                capacity: 0.5,
+            },
+            {
+                id: 'cdn-node-05',
+                region: 'sa-east-1',
+                status: 'maintenance',
+                latency: null,
+                capacity: null,
+            },
         ],
         bandwidth_usage: {
             current: 10737418240, // 10GB
             limit: 107374182400, // 100GB
-            percentage: 0.1
+            percentage: 0.1,
         },
         cache_stats: {
             hit_rate: 0.85,
             miss_rate: 0.15,
             total_requests: 1000000,
-            cached_files: 50000
-        }
+            cached_files: 50000,
+        },
     };
 
     useEffect(() => {
@@ -397,7 +475,7 @@ const MediaManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -407,8 +485,8 @@ const MediaManagementTab = () => {
         }
 
         if (bulkAction === 'optimize') {
-            const selectedFileObjects = mediaFiles.filter(f => selectedFiles.includes(f.id));
-            selectedFileObjects.forEach(file => {
+            const selectedFileObjects = mediaFiles.filter((f) => selectedFiles.includes(f.id));
+            selectedFileObjects.forEach((file) => {
                 // Simulate optimization job creation
                 const newJob = {
                     id: `opt_job_${Date.now()}`,
@@ -427,29 +505,27 @@ const MediaManagementTab = () => {
                     optimization_settings: {
                         codec: file.file_type === 'video' ? 'h264' : 'webp',
                         quality: 85,
-                        compression: 'high'
+                        compression: 'high',
                     },
                     error_message: null,
-                    worker_node: `opt-worker-${Math.floor(Math.random() * 5) + 1}`
+                    worker_node: `opt-worker-${Math.floor(Math.random() * 5) + 1}`,
                 };
-                setOptimizationJobs(prev => [...prev, newJob]);
+                setOptimizationJobs((prev) => [...prev, newJob]);
             });
             showToast(`${selectedFiles.length} files added to optimization queue`, 'success');
         } else if (bulkAction === 'delete') {
             if (confirm(`Delete ${selectedFiles.length} files? This action cannot be undone.`)) {
-                setMediaFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
+                setMediaFiles((prev) => prev.filter((f) => !selectedFiles.includes(f.id)));
                 setSelectedFiles([]);
                 showToast('Files deleted', 'success');
             }
         } else if (bulkAction === 'sync_cdn') {
-            const selectedFileObjects = mediaFiles.filter(f => selectedFiles.includes(f.id));
-            selectedFileObjects.forEach(file => {
+            const selectedFileObjects = mediaFiles.filter((f) => selectedFiles.includes(f.id));
+            selectedFileObjects.forEach((file) => {
                 // Simulate CDN sync
-                setMediaFiles(prev => prev.map(f =>
-                    f.id === file.id
-                        ? { ...f, cdn_status: 'syncing' }
-                        : f
-                ));
+                setMediaFiles((prev) =>
+                    prev.map((f) => (f.id === file.id ? { ...f, cdn_status: 'syncing' } : f)),
+                );
             });
             showToast(`${selectedFiles.length} files queued for CDN sync`, 'success');
         }
@@ -457,7 +533,7 @@ const MediaManagementTab = () => {
     };
 
     const handleUploadMedia = (files) => {
-        Array.from(files).forEach(file => {
+        Array.from(files).forEach((file) => {
             const newMedia = {
                 id: `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 filename: file.name,
@@ -484,18 +560,18 @@ const MediaManagementTab = () => {
                 downloads: 0,
                 shares: 0,
                 created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
             };
 
-            setMediaFiles(prev => [...prev, newMedia]);
+            setMediaFiles((prev) => [...prev, newMedia]);
 
             // Simulate upload progress
             setTimeout(() => {
-                setMediaFiles(prev => prev.map(f =>
-                    f.id === newMedia.id
-                        ? { ...f, optimization_status: 'pending' }
-                        : f
-                ));
+                setMediaFiles((prev) =>
+                    prev.map((f) =>
+                        f.id === newMedia.id ? { ...f, optimization_status: 'pending' } : f,
+                    ),
+                );
 
                 // Create optimization job
                 const newJob = {
@@ -515,12 +591,12 @@ const MediaManagementTab = () => {
                     optimization_settings: {
                         codec: newMedia.file_type === 'video' ? 'h264' : 'webp',
                         quality: 85,
-                        compression: 'high'
+                        compression: 'high',
                     },
                     error_message: null,
-                    worker_node: `opt-worker-${Math.floor(Math.random() * 5) + 1}`
+                    worker_node: `opt-worker-${Math.floor(Math.random() * 5) + 1}`,
                 };
-                setOptimizationJobs(prev => [...prev, newJob]);
+                setOptimizationJobs((prev) => [...prev, newJob]);
             }, 2000);
         });
 
@@ -528,15 +604,19 @@ const MediaManagementTab = () => {
     };
 
     const handleDeleteMedia = (mediaId) => {
-        if (confirm('Are you sure you want to delete this media file? This action cannot be undone.')) {
-            setMediaFiles(prev => prev.filter(f => f.id !== mediaId));
-            setOptimizationJobs(prev => prev.filter(j => j.media_id !== mediaId));
+        if (
+            confirm(
+                'Are you sure you want to delete this media file? This action cannot be undone.',
+            )
+        ) {
+            setMediaFiles((prev) => prev.filter((f) => f.id !== mediaId));
+            setOptimizationJobs((prev) => prev.filter((j) => j.media_id !== mediaId));
             showToast('Media file deleted', 'success');
         }
     };
 
     const handleRetryOptimization = (mediaId) => {
-        const media = mediaFiles.find(f => f.id === mediaId);
+        const media = mediaFiles.find((f) => f.id === mediaId);
         if (media) {
             const newJob = {
                 id: `opt_job_${Date.now()}_${media.id}`,
@@ -555,21 +635,19 @@ const MediaManagementTab = () => {
                 optimization_settings: {
                     codec: media.file_type === 'video' ? 'h264' : 'webp',
                     quality: 85,
-                    compression: 'high'
+                    compression: 'high',
                 },
                 error_message: null,
-                worker_node: `opt-worker-${Math.floor(Math.random() * 5) + 1}`
+                worker_node: `opt-worker-${Math.floor(Math.random() * 5) + 1}`,
             };
-            setOptimizationJobs(prev => [...prev, newJob]);
+            setOptimizationJobs((prev) => [...prev, newJob]);
             showToast('Optimization job queued for retry', 'success');
         }
     };
 
     const toggleFileSelection = (fileId) => {
-        setSelectedFiles(prev =>
-            prev.includes(fileId)
-                ? prev.filter(id => id !== fileId)
-                : [...prev, fileId]
+        setSelectedFiles((prev) =>
+            prev.includes(fileId) ? prev.filter((id) => id !== fileId) : [...prev, fileId],
         );
     };
 
@@ -577,7 +655,7 @@ const MediaManagementTab = () => {
         if (selectedFiles.length === mediaFiles.length) {
             setSelectedFiles([]);
         } else {
-            setSelectedFiles(mediaFiles.map(f => f.id));
+            setSelectedFiles(mediaFiles.map((f) => f.id));
         }
     };
 
@@ -591,11 +669,16 @@ const MediaManagementTab = () => {
 
     const getFileIcon = (fileType) => {
         switch (fileType) {
-            case 'video': return <FileVideo size={24} />;
-            case 'image': return <FileImage size={24} />;
-            case 'audio': return <FileAudio size={24} />;
-            case 'document': return <FileText size={24} />;
-            default: return <File size={24} />;
+            case 'video':
+                return <FileVideo size={24} />;
+            case 'image':
+                return <FileImage size={24} />;
+            case 'audio':
+                return <FileAudio size={24} />;
+            case 'document':
+                return <FileText size={24} />;
+            default:
+                return <File size={24} />;
         }
     };
 
@@ -609,26 +692,45 @@ const MediaManagementTab = () => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'completed': return { color: 'green', text: 'Completed', icon: <CheckCircle size={14} /> };
-            case 'in_progress': return { color: 'blue', text: 'In Progress', icon: <RefreshCw size={14} /> };
-            case 'pending': return { color: 'yellow', text: 'Pending', icon: <Clock size={14} /> };
-            case 'failed': return { color: 'red', text: 'Failed', icon: <XCircle size={14} /> };
-            case 'optimized': return { color: 'green', text: 'Optimized', icon: <CheckCircle size={14} /> };
-            case 'optimizing': return { color: 'blue', text: 'Optimizing', icon: <RefreshCw size={14} /> };
-            case 'synced': return { color: 'green', text: 'Synced', icon: <CheckCircle size={14} /> };
-            case 'syncing': return { color: 'blue', text: 'Syncing', icon: <RefreshCw size={14} /> };
-            case 'backup_completed': return { color: 'green', text: 'Backup Completed', icon: <CheckCircle size={14} /> };
-            case 'backup_pending': return { color: 'yellow', text: 'Backup Pending', icon: <Clock size={14} /> };
-            default: return { color: 'gray', text: status, icon: <FileText size={14} /> };
+            case 'completed':
+                return { color: 'green', text: 'Completed', icon: <CheckCircle size={14} /> };
+            case 'in_progress':
+                return { color: 'blue', text: 'In Progress', icon: <RefreshCw size={14} /> };
+            case 'pending':
+                return { color: 'yellow', text: 'Pending', icon: <Clock size={14} /> };
+            case 'failed':
+                return { color: 'red', text: 'Failed', icon: <XCircle size={14} /> };
+            case 'optimized':
+                return { color: 'green', text: 'Optimized', icon: <CheckCircle size={14} /> };
+            case 'optimizing':
+                return { color: 'blue', text: 'Optimizing', icon: <RefreshCw size={14} /> };
+            case 'synced':
+                return { color: 'green', text: 'Synced', icon: <CheckCircle size={14} /> };
+            case 'syncing':
+                return { color: 'blue', text: 'Syncing', icon: <RefreshCw size={14} /> };
+            case 'backup_completed':
+                return {
+                    color: 'green',
+                    text: 'Backup Completed',
+                    icon: <CheckCircle size={14} />,
+                };
+            case 'backup_pending':
+                return { color: 'yellow', text: 'Backup Pending', icon: <Clock size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <FileText size={14} /> };
         }
     };
 
     const getStorageLocationBadge = (location) => {
         switch (location) {
-            case 'primary': return { color: 'blue', text: 'Primary', icon: <HardDrive size={14} /> };
-            case 'archive': return { color: 'orange', text: 'Archive', icon: <Database size={14} /> };
-            case 'backup': return { color: 'green', text: 'Backup', icon: <Server size={14} /> };
-            default: return { color: 'gray', text: location, icon: <File size={14} /> };
+            case 'primary':
+                return { color: 'blue', text: 'Primary', icon: <HardDrive size={14} /> };
+            case 'archive':
+                return { color: 'orange', text: 'Archive', icon: <Database size={14} /> };
+            case 'backup':
+                return { color: 'green', text: 'Backup', icon: <Server size={14} /> };
+            default:
+                return { color: 'gray', text: location, icon: <File size={14} /> };
         }
     };
 
@@ -638,7 +740,10 @@ const MediaManagementTab = () => {
             <div className="tab-header">
                 <div className="header-left">
                     <h2>Media Management</h2>
-                    <p>Advanced media storage optimization, CDN management, and content delivery optimization</p>
+                    <p>
+                        Advanced media storage optimization, CDN management, and content delivery
+                        optimization
+                    </p>
                 </div>
                 <div className="header-actions">
                     <button className="btn-secondary" onClick={() => setShowStorageModal(true)}>
@@ -731,7 +836,9 @@ const MediaManagementTab = () => {
 
                                 <select
                                     value={filters.storage_location}
-                                    onChange={(e) => handleFilterChange('storage_location', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('storage_location', e.target.value)
+                                    }
                                 >
                                     <option value="all">All Locations</option>
                                     <option value="primary">Primary</option>
@@ -741,7 +848,9 @@ const MediaManagementTab = () => {
 
                                 <select
                                     value={filters.optimization_status}
-                                    onChange={(e) => handleFilterChange('optimization_status', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('optimization_status', e.target.value)
+                                    }
                                 >
                                     <option value="all">All Optimization</option>
                                     <option value="optimized">Optimized</option>
@@ -766,11 +875,14 @@ const MediaManagementTab = () => {
                         </div>
 
                         <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => { }}>
+                            <button className="refresh-btn" onClick={() => {}}>
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
-                            <button className="btn-secondary" onClick={() => setShowOptimizationModal(true)}>
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setShowOptimizationModal(true)}
+                            >
                                 <Settings size={18} />
                                 Optimization Settings
                             </button>
@@ -817,14 +929,22 @@ const MediaManagementTab = () => {
                                     <div className="select-all">
                                         <input
                                             type="checkbox"
-                                            checked={selectedFiles.length === mediaFiles.length && mediaFiles.length > 0}
+                                            checked={
+                                                selectedFiles.length === mediaFiles.length &&
+                                                mediaFiles.length > 0
+                                            }
                                             onChange={selectAllFiles}
                                         />
                                         <span>Select All</span>
                                     </div>
                                     <div className="table-actions">
-                                        <span className="media-count">{mediaFiles.length} files found</span>
-                                        <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
+                                        <span className="media-count">
+                                            {mediaFiles.length} files found
+                                        </span>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={() => setShowUploadModal(true)}
+                                        >
                                             <Plus size={18} />
                                             Upload Media
                                         </button>
@@ -838,7 +958,11 @@ const MediaManagementTab = () => {
                                                 <th>
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedFiles.length === mediaFiles.length && mediaFiles.length > 0}
+                                                        checked={
+                                                            selectedFiles.length ===
+                                                                mediaFiles.length &&
+                                                            mediaFiles.length > 0
+                                                        }
                                                         onChange={selectAllFiles}
                                                     />
                                                 </th>
@@ -851,13 +975,27 @@ const MediaManagementTab = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {mediaFiles.map(file => (
-                                                <tr key={file.id} className={file.optimization_status === 'failed' ? 'error-file' : file.optimization_status === 'optimizing' ? 'optimizing-file' : ''}>
+                                            {mediaFiles.map((file) => (
+                                                <tr
+                                                    key={file.id}
+                                                    className={
+                                                        file.optimization_status === 'failed'
+                                                            ? 'error-file'
+                                                            : file.optimization_status ===
+                                                                'optimizing'
+                                                              ? 'optimizing-file'
+                                                              : ''
+                                                    }
+                                                >
                                                     <td>
                                                         <input
                                                             type="checkbox"
-                                                            checked={selectedFiles.includes(file.id)}
-                                                            onChange={() => toggleFileSelection(file.id)}
+                                                            checked={selectedFiles.includes(
+                                                                file.id,
+                                                            )}
+                                                            onChange={() =>
+                                                                toggleFileSelection(file.id)
+                                                            }
                                                         />
                                                     </td>
                                                     <td>
@@ -868,15 +1006,29 @@ const MediaManagementTab = () => {
                                                             <div className="file-details">
                                                                 <div className="file-title">
                                                                     <strong>{file.filename}</strong>
-                                                                    <span className="file-id">ID: {file.id}</span>
+                                                                    <span className="file-id">
+                                                                        ID: {file.id}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="file-meta">
-                                                                    <span className="file-mime">{file.mime_type}</span>
-                                                                    <span className="file-upload-date">Uploaded: {new Date(file.upload_date).toLocaleDateString()}</span>
+                                                                    <span className="file-mime">
+                                                                        {file.mime_type}
+                                                                    </span>
+                                                                    <span className="file-upload-date">
+                                                                        Uploaded:{' '}
+                                                                        {new Date(
+                                                                            file.upload_date,
+                                                                        ).toLocaleDateString()}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="file-tags">
-                                                                    {file.tags.map(tag => (
-                                                                        <span key={tag} className="tag-pill">{tag}</span>
+                                                                    {file.tags.map((tag) => (
+                                                                        <span
+                                                                            key={tag}
+                                                                            className="tag-pill"
+                                                                        >
+                                                                            {tag}
+                                                                        </span>
                                                                     ))}
                                                                 </div>
                                                             </div>
@@ -885,28 +1037,59 @@ const MediaManagementTab = () => {
                                                     <td>
                                                         <div className="type-size-info">
                                                             <div className="type-badge">
-                                                                <span className={`type-pill ${file.file_type}`}>
+                                                                <span
+                                                                    className={`type-pill ${file.file_type}`}
+                                                                >
                                                                     {file.file_type.toUpperCase()}
                                                                 </span>
                                                                 {file.dimensions && (
-                                                                    <span className="dimensions-pill">{file.dimensions}</span>
+                                                                    <span className="dimensions-pill">
+                                                                        {file.dimensions}
+                                                                    </span>
                                                                 )}
                                                                 {file.duration && (
-                                                                    <span className="duration-pill">{Math.floor(file.duration / 60)}:{(file.duration % 60).toString().padStart(2, '0')}</span>
+                                                                    <span className="duration-pill">
+                                                                        {Math.floor(
+                                                                            file.duration / 60,
+                                                                        )}
+                                                                        :
+                                                                        {(file.duration % 60)
+                                                                            .toString()
+                                                                            .padStart(2, '0')}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                             <div className="size-info">
                                                                 <div className="size-item">
-                                                                    <span className="size-label">Original:</span>
-                                                                    <span className="size-value">{formatFileSize(file.file_size)}</span>
+                                                                    <span className="size-label">
+                                                                        Original:
+                                                                    </span>
+                                                                    <span className="size-value">
+                                                                        {formatFileSize(
+                                                                            file.file_size,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="size-item">
-                                                                    <span className="size-label">Optimized:</span>
-                                                                    <span className="size-value">{formatFileSize(file.optimized_size)}</span>
+                                                                    <span className="size-label">
+                                                                        Optimized:
+                                                                    </span>
+                                                                    <span className="size-value">
+                                                                        {formatFileSize(
+                                                                            file.optimized_size,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="size-item">
-                                                                    <span className="size-label">Reduction:</span>
-                                                                    <span className="size-value reduction">{file.size_reduction.toFixed(1)}%</span>
+                                                                    <span className="size-label">
+                                                                        Reduction:
+                                                                    </span>
+                                                                    <span className="size-value reduction">
+                                                                        {file.size_reduction.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                        %
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -914,33 +1097,76 @@ const MediaManagementTab = () => {
                                                     <td>
                                                         <div className="status-info">
                                                             <div className="status-badge">
-                                                                <span className={`status-pill ${getStatusBadge(file.optimization_status).color}`}>
-                                                                    {getStatusBadge(file.optimization_status).icon}
-                                                                    {getStatusBadge(file.optimization_status).text}
+                                                                <span
+                                                                    className={`status-pill ${getStatusBadge(file.optimization_status).color}`}
+                                                                >
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            file.optimization_status,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            file.optimization_status,
+                                                                        ).text
+                                                                    }
                                                                 </span>
-                                                                <span className={`status-pill ${getStatusBadge(file.cdn_status).color}`}>
-                                                                    {getStatusBadge(file.cdn_status).icon}
-                                                                    {getStatusBadge(file.cdn_status).text}
+                                                                <span
+                                                                    className={`status-pill ${getStatusBadge(file.cdn_status).color}`}
+                                                                >
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            file.cdn_status,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            file.cdn_status,
+                                                                        ).text
+                                                                    }
                                                                 </span>
-                                                                <span className={`status-pill ${getStatusBadge(file.backup_status).color}`}>
-                                                                    {getStatusBadge(file.backup_status).icon}
-                                                                    {getStatusBadge(file.backup_status).text}
+                                                                <span
+                                                                    className={`status-pill ${getStatusBadge(file.backup_status).color}`}
+                                                                >
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            file.backup_status,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            file.backup_status,
+                                                                        ).text
+                                                                    }
                                                                 </span>
                                                             </div>
                                                             <div className="optimization-status">
-                                                                {file.optimization_status !== 'optimized' && (
+                                                                {file.optimization_status !==
+                                                                    'optimized' && (
                                                                     <div className="progress-bar">
                                                                         <div
                                                                             className="progress-fill"
-                                                                            style={{ width: `${file.optimization_status === 'optimizing' ? 60 : 0}%` }}
+                                                                            style={{
+                                                                                width: `${file.optimization_status === 'optimizing' ? 60 : 0}%`,
+                                                                            }}
                                                                         ></div>
-                                                                        <span className="progress-text">{file.optimization_status === 'optimizing' ? '60%' : '0%'}</span>
+                                                                        <span className="progress-text">
+                                                                            {file.optimization_status ===
+                                                                            'optimizing'
+                                                                                ? '60%'
+                                                                                : '0%'}
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                                 {file.optimization_date && (
                                                                     <div className="optimization-date">
                                                                         <Clock size={12} />
-                                                                        <span>Optimized: {new Date(file.optimization_date).toLocaleString()}</span>
+                                                                        <span>
+                                                                            Optimized:{' '}
+                                                                            {new Date(
+                                                                                file.optimization_date,
+                                                                            ).toLocaleString()}
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -949,27 +1175,52 @@ const MediaManagementTab = () => {
                                                     <td>
                                                         <div className="storage-info">
                                                             <div className="storage-badge">
-                                                                <span className={`storage-pill ${getStorageLocationBadge(file.storage_location).color}`}>
-                                                                    {getStorageLocationBadge(file.storage_location).icon}
-                                                                    {getStorageLocationBadge(file.storage_location).text}
+                                                                <span
+                                                                    className={`storage-pill ${getStorageLocationBadge(file.storage_location).color}`}
+                                                                >
+                                                                    {
+                                                                        getStorageLocationBadge(
+                                                                            file.storage_location,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getStorageLocationBadge(
+                                                                            file.storage_location,
+                                                                        ).text
+                                                                    }
                                                                 </span>
                                                                 {file.backup_location && (
-                                                                    <span className="backup-pill">Backup: {file.backup_location}</span>
+                                                                    <span className="backup-pill">
+                                                                        Backup:{' '}
+                                                                        {file.backup_location}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                             <div className="cdn-info">
                                                                 {file.cdn_url && (
                                                                     <div className="cdn-url">
-                                                                        <span className="cdn-label">CDN URL:</span>
-                                                                        <a href={file.cdn_url} target="_blank" rel="noopener noreferrer" className="cdn-link">
+                                                                        <span className="cdn-label">
+                                                                            CDN URL:
+                                                                        </span>
+                                                                        <a
+                                                                            href={file.cdn_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="cdn-link"
+                                                                        >
                                                                             {file.cdn_url}
                                                                         </a>
                                                                     </div>
                                                                 )}
                                                                 {file.cdn_status === 'syncing' && (
                                                                     <div className="syncing-status">
-                                                                        <RefreshCw size={12} className="spin-anim" />
-                                                                        <span>Syncing to CDN...</span>
+                                                                        <RefreshCw
+                                                                            size={12}
+                                                                            className="spin-anim"
+                                                                        />
+                                                                        <span>
+                                                                            Syncing to CDN...
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -980,33 +1231,52 @@ const MediaManagementTab = () => {
                                                             <div className="perf-metrics">
                                                                 <div className="metric-item">
                                                                     <Eye size={14} />
-                                                                    <span>{file.views.toLocaleString()} views</span>
+                                                                    <span>
+                                                                        {file.views.toLocaleString()}{' '}
+                                                                        views
+                                                                    </span>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Download size={14} />
-                                                                    <span>{file.downloads} downloads</span>
+                                                                    <span>
+                                                                        {file.downloads} downloads
+                                                                    </span>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Share2 size={14} />
-                                                                    <span>{file.shares} shares</span>
+                                                                    <span>
+                                                                        {file.shares} shares
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                             <div className="file-actions">
                                                                 {file.file_type === 'video' && (
-                                                                    <button className="action-btn preview" title="Preview Video">
+                                                                    <button
+                                                                        className="action-btn preview"
+                                                                        title="Preview Video"
+                                                                    >
                                                                         <Eye size={16} />
                                                                     </button>
                                                                 )}
                                                                 {file.file_type === 'image' && (
-                                                                    <button className="action-btn preview" title="Preview Image">
+                                                                    <button
+                                                                        className="action-btn preview"
+                                                                        title="Preview Image"
+                                                                    >
                                                                         <Eye size={16} />
                                                                     </button>
                                                                 )}
-                                                                <button className="action-btn download" title="Download Original">
+                                                                <button
+                                                                    className="action-btn download"
+                                                                    title="Download Original"
+                                                                >
                                                                     <Download size={16} />
                                                                 </button>
                                                                 {file.cdn_url && (
-                                                                    <button className="action-btn cdn" title="Open CDN URL">
+                                                                    <button
+                                                                        className="action-btn cdn"
+                                                                        title="Open CDN URL"
+                                                                    >
                                                                         <Wifi size={16} />
                                                                     </button>
                                                                 )}
@@ -1022,10 +1292,15 @@ const MediaManagementTab = () => {
                                                             >
                                                                 <Edit size={16} />
                                                             </button>
-                                                            {file.optimization_status === 'failed' && (
+                                                            {file.optimization_status ===
+                                                                'failed' && (
                                                                 <button
                                                                     className="action-btn retry"
-                                                                    onClick={() => handleRetryOptimization(file.id)}
+                                                                    onClick={() =>
+                                                                        handleRetryOptimization(
+                                                                            file.id,
+                                                                        )
+                                                                    }
                                                                     title="Retry Optimization"
                                                                 >
                                                                     <RefreshCw size={16} />
@@ -1033,7 +1308,9 @@ const MediaManagementTab = () => {
                                                             )}
                                                             <button
                                                                 className="action-btn delete"
-                                                                onClick={() => handleDeleteMedia(file.id)}
+                                                                onClick={() =>
+                                                                    handleDeleteMedia(file.id)
+                                                                }
                                                                 title="Delete File"
                                                             >
                                                                 <Trash2 size={16} />
@@ -1075,7 +1352,12 @@ const MediaManagementTab = () => {
                             </div>
                             <div className="stat-content">
                                 <span className="stat-label">Completed</span>
-                                <strong>{mockOptimizationJobs.filter(j => j.status === 'completed').length}</strong>
+                                <strong>
+                                    {
+                                        mockOptimizationJobs.filter((j) => j.status === 'completed')
+                                            .length
+                                    }
+                                </strong>
                             </div>
                         </div>
                         <div className="stat-card">
@@ -1084,7 +1366,13 @@ const MediaManagementTab = () => {
                             </div>
                             <div className="stat-content">
                                 <span className="stat-label">In Progress</span>
-                                <strong>{mockOptimizationJobs.filter(j => j.status === 'in_progress').length}</strong>
+                                <strong>
+                                    {
+                                        mockOptimizationJobs.filter(
+                                            (j) => j.status === 'in_progress',
+                                        ).length
+                                    }
+                                </strong>
                             </div>
                         </div>
                         <div className="stat-card">
@@ -1093,7 +1381,12 @@ const MediaManagementTab = () => {
                             </div>
                             <div className="stat-content">
                                 <span className="stat-label">Pending</span>
-                                <strong>{mockOptimizationJobs.filter(j => j.status === 'pending').length}</strong>
+                                <strong>
+                                    {
+                                        mockOptimizationJobs.filter((j) => j.status === 'pending')
+                                            .length
+                                    }
+                                </strong>
                             </div>
                         </div>
                         <div className="stat-card">
@@ -1102,7 +1395,12 @@ const MediaManagementTab = () => {
                             </div>
                             <div className="stat-content">
                                 <span className="stat-label">Avg Reduction</span>
-                                <strong>{mockStorageStats.optimization_stats.avg_size_reduction.toFixed(1)}%</strong>
+                                <strong>
+                                    {mockStorageStats.optimization_stats.avg_size_reduction.toFixed(
+                                        1,
+                                    )}
+                                    %
+                                </strong>
                             </div>
                         </div>
                     </div>
@@ -1126,25 +1424,47 @@ const MediaManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {optimizationJobs.map(job => (
-                                        <tr key={job.id} className={job.status === 'failed' ? 'failed-job' : job.status === 'in_progress' ? 'in-progress-job' : ''}>
+                                    {optimizationJobs.map((job) => (
+                                        <tr
+                                            key={job.id}
+                                            className={
+                                                job.status === 'failed'
+                                                    ? 'failed-job'
+                                                    : job.status === 'in_progress'
+                                                      ? 'in-progress-job'
+                                                      : ''
+                                            }
+                                        >
                                             <td>
                                                 <div className="job-info">
                                                     <div className="job-title">
                                                         <strong>{job.media_filename}</strong>
-                                                        <span className="job-id">Job: {job.id}</span>
+                                                        <span className="job-id">
+                                                            Job: {job.id}
+                                                        </span>
                                                     </div>
                                                     <div className="job-meta">
-                                                        <span className="job-type">{job.job_type}</span>
-                                                        <span className="job-created">Created: {new Date(job.created_at).toLocaleString()}</span>
-                                                        <span className="job-worker">Worker: {job.worker_node}</span>
+                                                        <span className="job-type">
+                                                            {job.job_type}
+                                                        </span>
+                                                        <span className="job-created">
+                                                            Created:{' '}
+                                                            {new Date(
+                                                                job.created_at,
+                                                            ).toLocaleString()}
+                                                        </span>
+                                                        <span className="job-worker">
+                                                            Worker: {job.worker_node}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="job-status">
                                                     <div className="status-badge">
-                                                        <span className={`status-pill ${getStatusBadge(job.status).color}`}>
+                                                        <span
+                                                            className={`status-pill ${getStatusBadge(job.status).color}`}
+                                                        >
                                                             {getStatusBadge(job.status).icon}
                                                             {getStatusBadge(job.status).text}
                                                         </span>
@@ -1153,9 +1473,13 @@ const MediaManagementTab = () => {
                                                         <div className="progress-bar">
                                                             <div
                                                                 className="progress-fill"
-                                                                style={{ width: `${job.progress}%` }}
+                                                                style={{
+                                                                    width: `${job.progress}%`,
+                                                                }}
                                                             ></div>
-                                                            <span className="progress-text">{job.progress}%</span>
+                                                            <span className="progress-text">
+                                                                {job.progress}%
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     {job.error_message && (
@@ -1169,60 +1493,117 @@ const MediaManagementTab = () => {
                                             <td>
                                                 <div className="file-specs">
                                                     <div className="spec-item">
-                                                        <span className="spec-label">Original:</span>
-                                                        <span className="spec-value">{formatFileSize(job.original_size)}</span>
+                                                        <span className="spec-label">
+                                                            Original:
+                                                        </span>
+                                                        <span className="spec-value">
+                                                            {formatFileSize(job.original_size)}
+                                                        </span>
                                                     </div>
                                                     <div className="spec-item">
-                                                        <span className="spec-label">Optimized:</span>
-                                                        <span className="spec-value">{job.optimized_size ? formatFileSize(job.optimized_size) : 'N/A'}</span>
+                                                        <span className="spec-label">
+                                                            Optimized:
+                                                        </span>
+                                                        <span className="spec-value">
+                                                            {job.optimized_size
+                                                                ? formatFileSize(job.optimized_size)
+                                                                : 'N/A'}
+                                                        </span>
                                                     </div>
                                                     <div className="spec-item">
-                                                        <span className="spec-label">Reduction:</span>
-                                                        <span className="spec-value">{job.size_reduction ? `${job.size_reduction.toFixed(1)}%` : 'N/A'}</span>
+                                                        <span className="spec-label">
+                                                            Reduction:
+                                                        </span>
+                                                        <span className="spec-value">
+                                                            {job.size_reduction
+                                                                ? `${job.size_reduction.toFixed(1)}%`
+                                                                : 'N/A'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="optimization-settings">
                                                     <div className="setting-item">
-                                                        <span className="setting-label">Codec:</span>
-                                                        <span className="setting-value">{job.optimization_settings.codec}</span>
+                                                        <span className="setting-label">
+                                                            Codec:
+                                                        </span>
+                                                        <span className="setting-value">
+                                                            {job.optimization_settings.codec}
+                                                        </span>
                                                     </div>
                                                     <div className="setting-item">
-                                                        <span className="setting-label">Quality:</span>
-                                                        <span className="setting-value">{job.optimization_settings.quality}</span>
+                                                        <span className="setting-label">
+                                                            Quality:
+                                                        </span>
+                                                        <span className="setting-value">
+                                                            {job.optimization_settings.quality}
+                                                        </span>
                                                     </div>
                                                     <div className="setting-item">
-                                                        <span className="setting-label">Compression:</span>
-                                                        <span className="setting-value">{job.optimization_settings.compression}</span>
+                                                        <span className="setting-label">
+                                                            Compression:
+                                                        </span>
+                                                        <span className="setting-value">
+                                                            {job.optimization_settings.compression}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="performance-info">
                                                     <div className="perf-item">
-                                                        <span className="perf-label">Duration:</span>
-                                                        <span className="perf-value">{job.duration ? `${job.duration}s` : 'N/A'}</span>
+                                                        <span className="perf-label">
+                                                            Duration:
+                                                        </span>
+                                                        <span className="perf-value">
+                                                            {job.duration
+                                                                ? `${job.duration}s`
+                                                                : 'N/A'}
+                                                        </span>
                                                     </div>
                                                     <div className="perf-item">
                                                         <span className="perf-label">Started:</span>
-                                                        <span className="perf-value">{job.started_at ? new Date(job.started_at).toLocaleString() : 'N/A'}</span>
+                                                        <span className="perf-value">
+                                                            {job.started_at
+                                                                ? new Date(
+                                                                      job.started_at,
+                                                                  ).toLocaleString()
+                                                                : 'N/A'}
+                                                        </span>
                                                     </div>
                                                     <div className="perf-item">
-                                                        <span className="perf-label">Completed:</span>
-                                                        <span className="perf-value">{job.completed_at ? new Date(job.completed_at).toLocaleString() : 'N/A'}</span>
+                                                        <span className="perf-label">
+                                                            Completed:
+                                                        </span>
+                                                        <span className="perf-value">
+                                                            {job.completed_at
+                                                                ? new Date(
+                                                                      job.completed_at,
+                                                                  ).toLocaleString()
+                                                                : 'N/A'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="job-actions">
-                                                    <button className="action-btn view" title="View Details">
+                                                    <button
+                                                        className="action-btn view"
+                                                        title="View Details"
+                                                    >
                                                         <Eye size={16} />
                                                     </button>
-                                                    <button className="action-btn retry" title="Retry Job">
+                                                    <button
+                                                        className="action-btn retry"
+                                                        title="Retry Job"
+                                                    >
                                                         <RefreshCw size={16} />
                                                     </button>
-                                                    <button className="action-btn delete" title="Cancel Job">
+                                                    <button
+                                                        className="action-btn delete"
+                                                        title="Cancel Job"
+                                                    >
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
@@ -1270,7 +1651,9 @@ const MediaManagementTab = () => {
                                     <HardDrive size={24} />
                                 </div>
                                 <div className="metric-content">
-                                    <div className="metric-value">{formatFileSize(storageStats.total_storage)}</div>
+                                    <div className="metric-value">
+                                        {formatFileSize(storageStats.total_storage)}
+                                    </div>
                                     <div className="metric-label">Total Storage</div>
                                 </div>
                             </div>
@@ -1280,7 +1663,9 @@ const MediaManagementTab = () => {
                                     <Database size={24} />
                                 </div>
                                 <div className="metric-content">
-                                    <div className="metric-value">{formatFileSize(storageStats.used_storage)}</div>
+                                    <div className="metric-value">
+                                        {formatFileSize(storageStats.used_storage)}
+                                    </div>
                                     <div className="metric-label">Used Storage</div>
                                 </div>
                             </div>
@@ -1290,7 +1675,9 @@ const MediaManagementTab = () => {
                                     <Server size={24} />
                                 </div>
                                 <div className="metric-content">
-                                    <div className="metric-value">{formatFileSize(storageStats.available_storage)}</div>
+                                    <div className="metric-value">
+                                        {formatFileSize(storageStats.available_storage)}
+                                    </div>
                                     <div className="metric-label">Available Storage</div>
                                 </div>
                             </div>
@@ -1299,7 +1686,9 @@ const MediaManagementTab = () => {
                         <div className="storage-utilization">
                             <div className="utilization-header">
                                 <h4>Storage Utilization</h4>
-                                <span className="utilization-percentage">{(storageStats.storage_utilization * 100).toFixed(1)}%</span>
+                                <span className="utilization-percentage">
+                                    {(storageStats.storage_utilization * 100).toFixed(1)}%
+                                </span>
                             </div>
                             <div className="utilization-bar">
                                 <div
@@ -1314,46 +1703,66 @@ const MediaManagementTab = () => {
                         <div className="breakdown-section">
                             <h4>By Storage Location</h4>
                             <div className="location-breakdown">
-                                {Object.entries(storageStats.storage_locations || {}).map(([location, data]) => (
-                                    <div key={location} className="location-item">
-                                        <div className="location-info">
-                                            <span className="location-name">{location.toUpperCase()}</span>
-                                            <span className="location-capacity">{formatFileSize(data.capacity)} capacity</span>
-                                        </div>
-                                        <div className="location-storage">
-                                            <div className="storage-bar">
-                                                <div
-                                                    className="storage-fill"
-                                                    style={{ width: `${data.utilization * 100}%` }}
-                                                ></div>
+                                {Object.entries(storageStats.storage_locations || {}).map(
+                                    ([location, data]) => (
+                                        <div key={location} className="location-item">
+                                            <div className="location-info">
+                                                <span className="location-name">
+                                                    {location.toUpperCase()}
+                                                </span>
+                                                <span className="location-capacity">
+                                                    {formatFileSize(data.capacity)} capacity
+                                                </span>
                                             </div>
-                                            <span className="storage-used">{formatFileSize(data.used)} used</span>
+                                            <div className="location-storage">
+                                                <div className="storage-bar">
+                                                    <div
+                                                        className="storage-fill"
+                                                        style={{
+                                                            width: `${data.utilization * 100}%`,
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="storage-used">
+                                                    {formatFileSize(data.used)} used
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
                         </div>
 
                         <div className="breakdown-section">
                             <h4>By File Type</h4>
                             <div className="type-breakdown">
-                                {Object.entries(storageStats.file_types || {}).map(([type, data]) => (
-                                    <div key={type} className="type-item">
-                                        <div className="type-info">
-                                            <span className="type-name">{type.toUpperCase()}</span>
-                                            <span className="type-count">{data.count} files</span>
-                                        </div>
-                                        <div className="type-storage">
-                                            <div className="storage-bar">
-                                                <div
-                                                    className="storage-fill"
-                                                    style={{ width: `${(data.size / storageStats.total_storage) * 100}%` }}
-                                                ></div>
+                                {Object.entries(storageStats.file_types || {}).map(
+                                    ([type, data]) => (
+                                        <div key={type} className="type-item">
+                                            <div className="type-info">
+                                                <span className="type-name">
+                                                    {type.toUpperCase()}
+                                                </span>
+                                                <span className="type-count">
+                                                    {data.count} files
+                                                </span>
                                             </div>
-                                            <span className="storage-size">{formatFileSize(data.size)}</span>
+                                            <div className="type-storage">
+                                                <div className="storage-bar">
+                                                    <div
+                                                        className="storage-fill"
+                                                        style={{
+                                                            width: `${(data.size / storageStats.total_storage) * 100}%`,
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="storage-size">
+                                                    {formatFileSize(data.size)}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1363,23 +1772,38 @@ const MediaManagementTab = () => {
                         <div className="optimization-metrics">
                             <div className="optimization-metric">
                                 <span className="metric-label">Total Optimized:</span>
-                                <span className="metric-value">{storageStats.optimization_stats.total_optimized}</span>
+                                <span className="metric-value">
+                                    {storageStats.optimization_stats.total_optimized}
+                                </span>
                             </div>
                             <div className="optimization-metric">
                                 <span className="metric-label">Optimization Rate:</span>
-                                <span className="metric-value">{(storageStats.optimization_stats.optimization_rate * 100).toFixed(1)}%</span>
+                                <span className="metric-value">
+                                    {(
+                                        storageStats.optimization_stats.optimization_rate * 100
+                                    ).toFixed(1)}
+                                    %
+                                </span>
                             </div>
                             <div className="optimization-metric">
                                 <span className="metric-label">Avg Size Reduction:</span>
-                                <span className="metric-value">{storageStats.optimization_stats.avg_size_reduction.toFixed(1)}%</span>
+                                <span className="metric-value">
+                                    {storageStats.optimization_stats.avg_size_reduction.toFixed(1)}%
+                                </span>
                             </div>
                             <div className="optimization-metric">
                                 <span className="metric-label">Space Saved:</span>
-                                <span className="metric-value">{formatFileSize(storageStats.optimization_stats.total_space_saved)}</span>
+                                <span className="metric-value">
+                                    {formatFileSize(
+                                        storageStats.optimization_stats.total_space_saved,
+                                    )}
+                                </span>
                             </div>
                             <div className="optimization-metric">
                                 <span className="metric-label">Avg Time:</span>
-                                <span className="metric-value">{storageStats.optimization_stats.avg_optimization_time}s</span>
+                                <span className="metric-value">
+                                    {storageStats.optimization_stats.avg_optimization_time}s
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1421,8 +1845,12 @@ const MediaManagementTab = () => {
                                 </div>
                                 <div className="status-content">
                                     <span className="status-label">Bandwidth Used</span>
-                                    <strong className="status-value">{formatFileSize(cdnStatus.bandwidth_usage.current)}</strong>
-                                    <small>of {formatFileSize(cdnStatus.bandwidth_usage.limit)}</small>
+                                    <strong className="status-value">
+                                        {formatFileSize(cdnStatus.bandwidth_usage.current)}
+                                    </strong>
+                                    <small>
+                                        of {formatFileSize(cdnStatus.bandwidth_usage.limit)}
+                                    </small>
                                 </div>
                             </div>
 
@@ -1432,7 +1860,9 @@ const MediaManagementTab = () => {
                                 </div>
                                 <div className="status-content">
                                     <span className="status-label">Cache Hit Rate</span>
-                                    <strong className="status-value">{(cdnStatus.cache_stats.hit_rate * 100).toFixed(1)}%</strong>
+                                    <strong className="status-value">
+                                        {(cdnStatus.cache_stats.hit_rate * 100).toFixed(1)}%
+                                    </strong>
                                 </div>
                             </div>
 
@@ -1442,7 +1872,9 @@ const MediaManagementTab = () => {
                                 </div>
                                 <div className="status-content">
                                     <span className="status-label">Estimated Cost</span>
-                                    <strong className="status-value">${cdnStatus.cdn_stats.cdn_cost_estimate}</strong>
+                                    <strong className="status-value">
+                                        ${cdnStatus.cdn_stats.cdn_cost_estimate}
+                                    </strong>
                                 </div>
                             </div>
                         </div>
@@ -1450,12 +1882,16 @@ const MediaManagementTab = () => {
                         <div className="bandwidth-usage">
                             <div className="usage-header">
                                 <h4>Bandwidth Usage</h4>
-                                <span className="usage-percentage">{(cdnStatus.bandwidth_usage.percentage * 100).toFixed(1)}%</span>
+                                <span className="usage-percentage">
+                                    {(cdnStatus.bandwidth_usage.percentage * 100).toFixed(1)}%
+                                </span>
                             </div>
                             <div className="usage-bar">
                                 <div
                                     className="usage-fill"
-                                    style={{ width: `${cdnStatus.bandwidth_usage.percentage * 100}%` }}
+                                    style={{
+                                        width: `${cdnStatus.bandwidth_usage.percentage * 100}%`,
+                                    }}
                                 ></div>
                             </div>
                         </div>
@@ -1464,12 +1900,18 @@ const MediaManagementTab = () => {
                     <div className="cdn-nodes">
                         <h4>CDN Nodes Status</h4>
                         <div className="nodes-grid">
-                            {cdnStatus.nodes?.map(node => (
+                            {cdnStatus.nodes?.map((node) => (
                                 <div key={node.id} className={`node-card ${node.status}`}>
                                     <div className="node-header">
                                         <strong>{node.id}</strong>
                                         <span className={`status-pill ${node.status}`}>
-                                            {node.status === 'active' ? <Wifi size={12} /> : node.status === 'maintenance' ? <Settings size={12} /> : <WifiOff size={12} />}
+                                            {node.status === 'active' ? (
+                                                <Wifi size={12} />
+                                            ) : node.status === 'maintenance' ? (
+                                                <Settings size={12} />
+                                            ) : (
+                                                <WifiOff size={12} />
+                                            )}
                                             {node.status.toUpperCase()}
                                         </span>
                                     </div>
@@ -1477,11 +1919,17 @@ const MediaManagementTab = () => {
                                     <div className="node-metrics">
                                         <div className="metric">
                                             <span className="metric-label">Latency:</span>
-                                            <span className="metric-value">{node.latency ? `${node.latency}ms` : 'N/A'}</span>
+                                            <span className="metric-value">
+                                                {node.latency ? `${node.latency}ms` : 'N/A'}
+                                            </span>
                                         </div>
                                         <div className="metric">
                                             <span className="metric-label">Capacity:</span>
-                                            <span className="metric-value">{node.capacity ? `${(node.capacity * 100).toFixed(0)}%` : 'N/A'}</span>
+                                            <span className="metric-value">
+                                                {node.capacity
+                                                    ? `${(node.capacity * 100).toFixed(0)}%`
+                                                    : 'N/A'}
+                                            </span>
                                         </div>
                                     </div>
                                     {node.status === 'active' && (
@@ -1504,27 +1952,39 @@ const MediaManagementTab = () => {
                         <div className="stats-grid">
                             <div className="stat-item">
                                 <span className="stat-label">Files Synced:</span>
-                                <span className="stat-value">{cdnStatus.cdn_stats.total_files_synced}</span>
+                                <span className="stat-value">
+                                    {cdnStatus.cdn_stats.total_files_synced}
+                                </span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-label">Sync Rate:</span>
-                                <span className="stat-value">{(cdnStatus.cdn_stats.sync_rate * 100).toFixed(1)}%</span>
+                                <span className="stat-value">
+                                    {(cdnStatus.cdn_stats.sync_rate * 100).toFixed(1)}%
+                                </span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-label">Avg Sync Time:</span>
-                                <span className="stat-value">{cdnStatus.cdn_stats.avg_sync_time}s</span>
+                                <span className="stat-value">
+                                    {cdnStatus.cdn_stats.avg_sync_time}s
+                                </span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-label">Total Requests:</span>
-                                <span className="stat-value">{cdnStatus.cdn_stats.total_requests.toLocaleString()}</span>
+                                <span className="stat-value">
+                                    {cdnStatus.cdn_stats.total_requests.toLocaleString()}
+                                </span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-label">Cached Files:</span>
-                                <span className="stat-value">{cdnStatus.cdn_stats.cached_files}</span>
+                                <span className="stat-value">
+                                    {cdnStatus.cdn_stats.cached_files}
+                                </span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-label">Miss Rate:</span>
-                                <span className="stat-value">{(cdnStatus.cache_stats.miss_rate * 100).toFixed(1)}%</span>
+                                <span className="stat-value">
+                                    {(cdnStatus.cache_stats.miss_rate * 100).toFixed(1)}%
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1534,20 +1994,31 @@ const MediaManagementTab = () => {
             {/* Upload Modal */}
             {showUploadModal && (
                 <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '600px' }}
+                    >
                         <div className="modal-header">
                             <h3>Upload Media Files</h3>
-                            <button className="close-btn" onClick={() => setShowUploadModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowUploadModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
+                            <div
+                                className="upload-area"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
                                 <div className="upload-icon">
                                     <Upload size={48} />
                                 </div>
                                 <div className="upload-text">
                                     <h4>Drag and drop media files here</h4>
                                     <p>or click to select files</p>
-                                    <p className="upload-hint">Supported formats: Images, Videos, Audio, Documents</p>
+                                    <p className="upload-hint">
+                                        Supported formats: Images, Videos, Audio, Documents
+                                    </p>
                                 </div>
                                 <input
                                     ref={fileInputRef}
@@ -1588,10 +2059,19 @@ const MediaManagementTab = () => {
             {/* Optimization Settings Modal */}
             {showOptimizationModal && (
                 <div className="modal-overlay" onClick={() => setShowOptimizationModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>Optimization Settings</h3>
-                            <button className="close-btn" onClick={() => setShowOptimizationModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowOptimizationModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="settings-grid">
@@ -1608,13 +2088,20 @@ const MediaManagementTab = () => {
                                         </div>
                                         <div className="setting-item">
                                             <label>Quality</label>
-                                            <input type="range" min="1" max="100" defaultValue="85" />
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="100"
+                                                defaultValue="85"
+                                            />
                                         </div>
                                         <div className="setting-item">
                                             <label>Max Resolution</label>
                                             <select defaultValue="1920x1080">
                                                 <option value="3840x2160">4K (3840x2160)</option>
-                                                <option value="1920x1080">Full HD (1920x1080)</option>
+                                                <option value="1920x1080">
+                                                    Full HD (1920x1080)
+                                                </option>
                                                 <option value="1280x720">HD (1280x720)</option>
                                                 <option value="640x480">SD (640x480)</option>
                                             </select>
@@ -1635,7 +2122,12 @@ const MediaManagementTab = () => {
                                         </div>
                                         <div className="setting-item">
                                             <label>Quality</label>
-                                            <input type="range" min="1" max="100" defaultValue="85" />
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="100"
+                                                defaultValue="85"
+                                            />
                                         </div>
                                         <div className="setting-item">
                                             <label>Compression</label>
@@ -1706,7 +2198,11 @@ const MediaManagementTab = () => {
                             </div>
                         </div>
                         <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={() => setShowOptimizationModal(false)}>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowOptimizationModal(false)}
+                            >
                                 Cancel
                             </button>
                             <button type="button" className="btn-primary">

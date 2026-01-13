@@ -29,6 +29,6 @@ export const useUpdateProfile = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to update profile', 'error');
-        }
+        },
     });
 };

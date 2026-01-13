@@ -1,12 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import {
-    FileText, Plus, Edit, Trash2, Eye, EyeOff, Download, Upload, RefreshCw, Search,
-    Filter, Clock, Calendar, User, Users, TrendingUp, BarChart3, FileSpreadsheet,
-    AlertTriangle, CheckCircle, XCircle, UserCheck, UserX, ShieldCheck, AlertCircle,
-    Zap, Repeat, FileCheck, FileClock, FileSearch,
-    Globe, Video, Image, AudioLines, Tag, Star, Crown, Shield, MessageSquare,
-    ChevronLeft, ChevronRight, Copy, Share2, ThumbsUp,
-    MessageCircle, Share
+    FileText,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    EyeOff,
+    Download,
+    Upload,
+    RefreshCw,
+    Search,
+    Filter,
+    Clock,
+    Calendar,
+    User,
+    Users,
+    TrendingUp,
+    BarChart3,
+    FileSpreadsheet,
+    AlertTriangle,
+    CheckCircle,
+    XCircle,
+    UserCheck,
+    UserX,
+    ShieldCheck,
+    AlertCircle,
+    Zap,
+    Repeat,
+    FileCheck,
+    FileClock,
+    FileSearch,
+    Globe,
+    Video,
+    Image,
+    AudioLines,
+    Tag,
+    Star,
+    Crown,
+    Shield,
+    MessageSquare,
+    ChevronLeft,
+    ChevronRight,
+    Copy,
+    Share2,
+    ThumbsUp,
+    MessageCircle,
+    Share,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -19,7 +58,7 @@ const PostManagementTab = () => {
         author: 'all',
         search: '',
         sortBy: 'created_at',
-        sortOrder: 'desc'
+        sortOrder: 'desc',
     });
 
     const [selectedPosts, setSelectedPosts] = useState([]);
@@ -69,7 +108,8 @@ const PostManagementTab = () => {
             allow_comments: true,
             allow_sharing: true,
             seo_title: 'The Future of AI in Education - KaruTeens',
-            seo_description: 'Discover how artificial intelligence is transforming education and what it means for students and teachers.',
+            seo_description:
+                'Discover how artificial intelligence is transforming education and what it means for students and teachers.',
             seo_keywords: ['AI', 'education', 'technology', 'future'],
             source_url: null,
             source_author: null,
@@ -84,8 +124,8 @@ const PostManagementTab = () => {
                 total_comments: 23,
                 total_shares: 15,
                 avg_reading_time: 4.5,
-                engagement_rate: 10.2
-            }
+                engagement_rate: 10.2,
+            },
         },
         {
             id: 'post_002',
@@ -121,7 +161,8 @@ const PostManagementTab = () => {
             allow_comments: true,
             allow_sharing: true,
             seo_title: 'Healthy Eating Habits for Students - KaruTeens',
-            seo_description: 'Discover the best eating habits to improve your focus and academic performance.',
+            seo_description:
+                'Discover the best eating habits to improve your focus and academic performance.',
             seo_keywords: ['health', 'nutrition', 'students', 'eating'],
             source_url: null,
             source_author: null,
@@ -136,8 +177,8 @@ const PostManagementTab = () => {
                 total_comments: 0,
                 total_shares: 0,
                 avg_reading_time: null,
-                engagement_rate: 0.0
-            }
+                engagement_rate: 0.0,
+            },
         },
         {
             id: 'post_003',
@@ -188,13 +229,13 @@ const PostManagementTab = () => {
                 total_comments: 0,
                 total_shares: 0,
                 avg_reading_time: null,
-                engagement_rate: 0.0
-            }
+                engagement_rate: 0.0,
+            },
         },
         {
             id: 'post_004',
             title: 'How to Master Programming in 2024',
-            content: 'Programming skills are in high demand in today\'s job market...',
+            content: "Programming skills are in high demand in today's job market...",
             excerpt: 'Essential programming skills you need to master this year.',
             slug: 'master-programming-2024',
             status: 'draft',
@@ -240,8 +281,8 @@ const PostManagementTab = () => {
                 total_comments: 0,
                 total_shares: 0,
                 avg_reading_time: null,
-                engagement_rate: 0.0
-            }
+                engagement_rate: 0.0,
+            },
         },
         {
             id: 'post_005',
@@ -292,9 +333,9 @@ const PostManagementTab = () => {
                 total_comments: 0,
                 total_shares: 0,
                 avg_reading_time: null,
-                engagement_rate: 0.0
-            }
-        }
+                engagement_rate: 0.0,
+            },
+        },
     ];
 
     useEffect(() => {
@@ -307,7 +348,7 @@ const PostManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -317,43 +358,43 @@ const PostManagementTab = () => {
         }
 
         if (bulkAction === 'approve') {
-            setPosts(prev => prev.map(p =>
-                selectedPosts.includes(p.id) ? { ...p, status: 'approved' } : p
-            ));
+            setPosts((prev) =>
+                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'approved' } : p)),
+            );
             setSelectedPosts([]);
             setBulkAction('');
             showToast('Posts approved', 'success');
         } else if (bulkAction === 'reject') {
-            setPosts(prev => prev.map(p =>
-                selectedPosts.includes(p.id) ? { ...p, status: 'rejected' } : p
-            ));
+            setPosts((prev) =>
+                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'rejected' } : p)),
+            );
             setSelectedPosts([]);
             setBulkAction('');
             showToast('Posts rejected', 'info');
         } else if (bulkAction === 'publish') {
-            setPosts(prev => prev.map(p =>
-                selectedPosts.includes(p.id) ? { ...p, status: 'published' } : p
-            ));
+            setPosts((prev) =>
+                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'published' } : p)),
+            );
             setSelectedPosts([]);
             setBulkAction('');
             showToast('Posts published', 'success');
         } else if (bulkAction === 'make_featured') {
-            setPosts(prev => prev.map(p =>
-                selectedPosts.includes(p.id) ? { ...p, is_featured: true } : p
-            ));
+            setPosts((prev) =>
+                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, is_featured: true } : p)),
+            );
             setSelectedPosts([]);
             setBulkAction('');
             showToast('Posts marked as featured', 'success');
         } else if (bulkAction === 'make_premium') {
-            setPosts(prev => prev.map(p =>
-                selectedPosts.includes(p.id) ? { ...p, is_premium: true } : p
-            ));
+            setPosts((prev) =>
+                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, is_premium: true } : p)),
+            );
             setSelectedPosts([]);
             setBulkAction('');
             showToast('Posts marked as premium', 'success');
         } else if (bulkAction === 'delete') {
             if (confirm(`Delete ${selectedPosts.length} posts? This action cannot be undone.`)) {
-                setPosts(prev => prev.filter(p => !selectedPosts.includes(p.id)));
+                setPosts((prev) => prev.filter((p) => !selectedPosts.includes(p.id)));
                 setSelectedPosts([]);
                 setBulkAction('');
                 showToast('Posts deleted', 'success');
@@ -362,38 +403,48 @@ const PostManagementTab = () => {
     };
 
     const handleApprovePost = (postId) => {
-        setPosts(prev => prev.map(p =>
-            p.id === postId ? { ...p, status: 'approved', approved_at: new Date().toISOString() } : p
-        ));
+        setPosts((prev) =>
+            prev.map((p) =>
+                p.id === postId
+                    ? { ...p, status: 'approved', approved_at: new Date().toISOString() }
+                    : p,
+            ),
+        );
         showToast('Post approved', 'success');
     };
 
     const handleRejectPost = (postId) => {
-        setPosts(prev => prev.map(p =>
-            p.id === postId ? { ...p, status: 'rejected', rejected_at: new Date().toISOString() } : p
-        ));
+        setPosts((prev) =>
+            prev.map((p) =>
+                p.id === postId
+                    ? { ...p, status: 'rejected', rejected_at: new Date().toISOString() }
+                    : p,
+            ),
+        );
         showToast('Post rejected', 'info');
     };
 
     const handlePublishPost = (postId) => {
-        setPosts(prev => prev.map(p =>
-            p.id === postId ? { ...p, status: 'published', published_at: new Date().toISOString() } : p
-        ));
+        setPosts((prev) =>
+            prev.map((p) =>
+                p.id === postId
+                    ? { ...p, status: 'published', published_at: new Date().toISOString() }
+                    : p,
+            ),
+        );
         showToast('Post published', 'success');
     };
 
     const handleDeletePost = (postId) => {
         if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-            setPosts(prev => prev.filter(p => p.id !== postId));
+            setPosts((prev) => prev.filter((p) => p.id !== postId));
             showToast('Post deleted', 'success');
         }
     };
 
     const togglePostSelection = (postId) => {
-        setSelectedPosts(prev =>
-            prev.includes(postId)
-                ? prev.filter(id => id !== postId)
-                : [...prev, postId]
+        setSelectedPosts((prev) =>
+            prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId],
         );
     };
 
@@ -401,30 +452,43 @@ const PostManagementTab = () => {
         if (selectedPosts.length === posts.length) {
             setSelectedPosts([]);
         } else {
-            setSelectedPosts(posts.map(p => p.id));
+            setSelectedPosts(posts.map((p) => p.id));
         }
     };
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'published': return { color: 'green', text: 'Published', icon: <CheckCircle size={14} /> };
-            case 'approved': return { color: 'blue', text: 'Approved', icon: <ShieldCheck size={14} /> };
-            case 'pending_review': return { color: 'orange', text: 'Pending Review', icon: <FileClock size={14} /> };
-            case 'draft': return { color: 'gray', text: 'Draft', icon: <FileClock size={14} /> };
-            case 'rejected': return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
-            case 'scheduled': return { color: 'purple', text: 'Scheduled', icon: <Calendar size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertTriangle size={14} /> };
+            case 'published':
+                return { color: 'green', text: 'Published', icon: <CheckCircle size={14} /> };
+            case 'approved':
+                return { color: 'blue', text: 'Approved', icon: <ShieldCheck size={14} /> };
+            case 'pending_review':
+                return { color: 'orange', text: 'Pending Review', icon: <FileClock size={14} /> };
+            case 'draft':
+                return { color: 'gray', text: 'Draft', icon: <FileClock size={14} /> };
+            case 'rejected':
+                return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
+            case 'scheduled':
+                return { color: 'purple', text: 'Scheduled', icon: <Calendar size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertTriangle size={14} /> };
         }
     };
 
     const getPostTypeBadge = (postType) => {
         switch (postType) {
-            case 'article': return { color: 'blue', text: 'Article', icon: <FileText size={14} /> };
-            case 'blog': return { color: 'green', text: 'Blog', icon: <MessageCircle size={14} /> };
-            case 'news': return { color: 'orange', text: 'News', icon: <Globe size={14} /> };
-            case 'announcement': return { color: 'red', text: 'Announcement', icon: <AlertCircle size={14} /> };
-            case 'tutorial': return { color: 'purple', text: 'Tutorial', icon: <Zap size={14} /> };
-            default: return { color: 'gray', text: postType, icon: <AlertTriangle size={14} /> };
+            case 'article':
+                return { color: 'blue', text: 'Article', icon: <FileText size={14} /> };
+            case 'blog':
+                return { color: 'green', text: 'Blog', icon: <MessageCircle size={14} /> };
+            case 'news':
+                return { color: 'orange', text: 'News', icon: <Globe size={14} /> };
+            case 'announcement':
+                return { color: 'red', text: 'Announcement', icon: <AlertCircle size={14} /> };
+            case 'tutorial':
+                return { color: 'purple', text: 'Tutorial', icon: <Zap size={14} /> };
+            default:
+                return { color: 'gray', text: postType, icon: <AlertTriangle size={14} /> };
         }
     };
 
@@ -462,10 +526,7 @@ const PostManagementTab = () => {
                         <Download size={18} />
                         Export Posts
                     </button>
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowAddModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
                         <Plus size={18} />
                         Add Post
                     </button>
@@ -526,7 +587,7 @@ const PostManagementTab = () => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => { }}>
+                    <button className="refresh-btn" onClick={() => {}}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
@@ -536,14 +597,9 @@ const PostManagementTab = () => {
             {/* Bulk Actions */}
             {selectedPosts.length > 0 && (
                 <div className="bulk-actions">
-                    <div className="selection-info">
-                        {selectedPosts.length} posts selected
-                    </div>
+                    <div className="selection-info">{selectedPosts.length} posts selected</div>
                     <div className="bulk-actions-controls">
-                        <select
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="approve">Approve</option>
                             <option value="reject">Reject</option>
@@ -576,14 +632,16 @@ const PostManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedPosts.length === posts.length && posts.length > 0}
+                                    checked={
+                                        selectedPosts.length === posts.length && posts.length > 0
+                                    }
                                     onChange={selectAllPosts}
                                 />
                                 <span>Select All</span>
                             </div>
                             <div className="table-actions">
                                 <span className="post-count">{posts.length} posts found</span>
-                                <button className="refresh-btn" onClick={() => { }}>
+                                <button className="refresh-btn" onClick={() => {}}>
                                     <RefreshCw size={18} />
                                     Refresh
                                 </button>
@@ -597,7 +655,10 @@ const PostManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedPosts.length === posts.length && posts.length > 0}
+                                                checked={
+                                                    selectedPosts.length === posts.length &&
+                                                    posts.length > 0
+                                                }
                                                 onChange={selectAllPosts}
                                             />
                                         </th>
@@ -610,8 +671,13 @@ const PostManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {posts.map(post => (
-                                        <tr key={post.id} className={post.status === 'rejected' ? 'rejected-post' : ''}>
+                                    {posts.map((post) => (
+                                        <tr
+                                            key={post.id}
+                                            className={
+                                                post.status === 'rejected' ? 'rejected-post' : ''
+                                            }
+                                        >
                                             <td>
                                                 <input
                                                     type="checkbox"
@@ -636,23 +702,37 @@ const PostManagementTab = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="post-excerpt">{post.excerpt}</div>
+                                                    <div className="post-excerpt">
+                                                        {post.excerpt}
+                                                    </div>
                                                     <div className="post-meta">
-                                                        <span className="slug-badge">{post.slug}</span>
-                                                        {post.tags && post.tags.map(tag => (
-                                                            <span key={tag} className="tag-badge">{tag}</span>
-                                                        ))}
+                                                        <span className="slug-badge">
+                                                            {post.slug}
+                                                        </span>
+                                                        {post.tags &&
+                                                            post.tags.map((tag) => (
+                                                                <span
+                                                                    key={tag}
+                                                                    className="tag-badge"
+                                                                >
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="status-info">
                                                     <div className="status-badge">
-                                                        <span className={`status-pill ${getStatusBadge(post.status).color}`}>
+                                                        <span
+                                                            className={`status-pill ${getStatusBadge(post.status).color}`}
+                                                        >
                                                             {getStatusBadge(post.status).icon}
                                                             {getStatusBadge(post.status).text}
                                                         </span>
-                                                        <span className={`post-type-pill ${getPostTypeBadge(post.post_type).color}`}>
+                                                        <span
+                                                            className={`post-type-pill ${getPostTypeBadge(post.post_type).color}`}
+                                                        >
                                                             {getPostTypeBadge(post.post_type).icon}
                                                             {getPostTypeBadge(post.post_type).text}
                                                         </span>
@@ -661,19 +741,34 @@ const PostManagementTab = () => {
                                                         {post.approved_at && (
                                                             <div className="status-date">
                                                                 <ShieldCheck size={12} />
-                                                                <span>Approved: {new Date(post.approved_at).toLocaleDateString()}</span>
+                                                                <span>
+                                                                    Approved:{' '}
+                                                                    {new Date(
+                                                                        post.approved_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                         {post.published_at && (
                                                             <div className="status-date">
                                                                 <CheckCircle size={12} />
-                                                                <span>Published: {new Date(post.published_at).toLocaleDateString()}</span>
+                                                                <span>
+                                                                    Published:{' '}
+                                                                    {new Date(
+                                                                        post.published_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                         {post.scheduled_publish_date && (
                                                             <div className="status-date">
                                                                 <Calendar size={12} />
-                                                                <span>Scheduled: {new Date(post.scheduled_publish_date).toLocaleDateString()}</span>
+                                                                <span>
+                                                                    Scheduled:{' '}
+                                                                    {new Date(
+                                                                        post.scheduled_publish_date,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -699,17 +794,31 @@ const PostManagementTab = () => {
                                                     <div className="date-info">
                                                         <div className="created-date">
                                                             <Calendar size={12} />
-                                                            <span>Created: {new Date(post.created_at).toLocaleDateString()}</span>
+                                                            <span>
+                                                                Created:{' '}
+                                                                {new Date(
+                                                                    post.created_at,
+                                                                ).toLocaleDateString()}
+                                                            </span>
                                                         </div>
                                                         <div className="days-since">
                                                             <Clock size={12} />
-                                                            <span>{getDaysSinceCreated(post.created_at)} days ago</span>
+                                                            <span>
+                                                                {getDaysSinceCreated(
+                                                                    post.created_at,
+                                                                )}{' '}
+                                                                days ago
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <div className="content-details">
                                                         <div className="reading-time">
                                                             <Clock size={12} />
-                                                            <span>{getReadingTimeText(post.reading_time || 0)}</span>
+                                                            <span>
+                                                                {getReadingTimeText(
+                                                                    post.reading_time || 0,
+                                                                )}
+                                                            </span>
                                                         </div>
                                                         <div className="language">
                                                             <Globe size={12} />
@@ -718,7 +827,10 @@ const PostManagementTab = () => {
                                                         {post.plagiarism_score && (
                                                             <div className="plagiarism-score">
                                                                 <AlertTriangle size={12} />
-                                                                <span>{post.plagiarism_score}% similarity</span>
+                                                                <span>
+                                                                    {post.plagiarism_score}%
+                                                                    similarity
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -745,27 +857,39 @@ const PostManagementTab = () => {
                                                                 Audio
                                                             </span>
                                                         )}
-                                                        {post.gallery_images && post.gallery_images.length > 0 && (
-                                                            <span className="feature-badge gallery">
-                                                                <Image size={12} />
-                                                                Gallery ({post.gallery_images.length})
-                                                            </span>
-                                                        )}
+                                                        {post.gallery_images &&
+                                                            post.gallery_images.length > 0 && (
+                                                                <span className="feature-badge gallery">
+                                                                    <Image size={12} />
+                                                                    Gallery (
+                                                                    {post.gallery_images.length})
+                                                                </span>
+                                                            )}
                                                     </div>
                                                     <div className="content-controls">
                                                         <div className="comments-control">
                                                             <MessageSquare size={12} />
-                                                            <span>{post.allow_comments ? 'Comments Enabled' : 'Comments Disabled'}</span>
+                                                            <span>
+                                                                {post.allow_comments
+                                                                    ? 'Comments Enabled'
+                                                                    : 'Comments Disabled'}
+                                                            </span>
                                                         </div>
                                                         <div className="sharing-control">
                                                             <Share2 size={12} />
-                                                            <span>{post.allow_sharing ? 'Sharing Enabled' : 'Sharing Disabled'}</span>
+                                                            <span>
+                                                                {post.allow_sharing
+                                                                    ? 'Sharing Enabled'
+                                                                    : 'Sharing Disabled'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     {post.content_rating && (
                                                         <div className="content-rating">
                                                             <Shield size={12} />
-                                                            <span>Rating: {post.content_rating}</span>
+                                                            <span>
+                                                                Rating: {post.content_rating}
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -775,36 +899,52 @@ const PostManagementTab = () => {
                                                     <div className="metric-row">
                                                         <div className="metric-item">
                                                             <Eye size={14} />
-                                                            <span>{post.analytics.total_views.toLocaleString()}</span>
+                                                            <span>
+                                                                {post.analytics.total_views.toLocaleString()}
+                                                            </span>
                                                             <small>Views</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <ThumbsUp size={14} />
-                                                            <span>{post.analytics.total_likes}</span>
+                                                            <span>
+                                                                {post.analytics.total_likes}
+                                                            </span>
                                                             <small>Likes</small>
                                                         </div>
                                                     </div>
                                                     <div className="metric-row">
                                                         <div className="metric-item">
                                                             <MessageCircle size={14} />
-                                                            <span>{post.analytics.total_comments}</span>
+                                                            <span>
+                                                                {post.analytics.total_comments}
+                                                            </span>
                                                             <small>Comments</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <Share size={14} />
-                                                            <span>{post.analytics.total_shares}</span>
+                                                            <span>
+                                                                {post.analytics.total_shares}
+                                                            </span>
                                                             <small>Shares</small>
                                                         </div>
                                                     </div>
                                                     <div className="metric-row">
                                                         <div className="metric-item">
                                                             <TrendingUp size={14} />
-                                                            <span>{formatEngagementRate(post.analytics.engagement_rate)}</span>
+                                                            <span>
+                                                                {formatEngagementRate(
+                                                                    post.analytics.engagement_rate,
+                                                                )}
+                                                            </span>
                                                             <small>Engagement</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <Clock size={14} />
-                                                            <span>{post.analytics.avg_reading_time || 0} min</span>
+                                                            <span>
+                                                                {post.analytics.avg_reading_time ||
+                                                                    0}{' '}
+                                                                min
+                                                            </span>
                                                             <small>Avg Time</small>
                                                         </div>
                                                     </div>
@@ -814,14 +954,19 @@ const PostManagementTab = () => {
                                                 <div className="action-buttons">
                                                     <button
                                                         className="action-btn view"
-                                                        onClick={() => window.open(`/post/${post.slug}`, '_blank')}
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `/post/${post.slug}`,
+                                                                '_blank',
+                                                            )
+                                                        }
                                                         title="View Post"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     <button
                                                         className="action-btn analytics"
-                                                        onClick={() => { }}
+                                                        onClick={() => {}}
                                                         title="View Analytics"
                                                     >
                                                         <BarChart3 size={16} />
@@ -850,14 +995,18 @@ const PostManagementTab = () => {
                                                         <>
                                                             <button
                                                                 className="action-btn approve"
-                                                                onClick={() => handleApprovePost(post.id)}
+                                                                onClick={() =>
+                                                                    handleApprovePost(post.id)
+                                                                }
                                                                 title="Approve Post"
                                                             >
                                                                 <FileCheck size={16} />
                                                             </button>
                                                             <button
                                                                 className="action-btn reject"
-                                                                onClick={() => handleRejectPost(post.id)}
+                                                                onClick={() =>
+                                                                    handleRejectPost(post.id)
+                                                                }
                                                                 title="Reject Post"
                                                             >
                                                                 <XCircle size={16} />
@@ -867,7 +1016,9 @@ const PostManagementTab = () => {
                                                     {post.status === 'approved' && (
                                                         <button
                                                             className="action-btn publish"
-                                                            onClick={() => handlePublishPost(post.id)}
+                                                            onClick={() =>
+                                                                handlePublishPost(post.id)
+                                                            }
                                                             title="Publish Post"
                                                         >
                                                             <FileText size={16} />
@@ -894,17 +1045,27 @@ const PostManagementTab = () => {
             {/* Add Post Modal */}
             {showAddModal && (
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1000px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1000px' }}
+                    >
                         <div className="modal-header">
                             <h3>Add New Post</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Post Title *</label>
-                                        <input type="text" className="form-input" placeholder="Enter post title" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter post title"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Post Type *</label>
@@ -921,12 +1082,20 @@ const PostManagementTab = () => {
 
                                 <div className="form-group">
                                     <label>Content *</label>
-                                    <textarea className="form-input" rows="8" placeholder="Enter post content"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="8"
+                                        placeholder="Enter post content"
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Excerpt (Optional)</label>
-                                    <textarea className="form-input" rows="3" placeholder="Enter post excerpt"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        placeholder="Enter post excerpt"
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-row">
@@ -943,7 +1112,11 @@ const PostManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Tags (comma-separated)</label>
-                                        <input type="text" className="form-input" placeholder="tag1, tag2, tag3" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="tag1, tag2, tag3"
+                                        />
                                     </div>
                                 </div>
 
@@ -971,22 +1144,38 @@ const PostManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Featured Image URL</label>
-                                            <input type="url" className="form-input" placeholder="Enter featured image URL" />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="Enter featured image URL"
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Video URL (Optional)</label>
-                                            <input type="url" className="form-input" placeholder="Enter video URL" />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="Enter video URL"
+                                            />
                                         </div>
                                     </div>
 
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Audio URL (Optional)</label>
-                                            <input type="url" className="form-input" placeholder="Enter audio URL" />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="Enter audio URL"
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Gallery Images (comma-separated URLs)</label>
-                                            <input type="text" className="form-input" placeholder="image1.jpg, image2.jpg" />
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="image1.jpg, image2.jpg"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -995,15 +1184,27 @@ const PostManagementTab = () => {
                                     <h4>SEO Settings</h4>
                                     <div className="form-group">
                                         <label>SEO Title</label>
-                                        <input type="text" className="form-input" placeholder="Enter SEO title" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter SEO title"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>SEO Description</label>
-                                        <textarea className="form-input" rows="3" placeholder="Enter SEO description"></textarea>
+                                        <textarea
+                                            className="form-input"
+                                            rows="3"
+                                            placeholder="Enter SEO description"
+                                        ></textarea>
                                     </div>
                                     <div className="form-group">
                                         <label>SEO Keywords (comma-separated)</label>
-                                        <input type="text" className="form-input" placeholder="keyword1, keyword2, keyword3" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="keyword1, keyword2, keyword3"
+                                        />
                                     </div>
                                 </div>
 
@@ -1043,13 +1244,21 @@ const PostManagementTab = () => {
                                         </div>
                                         <div className="form-group">
                                             <label>Custom Meta Data (JSON)</label>
-                                            <textarea className="form-input" rows="3" placeholder='{"key": "value"}'></textarea>
+                                            <textarea
+                                                className="form-input"
+                                                rows="3"
+                                                placeholder='{"key": "value"}'
+                                            ></textarea>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowAddModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -1065,21 +1274,34 @@ const PostManagementTab = () => {
             {/* Edit Post Modal */}
             {showEditModal && editingPost && (
                 <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1000px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1000px' }}
+                    >
                         <div className="modal-header">
                             <h3>Edit Post: {editingPost.title}</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Post Title</label>
-                                        <input type="text" className="form-input" defaultValue={editingPost.title} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingPost.title}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Post Type</label>
-                                        <select className="form-input" defaultValue={editingPost.post_type}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPost.post_type}
+                                        >
                                             <option value="article">Article</option>
                                             <option value="blog">Blog</option>
                                             <option value="news">News</option>
@@ -1091,18 +1313,29 @@ const PostManagementTab = () => {
 
                                 <div className="form-group">
                                     <label>Content</label>
-                                    <textarea className="form-input" rows="8" defaultValue={editingPost.content}></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="8"
+                                        defaultValue={editingPost.content}
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Excerpt</label>
-                                    <textarea className="form-input" rows="3" defaultValue={editingPost.excerpt || ''}></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        defaultValue={editingPost.excerpt || ''}
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Category</label>
-                                        <select className="form-input" defaultValue={editingPost.category}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPost.category}
+                                        >
                                             <option value="Technology">Technology</option>
                                             <option value="Health">Health</option>
                                             <option value="News">News</option>
@@ -1112,14 +1345,21 @@ const PostManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Tags</label>
-                                        <input type="text" className="form-input" defaultValue={editingPost.tags?.join(', ') || ''} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingPost.tags?.join(', ') || ''}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Language</label>
-                                        <select className="form-input" defaultValue={editingPost.language}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPost.language}
+                                        >
                                             <option value="en">English</option>
                                             <option value="sw">Swahili</option>
                                             <option value="fr">French</option>
@@ -1127,7 +1367,10 @@ const PostManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Content Rating</label>
-                                        <select className="form-input" defaultValue={editingPost.content_rating || 'G'}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPost.content_rating || 'G'}
+                                        >
                                             <option value="G">G - General</option>
                                             <option value="PG">PG - Parental Guidance</option>
                                             <option value="R">R - Restricted</option>
@@ -1140,22 +1383,40 @@ const PostManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Featured Image URL</label>
-                                            <input type="url" className="form-input" defaultValue={editingPost.featured_image || ''} />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                defaultValue={editingPost.featured_image || ''}
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Video URL</label>
-                                            <input type="url" className="form-input" defaultValue={editingPost.video_url || ''} />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                defaultValue={editingPost.video_url || ''}
+                                            />
                                         </div>
                                     </div>
 
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Audio URL</label>
-                                            <input type="url" className="form-input" defaultValue={editingPost.audio_url || ''} />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                defaultValue={editingPost.audio_url || ''}
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Gallery Images</label>
-                                            <input type="text" className="form-input" defaultValue={editingPost.gallery_images?.join(', ') || ''} />
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                defaultValue={
+                                                    editingPost.gallery_images?.join(', ') || ''
+                                                }
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -1164,15 +1425,29 @@ const PostManagementTab = () => {
                                     <h4>SEO Settings</h4>
                                     <div className="form-group">
                                         <label>SEO Title</label>
-                                        <input type="text" className="form-input" defaultValue={editingPost.seo_title || ''} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingPost.seo_title || ''}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>SEO Description</label>
-                                        <textarea className="form-input" rows="3" defaultValue={editingPost.seo_description || ''}></textarea>
+                                        <textarea
+                                            className="form-input"
+                                            rows="3"
+                                            defaultValue={editingPost.seo_description || ''}
+                                        ></textarea>
                                     </div>
                                     <div className="form-group">
                                         <label>SEO Keywords</label>
-                                        <input type="text" className="form-input" defaultValue={editingPost.seo_keywords?.join(', ') || ''} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={
+                                                editingPost.seo_keywords?.join(', ') || ''
+                                            }
+                                        />
                                     </div>
                                 </div>
 
@@ -1181,25 +1456,37 @@ const PostManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingPost.is_featured} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingPost.is_featured}
+                                                />
                                                 Featured Post
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingPost.is_premium} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingPost.is_premium}
+                                                />
                                                 Premium Content
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingPost.allow_comments} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingPost.allow_comments}
+                                                />
                                                 Allow Comments
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingPost.allow_sharing} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingPost.allow_sharing}
+                                                />
                                                 Allow Sharing
                                             </label>
                                         </div>
@@ -1208,17 +1495,33 @@ const PostManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Scheduled Publish Date</label>
-                                            <input type="datetime-local" className="form-input" defaultValue={editingPost.scheduled_publish_date || ''} />
+                                            <input
+                                                type="datetime-local"
+                                                className="form-input"
+                                                defaultValue={
+                                                    editingPost.scheduled_publish_date || ''
+                                                }
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Custom Meta Data</label>
-                                            <textarea className="form-input" rows="3" defaultValue={JSON.stringify(editingPost.meta_data || {})}></textarea>
+                                            <textarea
+                                                className="form-input"
+                                                rows="3"
+                                                defaultValue={JSON.stringify(
+                                                    editingPost.meta_data || {},
+                                                )}
+                                            ></textarea>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowEditModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -1234,10 +1537,19 @@ const PostManagementTab = () => {
             {/* Workflow Modal */}
             {showWorkflowModal && editingPost && (
                 <div className="modal-overlay" onClick={() => setShowWorkflowModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1200px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1200px' }}
+                    >
                         <div className="modal-header">
                             <h3>Post Workflow: {editingPost.title}</h3>
-                            <button className="close-btn" onClick={() => setShowWorkflowModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowWorkflowModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="workflow-container">
@@ -1248,7 +1560,11 @@ const PostManagementTab = () => {
                                             <div className="timeline-dot"></div>
                                             <div className="timeline-content">
                                                 <strong>Draft Created</strong>
-                                                <span>{new Date(editingPost.created_at).toLocaleString()}</span>
+                                                <span>
+                                                    {new Date(
+                                                        editingPost.created_at,
+                                                    ).toLocaleString()}
+                                                </span>
                                                 <p>Post created by {editingPost.author_name}</p>
                                             </div>
                                         </div>
@@ -1257,7 +1573,11 @@ const PostManagementTab = () => {
                                                 <div className="timeline-dot approved"></div>
                                                 <div className="timeline-content">
                                                     <strong>Approved</strong>
-                                                    <span>{new Date(editingPost.approved_at).toLocaleString()}</span>
+                                                    <span>
+                                                        {new Date(
+                                                            editingPost.approved_at,
+                                                        ).toLocaleString()}
+                                                    </span>
                                                     <p>Approved by {editingPost.approved_by}</p>
                                                 </div>
                                             </div>
@@ -1267,7 +1587,11 @@ const PostManagementTab = () => {
                                                 <div className="timeline-dot published"></div>
                                                 <div className="timeline-content">
                                                     <strong>Published</strong>
-                                                    <span>{new Date(editingPost.published_at).toLocaleString()}</span>
+                                                    <span>
+                                                        {new Date(
+                                                            editingPost.published_at,
+                                                        ).toLocaleString()}
+                                                    </span>
                                                     <p>Post went live to public</p>
                                                 </div>
                                             </div>
@@ -1277,9 +1601,15 @@ const PostManagementTab = () => {
                                                 <div className="timeline-dot rejected"></div>
                                                 <div className="timeline-content">
                                                     <strong>Rejected</strong>
-                                                    <span>{new Date(editingPost.rejected_at).toLocaleString()}</span>
+                                                    <span>
+                                                        {new Date(
+                                                            editingPost.rejected_at,
+                                                        ).toLocaleString()}
+                                                    </span>
                                                     <p>Rejected by {editingPost.rejected_by}</p>
-                                                    <p className="rejection-reason">{editingPost.rejection_reason}</p>
+                                                    <p className="rejection-reason">
+                                                        {editingPost.rejection_reason}
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
@@ -1291,19 +1621,29 @@ const PostManagementTab = () => {
                                     <div className="analytics-grid">
                                         <div className="analytics-card">
                                             <h5>Total Views</h5>
-                                            <div className="metric-value">{editingPost.analytics.total_views.toLocaleString()}</div>
+                                            <div className="metric-value">
+                                                {editingPost.analytics.total_views.toLocaleString()}
+                                            </div>
                                         </div>
                                         <div className="analytics-card">
                                             <h5>Unique Views</h5>
-                                            <div className="metric-value">{editingPost.analytics.unique_views}</div>
+                                            <div className="metric-value">
+                                                {editingPost.analytics.unique_views}
+                                            </div>
                                         </div>
                                         <div className="analytics-card">
                                             <h5>Engagement Rate</h5>
-                                            <div className="metric-value">{formatEngagementRate(editingPost.analytics.engagement_rate)}</div>
+                                            <div className="metric-value">
+                                                {formatEngagementRate(
+                                                    editingPost.analytics.engagement_rate,
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="analytics-card">
                                             <h5>Avg Reading Time</h5>
-                                            <div className="metric-value">{editingPost.analytics.avg_reading_time || 0} min</div>
+                                            <div className="metric-value">
+                                                {editingPost.analytics.avg_reading_time || 0} min
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1313,7 +1653,9 @@ const PostManagementTab = () => {
                                     <div className="content-details-grid">
                                         <div className="detail-item">
                                             <strong>Status:</strong>
-                                            <span className={`status-pill ${getStatusBadge(editingPost.status).color}`}>
+                                            <span
+                                                className={`status-pill ${getStatusBadge(editingPost.status).color}`}
+                                            >
                                                 {getStatusBadge(editingPost.status).text}
                                             </span>
                                         </div>
@@ -1327,7 +1669,9 @@ const PostManagementTab = () => {
                                         </div>
                                         <div className="detail-item">
                                             <strong>Reading Time:</strong>
-                                            <span>{getReadingTimeText(editingPost.reading_time || 0)}</span>
+                                            <span>
+                                                {getReadingTimeText(editingPost.reading_time || 0)}
+                                            </span>
                                         </div>
                                         <div className="detail-item">
                                             <strong>Plagiarism Score:</strong>

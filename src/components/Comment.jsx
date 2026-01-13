@@ -32,7 +32,10 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
     const maxNestingLevel = 3; // Limit nesting to avoid too deep threads
 
     return (
-        <div className={`comment-wrapper ${level > 0 ? 'is-reply' : ''}`} style={{ marginLeft: `${Math.min(level, maxNestingLevel) * 2}rem` }}>
+        <div
+            className={`comment-wrapper ${level > 0 ? 'is-reply' : ''}`}
+            style={{ marginLeft: `${Math.min(level, maxNestingLevel) * 2}rem` }}
+        >
             <div className={`comment-main ${comment.is_optimistic ? 'is-optimistic' : ''}`}>
                 <div className="comment-content">
                     {/* Quoted parent reply - WhatsApp style */}
@@ -74,7 +77,8 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
                                 onClick={() => setShowReplies(!showReplies)}
                             >
                                 {showReplies ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                {comment.replies_count} {comment.replies_count === 1 ? 'reply' : 'replies'}
+                                {comment.replies_count}{' '}
+                                {comment.replies_count === 1 ? 'reply' : 'replies'}
                             </button>
                         )}
                     </div>
@@ -100,10 +104,18 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
                                 autoFocus
                             />
                             <div className="reply-actions">
-                                <button type="button" onClick={handleCancelReply} className="btn-cancel">
+                                <button
+                                    type="button"
+                                    onClick={handleCancelReply}
+                                    className="btn-cancel"
+                                >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn-reply" disabled={!replyText.trim()}>
+                                <button
+                                    type="submit"
+                                    className="btn-reply"
+                                    disabled={!replyText.trim()}
+                                >
                                     Reply
                                 </button>
                             </div>

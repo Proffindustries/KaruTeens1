@@ -21,10 +21,30 @@ const SearchResultsPage = () => {
                 </div>
 
                 <div className="search-tabs">
-                    <button className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>All</button>
-                    <button className={`tab-btn ${activeTab === 'people' ? 'active' : ''}`} onClick={() => setActiveTab('people')}>People</button>
-                    <button className={`tab-btn ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>Posts</button>
-                    <button className={`tab-btn ${activeTab === 'market' ? 'active' : ''}`} onClick={() => setActiveTab('market')}>Marketplace</button>
+                    <button
+                        className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('all')}
+                    >
+                        All
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'people' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('people')}
+                    >
+                        People
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'posts' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('posts')}
+                    >
+                        Posts
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'market' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('market')}
+                    >
+                        Marketplace
+                    </button>
                 </div>
             </div>
 
@@ -34,7 +54,9 @@ const SearchResultsPage = () => {
                 {/* People Results */}
                 {(activeTab === 'all' || activeTab === 'people') && (
                     <div className="result-section">
-                        <h3><User size={18} /> People</h3>
+                        <h3>
+                            <User size={18} /> People
+                        </h3>
                         <div className="result-list">
                             <div className="result-item">
                                 <Avatar name="John Calculus" />
@@ -51,7 +73,9 @@ const SearchResultsPage = () => {
                 {/* Posts Results */}
                 {(activeTab === 'all' || activeTab === 'posts') && (
                     <div className="result-section">
-                        <h3><FileText size={18} /> Posts</h3>
+                        <h3>
+                            <FileText size={18} /> Posts
+                        </h3>
                         <div className="result-list">
                             <div className="result-item post-preview">
                                 <div>
@@ -66,7 +90,9 @@ const SearchResultsPage = () => {
                 {/* Market Results */}
                 {(activeTab === 'all' || activeTab === 'market') && (
                     <div className="result-section">
-                        <h3><ShoppingBag size={18} /> Marketplace</h3>
+                        <h3>
+                            <ShoppingBag size={18} /> Marketplace
+                        </h3>
                         <div className="result-list">
                             <div className="result-item">
                                 <div className="result-img-placeholder"></div>

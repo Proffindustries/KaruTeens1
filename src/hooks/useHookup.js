@@ -8,7 +8,7 @@ export const useMyAlias = () => {
             const { data } = await api.get('/hookup/alias');
             return data;
         },
-        retry: false
+        retry: false,
     });
 };
 
@@ -21,7 +21,7 @@ export const useCreateAlias = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['myAlias'] });
-        }
+        },
     });
 };
 
@@ -32,7 +32,7 @@ export const useDiscovery = () => {
             const { data } = await api.get('/hookup/discover');
             return data;
         },
-        staleTime: 30000
+        staleTime: 30000,
     });
 };
 
@@ -42,6 +42,6 @@ export const useInteract = () => {
         mutationFn: async ({ id, type }) => {
             const { data } = await api.post(`/hookup/interact/${id}/${type}`);
             return data;
-        }
+        },
     });
 };

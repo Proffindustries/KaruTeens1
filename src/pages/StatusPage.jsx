@@ -18,20 +18,25 @@ const StatusPage = () => {
     const [isPaused, setIsPaused] = useState(false);
 
     // Filter out my stories from the main list usually
-    const myStoriesData = usersWithStories?.find(u => u.user_id === currentUser?.user_id || u.user_id === currentUser?._id);
-    const otherUsersStories = usersWithStories?.filter(u => u.user_id !== currentUser?.user_id && u.user_id !== currentUser?._id) || [];
+    const myStoriesData = usersWithStories?.find(
+        (u) => u.user_id === currentUser?.user_id || u.user_id === currentUser?._id,
+    );
+    const otherUsersStories =
+        usersWithStories?.filter(
+            (u) => u.user_id !== currentUser?.user_id && u.user_id !== currentUser?._id,
+        ) || [];
 
     const handleNextStory = () => {
         if (viewingUserIndex === null) return;
         const userStories = usersWithStories[viewingUserIndex].stories;
 
         if (currentStoryIndex < userStories.length - 1) {
-            setCurrentStoryIndex(prev => prev + 1);
+            setCurrentStoryIndex((prev) => prev + 1);
             setProgress(0);
         } else {
             // Next user
             if (viewingUserIndex < usersWithStories.length - 1) {
-                setViewingUserIndex(prev => prev + 1);
+                setViewingUserIndex((prev) => prev + 1);
                 setCurrentStoryIndex(0);
                 setProgress(0);
             } else {
@@ -44,12 +49,12 @@ const StatusPage = () => {
         if (viewingUserIndex === null) return;
 
         if (currentStoryIndex > 0) {
-            setCurrentStoryIndex(prev => prev - 1);
+            setCurrentStoryIndex((prev) => prev - 1);
             setProgress(0);
         } else {
             // Prev user
             if (viewingUserIndex > 0) {
-                setViewingUserIndex(prev => prev - 1);
+                setViewingUserIndex((prev) => prev - 1);
                 setCurrentStoryIndex(0);
                 setProgress(0);
             }
@@ -57,11 +62,11 @@ const StatusPage = () => {
     };
 
     const openViewer = (userId) => {
-        const index = usersWithStories.findIndex(u => u.user_id === userId);
+        const index = usersWithStories.findIndex((u) => u.user_id === userId);
         if (index !== -1) {
             setViewingUserIndex(index);
             // Start from first unviewed story
-            const firstUnviewed = usersWithStories[index].stories.findIndex(s => !s.is_viewed);
+            const firstUnviewed = usersWithStories[index].stories.findIndex((s) => !s.is_viewed);
             setCurrentStoryIndex(firstUnviewed !== -1 ? firstUnviewed : 0);
         }
     };
@@ -94,7 +99,7 @@ const StatusPage = () => {
             const step = 50;
 
             interval = setInterval(() => {
-                setProgress(prev => {
+                setProgress((prev) => {
                     if (prev >= 100) {
                         handleNextStory();
                         return 0; // Reset for the next story
@@ -104,10 +109,10 @@ const StatusPage = () => {
             }, step);
         }
         return () => clearInterval(interval);
-    }, [viewingUserIndex, currentStoryIndex, isPaused]); // Intentionally omitting handleNextStory to avoid loop, it's safe here due to setProgress closure but ideally we use refs. 
+    }, [viewingUserIndex, currentStoryIndex, isPaused]); // Intentionally omitting handleNextStory to avoid loop, it's safe here due to setProgress closure but ideally we use refs.
     // Wait, handleNextStory uses state. If it's stale, it breaks.
     // I will include handleNextStory in deps but wrap it in useCallback if I could, but simply included in deps works because it changes when state changes.
-    // Actually, let's leave as is from my previous edit which was working before I corrupted file. 
+    // Actually, let's leave as is from my previous edit which was working before I corrupted file.
     // The previous working version had handleNextStory in deps, so I'll add it back.
     // wait, if I add it back, does it cause infinite loop?
     // handleNextStory changes on every render.
@@ -118,7 +123,7 @@ const StatusPage = () => {
     // Effect cleanup runs (clears interval).
     // Effect setup runs (starts new interval).
     // This is fine, just slightly inefficient (restarting interval every 50ms).
-    // But it ensures correctness. 
+    // But it ensures correctness.
 
     if (isLoading) return <div className="p-4 text-center">Loading updates...</div>;
 
@@ -137,11 +142,18 @@ const StatusPage = () => {
 
             <div className="status-grid">
                 {/* My Status */}
-                <div className="status-item" onClick={() => myStoriesData ? openViewer(myStoriesData.user_id) : setIsCreateModalOpen(true)}>
+                <div
+                    className="status-item"
+                    onClick={() =>
+                        myStoriesData
+                            ? openViewer(myStoriesData.user_id)
+                            : setIsCreateModalOpen(true)
+                    }
+                >
                     <div className={`status-ring ${!myStoriesData ? 'yours' : ''}`}>
                         <Avatar
                             src={currentUser?.avatar_url}
-                            name={currentUser?.username || "Me"}
+                            name={currentUser?.username || 'Me'}
                             className="w-full h-full rounded-full"
                         />
                         {!myStoriesData && (
@@ -154,9 +166,15 @@ const StatusPage = () => {
                 </div>
 
                 {/* Other Users */}
-                {otherUsersStories.map(userData => (
-                    <div key={userData.user_id} className="status-item" onClick={() => openViewer(userData.user_id)}>
-                        <div className={`status-ring ${userData.has_unviewed ? 'has-new' : 'viewed'}`}>
+                {otherUsersStories.map((userData) => (
+                    <div
+                        key={userData.user_id}
+                        className="status-item"
+                        onClick={() => openViewer(userData.user_id)}
+                    >
+                        <div
+                            className={`status-ring ${userData.has_unviewed ? 'has-new' : 'viewed'}`}
+                        >
                             <Avatar
                                 src={userData.avatar_url}
                                 name={userData.username}
@@ -189,13 +207,27 @@ const StatusPage = () => {
                         {/* Progress Bars */}
                         <div className="viewer-progress-container">
                             {viewingUser.stories.map((story, idx) => (
-                                <div key={story.id} className="viewer-progress-bar-bg" style={{ flex: 1, background: 'rgba(255,255,255,0.3)', height: '2px', borderRadius: '2px' }}>
+                                <div
+                                    key={story.id}
+                                    className="viewer-progress-bar-bg"
+                                    style={{
+                                        flex: 1,
+                                        background: 'rgba(255,255,255,0.3)',
+                                        height: '2px',
+                                        borderRadius: '2px',
+                                    }}
+                                >
                                     <div
                                         className="viewer-progress-bar"
                                         style={{
-                                            width: idx < currentStoryIndex ? '100%' : idx === currentStoryIndex ? `${progress}%` : '0%',
+                                            width:
+                                                idx < currentStoryIndex
+                                                    ? '100%'
+                                                    : idx === currentStoryIndex
+                                                      ? `${progress}%`
+                                                      : '0%',
                                             height: '100%',
-                                            background: 'white'
+                                            background: 'white',
                                         }}
                                     />
                                 </div>
@@ -212,7 +244,12 @@ const StatusPage = () => {
                             />
                             <div className="flex flex-col">
                                 <span>{viewingUser.username}</span>
-                                <span className="viewer-time">{new Date(activeStory.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="viewer-time">
+                                    {new Date(activeStory.created_at).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </span>
                             </div>
                         </div>
 
@@ -236,7 +273,7 @@ const StatusPage = () => {
                         )}
 
                         {/* Footer / Reply */}
-                        <div className="viewer-footer" onMouseDown={e => e.stopPropagation()}>
+                        <div className="viewer-footer" onMouseDown={(e) => e.stopPropagation()}>
                             <div className="pipe-input-container">
                                 <input
                                     type="text"
@@ -255,7 +292,10 @@ const StatusPage = () => {
                 </div>
             )}
 
-            <CreateStoryModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+            <CreateStoryModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+            />
         </div>
     );
 };

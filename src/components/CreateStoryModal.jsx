@@ -24,7 +24,7 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
         setSelectedFile(file);
         setPreview({
             url: URL.createObjectURL(file),
-            type: file.type.startsWith('video/') ? 'video' : 'image'
+            type: file.type.startsWith('video/') ? 'video' : 'image',
         });
     };
 
@@ -42,19 +42,22 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                 mediaUrl = await uploadFile(selectedFile);
             }
 
-            createStory({
-                media_url: mediaUrl,
-                media_type: mediaType,
-                caption: caption
-            }, {
-                onSuccess: () => {
-                    showToast('Story added successfully!', 'success');
-                    handleClose();
+            createStory(
+                {
+                    media_url: mediaUrl,
+                    media_type: mediaType,
+                    caption: caption,
                 },
-                onError: (err) => {
-                    showToast(err.message || 'Failed to add story', 'error');
-                }
-            });
+                {
+                    onSuccess: () => {
+                        showToast('Story added successfully!', 'success');
+                        handleClose();
+                    },
+                    onError: (err) => {
+                        showToast(err.message || 'Failed to add story', 'error');
+                    },
+                },
+            );
         } catch (error) {
             console.error(error);
             // Toast handled in hook usually, but doubled check here
@@ -88,11 +91,13 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                     exit={{ scale: 0.95, opacity: 0 }}
                     className="modal-content"
                     style={{ maxWidth: '400px' }}
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <div className="modal-header">
                         <h3>Add to Story</h3>
-                        <button className="close-btn" onClick={handleClose}><X size={24} /></button>
+                        <button className="close-btn" onClick={handleClose}>
+                            <X size={24} />
+                        </button>
                     </div>
 
                     <div className="modal-body">
@@ -107,7 +112,7 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                                     justifyContent: 'center',
                                     border: '2px dashed rgba(255,255,255,0.1)',
                                     borderRadius: '12px',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
                                 }}
                                 onClick={() => fileInputRef.current.click()}
                             >
@@ -115,7 +120,9 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                                     <ImageIcon size={48} className="text-gray-400" />
                                     <Video size={48} className="text-gray-400" />
                                 </div>
-                                <span className="text-gray-400">Click to select photo or video</span>
+                                <span className="text-gray-400">
+                                    Click to select photo or video
+                                </span>
                                 <input
                                     type="file"
                                     ref={fileInputRef}
@@ -125,11 +132,26 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                                 />
                             </div>
                         ) : (
-                            <div className="preview-container" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+                            <div
+                                className="preview-container"
+                                style={{
+                                    position: 'relative',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                }}
+                            >
                                 {preview.type === 'video' ? (
-                                    <video src={preview.url} controls className="w-full h-auto max-h-[400px]" />
+                                    <video
+                                        src={preview.url}
+                                        controls
+                                        className="w-full h-auto max-h-[400px]"
+                                    />
                                 ) : (
-                                    <img src={preview.url} alt="Preview" className="w-full h-auto max-h-[400px] object-contain" />
+                                    <img
+                                        src={preview.url}
+                                        alt="Preview"
+                                        className="w-full h-auto max-h-[400px] object-contain"
+                                    />
                                 )}
                                 <button
                                     onClick={() => {
@@ -160,7 +182,11 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                             disabled={!selectedFile || isUploading}
                             onClick={handlePost}
                         >
-                            {isUploading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                            {isUploading ? (
+                                <Loader2 className="animate-spin" size={20} />
+                            ) : (
+                                <Send size={20} />
+                            )}
                             {isUploading ? 'Posting...' : 'Share to Story'}
                         </button>
                     </div>

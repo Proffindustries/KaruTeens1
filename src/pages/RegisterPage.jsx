@@ -10,9 +10,18 @@ const RegisterPage = () => {
     const totalSteps = 3;
 
     const [formData, setFormData] = useState({
-        fullName: '', email: '', username: '', password: '', confirmPassword: '',
-        legalName: '', age: '', gender: '', bio: '', school: '', yearOfStudy: '',
-        profilePic: null
+        fullName: '',
+        email: '',
+        username: '',
+        password: '',
+        confirmPassword: '',
+        legalName: '',
+        age: '',
+        gender: '',
+        bio: '',
+        school: '',
+        yearOfStudy: '',
+        profilePic: null,
     });
 
     const { mutate: register, isPending, error } = useRegister();
@@ -21,9 +30,9 @@ const RegisterPage = () => {
         const { name, value } = e.target;
         if (name === 'username') {
             const sanitizedValue = value.replace(/[^a-zA-Z0-9]/g, '');
-            setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+            setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
 
@@ -48,7 +57,7 @@ const RegisterPage = () => {
             year_of_study: formData.yearOfStudy ? parseInt(formData.yearOfStudy) : null,
             age: formData.age ? parseInt(formData.age) : null,
             gender: formData.gender,
-            avatar_url: null // Handle this later with real upload
+            avatar_url: null, // Handle this later with real upload
         });
     };
 
@@ -58,26 +67,56 @@ const RegisterPage = () => {
             subtitle={`Step ${step} of ${totalSteps}: ${step === 1 ? 'Basic Info' : step === 2 ? 'Student Details' : 'Profile Setup'}`}
         >
             <form onSubmit={step === totalSteps ? handleSubmit : handleNext}>
-
-
                 {/* Step 1: Basic Info */}
                 {step === 1 && (
                     <div className="step-content">
                         <div className="form-group">
                             <label htmlFor="fullName">Full Name</label>
-                            <input type="text" id="fullName" name="fullName" className="form-input" required value={formData.fullName} onChange={handleChange} />
+                            <input
+                                type="text"
+                                id="fullName"
+                                name="fullName"
+                                className="form-input"
+                                required
+                                value={formData.fullName}
+                                onChange={handleChange}
+                            />
                         </div>
                         <div className="form-group">
                             <label htmlFor="email">Email Address</label>
-                            <input type="email" id="email" name="email" className="form-input" required value={formData.email} onChange={handleChange} />
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                className="form-input"
+                                required
+                                value={formData.email}
+                                onChange={handleChange}
+                            />
                         </div>
                         <div className="form-group">
                             <label htmlFor="username">Username</label>
-                            <input type="text" id="username" name="username" className="form-input" required value={formData.username} onChange={handleChange} />
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                className="form-input"
+                                required
+                                value={formData.username}
+                                onChange={handleChange}
+                            />
                         </div>
                         <div className="form-group">
                             <label htmlFor="password">Password</label>
-                            <input type="password" id="password" name="password" className="form-input" required value={formData.password} onChange={handleChange} />
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                className="form-input"
+                                required
+                                value={formData.password}
+                                onChange={handleChange}
+                            />
                         </div>
                     </div>
                 )}
@@ -87,16 +126,42 @@ const RegisterPage = () => {
                     <div className="step-content">
                         <div className="form-group">
                             <label htmlFor="legalName">Legal Name (Private)</label>
-                            <input type="text" id="legalName" name="legalName" className="form-input" required value={formData.legalName} onChange={handleChange} />
+                            <input
+                                type="text"
+                                id="legalName"
+                                name="legalName"
+                                className="form-input"
+                                required
+                                value={formData.legalName}
+                                onChange={handleChange}
+                            />
                         </div>
-                        <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div
+                            className="form-group"
+                            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}
+                        >
                             <div>
                                 <label htmlFor="age">Age</label>
-                                <input type="number" id="age" name="age" className="form-input" required value={formData.age} onChange={handleChange} />
+                                <input
+                                    type="number"
+                                    id="age"
+                                    name="age"
+                                    className="form-input"
+                                    required
+                                    value={formData.age}
+                                    onChange={handleChange}
+                                />
                             </div>
                             <div>
                                 <label htmlFor="gender">Gender</label>
-                                <select id="gender" name="gender" className="form-input" required value={formData.gender} onChange={handleChange}>
+                                <select
+                                    id="gender"
+                                    name="gender"
+                                    className="form-input"
+                                    required
+                                    value={formData.gender}
+                                    onChange={handleChange}
+                                >
                                     <option value="">Select</option>
                                     <option value="male">Male</option>
                                     <option value="female">Female</option>
@@ -106,7 +171,14 @@ const RegisterPage = () => {
                         </div>
                         <div className="form-group">
                             <label htmlFor="school">School of...</label>
-                            <select id="school" name="school" className="form-input" required value={formData.school} onChange={handleChange}>
+                            <select
+                                id="school"
+                                name="school"
+                                className="form-input"
+                                required
+                                value={formData.school}
+                                onChange={handleChange}
+                            >
                                 <option value="">Select School</option>
                                 <option value="business">School of Business</option>
                                 <option value="education">School of Education</option>
@@ -116,7 +188,14 @@ const RegisterPage = () => {
                         </div>
                         <div className="form-group">
                             <label htmlFor="yearOfStudy">Year of Study</label>
-                            <select id="yearOfStudy" name="yearOfStudy" className="form-input" required value={formData.yearOfStudy} onChange={handleChange}>
+                            <select
+                                id="yearOfStudy"
+                                name="yearOfStudy"
+                                className="form-input"
+                                required
+                                value={formData.yearOfStudy}
+                                onChange={handleChange}
+                            >
                                 <option value="">Select Year</option>
                                 <option value="1">Year 1</option>
                                 <option value="2">Year 2</option>
@@ -132,36 +211,87 @@ const RegisterPage = () => {
                     <div className="step-content">
                         <div className="form-group" style={{ textAlign: 'center' }}>
                             <label>Profile Picture</label>
-                            <div style={{
-                                width: '120px', height: '120px', background: 'var(--background)',
-                                borderRadius: '50%', margin: '0 auto 1rem', display: 'flex',
-                                alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border)'
-                            }}>
+                            <div
+                                style={{
+                                    width: '120px',
+                                    height: '120px',
+                                    background: 'var(--background)',
+                                    borderRadius: '50%',
+                                    margin: '0 auto 1rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2px dashed var(--border)',
+                                }}
+                            >
                                 <Camera size={32} color="var(--text-muted)" />
                             </div>
-                            <input type="file" className="form-input" style={{ padding: '0.25rem' }} />
+                            <input
+                                type="file"
+                                className="form-input"
+                                style={{ padding: '0.25rem' }}
+                            />
                         </div>
                         <div className="form-group">
                             <label htmlFor="bio">Bio</label>
-                            <textarea id="bio" name="bio" className="form-input" rows="4" placeholder="Tell us about yourself..." value={formData.bio} onChange={handleChange}></textarea>
+                            <textarea
+                                id="bio"
+                                name="bio"
+                                className="form-input"
+                                rows="4"
+                                placeholder="Tell us about yourself..."
+                                value={formData.bio}
+                                onChange={handleChange}
+                            ></textarea>
                         </div>
                     </div>
                 )}
 
-                <div className="form-actions" style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <div
+                    className="form-actions"
+                    style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}
+                >
                     {step > 1 && (
-                        <button type="button" className="btn btn-outline" onClick={handleBack} disabled={isPending}>
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            onClick={handleBack}
+                            disabled={isPending}
+                        >
                             <ChevronLeft size={16} /> Back
                         </button>
                     )}
-                    <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isPending}>
-                        {step === totalSteps ? (isPending ? 'Creating Account...' : 'Complete Registration') : <><span style={{ marginRight: '0.5rem' }}>Next</span> <ChevronRight size={16} /></>}
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        style={{ flex: 1 }}
+                        disabled={isPending}
+                    >
+                        {step === totalSteps ? (
+                            isPending ? (
+                                'Creating Account...'
+                            ) : (
+                                'Complete Registration'
+                            )
+                        ) : (
+                            <>
+                                <span style={{ marginRight: '0.5rem' }}>Next</span>{' '}
+                                <ChevronRight size={16} />
+                            </>
+                        )}
                     </button>
                 </div>
 
                 {step === 1 && (
                     <div className="auth-register-link" style={{ marginTop: '1.5rem' }}>
-                        Already have an account? <Link to="/login" state={location.state} className="text-primary hover:underline">Login here</Link>
+                        Already have an account?{' '}
+                        <Link
+                            to="/login"
+                            state={location.state}
+                            className="text-primary hover:underline"
+                        >
+                            Login here
+                        </Link>
                     </div>
                 )}
             </form>

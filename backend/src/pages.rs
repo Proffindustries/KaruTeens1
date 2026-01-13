@@ -17,24 +17,6 @@ use futures::stream::StreamExt;
 // --- DTOs ---
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct CreatePageRequest {
-    pub title: String,
-    pub slug: String,
-    pub content: String,
-    pub excerpt: Option<String>,
-    pub featured_image: Option<String>,
-    pub meta_title: Option<String>,
-    pub meta_description: Option<String>,
-    pub meta_keywords: Option<Vec<String>>,
-    pub status: String,
-    pub visibility: String,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub template: Option<String>,
-    pub redirect_url: Option<String>,
-}
-
-#[derive(Deserialize, Serialize, Clone)]
 pub struct UpdatePageRequest {
     pub title: Option<String>,
     pub slug: Option<String>,
@@ -63,7 +45,6 @@ pub struct PageFilter {
     pub status: Option<String>,
     pub visibility: Option<String>,
     pub category: Option<String>,
-    pub author: Option<String>,
     pub search: Option<String>,
     pub sort_by: Option<String>,
     pub sort_order: Option<String>,
@@ -240,61 +221,6 @@ pub async fn get_page_handler(
     Ok((StatusCode::OK, Json(page_info)))
 }
 
-pub async fn create_page_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Json(payload): Json<CreatePageRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let pages = state.mongo.collection::<Page>("pages");
-    
-    // Check if slug already exists
-    let existing_page = pages.find_one(doc! { "slug": &payload.slug }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    if existing_page.is_some() {
-        return Err((StatusCode::CONFLICT, Json(json!({"error": "Slug already exists"}))));
-    }
-
-    let new_page = Page {
-        id: None,
-        title: payload.title.clone(),
-        slug: payload.slug.clone(),
-        content: payload.content.clone(),
-        excerpt: payload.excerpt.clone(),
-        featured_image: payload.featured_image.clone(),
-        meta_title: payload.meta_title.clone(),
-        meta_description: payload.meta_description.clone(),
-        meta_keywords: payload.meta_keywords.clone(),
-        status: payload.status.clone(),
-        visibility: payload.visibility.clone(),
-        author_id: user.user_id,
-        category: payload.category.clone(),
-        tags: payload.tags.clone(),
-        template: payload.template.clone(),
-        redirect_url: payload.redirect_url.clone(),
-        seo_score: None,
-        view_count: 0,
-        likes_count: 0,
-        comments_count: 0,
-        published_at: None,
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
-    };
-
-    let result = pages.insert_one(new_page, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Create initial revision
-    create_page_revision(&state, result.inserted_id.as_object_id().unwrap(), &user.user_id, "Initial creation", &payload).await?;
-
-    Ok((StatusCode::CREATED, Json(json!({
-        "message": "Page created successfully",
-        "page_id": result.inserted_id.as_object_id().unwrap().to_hex()
-    }))))
-}
-
 pub async fn update_page_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
@@ -368,9 +294,6 @@ pub async fn update_page_handler(
         doc! { "$set": update_doc },
         None
     ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Create revision
-    create_page_revision(&state, oid, &user.user_id, "Page updated", &payload).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Page updated successfully"}))))
 }
@@ -595,36 +518,6 @@ async fn build_page_response(
         created_at: page.created_at.to_chrono().to_rfc3339(),
         updated_at: page.updated_at.to_chrono().to_rfc3339(),
     })
-}
-
-async fn create_page_revision(
-    state: &Arc<AppState>,
-    page_id: ObjectId,
-    editor_id: &ObjectId,
-    editor_notes: &str,
-    payload: &impl serde::Serialize,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let page_revisions = state.mongo.collection::<PageRevision>("page_revisions");
-    
-    let revision = PageRevision {
-        id: None,
-        page_id,
-        title: serde_json::to_value(payload).unwrap().get("title").unwrap().as_str().unwrap_or("").to_string(),
-        content: serde_json::to_value(payload).unwrap().get("content").unwrap().as_str().unwrap_or("").to_string(),
-        excerpt: serde_json::to_value(payload).unwrap().get("excerpt").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        featured_image: serde_json::to_value(payload).unwrap().get("featured_image").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        meta_title: serde_json::to_value(payload).unwrap().get("meta_title").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        meta_description: serde_json::to_value(payload).unwrap().get("meta_description").and_then(|v| v.as_str()).map(|s| s.to_string()),
-        meta_keywords: serde_json::to_value(payload).unwrap().get("meta_keywords").and_then(|v| v.as_array()).map(|arr| arr.iter().map(|v| v.as_str().unwrap_or("").to_string()).collect()),
-        editor_id: *editor_id,
-        editor_notes: Some(editor_notes.to_string()),
-        created_at: DateTime::now(),
-    };
-
-    page_revisions.insert_one(revision, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok(())
 }
 
 async fn get_traffic_by_hour(

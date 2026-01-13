@@ -16,6 +16,16 @@ use futures::stream::StreamExt;
 use chrono::{Utc, Duration};
 use mongodb::options::UpdateOptions;
 
+// Import sub-admin routes
+use crate::posts::post_routes;
+use crate::events::event_routes;
+use crate::comments::comment_routes;
+use crate::stories::story_routes;
+use crate::reels::reel_routes;
+use crate::groups::group_routes;
+use crate::pages::page_routes;
+use crate::ads::ad_routes;
+
 // --- DTOs za Mfumo ---
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SystemSettings {
@@ -444,4 +454,12 @@ pub fn admin_routes() -> Router<Arc<AppState>> {
         .route("/moderation", get(list_moderation_items_handler))
         .route("/moderation/:id", put(update_moderation_handler))
         .route("/settings", get(get_settings_handler).put(update_settings_update))
+        .nest("/posts", post_routes())
+        .nest("/events", event_routes())
+        .nest("/comments", comment_routes())
+        .nest("/stories", story_routes())
+        .nest("/reels", reel_routes())
+        .nest("/groups", group_routes())
+        .nest("/pages", page_routes())
+        .nest("/ads", ad_routes())
 }

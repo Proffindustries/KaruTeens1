@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
-    User, Lock, Bell, Moon, LogOut,
-    Save, Shield, Smartphone, Mail, Globe,
-    ChevronRight, CreditCard, HelpCircle
+    User,
+    Lock,
+    Bell,
+    Moon,
+    LogOut,
+    Save,
+    Shield,
+    Smartphone,
+    Mail,
+    Globe,
+    ChevronRight,
+    CreditCard,
+    HelpCircle,
 } from 'lucide-react';
 import { useAuth, useLogout, useUpdateProfile } from '../hooks/useAuth';
 import '../styles/SettingsPage.css';
@@ -23,14 +33,14 @@ const SettingsPage = () => {
         school: '',
         year_of_study: 1,
         age: 18,
-        gender: ''
+        gender: '',
     });
 
     // Password State
     const [passwordData, setPasswordData] = useState({
         current_password: '',
         new_password: '',
-        confirm_password: ''
+        confirm_password: '',
     });
 
     // Fetch profile on mount
@@ -49,10 +59,10 @@ const SettingsPage = () => {
                 school: res.data.school || '',
                 year_of_study: res.data.year_of_study || 1,
                 age: res.data.age || 18,
-                gender: res.data.gender || ''
+                gender: res.data.gender || '',
             });
         } catch (err) {
-            console.error("Error fetching profile", err);
+            console.error('Error fetching profile', err);
         }
     };
 
@@ -75,12 +85,15 @@ const SettingsPage = () => {
         try {
             await api.post('/auth/change-password', {
                 current_password: passwordData.current_password,
-                new_password: passwordData.new_password
+                new_password: passwordData.new_password,
             });
             setMessage({ type: 'success', text: 'Password updated successfully!' });
             setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
         } catch (err) {
-            setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to change password' });
+            setMessage({
+                type: 'error',
+                text: err.response?.data?.error || 'Failed to change password',
+            });
         } finally {
             setLoading(false);
         }
@@ -98,7 +111,10 @@ const SettingsPage = () => {
             <div className="settings-header">
                 <h1>Settings</h1>
                 {message.text && (
-                    <div className={`alert alert-${message.type}`} style={{ padding: '0.8rem', borderRadius: '10px', marginTop: '1rem' }}>
+                    <div
+                        className={`alert alert-${message.type}`}
+                        style={{ padding: '0.8rem', borderRadius: '10px', marginTop: '1rem' }}
+                    >
                         {message.text}
                     </div>
                 )}
@@ -106,7 +122,7 @@ const SettingsPage = () => {
 
             <div className="settings-container">
                 <div className="settings-sidebar">
-                    {tabs.map(tab => (
+                    {tabs.map((tab) => (
                         <div
                             key={tab.id}
                             className={`sidebar-item ${activeTab === tab.id ? 'active' : ''}`}
@@ -126,7 +142,9 @@ const SettingsPage = () => {
                     {activeTab === 'account' && (
                         <div className="settings-section">
                             <h2 className="section-title">Personal Information</h2>
-                            <p className="section-desc">Update your profile details and campus information.</p>
+                            <p className="section-desc">
+                                Update your profile details and campus information.
+                            </p>
 
                             <form className="settings-form" onSubmit={handleUpdateProfile}>
                                 <div className="form-group">
@@ -134,7 +152,12 @@ const SettingsPage = () => {
                                     <input
                                         type="text"
                                         value={profileData.full_name}
-                                        onChange={e => setProfileData({ ...profileData, full_name: e.target.value })}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                full_name: e.target.value,
+                                            })
+                                        }
                                         placeholder="Enter your full name"
                                     />
                                 </div>
@@ -143,7 +166,12 @@ const SettingsPage = () => {
                                     <input
                                         type="text"
                                         value={profileData.school}
-                                        onChange={e => setProfileData({ ...profileData, school: e.target.value })}
+                                        onChange={(e) =>
+                                            setProfileData({
+                                                ...profileData,
+                                                school: e.target.value,
+                                            })
+                                        }
                                         placeholder="e.g. Science & Information Tech"
                                     />
                                 </div>
@@ -152,9 +180,18 @@ const SettingsPage = () => {
                                         <label>Year of Study</label>
                                         <select
                                             value={profileData.year_of_study}
-                                            onChange={e => setProfileData({ ...profileData, year_of_study: parseInt(e.target.value) })}
+                                            onChange={(e) =>
+                                                setProfileData({
+                                                    ...profileData,
+                                                    year_of_study: parseInt(e.target.value),
+                                                })
+                                            }
                                         >
-                                            {[1, 2, 3, 4, 5, 6].map(year => <option key={year} value={year}>Year {year}</option>)}
+                                            {[1, 2, 3, 4, 5, 6].map((year) => (
+                                                <option key={year} value={year}>
+                                                    Year {year}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div className="form-group">
@@ -162,7 +199,12 @@ const SettingsPage = () => {
                                         <input
                                             type="number"
                                             value={profileData.age}
-                                            onChange={e => setProfileData({ ...profileData, age: parseInt(e.target.value) })}
+                                            onChange={(e) =>
+                                                setProfileData({
+                                                    ...profileData,
+                                                    age: parseInt(e.target.value),
+                                                })
+                                            }
                                         />
                                     </div>
                                 </div>
@@ -171,12 +213,18 @@ const SettingsPage = () => {
                                     <textarea
                                         rows="4"
                                         value={profileData.bio}
-                                        onChange={e => setProfileData({ ...profileData, bio: e.target.value })}
+                                        onChange={(e) =>
+                                            setProfileData({ ...profileData, bio: e.target.value })
+                                        }
                                         placeholder="Tell us a bit about yourself..."
                                     ></textarea>
                                 </div>
                                 <div className="settings-actions">
-                                    <button type="submit" className="btn btn-primary" disabled={updateProfile.isPending}>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={updateProfile.isPending}
+                                    >
                                         <Save size={18} style={{ marginRight: '8px' }} />
                                         {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
                                     </button>
@@ -188,7 +236,9 @@ const SettingsPage = () => {
                     {activeTab === 'security' && (
                         <div className="settings-section">
                             <h2 className="section-title">Security Settings</h2>
-                            <p className="section-desc">Manage your password and account security preferences.</p>
+                            <p className="section-desc">
+                                Manage your password and account security preferences.
+                            </p>
 
                             <form className="settings-form" onSubmit={handleChangePassword}>
                                 <div className="form-group">
@@ -196,7 +246,12 @@ const SettingsPage = () => {
                                     <input
                                         type="password"
                                         value={passwordData.current_password}
-                                        onChange={e => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                                        onChange={(e) =>
+                                            setPasswordData({
+                                                ...passwordData,
+                                                current_password: e.target.value,
+                                            })
+                                        }
                                         placeholder="••••••••"
                                         required
                                     />
@@ -206,7 +261,12 @@ const SettingsPage = () => {
                                     <input
                                         type="password"
                                         value={passwordData.new_password}
-                                        onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                                        onChange={(e) =>
+                                            setPasswordData({
+                                                ...passwordData,
+                                                new_password: e.target.value,
+                                            })
+                                        }
                                         placeholder="••••••••"
                                         required
                                     />
@@ -216,20 +276,35 @@ const SettingsPage = () => {
                                     <input
                                         type="password"
                                         value={passwordData.confirm_password}
-                                        onChange={e => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                                        onChange={(e) =>
+                                            setPasswordData({
+                                                ...passwordData,
+                                                confirm_password: e.target.value,
+                                            })
+                                        }
                                         placeholder="••••••••"
                                         required
                                     />
                                 </div>
                                 <div className="settings-actions">
-                                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={loading}
+                                    >
                                         <Shield size={18} style={{ marginRight: '8px' }} />
                                         {loading ? 'Updating...' : 'Update Password'}
                                     </button>
                                 </div>
                             </form>
 
-                            <div style={{ marginTop: '3rem', borderTop: '1px solid rgb(var(--card-border))', paddingTop: '2rem' }}>
+                            <div
+                                style={{
+                                    marginTop: '3rem',
+                                    borderTop: '1px solid rgb(var(--card-border))',
+                                    paddingTop: '2rem',
+                                }}
+                            >
                                 <h4 style={{ marginBottom: '1rem' }}>Two-Factor Authentication</h4>
                                 <div className="toggle-group">
                                     <div className="toggle-info">
@@ -299,7 +374,9 @@ const SettingsPage = () => {
                     {activeTab === 'appearance' && (
                         <div className="settings-section">
                             <h2 className="section-title">Appearance</h2>
-                            <p className="section-desc">Customize how KaruTeens looks on your device.</p>
+                            <p className="section-desc">
+                                Customize how KaruTeens looks on your device.
+                            </p>
 
                             <div className="appearance-grid">
                                 <div className="theme-card active">

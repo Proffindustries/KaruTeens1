@@ -1,12 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import {
-    MessageSquare, Eye, EyeOff, Trash2, ShieldCheck, XCircle, AlertTriangle,
-    User, Clock, Calendar, TrendingUp, BarChart3, Filter, Search, RefreshCw,
-    Download, Upload, Plus, Edit, CheckCircle, Ban, Shield, Users,
-    MessageCircle, ThumbsUp, MessageCircleMore, AlertCircle, Zap,
-    Globe, UserCheck, UserX, ChevronLeft, ChevronRight, Copy, Share2,
-    FileText, FileClock, FileSearch, FileCheck, FileSpreadsheet,
-    Video, Image, AudioLines, Tag, Star, Crown, Repeat
+    MessageSquare,
+    Eye,
+    EyeOff,
+    Trash2,
+    ShieldCheck,
+    XCircle,
+    AlertTriangle,
+    User,
+    Clock,
+    Calendar,
+    TrendingUp,
+    BarChart3,
+    Filter,
+    Search,
+    RefreshCw,
+    Download,
+    Upload,
+    Plus,
+    Edit,
+    CheckCircle,
+    Ban,
+    Shield,
+    Users,
+    MessageCircle,
+    ThumbsUp,
+    MessageCircleMore,
+    AlertCircle,
+    Zap,
+    Globe,
+    UserCheck,
+    UserX,
+    ChevronLeft,
+    ChevronRight,
+    Copy,
+    Share2,
+    FileText,
+    FileClock,
+    FileSearch,
+    FileCheck,
+    FileSpreadsheet,
+    Video,
+    Image,
+    AudioLines,
+    Tag,
+    Star,
+    Crown,
+    Repeat,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -22,7 +62,7 @@ const CommentManagementTab = () => {
         date_from: '',
         date_to: '',
         sort_by: 'created_at',
-        sort_order: 'desc'
+        sort_order: 'desc',
     });
 
     const [selectedComments, setSelectedComments] = useState([]);
@@ -71,9 +111,9 @@ const CommentManagementTab = () => {
                     action: 'approve',
                     reason: 'Content is appropriate and valuable',
                     notes: 'Approved by admin',
-                    created_at: '2024-01-15T10:05:00Z'
-                }
-            ]
+                    created_at: '2024-01-15T10:05:00Z',
+                },
+            ],
         },
         {
             id: 'comment_002',
@@ -105,17 +145,17 @@ const CommentManagementTab = () => {
                     reason: 'spam',
                     description: 'Promotional content',
                     reported_by_username: 'user_003',
-                    created_at: '2024-01-16T14:32:00Z'
-                }
+                    created_at: '2024-01-16T14:32:00Z',
+                },
             ],
             moderation_history: [
                 {
                     action: 'reject',
                     reason: 'Spam detected',
                     notes: 'Automatically flagged by AI moderation',
-                    created_at: '2024-01-16T14:35:00Z'
-                }
-            ]
+                    created_at: '2024-01-16T14:35:00Z',
+                },
+            ],
         },
         {
             id: 'comment_003',
@@ -125,7 +165,7 @@ const CommentManagementTab = () => {
             username: 'ConcernedUser',
             user_avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',
             parent_id: 'comment_001',
-            content: 'I disagree with some points in this article. Here\'s why...',
+            content: "I disagree with some points in this article. Here's why...",
             status: 'pending',
             spam_score: 0.2,
             sentiment_score: -0.1,
@@ -147,10 +187,10 @@ const CommentManagementTab = () => {
                     reason: 'offensive',
                     description: 'Disagrees too strongly',
                     reported_by_username: 'user_004',
-                    created_at: '2024-01-17T09:20:00Z'
-                }
+                    created_at: '2024-01-17T09:20:00Z',
+                },
             ],
-            moderation_history: []
+            moderation_history: [],
         },
         {
             id: 'comment_004',
@@ -183,9 +223,9 @@ const CommentManagementTab = () => {
                     action: 'approve',
                     reason: 'Content is helpful and appropriate',
                     notes: 'Approved by admin',
-                    created_at: '2024-01-18T10:35:00Z'
-                }
-            ]
+                    created_at: '2024-01-18T10:35:00Z',
+                },
+            ],
         },
         {
             id: 'comment_005',
@@ -195,7 +235,7 @@ const CommentManagementTab = () => {
             username: 'TrollAccount',
             user_avatar: null,
             parent_id: null,
-            content: 'This is the worst article I\'ve ever read. The author knows nothing!',
+            content: "This is the worst article I've ever read. The author knows nothing!",
             status: 'rejected',
             spam_score: 0.4,
             sentiment_score: -0.9,
@@ -217,18 +257,18 @@ const CommentManagementTab = () => {
                     reason: 'harassment',
                     description: 'Personal attack on author',
                     reported_by_username: 'user_001',
-                    created_at: '2024-01-19T16:48:00Z'
-                }
+                    created_at: '2024-01-19T16:48:00Z',
+                },
             ],
             moderation_history: [
                 {
                     action: 'reject',
                     reason: 'Toxic content',
                     notes: 'Violates community guidelines',
-                    created_at: '2024-01-19T16:50:00Z'
-                }
-            ]
-        }
+                    created_at: '2024-01-19T16:50:00Z',
+                },
+            ],
+        },
     ];
 
     // Mock user stats
@@ -246,7 +286,7 @@ const CommentManagementTab = () => {
             total_replies_received: 12,
             avg_spam_score: 0.12,
             avg_sentiment_score: 0.75,
-            last_comment_at: '2024-01-20T10:00:00Z'
+            last_comment_at: '2024-01-20T10:00:00Z',
         },
         {
             user_id: 'user_002',
@@ -261,7 +301,7 @@ const CommentManagementTab = () => {
             total_replies_received: 0,
             avg_spam_score: 0.85,
             avg_sentiment_score: -0.2,
-            last_comment_at: '2024-01-16T14:30:00Z'
+            last_comment_at: '2024-01-16T14:30:00Z',
         },
         {
             user_id: 'user_003',
@@ -276,8 +316,8 @@ const CommentManagementTab = () => {
             total_replies_received: 3,
             avg_spam_score: 0.15,
             avg_sentiment_score: 0.3,
-            last_comment_at: '2024-01-17T09:15:00Z'
-        }
+            last_comment_at: '2024-01-17T09:15:00Z',
+        },
     ];
 
     useEffect(() => {
@@ -290,7 +330,7 @@ const CommentManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -300,30 +340,36 @@ const CommentManagementTab = () => {
         }
 
         if (bulkAction === 'approve') {
-            setComments(prev => prev.map(c =>
-                selectedComments.includes(c.id) ? { ...c, status: 'approved' } : c
-            ));
+            setComments((prev) =>
+                prev.map((c) =>
+                    selectedComments.includes(c.id) ? { ...c, status: 'approved' } : c,
+                ),
+            );
             setSelectedComments([]);
             setBulkAction('');
             showToast('Comments approved', 'success');
         } else if (bulkAction === 'reject') {
-            setComments(prev => prev.map(c =>
-                selectedComments.includes(c.id) ? { ...c, status: 'rejected' } : c
-            ));
+            setComments((prev) =>
+                prev.map((c) =>
+                    selectedComments.includes(c.id) ? { ...c, status: 'rejected' } : c,
+                ),
+            );
             setSelectedComments([]);
             setBulkAction('');
             showToast('Comments rejected', 'info');
         } else if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedComments.length} comments? This action cannot be undone.`)) {
-                setComments(prev => prev.filter(c => !selectedComments.includes(c.id)));
+            if (
+                confirm(`Delete ${selectedComments.length} comments? This action cannot be undone.`)
+            ) {
+                setComments((prev) => prev.filter((c) => !selectedComments.includes(c.id)));
                 setSelectedComments([]);
                 setBulkAction('');
                 showToast('Comments deleted', 'success');
             }
         } else if (bulkAction === 'mark_spam') {
-            setComments(prev => prev.map(c =>
-                selectedComments.includes(c.id) ? { ...c, status: 'spam' } : c
-            ));
+            setComments((prev) =>
+                prev.map((c) => (selectedComments.includes(c.id) ? { ...c, status: 'spam' } : c)),
+            );
             setSelectedComments([]);
             setBulkAction('');
             showToast('Comments marked as spam', 'info');
@@ -338,19 +384,27 @@ const CommentManagementTab = () => {
     const confirmModeration = () => {
         if (!moderatingComment || !moderationAction) return;
 
-        setComments(prev => prev.map(c =>
-            c.id === moderatingComment.id
-                ? {
-                    ...c,
-                    status: moderationAction === 'approve' ? 'approved' :
-                        moderationAction === 'reject' ? 'rejected' :
-                            moderationAction === 'delete' ? 'deleted' :
-                                moderationAction === 'spam' ? 'spam' : c.status,
-                    moderation_notes: moderationReason,
-                    updated_at: new Date().toISOString()
-                }
-                : c
-        ));
+        setComments((prev) =>
+            prev.map((c) =>
+                c.id === moderatingComment.id
+                    ? {
+                          ...c,
+                          status:
+                              moderationAction === 'approve'
+                                  ? 'approved'
+                                  : moderationAction === 'reject'
+                                    ? 'rejected'
+                                    : moderationAction === 'delete'
+                                      ? 'deleted'
+                                      : moderationAction === 'spam'
+                                        ? 'spam'
+                                        : c.status,
+                          moderation_notes: moderationReason,
+                          updated_at: new Date().toISOString(),
+                      }
+                    : c,
+            ),
+        );
 
         setShowModerationModal(false);
         setModeratingComment(null);
@@ -360,17 +414,17 @@ const CommentManagementTab = () => {
     };
 
     const handleDeleteComment = (commentId) => {
-        if (confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-            setComments(prev => prev.filter(c => c.id !== commentId));
+        if (
+            confirm('Are you sure you want to delete this comment? This action cannot be undone.')
+        ) {
+            setComments((prev) => prev.filter((c) => c.id !== commentId));
             showToast('Comment deleted', 'success');
         }
     };
 
     const toggleCommentSelection = (commentId) => {
-        setSelectedComments(prev =>
-            prev.includes(commentId)
-                ? prev.filter(id => id !== commentId)
-                : [...prev, commentId]
+        setSelectedComments((prev) =>
+            prev.includes(commentId) ? prev.filter((id) => id !== commentId) : [...prev, commentId],
         );
     };
 
@@ -378,27 +432,37 @@ const CommentManagementTab = () => {
         if (selectedComments.length === comments.length) {
             setSelectedComments([]);
         } else {
-            setSelectedComments(comments.map(c => c.id));
+            setSelectedComments(comments.map((c) => c.id));
         }
     };
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'approved': return { color: 'green', text: 'Approved', icon: <CheckCircle size={14} /> };
-            case 'pending': return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
-            case 'rejected': return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
-            case 'spam': return { color: 'purple', text: 'Spam', icon: <AlertTriangle size={14} /> };
-            case 'deleted': return { color: 'gray', text: 'Deleted', icon: <Trash2 size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
+            case 'approved':
+                return { color: 'green', text: 'Approved', icon: <CheckCircle size={14} /> };
+            case 'pending':
+                return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
+            case 'rejected':
+                return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
+            case 'spam':
+                return { color: 'purple', text: 'Spam', icon: <AlertTriangle size={14} /> };
+            case 'deleted':
+                return { color: 'gray', text: 'Deleted', icon: <Trash2 size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
         }
     };
 
     const getContentTypeBadge = (contentType) => {
         switch (contentType) {
-            case 'post': return { color: 'blue', text: 'Post', icon: <FileText size={14} /> };
-            case 'story': return { color: 'orange', text: 'Story', icon: <Globe size={14} /> };
-            case 'reel': return { color: 'purple', text: 'Reel', icon: <Video size={14} /> };
-            default: return { color: 'gray', text: contentType, icon: <AlertTriangle size={14} /> };
+            case 'post':
+                return { color: 'blue', text: 'Post', icon: <FileText size={14} /> };
+            case 'story':
+                return { color: 'orange', text: 'Story', icon: <Globe size={14} /> };
+            case 'reel':
+                return { color: 'purple', text: 'Reel', icon: <Video size={14} /> };
+            default:
+                return { color: 'gray', text: contentType, icon: <AlertTriangle size={14} /> };
         }
     };
 
@@ -450,10 +514,7 @@ const CommentManagementTab = () => {
                         <Download size={18} />
                         Export Comments
                     </button>
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowSpamRulesModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowSpamRulesModal(true)}>
                         <ZapIcon size={18} />
                         Spam Rules
                     </button>
@@ -507,13 +568,15 @@ const CommentManagementTab = () => {
                             type="number"
                             placeholder="Min reports"
                             value={filters.reported_count_min}
-                            onChange={(e) => handleFilterChange('reported_count_min', e.target.value)}
+                            onChange={(e) =>
+                                handleFilterChange('reported_count_min', e.target.value)
+                            }
                         />
                     </div>
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => { }}>
+                    <button className="refresh-btn" onClick={() => {}}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
@@ -531,10 +594,7 @@ const CommentManagementTab = () => {
                         {selectedComments.length} comments selected
                     </div>
                     <div className="bulk-actions-controls">
-                        <select
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="approve">Approve</option>
                             <option value="reject">Reject</option>
@@ -565,14 +625,19 @@ const CommentManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedComments.length === comments.length && comments.length > 0}
+                                    checked={
+                                        selectedComments.length === comments.length &&
+                                        comments.length > 0
+                                    }
                                     onChange={selectAllComments}
                                 />
                                 <span>Select All</span>
                             </div>
                             <div className="table-actions">
-                                <span className="comment-count">{comments.length} comments found</span>
-                                <button className="refresh-btn" onClick={() => { }}>
+                                <span className="comment-count">
+                                    {comments.length} comments found
+                                </span>
+                                <button className="refresh-btn" onClick={() => {}}>
                                     <RefreshCw size={18} />
                                     Refresh
                                 </button>
@@ -586,7 +651,10 @@ const CommentManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedComments.length === comments.length && comments.length > 0}
+                                                checked={
+                                                    selectedComments.length === comments.length &&
+                                                    comments.length > 0
+                                                }
                                                 onChange={selectAllComments}
                                             />
                                         </th>
@@ -599,13 +667,24 @@ const CommentManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {comments.map(comment => (
-                                        <tr key={comment.id} className={comment.status === 'spam' ? 'spam-comment' : comment.status === 'rejected' ? 'rejected-comment' : ''}>
+                                    {comments.map((comment) => (
+                                        <tr
+                                            key={comment.id}
+                                            className={
+                                                comment.status === 'spam'
+                                                    ? 'spam-comment'
+                                                    : comment.status === 'rejected'
+                                                      ? 'rejected-comment'
+                                                      : ''
+                                            }
+                                        >
                                             <td>
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedComments.includes(comment.id)}
-                                                    onChange={() => toggleCommentSelection(comment.id)}
+                                                    onChange={() =>
+                                                        toggleCommentSelection(comment.id)
+                                                    }
                                                 />
                                             </td>
                                             <td>
@@ -613,16 +692,24 @@ const CommentManagementTab = () => {
                                                     <div className="comment-content">
                                                         <p>{comment.content}</p>
                                                         {comment.is_edited && (
-                                                            <span className="edited-badge">Edited</span>
+                                                            <span className="edited-badge">
+                                                                Edited
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="comment-meta">
-                                                        <span className="content-id">Content: {comment.content_id}</span>
+                                                        <span className="content-id">
+                                                            Content: {comment.content_id}
+                                                        </span>
                                                         {comment.parent_id && (
-                                                            <span className="parent-id">Reply to: {comment.parent_id}</span>
+                                                            <span className="parent-id">
+                                                                Reply to: {comment.parent_id}
+                                                            </span>
                                                         )}
                                                         {comment.replies_count > 0 && (
-                                                            <span className="replies-count">{comment.replies_count} replies</span>
+                                                            <span className="replies-count">
+                                                                {comment.replies_count} replies
+                                                            </span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -630,24 +717,46 @@ const CommentManagementTab = () => {
                                             <td>
                                                 <div className="status-info">
                                                     <div className="status-badge">
-                                                        <span className={`status-pill ${getStatusBadge(comment.status).color}`}>
+                                                        <span
+                                                            className={`status-pill ${getStatusBadge(comment.status).color}`}
+                                                        >
                                                             {getStatusBadge(comment.status).icon}
                                                             {getStatusBadge(comment.status).text}
                                                         </span>
-                                                        <span className={`content-type-pill ${getContentTypeBadge(comment.content_type).color}`}>
-                                                            {getContentTypeBadge(comment.content_type).icon}
-                                                            {getContentTypeBadge(comment.content_type).text}
+                                                        <span
+                                                            className={`content-type-pill ${getContentTypeBadge(comment.content_type).color}`}
+                                                        >
+                                                            {
+                                                                getContentTypeBadge(
+                                                                    comment.content_type,
+                                                                ).icon
+                                                            }
+                                                            {
+                                                                getContentTypeBadge(
+                                                                    comment.content_type,
+                                                                ).text
+                                                            }
                                                         </span>
                                                     </div>
                                                     <div className="status-dates">
                                                         <div className="status-date">
                                                             <Calendar size={12} />
-                                                            <span>Created: {new Date(comment.created_at).toLocaleDateString()}</span>
+                                                            <span>
+                                                                Created:{' '}
+                                                                {new Date(
+                                                                    comment.created_at,
+                                                                ).toLocaleDateString()}
+                                                            </span>
                                                         </div>
                                                         {comment.edited_at && (
                                                             <div className="status-date">
                                                                 <Repeat size={12} />
-                                                                <span>Edited: {new Date(comment.edited_at).toLocaleDateString()}</span>
+                                                                <span>
+                                                                    Edited:{' '}
+                                                                    {new Date(
+                                                                        comment.edited_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -673,11 +782,21 @@ const CommentManagementTab = () => {
                                                     <div className="date-info">
                                                         <div className="created-date">
                                                             <Calendar size={12} />
-                                                            <span>Created: {new Date(comment.created_at).toLocaleDateString()}</span>
+                                                            <span>
+                                                                Created:{' '}
+                                                                {new Date(
+                                                                    comment.created_at,
+                                                                ).toLocaleDateString()}
+                                                            </span>
                                                         </div>
                                                         <div className="days-since">
                                                             <Clock size={12} />
-                                                            <span>{getDaysSinceCreated(comment.created_at)} days ago</span>
+                                                            <span>
+                                                                {getDaysSinceCreated(
+                                                                    comment.created_at,
+                                                                )}{' '}
+                                                                days ago
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <div className="user-actions">
@@ -697,22 +816,52 @@ const CommentManagementTab = () => {
                                                     <div className="analysis-metrics">
                                                         <div className="metric-item">
                                                             <AlertTriangle size={14} />
-                                                            <span className={`spam-score ${getSpamLevel(comment.spam_score || 0).color}`}>
-                                                                {formatSpamScore(comment.spam_score || 0)}
+                                                            <span
+                                                                className={`spam-score ${getSpamLevel(comment.spam_score || 0).color}`}
+                                                            >
+                                                                {formatSpamScore(
+                                                                    comment.spam_score || 0,
+                                                                )}
                                                             </span>
                                                             <small>Spam Score</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <TrendingUp size={14} />
-                                                            <span className={`sentiment-score ${getSentimentLevel(comment.sentiment_score || 0).color}`}>
-                                                                {comment.sentiment_score > 0 ? '+' : ''}{(comment.sentiment_score || 0).toFixed(1)}
+                                                            <span
+                                                                className={`sentiment-score ${getSentimentLevel(comment.sentiment_score || 0).color}`}
+                                                            >
+                                                                {comment.sentiment_score > 0
+                                                                    ? '+'
+                                                                    : ''}
+                                                                {(
+                                                                    comment.sentiment_score || 0
+                                                                ).toFixed(1)}
                                                             </span>
                                                             <small>Sentiment</small>
                                                         </div>
                                                     </div>
                                                     <div className="analysis-actions">
-                                                        <div className="priority-badge" style={{ backgroundColor: getPriorityColor(comment.spam_score || 0, comment.reported_count) }}>
-                                                            Priority: {getPriorityColor(comment.spam_score || 0, comment.reported_count) === 'red' ? 'High' : getPriorityColor(comment.spam_score || 0, comment.reported_count) === 'orange' ? 'Medium' : 'Low'}
+                                                        <div
+                                                            className="priority-badge"
+                                                            style={{
+                                                                backgroundColor: getPriorityColor(
+                                                                    comment.spam_score || 0,
+                                                                    comment.reported_count,
+                                                                ),
+                                                            }}
+                                                        >
+                                                            Priority:{' '}
+                                                            {getPriorityColor(
+                                                                comment.spam_score || 0,
+                                                                comment.reported_count,
+                                                            ) === 'red'
+                                                                ? 'High'
+                                                                : getPriorityColor(
+                                                                        comment.spam_score || 0,
+                                                                        comment.reported_count,
+                                                                    ) === 'orange'
+                                                                  ? 'Medium'
+                                                                  : 'Low'}
                                                         </div>
                                                         <div className="likes-count">
                                                             <ThumbsUp size={12} />
@@ -725,14 +874,26 @@ const CommentManagementTab = () => {
                                                 <div className="reports-info">
                                                     <div className="reports-count">
                                                         <AlertCircle size={14} />
-                                                        <span>{comment.reported_count} reports</span>
+                                                        <span>
+                                                            {comment.reported_count} reports
+                                                        </span>
                                                     </div>
                                                     {comment.reports.length > 0 && (
                                                         <div className="reports-list">
                                                             {comment.reports.map((report, idx) => (
-                                                                <div key={idx} className="report-item">
-                                                                    <span className="report-reason">{report.reason}</span>
-                                                                    <span className="report-user">by {report.reported_by_username}</span>
+                                                                <div
+                                                                    key={idx}
+                                                                    className="report-item"
+                                                                >
+                                                                    <span className="report-reason">
+                                                                        {report.reason}
+                                                                    </span>
+                                                                    <span className="report-user">
+                                                                        by{' '}
+                                                                        {
+                                                                            report.reported_by_username
+                                                                        }
+                                                                    </span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -741,7 +902,16 @@ const CommentManagementTab = () => {
                                                         {comment.moderation_history.length > 0 && (
                                                             <div className="history-item">
                                                                 <ShieldCheck size={12} />
-                                                                <span>Last action: {comment.moderation_history[comment.moderation_history.length - 1].action}</span>
+                                                                <span>
+                                                                    Last action:{' '}
+                                                                    {
+                                                                        comment.moderation_history[
+                                                                            comment
+                                                                                .moderation_history
+                                                                                .length - 1
+                                                                        ].action
+                                                                    }
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -751,14 +921,21 @@ const CommentManagementTab = () => {
                                                 <div className="action-buttons">
                                                     <button
                                                         className="action-btn view"
-                                                        onClick={() => window.open(`/post/${comment.content_id}`, '_blank')}
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `/post/${comment.content_id}`,
+                                                                '_blank',
+                                                            )
+                                                        }
                                                         title="View Content"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     <button
                                                         className="action-btn moderate"
-                                                        onClick={() => handleModerateComment(comment)}
+                                                        onClick={() =>
+                                                            handleModerateComment(comment)
+                                                        }
                                                         title="Moderate Comment"
                                                     >
                                                         <ShieldCheck size={16} />
@@ -770,7 +947,9 @@ const CommentManagementTab = () => {
                                                                 onClick={() => {
                                                                     setModeratingComment(comment);
                                                                     setModerationAction('approve');
-                                                                    setModerationReason('Content is appropriate');
+                                                                    setModerationReason(
+                                                                        'Content is appropriate',
+                                                                    );
                                                                     confirmModeration();
                                                                 }}
                                                                 title="Approve Comment"
@@ -782,7 +961,9 @@ const CommentManagementTab = () => {
                                                                 onClick={() => {
                                                                     setModeratingComment(comment);
                                                                     setModerationAction('reject');
-                                                                    setModerationReason('Inappropriate content');
+                                                                    setModerationReason(
+                                                                        'Inappropriate content',
+                                                                    );
                                                                     confirmModeration();
                                                                 }}
                                                                 title="Reject Comment"
@@ -793,7 +974,9 @@ const CommentManagementTab = () => {
                                                     )}
                                                     <button
                                                         className="action-btn delete"
-                                                        onClick={() => handleDeleteComment(comment.id)}
+                                                        onClick={() =>
+                                                            handleDeleteComment(comment.id)
+                                                        }
                                                         title="Delete Comment"
                                                     >
                                                         <Trash2 size={16} />
@@ -812,23 +995,39 @@ const CommentManagementTab = () => {
             {/* Moderation Modal */}
             {showModerationModal && moderatingComment && (
                 <div className="modal-overlay" onClick={() => setShowModerationModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '600px' }}
+                    >
                         <div className="modal-header">
                             <h3>Moderate Comment</h3>
-                            <button className="close-btn" onClick={() => setShowModerationModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowModerationModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="moderation-comment-preview">
                                 <div className="comment-preview-header">
                                     <strong>{moderatingComment.username}</strong>
-                                    <span className="comment-date">{new Date(moderatingComment.created_at).toLocaleString()}</span>
+                                    <span className="comment-date">
+                                        {new Date(moderatingComment.created_at).toLocaleString()}
+                                    </span>
                                 </div>
                                 <div className="comment-preview-content">
                                     {moderatingComment.content}
                                 </div>
                                 <div className="comment-preview-meta">
-                                    <span className="spam-score-preview">Spam Score: {formatSpamScore(moderatingComment.spam_score || 0)}</span>
-                                    <span className="reports-count-preview">Reports: {moderatingComment.reported_count}</span>
+                                    <span className="spam-score-preview">
+                                        Spam Score:{' '}
+                                        {formatSpamScore(moderatingComment.spam_score || 0)}
+                                    </span>
+                                    <span className="reports-count-preview">
+                                        Reports: {moderatingComment.reported_count}
+                                    </span>
                                 </div>
                             </div>
 
@@ -863,30 +1062,48 @@ const CommentManagementTab = () => {
                                     {moderationAction === 'reject' && (
                                         <div className="warning-box">
                                             <AlertCircle size={16} />
-                                            <span>Rejecting this comment will mark it as inappropriate</span>
+                                            <span>
+                                                Rejecting this comment will mark it as inappropriate
+                                            </span>
                                         </div>
                                     )}
                                     {moderationAction === 'delete' && (
                                         <div className="warning-box">
                                             <XCircle size={16} />
-                                            <span>Deleting this comment is permanent and cannot be undone</span>
+                                            <span>
+                                                Deleting this comment is permanent and cannot be
+                                                undone
+                                            </span>
                                         </div>
                                     )}
                                     {moderationAction === 'spam' && (
                                         <div className="warning-box">
                                             <AlertTriangle size={16} />
-                                            <span>Marking as spam will affect the user's reputation score</span>
+                                            <span>
+                                                Marking as spam will affect the user's reputation
+                                                score
+                                            </span>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                         <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={() => setShowModerationModal(false)}>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowModerationModal(false)}
+                            >
                                 Cancel
                             </button>
-                            <button type="button" className="btn-primary" onClick={confirmModeration}>
-                                Apply {moderationAction.charAt(0).toUpperCase() + moderationAction.slice(1)}
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={confirmModeration}
+                            >
+                                Apply{' '}
+                                {moderationAction.charAt(0).toUpperCase() +
+                                    moderationAction.slice(1)}
                             </button>
                         </div>
                     </div>
@@ -896,14 +1113,20 @@ const CommentManagementTab = () => {
             {/* User Stats Modal */}
             {showStatsModal && (
                 <div className="modal-overlay" onClick={() => setShowStatsModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1000px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1000px' }}
+                    >
                         <div className="modal-header">
                             <h3>User Comment Statistics</h3>
-                            <button className="close-btn" onClick={() => setShowStatsModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowStatsModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="stats-grid">
-                                {mockUserStats.map(stats => (
+                                {mockUserStats.map((stats) => (
                                     <div key={stats.user_id} className="stat-card">
                                         <div className="stat-header">
                                             <div className="user-info">
@@ -911,8 +1134,12 @@ const CommentManagementTab = () => {
                                                 <span className="user-id">ID: {stats.user_id}</span>
                                             </div>
                                             <div className="stat-actions">
-                                                <button className="stat-action-btn">View Profile</button>
-                                                <button className="stat-action-btn">Block User</button>
+                                                <button className="stat-action-btn">
+                                                    View Profile
+                                                </button>
+                                                <button className="stat-action-btn">
+                                                    Block User
+                                                </button>
                                             </div>
                                         </div>
 
@@ -952,28 +1179,45 @@ const CommentManagementTab = () => {
                                                 <div className="metric-item">
                                                     <ThumbsUp size={20} />
                                                     <div>
-                                                        <strong>{stats.total_likes_received}</strong>
+                                                        <strong>
+                                                            {stats.total_likes_received}
+                                                        </strong>
                                                         <span>Likes Received</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
                                                     <MessageCircle size={20} />
                                                     <div>
-                                                        <strong>{stats.total_replies_received}</strong>
+                                                        <strong>
+                                                            {stats.total_replies_received}
+                                                        </strong>
                                                         <span>Replies Received</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
                                                     <AlertTriangle size={20} />
                                                     <div>
-                                                        <strong>{stats.avg_spam_score ? (stats.avg_spam_score * 100).toFixed(0) : '0'}%</strong>
+                                                        <strong>
+                                                            {stats.avg_spam_score
+                                                                ? (
+                                                                      stats.avg_spam_score * 100
+                                                                  ).toFixed(0)
+                                                                : '0'}
+                                                            %
+                                                        </strong>
                                                         <span>Avg Spam Score</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
                                                     <TrendingUp size={20} />
                                                     <div>
-                                                        <strong>{stats.avg_sentiment_score ? stats.avg_sentiment_score.toFixed(1) : '0.0'}</strong>
+                                                        <strong>
+                                                            {stats.avg_sentiment_score
+                                                                ? stats.avg_sentiment_score.toFixed(
+                                                                      1,
+                                                                  )
+                                                                : '0.0'}
+                                                        </strong>
                                                         <span>Avg Sentiment</span>
                                                     </div>
                                                 </div>
@@ -982,12 +1226,24 @@ const CommentManagementTab = () => {
 
                                         <div className="stat-footer">
                                             <span className="last-activity">
-                                                Last Comment: {stats.last_comment_at ? new Date(stats.last_comment_at).toLocaleString() : 'Never'}
+                                                Last Comment:{' '}
+                                                {stats.last_comment_at
+                                                    ? new Date(
+                                                          stats.last_comment_at,
+                                                      ).toLocaleString()
+                                                    : 'Never'}
                                             </span>
                                             <div className="user-reputation">
-                                                <span className="reputation-label">Reputation:</span>
-                                                <span className={`reputation-score ${stats.avg_spam_score && stats.avg_spam_score > 0.5 ? 'bad' : 'good'}`}>
-                                                    {stats.avg_spam_score && stats.avg_spam_score > 0.5 ? 'Poor' : 'Good'}
+                                                <span className="reputation-label">
+                                                    Reputation:
+                                                </span>
+                                                <span
+                                                    className={`reputation-score ${stats.avg_spam_score && stats.avg_spam_score > 0.5 ? 'bad' : 'good'}`}
+                                                >
+                                                    {stats.avg_spam_score &&
+                                                    stats.avg_spam_score > 0.5
+                                                        ? 'Poor'
+                                                        : 'Good'}
                                                 </span>
                                             </div>
                                         </div>
@@ -1002,10 +1258,19 @@ const CommentManagementTab = () => {
             {/* Spam Rules Modal */}
             {showSpamRulesModal && (
                 <div className="modal-overlay" onClick={() => setShowSpamRulesModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>Spam Detection Rules</h3>
-                            <button className="close-btn" onClick={() => setShowSpamRulesModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowSpamRulesModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="spam-rules-list">
@@ -1014,8 +1279,12 @@ const CommentManagementTab = () => {
                                         <strong>Keyword Detection</strong>
                                         <span className="rule-score">Score: 0.3</span>
                                     </div>
-                                    <div className="rule-pattern">Pattern: (viagra|casino|loan|cheap)</div>
-                                    <div className="rule-description">Detects common spam keywords in comment content</div>
+                                    <div className="rule-pattern">
+                                        Pattern: (viagra|casino|loan|cheap)
+                                    </div>
+                                    <div className="rule-description">
+                                        Detects common spam keywords in comment content
+                                    </div>
                                     <div className="rule-actions">
                                         <button className="rule-action-btn">Edit</button>
                                         <button className="rule-action-btn">Disable</button>
@@ -1028,7 +1297,9 @@ const CommentManagementTab = () => {
                                         <span className="rule-score">Score: 0.5</span>
                                     </div>
                                     <div className="rule-pattern">Pattern: (http|www\.)</div>
-                                    <div className="rule-description">Detects URLs in comments from new users</div>
+                                    <div className="rule-description">
+                                        Detects URLs in comments from new users
+                                    </div>
                                     <div className="rule-actions">
                                         <button className="rule-action-btn">Edit</button>
                                         <button className="rule-action-btn">Disable</button>
@@ -1040,8 +1311,12 @@ const CommentManagementTab = () => {
                                         <strong>Profanity Filter</strong>
                                         <span className="rule-score">Score: 0.4</span>
                                     </div>
-                                    <div className="rule-pattern">Pattern: (badword1|badword2|badword3)</div>
-                                    <div className="rule-description">Filters offensive language</div>
+                                    <div className="rule-pattern">
+                                        Pattern: (badword1|badword2|badword3)
+                                    </div>
+                                    <div className="rule-description">
+                                        Filters offensive language
+                                    </div>
                                     <div className="rule-actions">
                                         <button className="rule-action-btn">Edit</button>
                                         <button className="rule-action-btn">Disable</button>
@@ -1054,20 +1329,39 @@ const CommentManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Rule Name</label>
-                                        <input type="text" className="form-input" placeholder="e.g., Promotion Detection" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g., Promotion Detection"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Score</label>
-                                        <input type="number" step="0.1" min="0" max="1" className="form-input" placeholder="0.1 - 1.0" />
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            min="0"
+                                            max="1"
+                                            className="form-input"
+                                            placeholder="0.1 - 1.0"
+                                        />
                                     </div>
                                 </div>
                                 <div className="form-group">
                                     <label>Pattern (Regex)</label>
-                                    <input type="text" className="form-input" placeholder="e.g., (buy now|click here)" />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="e.g., (buy now|click here)"
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>Description</label>
-                                    <textarea className="form-input" rows="2" placeholder="What this rule detects"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="2"
+                                        placeholder="What this rule detects"
+                                    ></textarea>
                                 </div>
                                 <div className="form-actions">
                                     <button className="btn-secondary">Cancel</button>

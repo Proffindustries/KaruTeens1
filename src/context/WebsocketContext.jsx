@@ -28,41 +28,44 @@ export const WebsocketProvider = ({ children }) => {
         };
     }, []);
 
-    const handleWsMessage = useCallback((payload) => {
-        const { type, data } = payload;
+    const handleWsMessage = useCallback(
+        (payload) => {
+            const { type, data } = payload;
 
-        // Global handling (Cache updates & Toasts)
-        switch (type) {
-            case 'message':
-                queryClient.setQueryData(['messages', data.chat_id], (old) => {
-                    if (!old) return old;
-                    if (old.find(m => m.id === data.id)) return old;
-                    return [...old, data];
-                });
-                queryClient.invalidateQueries({ queryKey: ['chats'] });
+            // Global handling (Cache updates & Toasts)
+            switch (type) {
+                case 'message':
+                    queryClient.setQueryData(['messages', data.chat_id], (old) => {
+                        if (!old) return old;
+                        if (old.find((m) => m.id === data.id)) return old;
+                        return [...old, data];
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['chats'] });
 
-                const currentChatId = window.location.pathname.split('/').pop();
-                if (currentChatId !== data.chat_id) {
-                    showToast(`New message from ${data.sender_username}`, 'info');
-                }
-                break;
+                    const currentChatId = window.location.pathname.split('/').pop();
+                    if (currentChatId !== data.chat_id) {
+                        showToast(`New message from ${data.sender_username}`, 'info');
+                    }
+                    break;
 
-            case 'notification':
-                queryClient.setQueryData(['notifications'], (old) => {
-                    if (!old) return [data];
-                    return [data, ...old];
-                });
-                showToast(data.content, 'info');
-                break;
+                case 'notification':
+                    queryClient.setQueryData(['notifications'], (old) => {
+                        if (!old) return [data];
+                        return [data, ...old];
+                    });
+                    showToast(data.content, 'info');
+                    break;
 
-            case 'auth_success':
-                console.log('WS Authenticated as', data.user_id);
-                break;
-        }
+                case 'auth_success':
+                    console.log('WS Authenticated as', data.user_id);
+                    break;
+            }
 
-        // Notify subscribers (e.g., MessagesPage for WebRTC)
-        subscribers.forEach((callback) => callback(type, data));
-    }, [queryClient, showToast, subscribers]);
+            // Notify subscribers (e.g., MessagesPage for WebRTC)
+            subscribers.forEach((callback) => callback(type, data));
+        },
+        [queryClient, showToast, subscribers],
+    );
 
     const connect = useCallback(() => {
         if (!token) return;
@@ -74,15 +77,15 @@ export const WebsocketProvider = ({ children }) => {
         if (import.meta.env.VITE_WS_URL) {
             wsUrl = import.meta.env.VITE_WS_URL;
         } else if (import.meta.env.VITE_API_URL) {
-            let base = import.meta.env.VITE_API_URL.replace(/\/$/, "");
-            if (base.endsWith("/api")) {
+            let base = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+            if (base.endsWith('/api')) {
                 base = base.slice(0, -4);
             }
-            wsUrl = base.replace(/^http/, "ws") + "/ws";
+            wsUrl = base.replace(/^http/, 'ws') + '/ws';
         } else {
             // Fallback for local development
             const host = window.location.hostname; // Just use hostname to avoid port confusion
-            const wsPort = "3000"; // Backend default port
+            const wsPort = '3000'; // Backend default port
             wsUrl = `ws://${host}:${wsPort}/ws`;
         }
 

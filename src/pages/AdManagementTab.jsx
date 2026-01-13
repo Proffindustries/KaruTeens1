@@ -1,9 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import {
-    DollarSign, TrendingUp, BarChart3, Users, Calendar, Clock, Eye, EyeOff,
-    Video, Image, Edit, Trash2, Plus, Search, Filter, RefreshCw, Download, Upload,
-    Shield, AlertTriangle, Globe, Target, Settings, Play, Pause, StopCircle,
-    AlertCircle, ShoppingBag, Smartphone, MessageCircle, Network, Zap as ZapIcon, Music
+    DollarSign,
+    TrendingUp,
+    BarChart3,
+    Users,
+    Calendar,
+    Clock,
+    Eye,
+    EyeOff,
+    Video,
+    Image,
+    Edit,
+    Trash2,
+    Plus,
+    Search,
+    Filter,
+    RefreshCw,
+    Download,
+    Upload,
+    Shield,
+    AlertTriangle,
+    Globe,
+    Target,
+    Settings,
+    Play,
+    Pause,
+    StopCircle,
+    AlertCircle,
+    ShoppingBag,
+    Smartphone,
+    MessageCircle,
+    Network,
+    Zap as ZapIcon,
+    Music,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -27,7 +56,7 @@ const AdManagementTab = () => {
         min_ctr: '',
         max_ctr: '',
         sort_by: 'created_at',
-        sort_order: 'desc'
+        sort_order: 'desc',
     });
 
     const [selectedCampaigns, setSelectedCampaigns] = useState([]);
@@ -66,7 +95,7 @@ const AdManagementTab = () => {
                 spent_lifetime: 8500.0,
                 remaining_daily: 50.0,
                 remaining_lifetime: 6500.0,
-                budget_utilization: 0.57
+                budget_utilization: 0.57,
             },
             optimization_goal: 'conversions',
             bidding_strategy: 'automatic_cpc',
@@ -82,10 +111,10 @@ const AdManagementTab = () => {
             frequency_capping: {
                 impressions: 3,
                 time_period: 'day',
-                user_type: 'all'
+                user_type: 'all',
             },
             exclusion_rules: [
-                { rule_type: 'content', rule_value: 'adult_content', rule_operator: 'exclude' }
+                { rule_type: 'content', rule_value: 'adult_content', rule_operator: 'exclude' },
             ],
             created_at: '2024-05-25T10:00:00Z',
             updated_at: '2024-06-01T10:00:00Z',
@@ -105,7 +134,7 @@ const AdManagementTab = () => {
             quality_score: 8.5,
             ad_rank: 1.2,
             performance_score: 85.0,
-            last_updated: '2024-06-15T14:30:00Z'
+            last_updated: '2024-06-15T14:30:00Z',
         },
         {
             id: 'campaign_002',
@@ -124,7 +153,7 @@ const AdManagementTab = () => {
                 spent_lifetime: 12000.0,
                 remaining_daily: 20.0,
                 remaining_lifetime: null,
-                budget_utilization: 0.90
+                budget_utilization: 0.9,
             },
             optimization_goal: 'impressions',
             bidding_strategy: 'cpm',
@@ -140,10 +169,14 @@ const AdManagementTab = () => {
             frequency_capping: {
                 impressions: 5,
                 time_period: 'week',
-                user_type: 'new'
+                user_type: 'new',
             },
             exclusion_rules: [
-                { rule_type: 'audience', rule_value: 'existing_customers', rule_operator: 'exclude' }
+                {
+                    rule_type: 'audience',
+                    rule_value: 'existing_customers',
+                    rule_operator: 'exclude',
+                },
             ],
             created_at: '2024-04-20T10:00:00Z',
             updated_at: '2024-05-01T10:00:00Z',
@@ -157,13 +190,13 @@ const AdManagementTab = () => {
             total_conversions: 200,
             ctr: 0.0053,
             cpm: 8.0,
-            cpc: 1.50,
+            cpc: 1.5,
             roas: 1.8,
             conversion_rate: 0.025,
             quality_score: 7.2,
             ad_rank: 0.8,
             performance_score: 72.0,
-            last_updated: '2024-06-10T09:15:00Z'
+            last_updated: '2024-06-10T09:15:00Z',
         },
         {
             id: 'campaign_003',
@@ -182,7 +215,7 @@ const AdManagementTab = () => {
                 spent_lifetime: 6500.0,
                 remaining_daily: 20.0,
                 remaining_lifetime: 18500.0,
-                budget_utilization: 0.26
+                budget_utilization: 0.26,
             },
             optimization_goal: 'leads',
             bidding_strategy: 'cpa',
@@ -198,7 +231,7 @@ const AdManagementTab = () => {
             frequency_capping: {
                 impressions: 2,
                 time_period: 'day',
-                user_type: 'all'
+                user_type: 'all',
             },
             exclusion_rules: [],
             created_at: '2024-06-05T10:00:00Z',
@@ -219,8 +252,8 @@ const AdManagementTab = () => {
             quality_score: 9.1,
             ad_rank: 1.5,
             performance_score: 91.0,
-            last_updated: '2024-06-18T16:45:00Z'
-        }
+            last_updated: '2024-06-18T16:45:00Z',
+        },
     ];
 
     // Mock data for ad groups
@@ -238,7 +271,7 @@ const AdManagementTab = () => {
                     income_levels: ['middle', 'high'],
                     education_levels: ['college', 'graduate'],
                     relationship_statuses: ['single', 'married'],
-                    parental_statuses: ['has_children', 'no_children']
+                    parental_statuses: ['has_children', 'no_children'],
                 },
                 interests: ['technology', 'gadgets', 'shopping'],
                 keywords: ['summer sale', 'electronics', 'discount'],
@@ -247,18 +280,25 @@ const AdManagementTab = () => {
                 time_of_day: {
                     start_hour: 9,
                     end_hour: 21,
-                    days_of_week: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                    days_of_week: [
+                        'monday',
+                        'tuesday',
+                        'wednesday',
+                        'thursday',
+                        'friday',
+                        'saturday',
+                    ],
                 },
                 custom_audiences: ['electronics_shoppers', 'tech_enthusiasts'],
                 lookalike_audiences: ['similar_to_electronics'],
-                exclusion_audiences: ['existing_customers']
+                exclusion_audiences: ['existing_customers'],
             },
             bid_strategy: {
                 bid_type: 'cpc',
                 bid_amount: 1.25,
                 bid_strategy: 'manual',
                 bid_ceiling: 3.0,
-                bid_floor: 0.5
+                bid_floor: 0.5,
             },
             ad_rotation: 'optimized',
             ad_serving_optimization: 'optimize_for_conversions',
@@ -272,7 +312,7 @@ const AdManagementTab = () => {
             total_clicks: 3000,
             ctr: 0.05,
             cpm: 35.0,
-            cpc: 0.70
+            cpc: 0.7,
         },
         {
             id: 'group_002',
@@ -287,7 +327,7 @@ const AdManagementTab = () => {
                     income_levels: ['middle'],
                     education_levels: ['high_school', 'college'],
                     relationship_statuses: ['single'],
-                    parental_statuses: ['no_children']
+                    parental_statuses: ['no_children'],
                 },
                 interests: ['fashion', 'beauty', 'lifestyle'],
                 keywords: ['summer fashion', 'clothing sale', 'beauty products'],
@@ -296,18 +336,18 @@ const AdManagementTab = () => {
                 time_of_day: {
                     start_hour: 12,
                     end_hour: 20,
-                    days_of_week: ['monday', 'wednesday', 'friday', 'sunday']
+                    days_of_week: ['monday', 'wednesday', 'friday', 'sunday'],
                 },
                 custom_audiences: ['fashion_shoppers', 'beauty_enthusiasts'],
                 lookalike_audiences: ['similar_to_fashion'],
-                exclusion_audiences: []
+                exclusion_audiences: [],
             },
             bid_strategy: {
                 bid_type: 'cpc',
                 bid_amount: 0.95,
                 bid_strategy: 'automatic',
                 bid_ceiling: 2.5,
-                bid_floor: 0.3
+                bid_floor: 0.3,
             },
             ad_rotation: 'rotate_forever',
             ad_serving_optimization: 'balanced',
@@ -321,8 +361,8 @@ const AdManagementTab = () => {
             total_clicks: 2250,
             ctr: 0.045,
             cpm: 36.0,
-            cpc: 0.80
-        }
+            cpc: 0.8,
+        },
     ];
 
     // Mock data for ad creatives
@@ -342,8 +382,8 @@ const AdManagementTab = () => {
                     asset_format: 'jpg',
                     asset_size: 150000,
                     alt_text: 'Summer sale electronics banner',
-                    creative_id: 'creative_001'
-                }
+                    creative_id: 'creative_001',
+                },
             ],
             variants: [
                 {
@@ -351,46 +391,47 @@ const AdManagementTab = () => {
                     assets: [
                         {
                             asset_type: 'image',
-                            asset_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
+                            asset_url:
+                                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
                             asset_text: null,
                             asset_dimensions: { width: 1200, height: 628, aspect_ratio: '1.91:1' },
                             asset_format: 'jpg',
                             asset_size: 150000,
                             alt_text: 'Summer sale electronics banner variant A',
-                            creative_id: 'creative_001a'
-                        }
+                            creative_id: 'creative_001a',
+                        },
                     ],
                     targeting: null,
                     bid_adjustments: {
                         device_adjustments: [
                             { device_type: 'mobile', adjustment_percentage: 1.2 },
-                            { device_type: 'desktop', adjustment_percentage: 0.8 }
+                            { device_type: 'desktop', adjustment_percentage: 0.8 },
                         ],
                         location_adjustments: [
                             { location: 'US', adjustment_percentage: 1.1 },
-                            { location: 'CA', adjustment_percentage: 0.9 }
+                            { location: 'CA', adjustment_percentage: 0.9 },
                         ],
-                        time_adjustments: [
-                            { time_period: 'evening', adjustment_percentage: 1.3 }
-                        ]
-                    }
-                }
+                        time_adjustments: [{ time_period: 'evening', adjustment_percentage: 1.3 }],
+                    },
+                },
             ],
             call_to_action: 'Shop Now',
             headline: 'Summer Sale - Up to 50% Off Electronics',
             description: 'Get the latest gadgets at unbeatable prices. Limited time offer!',
             display_url: 'www.example.com/summer-sale',
-            final_url: 'https://www.example.com/summer-sale?utm_source=facebook&utm_medium=paid&utm_campaign=summer_sale',
-            tracking_url: 'https://tracking.example.com/click?campaign_id={campaign_id}&ad_group_id={ad_group_id}',
+            final_url:
+                'https://www.example.com/summer-sale?utm_source=facebook&utm_medium=paid&utm_campaign=summer_sale',
+            tracking_url:
+                'https://tracking.example.com/click?campaign_id={campaign_id}&ad_group_id={ad_group_id}',
             custom_parameters: [
                 { key: 'utm_source', value: 'facebook' },
                 { key: 'utm_medium', value: 'paid' },
-                { key: 'utm_campaign', value: 'summer_sale' }
+                { key: 'utm_campaign', value: 'summer_sale' },
             ],
             template_id: 'template_electronics_001',
             template_fields: [
                 { field_name: 'product_category', field_value: 'electronics', field_type: 'text' },
-                { field_name: 'discount_percentage', field_value: '50', field_type: 'number' }
+                { field_name: 'discount_percentage', field_value: '50', field_type: 'number' },
             ],
             created_at: '2024-05-25T10:00:00Z',
             updated_at: '2024-06-01T10:00:00Z',
@@ -402,7 +443,7 @@ const AdManagementTab = () => {
             cpc: 0.72,
             quality_score: 8.7,
             relevance_score: 9.0,
-            landing_page_score: 8.5
+            landing_page_score: 8.5,
         },
         {
             id: 'creative_002',
@@ -419,20 +460,22 @@ const AdManagementTab = () => {
                     asset_format: 'mp4',
                     asset_size: 1048576,
                     alt_text: 'Summer fashion video ad',
-                    creative_id: 'creative_002'
-                }
+                    creative_id: 'creative_002',
+                },
             ],
             variants: null,
             call_to_action: 'Learn More',
             headline: 'Summer Fashion - Fresh Styles for Less',
             description: 'Discover trendy styles at amazing prices. Shop the collection today!',
             display_url: 'www.example.com/summer-fashion',
-            final_url: 'https://www.example.com/summer-fashion?utm_source=instagram&utm_medium=paid&utm_campaign=summer_fashion',
-            tracking_url: 'https://tracking.example.com/click?campaign_id={campaign_id}&ad_group_id={ad_group_id}',
+            final_url:
+                'https://www.example.com/summer-fashion?utm_source=instagram&utm_medium=paid&utm_campaign=summer_fashion',
+            tracking_url:
+                'https://tracking.example.com/click?campaign_id={campaign_id}&ad_group_id={ad_group_id}',
             custom_parameters: [
                 { key: 'utm_source', value: 'instagram' },
                 { key: 'utm_medium', value: 'paid' },
-                { key: 'utm_campaign', value: 'summer_fashion' }
+                { key: 'utm_campaign', value: 'summer_fashion' },
             ],
             template_id: null,
             template_fields: null,
@@ -446,8 +489,8 @@ const AdManagementTab = () => {
             cpc: 0.85,
             quality_score: 8.2,
             relevance_score: 8.5,
-            landing_page_score: 8.0
-        }
+            landing_page_score: 8.0,
+        },
     ];
 
     // Mock performance data
@@ -466,7 +509,7 @@ const AdManagementTab = () => {
             conversion_rate: 0.04,
             quality_score: 8.5,
             ad_rank: 1.2,
-            performance_score: 85.0
+            performance_score: 85.0,
         },
         {
             campaign_id: 'campaign_002',
@@ -477,12 +520,12 @@ const AdManagementTab = () => {
             spend: 12000.0,
             ctr: 0.0053,
             cpm: 8.0,
-            cpc: 1.50,
+            cpc: 1.5,
             roas: 1.8,
             conversion_rate: 0.025,
             quality_score: 7.2,
             ad_rank: 0.8,
-            performance_score: 72.0
+            performance_score: 72.0,
         },
         {
             campaign_id: 'campaign_003',
@@ -498,8 +541,8 @@ const AdManagementTab = () => {
             conversion_rate: 0.021,
             quality_score: 9.1,
             ad_rank: 1.5,
-            performance_score: 91.0
-        }
+            performance_score: 91.0,
+        },
     ];
 
     // Mock reports data
@@ -520,7 +563,7 @@ const AdManagementTab = () => {
             overall_cpc: 1.22,
             overall_roas: 2.37,
             currency: 'USD',
-            file_url: 'https://example.com/reports/campaign_performance_2024-06-16.pdf'
+            file_url: 'https://example.com/reports/campaign_performance_2024-06-16.pdf',
         },
         {
             id: 'report_002',
@@ -537,8 +580,8 @@ const AdManagementTab = () => {
             overall_cpm: 35.45,
             overall_cpc: 0.74,
             currency: 'USD',
-            file_url: 'https://example.com/reports/ad_group_analysis_2024-06-16.xlsx'
-        }
+            file_url: 'https://example.com/reports/ad_group_analysis_2024-06-16.xlsx',
+        },
     ];
 
     useEffect(() => {
@@ -553,7 +596,7 @@ const AdManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -572,48 +615,74 @@ const AdManagementTab = () => {
 
         if (bulkAction === 'activate') {
             if (currentTab === 'campaigns') {
-                setCampaigns(prev => prev.map(c =>
-                    selectedCampaigns.includes(c.id) ? { ...c, status: 'active' } : c
-                ));
+                setCampaigns((prev) =>
+                    prev.map((c) =>
+                        selectedCampaigns.includes(c.id) ? { ...c, status: 'active' } : c,
+                    ),
+                );
             } else if (currentTab === 'ad_groups') {
-                setAdGroups(prev => prev.map(g =>
-                    selectedAdGroups.includes(g.id) ? { ...g, status: 'active' } : g
-                ));
+                setAdGroups((prev) =>
+                    prev.map((g) =>
+                        selectedAdGroups.includes(g.id) ? { ...g, status: 'active' } : g,
+                    ),
+                );
             } else if (currentTab === 'creatives') {
-                setAdCreatives(prev => prev.map(cr =>
-                    selectedCreatives.includes(cr.id) ? { ...cr, status: 'active' } : cr
-                ));
+                setAdCreatives((prev) =>
+                    prev.map((cr) =>
+                        selectedCreatives.includes(cr.id) ? { ...cr, status: 'active' } : cr,
+                    ),
+                );
             }
             showToast('Items activated', 'success');
         } else if (bulkAction === 'pause') {
             if (currentTab === 'campaigns') {
-                setCampaigns(prev => prev.map(c =>
-                    selectedCampaigns.includes(c.id) ? { ...c, status: 'paused' } : c
-                ));
+                setCampaigns((prev) =>
+                    prev.map((c) =>
+                        selectedCampaigns.includes(c.id) ? { ...c, status: 'paused' } : c,
+                    ),
+                );
             } else if (currentTab === 'ad_groups') {
-                setAdGroups(prev => prev.map(g =>
-                    selectedAdGroups.includes(g.id) ? { ...g, status: 'paused' } : g
-                ));
+                setAdGroups((prev) =>
+                    prev.map((g) =>
+                        selectedAdGroups.includes(g.id) ? { ...g, status: 'paused' } : g,
+                    ),
+                );
             } else if (currentTab === 'creatives') {
-                setAdCreatives(prev => prev.map(cr =>
-                    selectedCreatives.includes(cr.id) ? { ...cr, status: 'paused' } : cr
-                ));
+                setAdCreatives((prev) =>
+                    prev.map((cr) =>
+                        selectedCreatives.includes(cr.id) ? { ...cr, status: 'paused' } : cr,
+                    ),
+                );
             }
             showToast('Items paused', 'info');
         } else if (bulkAction === 'delete') {
             if (currentTab === 'campaigns') {
-                if (confirm(`Delete ${selectedCampaigns.length} campaigns? This action cannot be undone.`)) {
-                    setCampaigns(prev => prev.filter(c => !selectedCampaigns.includes(c.id)));
+                if (
+                    confirm(
+                        `Delete ${selectedCampaigns.length} campaigns? This action cannot be undone.`,
+                    )
+                ) {
+                    setCampaigns((prev) => prev.filter((c) => !selectedCampaigns.includes(c.id)));
                     setSelectedCampaigns([]);
                 }
             } else if (currentTab === 'ad_groups') {
-                if (confirm(`Delete ${selectedAdGroups.length} ad groups? This action cannot be undone.`)) {
-                    setAdGroups(prev => prev.filter(g => !selectedAdGroups.includes(g.id)));
+                if (
+                    confirm(
+                        `Delete ${selectedAdGroups.length} ad groups? This action cannot be undone.`,
+                    )
+                ) {
+                    setAdGroups((prev) => prev.filter((g) => !selectedAdGroups.includes(g.id)));
                     setSelectedAdGroups([]);
                 }
             } else if (currentTab === 'creatives') {
-                if (confirm(`Delete ${selectedCreatives.length} creatives? This action cannot be undone.`)) {
-                    setAdCreatives(prev => prev.filter(cr => !selectedCreatives.includes(cr.id)));
+                if (
+                    confirm(
+                        `Delete ${selectedCreatives.length} creatives? This action cannot be undone.`,
+                    )
+                ) {
+                    setAdCreatives((prev) =>
+                        prev.filter((cr) => !selectedCreatives.includes(cr.id)),
+                    );
                     setSelectedCreatives([]);
                 }
             }
@@ -621,44 +690,44 @@ const AdManagementTab = () => {
             showToast('Items deleted', 'success');
         } else if (bulkAction === 'duplicate') {
             if (currentTab === 'campaigns') {
-                const newCampaigns = selectedCampaigns.map(id => {
-                    const original = campaigns.find(c => c.id === id);
+                const newCampaigns = selectedCampaigns.map((id) => {
+                    const original = campaigns.find((c) => c.id === id);
                     return {
                         ...original,
                         id: `campaign_${Date.now()}`,
                         name: `${original.name} - Copy`,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
-                        status: 'draft'
+                        status: 'draft',
                     };
                 });
-                setCampaigns(prev => [...prev, ...newCampaigns]);
+                setCampaigns((prev) => [...prev, ...newCampaigns]);
             } else if (currentTab === 'ad_groups') {
-                const newGroups = selectedAdGroups.map(id => {
-                    const original = adGroups.find(g => g.id === id);
+                const newGroups = selectedAdGroups.map((id) => {
+                    const original = adGroups.find((g) => g.id === id);
                     return {
                         ...original,
                         id: `group_${Date.now()}`,
                         name: `${original.name} - Copy`,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
-                        status: 'draft'
+                        status: 'draft',
                     };
                 });
-                setAdGroups(prev => [...prev, ...newGroups]);
+                setAdGroups((prev) => [...prev, ...newGroups]);
             } else if (currentTab === 'creatives') {
-                const newCreatives = selectedCreatives.map(id => {
-                    const original = adCreatives.find(cr => cr.id === id);
+                const newCreatives = selectedCreatives.map((id) => {
+                    const original = adCreatives.find((cr) => cr.id === id);
                     return {
                         ...original,
                         id: `creative_${Date.now()}`,
                         name: `${original.name} - Copy`,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
-                        status: 'draft'
+                        status: 'draft',
                     };
                 });
-                setAdCreatives(prev => [...prev, ...newCreatives]);
+                setAdCreatives((prev) => [...prev, ...newCreatives]);
             }
             showToast('Items duplicated', 'success');
         }
@@ -676,7 +745,7 @@ const AdManagementTab = () => {
             lifetime_budget: null,
             campaign_type: 'search',
             objective: 'traffic',
-            optimization_goal: 'clicks'
+            optimization_goal: 'clicks',
         });
         setShowCampaignModal(true);
     };
@@ -691,8 +760,8 @@ const AdManagementTab = () => {
                 locations: [],
                 demographics: {},
                 interests: [],
-                keywords: []
-            }
+                keywords: [],
+            },
         });
         setShowGroupModal(true);
     };
@@ -706,7 +775,7 @@ const AdManagementTab = () => {
             headline: '',
             description: '',
             final_url: '',
-            assets: []
+            assets: [],
         });
         setShowCreativeModal(true);
     };
@@ -727,47 +796,51 @@ const AdManagementTab = () => {
     };
 
     const handleDeleteCampaign = (campaignId) => {
-        if (confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
-            setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+        if (
+            confirm('Are you sure you want to delete this campaign? This action cannot be undone.')
+        ) {
+            setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
             showToast('Campaign deleted', 'success');
         }
     };
 
     const handleDeleteAdGroup = (groupId) => {
-        if (confirm('Are you sure you want to delete this ad group? This action cannot be undone.')) {
-            setAdGroups(prev => prev.filter(g => g.id !== groupId));
+        if (
+            confirm('Are you sure you want to delete this ad group? This action cannot be undone.')
+        ) {
+            setAdGroups((prev) => prev.filter((g) => g.id !== groupId));
             showToast('Ad group deleted', 'success');
         }
     };
 
     const handleDeleteCreative = (creativeId) => {
-        if (confirm('Are you sure you want to delete this creative? This action cannot be undone.')) {
-            setAdCreatives(prev => prev.filter(cr => cr.id !== creativeId));
+        if (
+            confirm('Are you sure you want to delete this creative? This action cannot be undone.')
+        ) {
+            setAdCreatives((prev) => prev.filter((cr) => cr.id !== creativeId));
             showToast('Creative deleted', 'success');
         }
     };
 
     const toggleCampaignSelection = (campaignId) => {
-        setSelectedCampaigns(prev =>
+        setSelectedCampaigns((prev) =>
             prev.includes(campaignId)
-                ? prev.filter(id => id !== campaignId)
-                : [...prev, campaignId]
+                ? prev.filter((id) => id !== campaignId)
+                : [...prev, campaignId],
         );
     };
 
     const toggleAdGroupSelection = (groupId) => {
-        setSelectedAdGroups(prev =>
-            prev.includes(groupId)
-                ? prev.filter(id => id !== groupId)
-                : [...prev, groupId]
+        setSelectedAdGroups((prev) =>
+            prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId],
         );
     };
 
     const toggleCreativeSelection = (creativeId) => {
-        setSelectedCreatives(prev =>
+        setSelectedCreatives((prev) =>
             prev.includes(creativeId)
-                ? prev.filter(id => id !== creativeId)
-                : [...prev, creativeId]
+                ? prev.filter((id) => id !== creativeId)
+                : [...prev, creativeId],
         );
     };
 
@@ -775,7 +848,7 @@ const AdManagementTab = () => {
         if (selectedCampaigns.length === campaigns.length) {
             setSelectedCampaigns([]);
         } else {
-            setSelectedCampaigns(campaigns.map(c => c.id));
+            setSelectedCampaigns(campaigns.map((c) => c.id));
         }
     };
 
@@ -783,7 +856,7 @@ const AdManagementTab = () => {
         if (selectedAdGroups.length === adGroups.length) {
             setSelectedAdGroups([]);
         } else {
-            setSelectedAdGroups(adGroups.map(g => g.id));
+            setSelectedAdGroups(adGroups.map((g) => g.id));
         }
     };
 
@@ -791,46 +864,63 @@ const AdManagementTab = () => {
         if (selectedCreatives.length === adCreatives.length) {
             setSelectedCreatives([]);
         } else {
-            setSelectedCreatives(adCreatives.map(cr => cr.id));
+            setSelectedCreatives(adCreatives.map((cr) => cr.id));
         }
     };
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'active': return { color: 'green', text: 'Active', icon: <Play size={14} /> };
-            case 'paused': return { color: 'orange', text: 'Paused', icon: <Pause size={14} /> };
-            case 'draft': return { color: 'blue', text: 'Draft', icon: <Clock size={14} /> };
-            case 'archived': return { color: 'gray', text: 'Archived', icon: <EyeOff size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
+            case 'active':
+                return { color: 'green', text: 'Active', icon: <Play size={14} /> };
+            case 'paused':
+                return { color: 'orange', text: 'Paused', icon: <Pause size={14} /> };
+            case 'draft':
+                return { color: 'blue', text: 'Draft', icon: <Clock size={14} /> };
+            case 'archived':
+                return { color: 'gray', text: 'Archived', icon: <EyeOff size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
         }
     };
 
     const getCampaignTypeBadge = (type) => {
         switch (type) {
-            case 'search': return { color: 'blue', text: 'Search', icon: <Search size={14} /> };
-            case 'display': return { color: 'green', text: 'Display', icon: <Image size={14} /> };
-            case 'video': return { color: 'purple', text: 'Video', icon: <Video size={14} /> };
-            case 'shopping': return { color: 'orange', text: 'Shopping', icon: <ShoppingBag size={14} /> };
-            case 'app': return { color: 'red', text: 'App', icon: <Smartphone size={14} /> };
-            default: return { color: 'gray', text: type, icon: <AlertCircle size={14} /> };
+            case 'search':
+                return { color: 'blue', text: 'Search', icon: <Search size={14} /> };
+            case 'display':
+                return { color: 'green', text: 'Display', icon: <Image size={14} /> };
+            case 'video':
+                return { color: 'purple', text: 'Video', icon: <Video size={14} /> };
+            case 'shopping':
+                return { color: 'orange', text: 'Shopping', icon: <ShoppingBag size={14} /> };
+            case 'app':
+                return { color: 'red', text: 'App', icon: <Smartphone size={14} /> };
+            default:
+                return { color: 'gray', text: type, icon: <AlertCircle size={14} /> };
         }
     };
 
     const getObjectiveBadge = (objective) => {
         switch (objective) {
-            case 'brand_awareness': return { color: 'blue', text: 'Awareness', icon: <Eye size={14} /> };
-            case 'traffic': return { color: 'green', text: 'Traffic', icon: <Users size={14} /> };
-            case 'engagement': return { color: 'purple', text: 'Engagement', icon: <MessageCircle size={14} /> };
-            case 'leads': return { color: 'orange', text: 'Leads', icon: <Target size={14} /> };
-            case 'conversions': return { color: 'red', text: 'Conversions', icon: <TrendingUp size={14} /> };
-            default: return { color: 'gray', text: objective, icon: <AlertCircle size={14} /> };
+            case 'brand_awareness':
+                return { color: 'blue', text: 'Awareness', icon: <Eye size={14} /> };
+            case 'traffic':
+                return { color: 'green', text: 'Traffic', icon: <Users size={14} /> };
+            case 'engagement':
+                return { color: 'purple', text: 'Engagement', icon: <MessageCircle size={14} /> };
+            case 'leads':
+                return { color: 'orange', text: 'Leads', icon: <Target size={14} /> };
+            case 'conversions':
+                return { color: 'red', text: 'Conversions', icon: <TrendingUp size={14} /> };
+            default:
+                return { color: 'gray', text: objective, icon: <AlertCircle size={14} /> };
         }
     };
 
     const formatCurrency = (amount, currency = 'USD') => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: currency
+            currency: currency,
         }).format(amount);
     };
 
@@ -844,7 +934,10 @@ const AdManagementTab = () => {
             <div className="tab-header">
                 <div className="header-left">
                     <h2>Ad Management</h2>
-                    <p>Comprehensive advertising campaign management with advanced targeting and performance analytics</p>
+                    <p>
+                        Comprehensive advertising campaign management with advanced targeting and
+                        performance analytics
+                    </p>
                 </div>
                 <div className="header-actions">
                     <button className="btn-secondary">
@@ -855,10 +948,7 @@ const AdManagementTab = () => {
                         <Upload size={18} />
                         Import Campaigns
                     </button>
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowReportsModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowReportsModal(true)}>
                         <BarChart3 size={18} />
                         Generate Reports
                     </button>
@@ -929,7 +1019,9 @@ const AdManagementTab = () => {
 
                                 <select
                                     value={filters.campaign_type}
-                                    onChange={(e) => handleFilterChange('campaign_type', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('campaign_type', e.target.value)
+                                    }
                                 >
                                     <option value="all">All Types</option>
                                     <option value="search">Search</option>
@@ -941,7 +1033,9 @@ const AdManagementTab = () => {
 
                                 <select
                                     value={filters.objective}
-                                    onChange={(e) => handleFilterChange('objective', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('objective', e.target.value)
+                                    }
                                 >
                                     <option value="all">All Objectives</option>
                                     <option value="brand_awareness">Brand Awareness</option>
@@ -955,14 +1049,18 @@ const AdManagementTab = () => {
                                     type="number"
                                     placeholder="Min budget"
                                     value={filters.min_budget}
-                                    onChange={(e) => handleFilterChange('min_budget', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('min_budget', e.target.value)
+                                    }
                                 />
 
                                 <input
                                     type="number"
                                     placeholder="Max budget"
                                     value={filters.max_budget}
-                                    onChange={(e) => handleFilterChange('max_budget', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('max_budget', e.target.value)
+                                    }
                                 />
 
                                 <input
@@ -982,11 +1080,14 @@ const AdManagementTab = () => {
                         </div>
 
                         <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => { }}>
+                            <button className="refresh-btn" onClick={() => {}}>
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
-                            <button className="btn-secondary" onClick={() => setShowPerformanceModal(true)}>
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setShowPerformanceModal(true)}
+                            >
                                 <BarChart3 size={18} />
                                 Campaign Analytics
                             </button>
@@ -1034,14 +1135,22 @@ const AdManagementTab = () => {
                                     <div className="select-all">
                                         <input
                                             type="checkbox"
-                                            checked={selectedCampaigns.length === campaigns.length && campaigns.length > 0}
+                                            checked={
+                                                selectedCampaigns.length === campaigns.length &&
+                                                campaigns.length > 0
+                                            }
                                             onChange={selectAllCampaigns}
                                         />
                                         <span>Select All</span>
                                     </div>
                                     <div className="table-actions">
-                                        <span className="campaign-count">{campaigns.length} campaigns found</span>
-                                        <button className="btn-primary" onClick={handleCreateCampaign}>
+                                        <span className="campaign-count">
+                                            {campaigns.length} campaigns found
+                                        </span>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleCreateCampaign}
+                                        >
                                             <Plus size={18} />
                                             Create Campaign
                                         </button>
@@ -1055,7 +1164,11 @@ const AdManagementTab = () => {
                                                 <th>
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedCampaigns.length === campaigns.length && campaigns.length > 0}
+                                                        checked={
+                                                            selectedCampaigns.length ===
+                                                                campaigns.length &&
+                                                            campaigns.length > 0
+                                                        }
                                                         onChange={selectAllCampaigns}
                                                     />
                                                 </th>
@@ -1068,60 +1181,134 @@ const AdManagementTab = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {campaigns.map(campaign => (
-                                                <tr key={campaign.id} className={campaign.status === 'paused' ? 'paused-campaign' : campaign.status === 'draft' ? 'draft-campaign' : ''}>
+                                            {campaigns.map((campaign) => (
+                                                <tr
+                                                    key={campaign.id}
+                                                    className={
+                                                        campaign.status === 'paused'
+                                                            ? 'paused-campaign'
+                                                            : campaign.status === 'draft'
+                                                              ? 'draft-campaign'
+                                                              : ''
+                                                    }
+                                                >
                                                     <td>
                                                         <input
                                                             type="checkbox"
-                                                            checked={selectedCampaigns.includes(campaign.id)}
-                                                            onChange={() => toggleCampaignSelection(campaign.id)}
+                                                            checked={selectedCampaigns.includes(
+                                                                campaign.id,
+                                                            )}
+                                                            onChange={() =>
+                                                                toggleCampaignSelection(campaign.id)
+                                                            }
                                                         />
                                                     </td>
                                                     <td>
                                                         <div className="campaign-info">
                                                             <div className="campaign-header">
                                                                 <strong>{campaign.name}</strong>
-                                                                <span className="campaign-id">ID: {campaign.id}</span>
+                                                                <span className="campaign-id">
+                                                                    ID: {campaign.id}
+                                                                </span>
                                                             </div>
                                                             <div className="campaign-description">
                                                                 <p>{campaign.description}</p>
                                                             </div>
                                                             <div className="campaign-meta">
-                                                                <span className="campaign-created">Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
-                                                                <span className="campaign-updated">Updated: {new Date(campaign.updated_at).toLocaleDateString()}</span>
-                                                                <span className="campaign-created-by">By: {campaign.created_by}</span>
+                                                                <span className="campaign-created">
+                                                                    Created:{' '}
+                                                                    {new Date(
+                                                                        campaign.created_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
+                                                                <span className="campaign-updated">
+                                                                    Updated:{' '}
+                                                                    {new Date(
+                                                                        campaign.updated_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
+                                                                <span className="campaign-created-by">
+                                                                    By: {campaign.created_by}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td>
                                                         <div className="status-info">
                                                             <div className="status-badge">
-                                                                <span className={`status-pill ${getStatusBadge(campaign.status).color}`}>
-                                                                    {getStatusBadge(campaign.status).icon}
-                                                                    {getStatusBadge(campaign.status).text}
+                                                                <span
+                                                                    className={`status-pill ${getStatusBadge(campaign.status).color}`}
+                                                                >
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            campaign.status,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            campaign.status,
+                                                                        ).text
+                                                                    }
                                                                 </span>
-                                                                <span className={`campaign-type-pill ${getCampaignTypeBadge(campaign.campaign_type).color}`}>
-                                                                    {getCampaignTypeBadge(campaign.campaign_type).icon}
-                                                                    {getCampaignTypeBadge(campaign.campaign_type).text}
+                                                                <span
+                                                                    className={`campaign-type-pill ${getCampaignTypeBadge(campaign.campaign_type).color}`}
+                                                                >
+                                                                    {
+                                                                        getCampaignTypeBadge(
+                                                                            campaign.campaign_type,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getCampaignTypeBadge(
+                                                                            campaign.campaign_type,
+                                                                        ).text
+                                                                    }
                                                                 </span>
-                                                                <span className={`objective-pill ${getObjectiveBadge(campaign.objective).color}`}>
-                                                                    {getObjectiveBadge(campaign.objective).icon}
-                                                                    {getObjectiveBadge(campaign.objective).text}
+                                                                <span
+                                                                    className={`objective-pill ${getObjectiveBadge(campaign.objective).color}`}
+                                                                >
+                                                                    {
+                                                                        getObjectiveBadge(
+                                                                            campaign.objective,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getObjectiveBadge(
+                                                                            campaign.objective,
+                                                                        ).text
+                                                                    }
                                                                 </span>
                                                             </div>
                                                             <div className="status-dates">
                                                                 <div className="status-date">
                                                                     <Calendar size={12} />
-                                                                    <span>Start: {new Date(campaign.start_date).toLocaleDateString()}</span>
+                                                                    <span>
+                                                                        Start:{' '}
+                                                                        {new Date(
+                                                                            campaign.start_date,
+                                                                        ).toLocaleDateString()}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="status-date">
                                                                     <Calendar size={12} />
-                                                                    <span>End: {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'Ongoing'}</span>
+                                                                    <span>
+                                                                        End:{' '}
+                                                                        {campaign.end_date
+                                                                            ? new Date(
+                                                                                  campaign.end_date,
+                                                                              ).toLocaleDateString()
+                                                                            : 'Ongoing'}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                             <div className="campaign-stats">
-                                                                <span className="groups-count">{campaign.groups_count} groups</span>
-                                                                <span className="creatives-count">{campaign.creatives_count} creatives</span>
+                                                                <span className="groups-count">
+                                                                    {campaign.groups_count} groups
+                                                                </span>
+                                                                <span className="creatives-count">
+                                                                    {campaign.creatives_count}{' '}
+                                                                    creatives
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -1131,7 +1318,13 @@ const AdManagementTab = () => {
                                                                 <div className="metric-item">
                                                                     <DollarSign size={14} />
                                                                     <div>
-                                                                        <strong>{formatCurrency(campaign.daily_budget, campaign.budget.currency)}</strong>
+                                                                        <strong>
+                                                                            {formatCurrency(
+                                                                                campaign.daily_budget,
+                                                                                campaign.budget
+                                                                                    .currency,
+                                                                            )}
+                                                                        </strong>
                                                                         <small>Daily Budget</small>
                                                                     </div>
                                                                 </div>
@@ -1139,15 +1332,29 @@ const AdManagementTab = () => {
                                                                     <div className="metric-item">
                                                                         <DollarSign size={14} />
                                                                         <div>
-                                                                            <strong>{formatCurrency(campaign.lifetime_budget, campaign.budget.currency)}</strong>
-                                                                            <small>Lifetime Budget</small>
+                                                                            <strong>
+                                                                                {formatCurrency(
+                                                                                    campaign.lifetime_budget,
+                                                                                    campaign.budget
+                                                                                        .currency,
+                                                                                )}
+                                                                            </strong>
+                                                                            <small>
+                                                                                Lifetime Budget
+                                                                            </small>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 <div className="metric-item">
                                                                     <DollarSign size={14} />
                                                                     <div>
-                                                                        <strong>{formatCurrency(campaign.total_spend, campaign.budget.currency)}</strong>
+                                                                        <strong>
+                                                                            {formatCurrency(
+                                                                                campaign.total_spend,
+                                                                                campaign.budget
+                                                                                    .currency,
+                                                                            )}
+                                                                        </strong>
                                                                         <small>Total Spend</small>
                                                                     </div>
                                                                 </div>
@@ -1156,20 +1363,38 @@ const AdManagementTab = () => {
                                                                 <div className="utilization-bar">
                                                                     <div
                                                                         className="utilization-fill"
-                                                                        style={{ width: `${campaign.budget.budget_utilization * 100}%` }}
+                                                                        style={{
+                                                                            width: `${campaign.budget.budget_utilization * 100}%`,
+                                                                        }}
                                                                     ></div>
                                                                 </div>
                                                                 <span className="utilization-text">
-                                                                    {formatPercentage(campaign.budget.budget_utilization)} used
+                                                                    {formatPercentage(
+                                                                        campaign.budget
+                                                                            .budget_utilization,
+                                                                    )}{' '}
+                                                                    used
                                                                 </span>
                                                             </div>
                                                             <div className="budget-actions">
-                                                                <span className="bidding-strategy">{campaign.bidding_strategy}</span>
+                                                                <span className="bidding-strategy">
+                                                                    {campaign.bidding_strategy}
+                                                                </span>
                                                                 {campaign.target_roas && (
-                                                                    <span className="target-roas">ROAS: {campaign.target_roas}x</span>
+                                                                    <span className="target-roas">
+                                                                        ROAS: {campaign.target_roas}
+                                                                        x
+                                                                    </span>
                                                                 )}
                                                                 {campaign.target_cpa && (
-                                                                    <span className="target-cpa">CPA: {formatCurrency(campaign.target_cpa, campaign.budget.currency)}</span>
+                                                                    <span className="target-cpa">
+                                                                        CPA:{' '}
+                                                                        {formatCurrency(
+                                                                            campaign.target_cpa,
+                                                                            campaign.budget
+                                                                                .currency,
+                                                                        )}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -1180,51 +1405,99 @@ const AdManagementTab = () => {
                                                                 <div className="metric-item">
                                                                     <Eye size={14} />
                                                                     <div>
-                                                                        <strong>{campaign.total_impressions.toLocaleString()}</strong>
+                                                                        <strong>
+                                                                            {campaign.total_impressions.toLocaleString()}
+                                                                        </strong>
                                                                         <small>Impressions</small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Users size={14} />
                                                                     <div>
-                                                                        <strong>{campaign.total_clicks.toLocaleString()}</strong>
+                                                                        <strong>
+                                                                            {campaign.total_clicks.toLocaleString()}
+                                                                        </strong>
                                                                         <small>Clicks</small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <TrendingUp size={14} />
                                                                     <div>
-                                                                        <strong>{campaign.total_conversions}</strong>
+                                                                        <strong>
+                                                                            {
+                                                                                campaign.total_conversions
+                                                                            }
+                                                                        </strong>
                                                                         <small>Conversions</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="performance-rates">
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CTR:</span>
-                                                                    <span className="rate-value">{formatPercentage(campaign.ctr)}</span>
+                                                                    <span className="rate-label">
+                                                                        CTR:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatPercentage(
+                                                                            campaign.ctr,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CPM:</span>
-                                                                    <span className="rate-value">{formatCurrency(campaign.cpm, campaign.budget.currency)}</span>
+                                                                    <span className="rate-label">
+                                                                        CPM:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatCurrency(
+                                                                            campaign.cpm,
+                                                                            campaign.budget
+                                                                                .currency,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CPC:</span>
-                                                                    <span className="rate-value">{formatCurrency(campaign.cpc, campaign.budget.currency)}</span>
+                                                                    <span className="rate-label">
+                                                                        CPC:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatCurrency(
+                                                                            campaign.cpc,
+                                                                            campaign.budget
+                                                                                .currency,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">ROAS:</span>
-                                                                    <span className="rate-value">{campaign.roas.toFixed(1)}x</span>
+                                                                    <span className="rate-label">
+                                                                        ROAS:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {campaign.roas.toFixed(1)}x
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                             <div className="quality-scores">
                                                                 <div className="score-item">
-                                                                    <span className="score-label">Quality Score:</span>
-                                                                    <span className="score-value">{campaign.quality_score.toFixed(1)}/10</span>
+                                                                    <span className="score-label">
+                                                                        Quality Score:
+                                                                    </span>
+                                                                    <span className="score-value">
+                                                                        {campaign.quality_score.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                        /10
+                                                                    </span>
                                                                 </div>
                                                                 <div className="score-item">
-                                                                    <span className="score-label">Performance Score:</span>
-                                                                    <span className="score-value">{campaign.performance_score.toFixed(1)}/100</span>
+                                                                    <span className="score-label">
+                                                                        Performance Score:
+                                                                    </span>
+                                                                    <span className="score-value">
+                                                                        {campaign.performance_score.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                        /100
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1235,29 +1508,51 @@ const AdManagementTab = () => {
                                                                 <div className="metric-item">
                                                                     <Target size={14} />
                                                                     <div>
-                                                                        <strong>{campaign.optimization_goal}</strong>
-                                                                        <small>Optimization Goal</small>
+                                                                        <strong>
+                                                                            {
+                                                                                campaign.optimization_goal
+                                                                            }
+                                                                        </strong>
+                                                                        <small>
+                                                                            Optimization Goal
+                                                                        </small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Shield size={14} />
                                                                     <div>
-                                                                        <strong>{campaign.attribution_model}</strong>
-                                                                        <small>Attribution Model</small>
+                                                                        <strong>
+                                                                            {
+                                                                                campaign.attribution_model
+                                                                            }
+                                                                        </strong>
+                                                                        <small>
+                                                                            Attribution Model
+                                                                        </small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Globe size={14} />
                                                                     <div>
-                                                                        <strong>{campaign.frequency_capping?.impressions || 0}</strong>
+                                                                        <strong>
+                                                                            {campaign
+                                                                                .frequency_capping
+                                                                                ?.impressions || 0}
+                                                                        </strong>
                                                                         <small>Frequency Cap</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="targeting-actions">
-                                                                <span className="tracking-pixel">Pixel: {campaign.tracking_pixel_id}</span>
+                                                                <span className="tracking-pixel">
+                                                                    Pixel:{' '}
+                                                                    {campaign.tracking_pixel_id}
+                                                                </span>
                                                                 <span className="conversion-actions">
-                                                                    Conversions: {campaign.conversion_actions?.join(', ') || 'None'}
+                                                                    Conversions:{' '}
+                                                                    {campaign.conversion_actions?.join(
+                                                                        ', ',
+                                                                    ) || 'None'}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1266,14 +1561,21 @@ const AdManagementTab = () => {
                                                         <div className="action-buttons">
                                                             <button
                                                                 className="action-btn view"
-                                                                onClick={() => window.open(`/campaign/${campaign.id}`, '_blank')}
+                                                                onClick={() =>
+                                                                    window.open(
+                                                                        `/campaign/${campaign.id}`,
+                                                                        '_blank',
+                                                                    )
+                                                                }
                                                                 title="View Campaign"
                                                             >
                                                                 <Eye size={16} />
                                                             </button>
                                                             <button
                                                                 className="action-btn edit"
-                                                                onClick={() => handleEditCampaign(campaign)}
+                                                                onClick={() =>
+                                                                    handleEditCampaign(campaign)
+                                                                }
                                                                 title="Edit Campaign"
                                                             >
                                                                 <Edit size={16} />
@@ -1285,12 +1587,20 @@ const AdManagementTab = () => {
                                                                         ...campaign,
                                                                         id: `campaign_${Date.now()}`,
                                                                         name: `${campaign.name} - Copy`,
-                                                                        created_at: new Date().toISOString(),
-                                                                        updated_at: new Date().toISOString(),
-                                                                        status: 'draft'
+                                                                        created_at:
+                                                                            new Date().toISOString(),
+                                                                        updated_at:
+                                                                            new Date().toISOString(),
+                                                                        status: 'draft',
                                                                     };
-                                                                    setCampaigns(prev => [...prev, newCampaign]);
-                                                                    showToast('Campaign duplicated', 'success');
+                                                                    setCampaigns((prev) => [
+                                                                        ...prev,
+                                                                        newCampaign,
+                                                                    ]);
+                                                                    showToast(
+                                                                        'Campaign duplicated',
+                                                                        'success',
+                                                                    );
                                                                 }}
                                                                 title="Duplicate Campaign"
                                                             >
@@ -1298,7 +1608,11 @@ const AdManagementTab = () => {
                                                             </button>
                                                             <button
                                                                 className="action-btn delete"
-                                                                onClick={() => handleDeleteCampaign(campaign.id)}
+                                                                onClick={() =>
+                                                                    handleDeleteCampaign(
+                                                                        campaign.id,
+                                                                    )
+                                                                }
                                                                 title="Delete Campaign"
                                                             >
                                                                 <Trash2 size={16} />
@@ -1345,11 +1659,15 @@ const AdManagementTab = () => {
 
                                 <select
                                     value={filters.campaign_type}
-                                    onChange={(e) => handleFilterChange('campaign_type', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('campaign_type', e.target.value)
+                                    }
                                 >
                                     <option value="all">All Campaigns</option>
-                                    {campaigns.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    {campaigns.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name}
+                                        </option>
                                     ))}
                                 </select>
 
@@ -1357,20 +1675,24 @@ const AdManagementTab = () => {
                                     type="number"
                                     placeholder="Min spend"
                                     value={filters.min_spend}
-                                    onChange={(e) => handleFilterChange('min_spend', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('min_spend', e.target.value)
+                                    }
                                 />
 
                                 <input
                                     type="number"
                                     placeholder="Max spend"
                                     value={filters.max_spend}
-                                    onChange={(e) => handleFilterChange('max_spend', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('max_spend', e.target.value)
+                                    }
                                 />
                             </div>
                         </div>
 
                         <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => { }}>
+                            <button className="refresh-btn" onClick={() => {}}>
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
@@ -1418,14 +1740,22 @@ const AdManagementTab = () => {
                                     <div className="select-all">
                                         <input
                                             type="checkbox"
-                                            checked={selectedAdGroups.length === adGroups.length && adGroups.length > 0}
+                                            checked={
+                                                selectedAdGroups.length === adGroups.length &&
+                                                adGroups.length > 0
+                                            }
                                             onChange={selectAllAdGroups}
                                         />
                                         <span>Select All</span>
                                     </div>
                                     <div className="table-actions">
-                                        <span className="ad-group-count">{adGroups.length} ad groups found</span>
-                                        <button className="btn-primary" onClick={handleCreateAdGroup}>
+                                        <span className="ad-group-count">
+                                            {adGroups.length} ad groups found
+                                        </span>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleCreateAdGroup}
+                                        >
                                             <Plus size={18} />
                                             Create Ad Group
                                         </button>
@@ -1439,7 +1769,11 @@ const AdManagementTab = () => {
                                                 <th>
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedAdGroups.length === adGroups.length && adGroups.length > 0}
+                                                        checked={
+                                                            selectedAdGroups.length ===
+                                                                adGroups.length &&
+                                                            adGroups.length > 0
+                                                        }
                                                         onChange={selectAllAdGroups}
                                                     />
                                                 </th>
@@ -1451,59 +1785,113 @@ const AdManagementTab = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {adGroups.map(group => (
-                                                <tr key={group.id} className={group.status === 'paused' ? 'paused-ad-group' : group.status === 'draft' ? 'draft-ad-group' : ''}>
+                                            {adGroups.map((group) => (
+                                                <tr
+                                                    key={group.id}
+                                                    className={
+                                                        group.status === 'paused'
+                                                            ? 'paused-ad-group'
+                                                            : group.status === 'draft'
+                                                              ? 'draft-ad-group'
+                                                              : ''
+                                                    }
+                                                >
                                                     <td>
                                                         <input
                                                             type="checkbox"
-                                                            checked={selectedAdGroups.includes(group.id)}
-                                                            onChange={() => toggleAdGroupSelection(group.id)}
+                                                            checked={selectedAdGroups.includes(
+                                                                group.id,
+                                                            )}
+                                                            onChange={() =>
+                                                                toggleAdGroupSelection(group.id)
+                                                            }
                                                         />
                                                     </td>
                                                     <td>
                                                         <div className="ad-group-info">
                                                             <div className="ad-group-header">
                                                                 <strong>{group.name}</strong>
-                                                                <span className="ad-group-id">ID: {group.id}</span>
+                                                                <span className="ad-group-id">
+                                                                    ID: {group.id}
+                                                                </span>
                                                             </div>
                                                             <div className="campaign-reference">
-                                                                <span className="campaign-label">Campaign:</span>
+                                                                <span className="campaign-label">
+                                                                    Campaign:
+                                                                </span>
                                                                 <span className="campaign-name">
-                                                                    {campaigns.find(c => c.id === group.campaign_id)?.name || 'Unknown'}
+                                                                    {campaigns.find(
+                                                                        (c) =>
+                                                                            c.id ===
+                                                                            group.campaign_id,
+                                                                    )?.name || 'Unknown'}
                                                                 </span>
                                                             </div>
                                                             <div className="ad-group-meta">
-                                                                <span className="ad-group-created">Created: {new Date(group.created_at).toLocaleDateString()}</span>
-                                                                <span className="ad-group-updated">Updated: {new Date(group.updated_at).toLocaleDateString()}</span>
-                                                                <span className="creatives-count">{group.creatives_count} creatives</span>
+                                                                <span className="ad-group-created">
+                                                                    Created:{' '}
+                                                                    {new Date(
+                                                                        group.created_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
+                                                                <span className="ad-group-updated">
+                                                                    Updated:{' '}
+                                                                    {new Date(
+                                                                        group.updated_at,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
+                                                                <span className="creatives-count">
+                                                                    {group.creatives_count}{' '}
+                                                                    creatives
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td>
                                                         <div className="targeting-info">
                                                             <div className="status-badge">
-                                                                <span className={`status-pill ${getStatusBadge(group.status).color}`}>
-                                                                    {getStatusBadge(group.status).icon}
-                                                                    {getStatusBadge(group.status).text}
+                                                                <span
+                                                                    className={`status-pill ${getStatusBadge(group.status).color}`}
+                                                                >
+                                                                    {
+                                                                        getStatusBadge(group.status)
+                                                                            .icon
+                                                                    }
+                                                                    {
+                                                                        getStatusBadge(group.status)
+                                                                            .text
+                                                                    }
                                                                 </span>
                                                             </div>
                                                             <div className="targeting-details">
                                                                 <div className="targeting-section">
-                                                                    <span className="targeting-label">Locations:</span>
+                                                                    <span className="targeting-label">
+                                                                        Locations:
+                                                                    </span>
                                                                     <span className="targeting-values">
-                                                                        {group.targeting.locations?.join(', ') || 'All'}
+                                                                        {group.targeting.locations?.join(
+                                                                            ', ',
+                                                                        ) || 'All'}
                                                                     </span>
                                                                 </div>
                                                                 <div className="targeting-section">
-                                                                    <span className="targeting-label">Devices:</span>
+                                                                    <span className="targeting-label">
+                                                                        Devices:
+                                                                    </span>
                                                                     <span className="targeting-values">
-                                                                        {group.targeting.devices?.join(', ') || 'All'}
+                                                                        {group.targeting.devices?.join(
+                                                                            ', ',
+                                                                        ) || 'All'}
                                                                     </span>
                                                                 </div>
                                                                 <div className="targeting-section">
-                                                                    <span className="targeting-label">Interests:</span>
+                                                                    <span className="targeting-label">
+                                                                        Interests:
+                                                                    </span>
                                                                     <span className="targeting-values">
-                                                                        {group.targeting.interests?.join(', ') || 'None'}
+                                                                        {group.targeting.interests?.join(
+                                                                            ', ',
+                                                                        ) || 'None'}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -1515,29 +1903,56 @@ const AdManagementTab = () => {
                                                                 <div className="metric-item">
                                                                     <DollarSign size={14} />
                                                                     <div>
-                                                                        <strong>{group.bid_strategy.bid_amount.toFixed(2)}</strong>
-                                                                        <small>{group.bid_strategy.bid_type.toUpperCase()}</small>
+                                                                        <strong>
+                                                                            {group.bid_strategy.bid_amount.toFixed(
+                                                                                2,
+                                                                            )}
+                                                                        </strong>
+                                                                        <small>
+                                                                            {group.bid_strategy.bid_type.toUpperCase()}
+                                                                        </small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Settings size={14} />
                                                                     <div>
-                                                                        <strong>{group.bid_strategy.bid_strategy}</strong>
+                                                                        <strong>
+                                                                            {
+                                                                                group.bid_strategy
+                                                                                    .bid_strategy
+                                                                            }
+                                                                        </strong>
                                                                         <small>Bid Strategy</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="bid-limits">
                                                                 {group.bid_strategy.bid_ceiling && (
-                                                                    <span className="bid-limit">Max: {group.bid_strategy.bid_ceiling}</span>
+                                                                    <span className="bid-limit">
+                                                                        Max:{' '}
+                                                                        {
+                                                                            group.bid_strategy
+                                                                                .bid_ceiling
+                                                                        }
+                                                                    </span>
                                                                 )}
                                                                 {group.bid_strategy.bid_floor && (
-                                                                    <span className="bid-limit">Min: {group.bid_strategy.bid_floor}</span>
+                                                                    <span className="bid-limit">
+                                                                        Min:{' '}
+                                                                        {
+                                                                            group.bid_strategy
+                                                                                .bid_floor
+                                                                        }
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                             <div className="ad-rotation">
-                                                                <span className="rotation-label">Rotation:</span>
-                                                                <span className="rotation-value">{group.ad_rotation}</span>
+                                                                <span className="rotation-label">
+                                                                    Rotation:
+                                                                </span>
+                                                                <span className="rotation-value">
+                                                                    {group.ad_rotation}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -1547,37 +1962,66 @@ const AdManagementTab = () => {
                                                                 <div className="metric-item">
                                                                     <Eye size={14} />
                                                                     <div>
-                                                                        <strong>{group.total_impressions.toLocaleString()}</strong>
+                                                                        <strong>
+                                                                            {group.total_impressions.toLocaleString()}
+                                                                        </strong>
                                                                         <small>Impressions</small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Users size={14} />
                                                                     <div>
-                                                                        <strong>{group.total_clicks.toLocaleString()}</strong>
+                                                                        <strong>
+                                                                            {group.total_clicks.toLocaleString()}
+                                                                        </strong>
                                                                         <small>Clicks</small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <DollarSign size={14} />
                                                                     <div>
-                                                                        <strong>{formatCurrency(group.total_spend, 'USD')}</strong>
+                                                                        <strong>
+                                                                            {formatCurrency(
+                                                                                group.total_spend,
+                                                                                'USD',
+                                                                            )}
+                                                                        </strong>
                                                                         <small>Spend</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="performance-rates">
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CTR:</span>
-                                                                    <span className="rate-value">{formatPercentage(group.ctr)}</span>
+                                                                    <span className="rate-label">
+                                                                        CTR:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatPercentage(
+                                                                            group.ctr,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CPM:</span>
-                                                                    <span className="rate-value">{formatCurrency(group.cpm, 'USD')}</span>
+                                                                    <span className="rate-label">
+                                                                        CPM:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatCurrency(
+                                                                            group.cpm,
+                                                                            'USD',
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CPC:</span>
-                                                                    <span className="rate-value">{formatCurrency(group.cpc, 'USD')}</span>
+                                                                    <span className="rate-label">
+                                                                        CPC:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatCurrency(
+                                                                            group.cpc,
+                                                                            'USD',
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1586,7 +2030,9 @@ const AdManagementTab = () => {
                                                         <div className="action-buttons">
                                                             <button
                                                                 className="action-btn edit"
-                                                                onClick={() => handleEditAdGroup(group)}
+                                                                onClick={() =>
+                                                                    handleEditAdGroup(group)
+                                                                }
                                                                 title="Edit Ad Group"
                                                             >
                                                                 <Edit size={16} />
@@ -1598,12 +2044,20 @@ const AdManagementTab = () => {
                                                                         ...group,
                                                                         id: `group_${Date.now()}`,
                                                                         name: `${group.name} - Copy`,
-                                                                        created_at: new Date().toISOString(),
-                                                                        updated_at: new Date().toISOString(),
-                                                                        status: 'draft'
+                                                                        created_at:
+                                                                            new Date().toISOString(),
+                                                                        updated_at:
+                                                                            new Date().toISOString(),
+                                                                        status: 'draft',
                                                                     };
-                                                                    setAdGroups(prev => [...prev, newGroup]);
-                                                                    showToast('Ad group duplicated', 'success');
+                                                                    setAdGroups((prev) => [
+                                                                        ...prev,
+                                                                        newGroup,
+                                                                    ]);
+                                                                    showToast(
+                                                                        'Ad group duplicated',
+                                                                        'success',
+                                                                    );
                                                                 }}
                                                                 title="Duplicate Ad Group"
                                                             >
@@ -1611,7 +2065,9 @@ const AdManagementTab = () => {
                                                             </button>
                                                             <button
                                                                 className="action-btn delete"
-                                                                onClick={() => handleDeleteAdGroup(group.id)}
+                                                                onClick={() =>
+                                                                    handleDeleteAdGroup(group.id)
+                                                                }
                                                                 title="Delete Ad Group"
                                                             >
                                                                 <Trash2 size={16} />
@@ -1658,7 +2114,9 @@ const AdManagementTab = () => {
 
                                 <select
                                     value={filters.creative_type}
-                                    onChange={(e) => handleFilterChange('creative_type', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('creative_type', e.target.value)
+                                    }
                                 >
                                     <option value="all">All Types</option>
                                     <option value="image">Image</option>
@@ -1671,7 +2129,9 @@ const AdManagementTab = () => {
                                     type="number"
                                     placeholder="Min impressions"
                                     value={filters.min_impressions}
-                                    onChange={(e) => handleFilterChange('min_impressions', e.target.value)}
+                                    onChange={(e) =>
+                                        handleFilterChange('min_impressions', e.target.value)
+                                    }
                                 />
 
                                 <input
@@ -1684,7 +2144,7 @@ const AdManagementTab = () => {
                         </div>
 
                         <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => { }}>
+                            <button className="refresh-btn" onClick={() => {}}>
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
@@ -1732,14 +2192,22 @@ const AdManagementTab = () => {
                                     <div className="select-all">
                                         <input
                                             type="checkbox"
-                                            checked={selectedCreatives.length === adCreatives.length && adCreatives.length > 0}
+                                            checked={
+                                                selectedCreatives.length === adCreatives.length &&
+                                                adCreatives.length > 0
+                                            }
                                             onChange={selectAllCreatives}
                                         />
                                         <span>Select All</span>
                                     </div>
                                     <div className="table-actions">
-                                        <span className="creative-count">{adCreatives.length} creatives found</span>
-                                        <button className="btn-primary" onClick={handleCreateCreative}>
+                                        <span className="creative-count">
+                                            {adCreatives.length} creatives found
+                                        </span>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleCreateCreative}
+                                        >
                                             <Plus size={18} />
                                             Create Creative
                                         </button>
@@ -1753,7 +2221,11 @@ const AdManagementTab = () => {
                                                 <th>
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedCreatives.length === adCreatives.length && adCreatives.length > 0}
+                                                        checked={
+                                                            selectedCreatives.length ===
+                                                                adCreatives.length &&
+                                                            adCreatives.length > 0
+                                                        }
                                                         onChange={selectAllCreatives}
                                                     />
                                                 </th>
@@ -1765,25 +2237,53 @@ const AdManagementTab = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {adCreatives.map(creative => (
-                                                <tr key={creative.id} className={creative.status === 'paused' ? 'paused-creative' : creative.status === 'draft' ? 'draft-creative' : ''}>
+                                            {adCreatives.map((creative) => (
+                                                <tr
+                                                    key={creative.id}
+                                                    className={
+                                                        creative.status === 'paused'
+                                                            ? 'paused-creative'
+                                                            : creative.status === 'draft'
+                                                              ? 'draft-creative'
+                                                              : ''
+                                                    }
+                                                >
                                                     <td>
                                                         <input
                                                             type="checkbox"
-                                                            checked={selectedCreatives.includes(creative.id)}
-                                                            onChange={() => toggleCreativeSelection(creative.id)}
+                                                            checked={selectedCreatives.includes(
+                                                                creative.id,
+                                                            )}
+                                                            onChange={() =>
+                                                                toggleCreativeSelection(creative.id)
+                                                            }
                                                         />
                                                     </td>
                                                     <td>
                                                         <div className="creative-content">
                                                             <div className="creative-media-preview">
-                                                                {creative.creative_type === 'image' ? (
-                                                                    <img src={creative.assets[0]?.asset_url} alt="Creative Preview" className="creative-thumbnail" />
+                                                                {creative.creative_type ===
+                                                                'image' ? (
+                                                                    <img
+                                                                        src={
+                                                                            creative.assets[0]
+                                                                                ?.asset_url
+                                                                        }
+                                                                        alt="Creative Preview"
+                                                                        className="creative-thumbnail"
+                                                                    />
                                                                 ) : (
-                                                                    <video src={creative.assets[0]?.asset_url} className="creative-thumbnail" />
+                                                                    <video
+                                                                        src={
+                                                                            creative.assets[0]
+                                                                                ?.asset_url
+                                                                        }
+                                                                        className="creative-thumbnail"
+                                                                    />
                                                                 )}
                                                                 <div className="creative-type-overlay">
-                                                                    {creative.creative_type === 'image' ? (
+                                                                    {creative.creative_type ===
+                                                                    'image' ? (
                                                                         <Image size={16} />
                                                                     ) : (
                                                                         <Video size={16} />
@@ -1793,16 +2293,28 @@ const AdManagementTab = () => {
                                                             <div className="creative-info">
                                                                 <div className="creative-header">
                                                                     <strong>{creative.name}</strong>
-                                                                    <span className="creative-id">ID: {creative.id}</span>
+                                                                    <span className="creative-id">
+                                                                        ID: {creative.id}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="creative-text">
-                                                                    <div className="creative-headline">{creative.headline}</div>
-                                                                    <div className="creative-description">{creative.description}</div>
-                                                                    <div className="creative-cta">{creative.call_to_action}</div>
+                                                                    <div className="creative-headline">
+                                                                        {creative.headline}
+                                                                    </div>
+                                                                    <div className="creative-description">
+                                                                        {creative.description}
+                                                                    </div>
+                                                                    <div className="creative-cta">
+                                                                        {creative.call_to_action}
+                                                                    </div>
                                                                 </div>
                                                                 <div className="creative-meta">
-                                                                    <span className="creative-url">{creative.display_url}</span>
-                                                                    <span className="creative-final-url">{creative.final_url}</span>
+                                                                    <span className="creative-url">
+                                                                        {creative.display_url}
+                                                                    </span>
+                                                                    <span className="creative-final-url">
+                                                                        {creative.final_url}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1810,21 +2322,44 @@ const AdManagementTab = () => {
                                                     <td>
                                                         <div className="status-info">
                                                             <div className="status-badge">
-                                                                <span className={`status-pill ${getStatusBadge(creative.status).color}`}>
-                                                                    {getStatusBadge(creative.status).icon}
-                                                                    {getStatusBadge(creative.status).text}
+                                                                <span
+                                                                    className={`status-pill ${getStatusBadge(creative.status).color}`}
+                                                                >
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            creative.status,
+                                                                        ).icon
+                                                                    }
+                                                                    {
+                                                                        getStatusBadge(
+                                                                            creative.status,
+                                                                        ).text
+                                                                    }
                                                                 </span>
-                                                                <span className={`creative-type-pill ${creative.creative_type === 'image' ? 'green' : 'purple'}`}>
-                                                                    {creative.creative_type === 'image' ? <Image size={12} /> : <Video size={12} />}
+                                                                <span
+                                                                    className={`creative-type-pill ${creative.creative_type === 'image' ? 'green' : 'purple'}`}
+                                                                >
+                                                                    {creative.creative_type ===
+                                                                    'image' ? (
+                                                                        <Image size={12} />
+                                                                    ) : (
+                                                                        <Video size={12} />
+                                                                    )}
                                                                     {creative.creative_type.toUpperCase()}
                                                                 </span>
                                                             </div>
                                                             <div className="creative-stats">
                                                                 <span className="ad-group-reference">
-                                                                    Ad Group: {adGroups.find(g => g.id === creative.ad_group_id)?.name || 'Unknown'}
+                                                                    Ad Group:{' '}
+                                                                    {adGroups.find(
+                                                                        (g) =>
+                                                                            g.id ===
+                                                                            creative.ad_group_id,
+                                                                    )?.name || 'Unknown'}
                                                                 </span>
                                                                 <span className="creative-variants">
-                                                                    Variants: {creative.variants?.length || 0}
+                                                                    Variants:{' '}
+                                                                    {creative.variants?.length || 0}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1835,37 +2370,63 @@ const AdManagementTab = () => {
                                                                 <div className="metric-item">
                                                                     <Eye size={14} />
                                                                     <div>
-                                                                        <strong>{creative.impressions.toLocaleString()}</strong>
+                                                                        <strong>
+                                                                            {creative.impressions.toLocaleString()}
+                                                                        </strong>
                                                                         <small>Impressions</small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <Users size={14} />
                                                                     <div>
-                                                                        <strong>{creative.clicks.toLocaleString()}</strong>
+                                                                        <strong>
+                                                                            {creative.clicks.toLocaleString()}
+                                                                        </strong>
                                                                         <small>Clicks</small>
                                                                     </div>
                                                                 </div>
                                                                 <div className="metric-item">
                                                                     <TrendingUp size={14} />
                                                                     <div>
-                                                                        <strong>{creative.conversions}</strong>
+                                                                        <strong>
+                                                                            {creative.conversions}
+                                                                        </strong>
                                                                         <small>Conversions</small>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="performance-rates">
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CTR:</span>
-                                                                    <span className="rate-value">{formatPercentage(creative.ctr)}</span>
+                                                                    <span className="rate-label">
+                                                                        CTR:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatPercentage(
+                                                                            creative.ctr,
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CPM:</span>
-                                                                    <span className="rate-value">{formatCurrency(creative.cpm, 'USD')}</span>
+                                                                    <span className="rate-label">
+                                                                        CPM:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatCurrency(
+                                                                            creative.cpm,
+                                                                            'USD',
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rate-item">
-                                                                    <span className="rate-label">CPC:</span>
-                                                                    <span className="rate-value">{formatCurrency(creative.cpc, 'USD')}</span>
+                                                                    <span className="rate-label">
+                                                                        CPC:
+                                                                    </span>
+                                                                    <span className="rate-value">
+                                                                        {formatCurrency(
+                                                                            creative.cpc,
+                                                                            'USD',
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1874,16 +2435,37 @@ const AdManagementTab = () => {
                                                         <div className="quality-info">
                                                             <div className="quality-metrics">
                                                                 <div className="metric-item">
-                                                                    <span className="quality-label">Quality Score:</span>
-                                                                    <span className="quality-value">{creative.quality_score.toFixed(1)}/10</span>
+                                                                    <span className="quality-label">
+                                                                        Quality Score:
+                                                                    </span>
+                                                                    <span className="quality-value">
+                                                                        {creative.quality_score.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                        /10
+                                                                    </span>
                                                                 </div>
                                                                 <div className="metric-item">
-                                                                    <span className="quality-label">Relevance Score:</span>
-                                                                    <span className="quality-value">{creative.relevance_score.toFixed(1)}/10</span>
+                                                                    <span className="quality-label">
+                                                                        Relevance Score:
+                                                                    </span>
+                                                                    <span className="quality-value">
+                                                                        {creative.relevance_score.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                        /10
+                                                                    </span>
                                                                 </div>
                                                                 <div className="metric-item">
-                                                                    <span className="quality-label">Landing Page Score:</span>
-                                                                    <span className="quality-value">{creative.landing_page_score.toFixed(1)}/10</span>
+                                                                    <span className="quality-label">
+                                                                        Landing Page Score:
+                                                                    </span>
+                                                                    <span className="quality-value">
+                                                                        {creative.landing_page_score.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                        /10
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1892,14 +2474,21 @@ const AdManagementTab = () => {
                                                         <div className="action-buttons">
                                                             <button
                                                                 className="action-btn view"
-                                                                onClick={() => window.open(creative.final_url, '_blank')}
+                                                                onClick={() =>
+                                                                    window.open(
+                                                                        creative.final_url,
+                                                                        '_blank',
+                                                                    )
+                                                                }
                                                                 title="Preview Creative"
                                                             >
                                                                 <Eye size={16} />
                                                             </button>
                                                             <button
                                                                 className="action-btn edit"
-                                                                onClick={() => handleEditCreative(creative)}
+                                                                onClick={() =>
+                                                                    handleEditCreative(creative)
+                                                                }
                                                                 title="Edit Creative"
                                                             >
                                                                 <Edit size={16} />
@@ -1911,12 +2500,20 @@ const AdManagementTab = () => {
                                                                         ...creative,
                                                                         id: `creative_${Date.now()}`,
                                                                         name: `${creative.name} - Copy`,
-                                                                        created_at: new Date().toISOString(),
-                                                                        updated_at: new Date().toISOString(),
-                                                                        status: 'draft'
+                                                                        created_at:
+                                                                            new Date().toISOString(),
+                                                                        updated_at:
+                                                                            new Date().toISOString(),
+                                                                        status: 'draft',
                                                                     };
-                                                                    setAdCreatives(prev => [...prev, newCreative]);
-                                                                    showToast('Creative duplicated', 'success');
+                                                                    setAdCreatives((prev) => [
+                                                                        ...prev,
+                                                                        newCreative,
+                                                                    ]);
+                                                                    showToast(
+                                                                        'Creative duplicated',
+                                                                        'success',
+                                                                    );
                                                                 }}
                                                                 title="Duplicate Creative"
                                                             >
@@ -1924,7 +2521,11 @@ const AdManagementTab = () => {
                                                             </button>
                                                             <button
                                                                 className="action-btn delete"
-                                                                onClick={() => handleDeleteCreative(creative.id)}
+                                                                onClick={() =>
+                                                                    handleDeleteCreative(
+                                                                        creative.id,
+                                                                    )
+                                                                }
                                                                 title="Delete Creative"
                                                             >
                                                                 <Trash2 size={16} />
@@ -1966,7 +2567,10 @@ const AdManagementTab = () => {
                             </div>
                             <div className="metric-content">
                                 <div className="metric-value">
-                                    {formatCurrency(mockPerformanceData.reduce((sum, p) => sum + p.spend, 0), 'USD')}
+                                    {formatCurrency(
+                                        mockPerformanceData.reduce((sum, p) => sum + p.spend, 0),
+                                        'USD',
+                                    )}
                                 </div>
                                 <div className="metric-label">Total Spend</div>
                             </div>
@@ -1978,7 +2582,9 @@ const AdManagementTab = () => {
                             </div>
                             <div className="metric-content">
                                 <div className="metric-value">
-                                    {mockPerformanceData.reduce((sum, p) => sum + p.impressions, 0).toLocaleString()}
+                                    {mockPerformanceData
+                                        .reduce((sum, p) => sum + p.impressions, 0)
+                                        .toLocaleString()}
                                 </div>
                                 <div className="metric-label">Total Impressions</div>
                             </div>
@@ -1990,7 +2596,9 @@ const AdManagementTab = () => {
                             </div>
                             <div className="metric-content">
                                 <div className="metric-value">
-                                    {mockPerformanceData.reduce((sum, p) => sum + p.clicks, 0).toLocaleString()}
+                                    {mockPerformanceData
+                                        .reduce((sum, p) => sum + p.clicks, 0)
+                                        .toLocaleString()}
                                 </div>
                                 <div className="metric-label">Total Clicks</div>
                             </div>
@@ -2014,7 +2622,10 @@ const AdManagementTab = () => {
                             </div>
                             <div className="metric-content">
                                 <div className="metric-value">
-                                    {formatPercentage(mockPerformanceData.reduce((sum, p) => sum + p.ctr, 0) / mockPerformanceData.length)}
+                                    {formatPercentage(
+                                        mockPerformanceData.reduce((sum, p) => sum + p.ctr, 0) /
+                                            mockPerformanceData.length,
+                                    )}
                                 </div>
                                 <div className="metric-label">Average CTR</div>
                             </div>
@@ -2026,7 +2637,11 @@ const AdManagementTab = () => {
                             </div>
                             <div className="metric-content">
                                 <div className="metric-value">
-                                    {(mockPerformanceData.reduce((sum, p) => sum + p.roas, 0) / mockPerformanceData.length).toFixed(1)}x
+                                    {(
+                                        mockPerformanceData.reduce((sum, p) => sum + p.roas, 0) /
+                                        mockPerformanceData.length
+                                    ).toFixed(1)}
+                                    x
                                 </div>
                                 <div className="metric-label">Average ROAS</div>
                             </div>
@@ -2036,7 +2651,9 @@ const AdManagementTab = () => {
                     <div className="performance-table-container">
                         <div className="table-header">
                             <h4>Campaign Performance Overview</h4>
-                            <span className="performance-count">{mockPerformanceData.length} campaigns</span>
+                            <span className="performance-count">
+                                {mockPerformanceData.length} campaigns
+                            </span>
                         </div>
 
                         <div className="table-responsive">
@@ -2056,14 +2673,22 @@ const AdManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {mockPerformanceData.map(data => {
-                                        const campaign = campaigns.find(c => c.id === data.campaign_id);
+                                    {mockPerformanceData.map((data) => {
+                                        const campaign = campaigns.find(
+                                            (c) => c.id === data.campaign_id,
+                                        );
                                         return (
                                             <tr key={data.campaign_id}>
                                                 <td>
                                                     <div className="campaign-name">
-                                                        <strong>{campaign?.name || 'Unknown Campaign'}</strong>
-                                                        <span className="campaign-date">{new Date(data.date).toLocaleDateString()}</span>
+                                                        <strong>
+                                                            {campaign?.name || 'Unknown Campaign'}
+                                                        </strong>
+                                                        <span className="campaign-date">
+                                                            {new Date(
+                                                                data.date,
+                                                            ).toLocaleDateString()}
+                                                        </span>
                                                     </div>
                                                 </td>
                                                 <td>{data.impressions.toLocaleString()}</td>
@@ -2088,10 +2713,19 @@ const AdManagementTab = () => {
             {/* Campaign Modal */}
             {showCampaignModal && editingCampaign && (
                 <div className="modal-overlay" onClick={() => setShowCampaignModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>{editingCampaign.id ? 'Edit Campaign' : 'Create New Campaign'}</h3>
-                            <button className="close-btn" onClick={() => setShowCampaignModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowCampaignModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="form-grid">
@@ -2101,7 +2735,12 @@ const AdManagementTab = () => {
                                         type="text"
                                         className="form-input"
                                         value={editingCampaign.name}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, name: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                name: e.target.value,
+                                            })
+                                        }
                                     />
                                 </div>
                                 <div className="form-group">
@@ -2109,7 +2748,12 @@ const AdManagementTab = () => {
                                     <select
                                         className="form-input"
                                         value={editingCampaign.status}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, status: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                status: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="active">Active</option>
                                         <option value="paused">Paused</option>
@@ -2123,7 +2767,12 @@ const AdManagementTab = () => {
                                         type="number"
                                         className="form-input"
                                         value={editingCampaign.daily_budget}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, daily_budget: parseFloat(e.target.value) })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                daily_budget: parseFloat(e.target.value),
+                                            })
+                                        }
                                     />
                                 </div>
                                 <div className="form-group">
@@ -2132,7 +2781,14 @@ const AdManagementTab = () => {
                                         type="number"
                                         className="form-input"
                                         value={editingCampaign.lifetime_budget || ''}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, lifetime_budget: e.target.value ? parseFloat(e.target.value) : null })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                lifetime_budget: e.target.value
+                                                    ? parseFloat(e.target.value)
+                                                    : null,
+                                            })
+                                        }
                                     />
                                 </div>
                                 <div className="form-group">
@@ -2140,7 +2796,12 @@ const AdManagementTab = () => {
                                     <select
                                         className="form-input"
                                         value={editingCampaign.campaign_type}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, campaign_type: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                campaign_type: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="search">Search</option>
                                         <option value="display">Display</option>
@@ -2154,7 +2815,12 @@ const AdManagementTab = () => {
                                     <select
                                         className="form-input"
                                         value={editingCampaign.objective}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, objective: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                objective: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="brand_awareness">Brand Awareness</option>
                                         <option value="traffic">Traffic</option>
@@ -2168,7 +2834,12 @@ const AdManagementTab = () => {
                                     <select
                                         className="form-input"
                                         value={editingCampaign.optimization_goal}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, optimization_goal: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                optimization_goal: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="clicks">Clicks</option>
                                         <option value="conversions">Conversions</option>
@@ -2181,7 +2852,12 @@ const AdManagementTab = () => {
                                     <select
                                         className="form-input"
                                         value={editingCampaign.bidding_strategy}
-                                        onChange={(e) => setEditingCampaign({ ...editingCampaign, bidding_strategy: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditingCampaign({
+                                                ...editingCampaign,
+                                                bidding_strategy: e.target.value,
+                                            })
+                                        }
                                     >
                                         <option value="manual_cpc">Manual CPC</option>
                                         <option value="automatic_cpc">Automatic CPC</option>
@@ -2197,7 +2873,12 @@ const AdManagementTab = () => {
                                     className="form-input"
                                     rows="4"
                                     value={editingCampaign.description}
-                                    onChange={(e) => setEditingCampaign({ ...editingCampaign, description: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditingCampaign({
+                                            ...editingCampaign,
+                                            description: e.target.value,
+                                        })
+                                    }
                                 ></textarea>
                             </div>
 
@@ -2207,7 +2888,12 @@ const AdManagementTab = () => {
                                     type="date"
                                     className="form-input"
                                     value={editingCampaign.start_date}
-                                    onChange={(e) => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditingCampaign({
+                                            ...editingCampaign,
+                                            start_date: e.target.value,
+                                        })
+                                    }
                                 />
                             </div>
 
@@ -2217,57 +2903,76 @@ const AdManagementTab = () => {
                                     type="date"
                                     className="form-input"
                                     value={editingCampaign.end_date || ''}
-                                    onChange={(e) => setEditingCampaign({ ...editingCampaign, end_date: e.target.value || null })}
+                                    onChange={(e) =>
+                                        setEditingCampaign({
+                                            ...editingCampaign,
+                                            end_date: e.target.value || null,
+                                        })
+                                    }
                                 />
                             </div>
                         </div>
                         <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={() => setShowCampaignModal(false)}>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowCampaignModal(false)}
+                            >
                                 Cancel
                             </button>
-                            <button type="button" className="btn-primary" onClick={() => {
-                                if (editingCampaign.id) {
-                                    setCampaigns(prev => prev.map(c => c.id === editingCampaign.id ? editingCampaign : c));
-                                } else {
-                                    const newCampaign = {
-                                        ...editingCampaign,
-                                        id: `campaign_${Date.now()}`,
-                                        created_at: new Date().toISOString(),
-                                        updated_at: new Date().toISOString(),
-                                        budget: {
-                                            daily_budget: editingCampaign.daily_budget,
-                                            lifetime_budget: editingCampaign.lifetime_budget,
-                                            budget_type: editingCampaign.lifetime_budget ? 'lifetime' : 'daily',
-                                            budget_delivery: 'standard',
-                                            currency: 'USD',
-                                            spent_today: 0,
-                                            spent_lifetime: 0,
-                                            remaining_daily: editingCampaign.daily_budget,
-                                            remaining_lifetime: editingCampaign.lifetime_budget,
-                                            budget_utilization: 0
-                                        },
-                                        groups_count: 0,
-                                        creatives_count: 0,
-                                        total_spend: 0,
-                                        total_impressions: 0,
-                                        total_clicks: 0,
-                                        total_conversions: 0,
-                                        ctr: 0,
-                                        cpm: 0,
-                                        cpc: 0,
-                                        roas: 0,
-                                        conversion_rate: 0,
-                                        quality_score: 0,
-                                        ad_rank: 0,
-                                        performance_score: 0,
-                                        last_updated: new Date().toISOString()
-                                    };
-                                    setCampaigns(prev => [...prev, newCampaign]);
-                                }
-                                setShowCampaignModal(false);
-                                setEditingCampaign(null);
-                                showToast('Campaign saved successfully', 'success');
-                            }}>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={() => {
+                                    if (editingCampaign.id) {
+                                        setCampaigns((prev) =>
+                                            prev.map((c) =>
+                                                c.id === editingCampaign.id ? editingCampaign : c,
+                                            ),
+                                        );
+                                    } else {
+                                        const newCampaign = {
+                                            ...editingCampaign,
+                                            id: `campaign_${Date.now()}`,
+                                            created_at: new Date().toISOString(),
+                                            updated_at: new Date().toISOString(),
+                                            budget: {
+                                                daily_budget: editingCampaign.daily_budget,
+                                                lifetime_budget: editingCampaign.lifetime_budget,
+                                                budget_type: editingCampaign.lifetime_budget
+                                                    ? 'lifetime'
+                                                    : 'daily',
+                                                budget_delivery: 'standard',
+                                                currency: 'USD',
+                                                spent_today: 0,
+                                                spent_lifetime: 0,
+                                                remaining_daily: editingCampaign.daily_budget,
+                                                remaining_lifetime: editingCampaign.lifetime_budget,
+                                                budget_utilization: 0,
+                                            },
+                                            groups_count: 0,
+                                            creatives_count: 0,
+                                            total_spend: 0,
+                                            total_impressions: 0,
+                                            total_clicks: 0,
+                                            total_conversions: 0,
+                                            ctr: 0,
+                                            cpm: 0,
+                                            cpc: 0,
+                                            roas: 0,
+                                            conversion_rate: 0,
+                                            quality_score: 0,
+                                            ad_rank: 0,
+                                            performance_score: 0,
+                                            last_updated: new Date().toISOString(),
+                                        };
+                                        setCampaigns((prev) => [...prev, newCampaign]);
+                                    }
+                                    setShowCampaignModal(false);
+                                    setEditingCampaign(null);
+                                    showToast('Campaign saved successfully', 'success');
+                                }}
+                            >
                                 Save Campaign
                             </button>
                         </div>
@@ -2278,10 +2983,19 @@ const AdManagementTab = () => {
             {/* Performance Modal */}
             {showPerformanceModal && (
                 <div className="modal-overlay" onClick={() => setShowPerformanceModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1200px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1200px' }}
+                    >
                         <div className="modal-header">
                             <h3>Campaign Analytics Dashboard</h3>
-                            <button className="close-btn" onClick={() => setShowPerformanceModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowPerformanceModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="analytics-grid">
@@ -2300,20 +3014,38 @@ const AdManagementTab = () => {
             {/* Reports Modal */}
             {showReportsModal && (
                 <div className="modal-overlay" onClick={() => setShowReportsModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1000px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1000px' }}
+                    >
                         <div className="modal-header">
                             <h3>Advertising Reports</h3>
-                            <button className="close-btn" onClick={() => setShowReportsModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowReportsModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="reports-list">
-                                {mockReports.map(report => (
+                                {mockReports.map((report) => (
                                     <div key={report.id} className="report-item">
                                         <div className="report-header">
                                             <div className="report-info">
-                                                <strong>{report.report_type.replace('_', ' ').toUpperCase()}</strong>
-                                                <span className="report-date">Generated: {new Date(report.generated_at).toLocaleString()}</span>
-                                                <span className="report-by">By: {report.generated_by}</span>
+                                                <strong>
+                                                    {report.report_type
+                                                        .replace('_', ' ')
+                                                        .toUpperCase()}
+                                                </strong>
+                                                <span className="report-date">
+                                                    Generated:{' '}
+                                                    {new Date(report.generated_at).toLocaleString()}
+                                                </span>
+                                                <span className="report-by">
+                                                    By: {report.generated_by}
+                                                </span>
                                             </div>
                                             <div className="report-actions">
                                                 <button className="report-action-btn">
@@ -2328,26 +3060,44 @@ const AdManagementTab = () => {
                                         </div>
 
                                         <div className="report-meta">
-                                            <span className="report-range">Date Range: {report.date_range}</span>
-                                            <span className="report-currency">Currency: {report.currency}</span>
-                                            <span className="report-campaigns">Campaigns: {report.campaigns?.length || report.ad_groups?.length || 0}</span>
+                                            <span className="report-range">
+                                                Date Range: {report.date_range}
+                                            </span>
+                                            <span className="report-currency">
+                                                Currency: {report.currency}
+                                            </span>
+                                            <span className="report-campaigns">
+                                                Campaigns:{' '}
+                                                {report.campaigns?.length ||
+                                                    report.ad_groups?.length ||
+                                                    0}
+                                            </span>
                                         </div>
 
                                         <div className="report-summary">
                                             <div className="summary-metrics">
                                                 <div className="metric-item">
                                                     <DollarSign size={16} />
-                                                    <span>{formatCurrency(report.total_spend, report.currency)}</span>
+                                                    <span>
+                                                        {formatCurrency(
+                                                            report.total_spend,
+                                                            report.currency,
+                                                        )}
+                                                    </span>
                                                     <small>Total Spend</small>
                                                 </div>
                                                 <div className="metric-item">
                                                     <Eye size={16} />
-                                                    <span>{report.total_impressions.toLocaleString()}</span>
+                                                    <span>
+                                                        {report.total_impressions.toLocaleString()}
+                                                    </span>
                                                     <small>Impressions</small>
                                                 </div>
                                                 <div className="metric-item">
                                                     <Users size={16} />
-                                                    <span>{report.total_clicks.toLocaleString()}</span>
+                                                    <span>
+                                                        {report.total_clicks.toLocaleString()}
+                                                    </span>
                                                     <small>Clicks</small>
                                                 </div>
                                                 <div className="metric-item">
@@ -2360,20 +3110,34 @@ const AdManagementTab = () => {
                                             <div className="summary-rates">
                                                 <div className="rate-item">
                                                     <span className="rate-label">CTR:</span>
-                                                    <span className="rate-value">{formatPercentage(report.overall_ctr)}</span>
+                                                    <span className="rate-value">
+                                                        {formatPercentage(report.overall_ctr)}
+                                                    </span>
                                                 </div>
                                                 <div className="rate-item">
                                                     <span className="rate-label">CPM:</span>
-                                                    <span className="rate-value">{formatCurrency(report.overall_cpm, report.currency)}</span>
+                                                    <span className="rate-value">
+                                                        {formatCurrency(
+                                                            report.overall_cpm,
+                                                            report.currency,
+                                                        )}
+                                                    </span>
                                                 </div>
                                                 <div className="rate-item">
                                                     <span className="rate-label">CPC:</span>
-                                                    <span className="rate-value">{formatCurrency(report.overall_cpc, report.currency)}</span>
+                                                    <span className="rate-value">
+                                                        {formatCurrency(
+                                                            report.overall_cpc,
+                                                            report.currency,
+                                                        )}
+                                                    </span>
                                                 </div>
                                                 {report.overall_roas && (
                                                     <div className="rate-item">
                                                         <span className="rate-label">ROAS:</span>
-                                                        <span className="rate-value">{report.overall_roas.toFixed(1)}x</span>
+                                                        <span className="rate-value">
+                                                            {report.overall_roas.toFixed(1)}x
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>

@@ -1,29 +1,10 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout.jsx';
+import AuthLayout from './layouts/AuthLayout.jsx';
 import HomePage from './pages/HomePage.jsx';
 import FeedPage from './pages/FeedPage.jsx';
-import MarketplacePage from './pages/MarketplacePage.jsx';
-import MarketplaceItemPage from './pages/MarketplaceItemPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
-import StatusPage from './pages/StatusPage.jsx';
-import MessagesPage from './pages/MessagesPage.jsx';
-import GroupsPage from './pages/GroupsPage.jsx';
-import GroupDetailPage from './pages/GroupDetailPage.jsx';
-import EventsPage from './pages/EventsPage.jsx';
-import EventDetailPage from './pages/EventDetailPage.jsx';
-import HookupPage from './pages/HookupPage.jsx';
-import StudyRoomsPage from './pages/StudyRoomsPage.jsx';
-import RecallPage from './pages/RecallPage.jsx';
-import AiPage from './pages/AiPage.jsx';
-import NotificationsPage from './pages/NotificationsPage.jsx';
-import SettingsPage from './pages/SettingsPage.jsx';
-import DonatePage from './pages/DonatePage.jsx';
-import PremiumPage from './pages/PremiumPage.jsx';
-import SearchResultsPage from './pages/SearchResultsPage.jsx';
-import ExplorePage from './pages/ExplorePage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
-import AdminDashboard from './pages/AdminDashboard.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import LegalPage from './pages/LegalPage.jsx';
@@ -37,55 +18,117 @@ import UploadProgress from './components/UploadProgress.jsx';
 import GlobalBackButton from './components/GlobalBackButton.jsx';
 import { WebsocketProvider } from './context/WebsocketContext.jsx';
 import { AblyProvider } from './context/AblyContext.jsx';
-import RevisionMaterialsPage from './pages/RevisionMaterialsPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
+// Dynamically imported components for code splitting
+const ExplorePage = lazy(() => import('./pages/ExplorePage.jsx'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage.jsx'));
+const MarketplaceItemPage = lazy(() => import('./pages/MarketplaceItemPage.jsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
+const StatusPage = lazy(() => import('./pages/StatusPage.jsx'));
+const MessagesPage = lazy(() => import('./pages/MessagesPage.jsx'));
+const GroupsPage = lazy(() => import('./pages/GroupsPage.jsx'));
+const GroupDetailPage = lazy(() => import('./pages/GroupDetailPage.jsx'));
+const EventsPage = lazy(() => import('./pages/EventsPage.jsx'));
+const EventDetailPage = lazy(() => import('./pages/EventDetailPage.jsx'));
+const HookupPage = lazy(() => import('./pages/HookupPage.jsx'));
+const StudyRoomsPage = lazy(() => import('./pages/StudyRoomsPage.jsx'));
+const RecallPage = lazy(() => import('./pages/RecallPage.jsx'));
+const AiPage = lazy(() => import('./pages/AiPage.jsx'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage.jsx'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const DonatePage = lazy(() => import('./pages/DonatePage.jsx'));
+const PremiumPage = lazy(() => import('./pages/PremiumPage.jsx'));
+const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage.jsx'));
+const RevisionMaterialsPage = lazy(() => import('./pages/RevisionMaterialsPage.jsx'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
+
 function App() {
-  return (
-    <AblyProvider>
-      <WebsocketProvider>
-        <GlobalBackButton />
-        <Routes>
-          <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
-          <Route path="/explore" element={<MainLayout><ExplorePage /></MainLayout>} />
-          <Route path="/about" element={<MainLayout><AboutPage /></MainLayout>} />
-          <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
-          <Route path="/legal" element={<MainLayout><LegalPage /></MainLayout>} />
-          <Route path="/feed" element={<ProtectedRoute><MainLayout><FeedPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/post/:postId" element={<ProtectedRoute><MainLayout><PostDetailPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/marketplace" element={<ProtectedRoute><MainLayout><MarketplacePage /></MainLayout></ProtectedRoute>} />
-          <Route path="/marketplace/item/:itemId" element={<ProtectedRoute><MainLayout><MarketplaceItemPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/profile/:username?" element={<ProtectedRoute><MainLayout><ProfilePage /></MainLayout></ProtectedRoute>} />
-          <Route path="/status" element={<ProtectedRoute><MainLayout><StatusPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><MainLayout><MessagesPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/groups" element={<ProtectedRoute><MainLayout><GroupsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/groups/:groupId" element={<ProtectedRoute><MainLayout><GroupDetailPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/events" element={<ProtectedRoute><MainLayout><EventsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/events/:eventId" element={<ProtectedRoute><MainLayout><EventDetailPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/date" element={<ProtectedRoute><MainLayout><HookupPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/study-rooms" element={<ProtectedRoute><MainLayout><StudyRoomsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/study-rooms/:roomId" element={<ProtectedRoute><MainLayout><StudyRoomsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/recall" element={<ProtectedRoute><MainLayout><RecallPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/ai-assistant" element={<ProtectedRoute><AiPage /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><MainLayout><NotificationsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><MainLayout><SettingsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/donate" element={<ProtectedRoute><MainLayout><DonatePage /></MainLayout></ProtectedRoute>} />
-          <Route path="/premium" element={<ProtectedRoute><MainLayout><PremiumPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/search" element={<ProtectedRoute><MainLayout><SearchResultsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/revision-materials" element={<ProtectedRoute><MainLayout><RevisionMaterialsPage /></MainLayout></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-          {/* Auth Pages */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/verification" element={<VerificationPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/get-account" element={<GetAccountPage />} />
-          <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />
-        </Routes>
-        <UploadProgress />
-      </WebsocketProvider>
-    </AblyProvider>
-  );
+    return (
+        <AblyProvider>
+            <WebsocketProvider>
+                <GlobalBackButton />
+                <Suspense
+                    fallback={
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                height: '100vh',
+                                fontSize: '1.2rem',
+                            }}
+                        >
+                            Loading...
+                        </div>
+                    }
+                >
+                    <Routes>
+                        <Route element={<AuthLayout />}>
+                            <Route path="/login" element={<LoginPage />} />
+                            <Route path="/register" element={<RegisterPage />} />
+                            <Route path="/verification" element={<VerificationPage />} />
+                            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                            <Route path="/get-account" element={<GetAccountPage />} />
+                        </Route>
+
+                        <Route path="/" element={<MainLayout />}>
+                            <Route index element={<HomePage />} />
+                            <Route path="about" element={<AboutPage />} />
+                            <Route path="contact" element={<ContactPage />} />
+                            <Route path="legal" element={<LegalPage />} />
+                            <Route path="explore" element={<ExplorePage />} />
+
+                            <Route element={<ProtectedRoute />}>
+                                <Route path="feed" element={<FeedPage />} />
+                                <Route path="post/:postId" element={<PostDetailPage />} />
+                                <Route path="marketplace" element={<MarketplacePage />} />
+                                <Route
+                                    path="marketplace/item/:itemId"
+                                    element={<MarketplaceItemPage />}
+                                />
+                                <Route path="profile/:username?" element={<ProfilePage />} />
+                                <Route path="status" element={<StatusPage />} />
+                                <Route path="messages" element={<MessagesPage />} />
+                                <Route path="groups" element={<GroupsPage />} />
+                                <Route path="groups/:groupId" element={<GroupDetailPage />} />
+                                <Route path="events" element={<EventsPage />} />
+                                <Route path="events/:eventId" element={<EventDetailPage />} />
+                                <Route path="date" element={<HookupPage />} />
+                                <Route path="study-rooms" element={<StudyRoomsPage />} />
+                                <Route path="study-rooms/:roomId" element={<StudyRoomsPage />} />
+                                <Route path="recall" element={<RecallPage />} />
+                                <Route path="notifications" element={<NotificationsPage />} />
+                                <Route path="settings" element={<SettingsPage />} />
+                                <Route path="donate" element={<DonatePage />} />
+                                <Route path="premium" element={<PremiumPage />} />
+                                <Route path="search" element={<SearchResultsPage />} />
+                                <Route
+                                    path="revision-materials"
+                                    element={<RevisionMaterialsPage />}
+                                />
+                            </Route>
+                        </Route>
+
+                        <Route element={<ProtectedRoute />}>
+                            <Route path="ai-assistant" element={<AiPage />} />
+                            <Route path="admin" element={<AdminDashboard />} />
+                        </Route>
+
+                        <Route
+                            path="*"
+                            element={
+                                <MainLayout>
+                                    <NotFoundPage />
+                                </MainLayout>
+                            }
+                        />
+                    </Routes>
+                </Suspense>
+                <UploadProgress />
+            </WebsocketProvider>
+        </AblyProvider>
+    );
 }
 
 export default App;

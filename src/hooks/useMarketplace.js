@@ -4,7 +4,8 @@ import { useToast } from '../context/ToastContext.jsx';
 
 export const useMarketplaceItems = (filters = {}) => {
     const queryParams = new URLSearchParams();
-    if (filters.category && filters.category !== 'all') queryParams.append('category', filters.category);
+    if (filters.category && filters.category !== 'all')
+        queryParams.append('category', filters.category);
     if (filters.search) queryParams.append('search', filters.search);
 
     return useQuery({
@@ -42,7 +43,7 @@ export const useCreateItem = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to list item', 'error');
-        }
+        },
     });
 };
 
@@ -62,6 +63,6 @@ export const useMarkSold = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to mark as sold', 'error');
-        }
+        },
     });
 };

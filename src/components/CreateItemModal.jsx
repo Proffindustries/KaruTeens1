@@ -13,7 +13,7 @@ const CreateItemModal = ({ isOpen, onClose }) => {
         description: '',
         category: 'Electronics',
         condition: 'Used - Good',
-        currency: 'Ksh'
+        currency: 'Ksh',
     });
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
@@ -32,37 +32,39 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                 description: '',
                 category: 'Electronics',
                 condition: 'Used - Good',
-                currency: 'Ksh'
+                currency: 'Ksh',
             });
             setSelectedFiles([]);
             setPreviews([]);
         } else {
             document.body.style.overflow = 'hidden';
         }
-        return () => { document.body.style.overflow = 'unset'; };
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (!files.length) return;
 
-        setSelectedFiles(prev => [...prev, ...files]);
+        setSelectedFiles((prev) => [...prev, ...files]);
 
-        const newPreviews = files.map(file => ({
+        const newPreviews = files.map((file) => ({
             url: URL.createObjectURL(file),
-            name: file.name
+            name: file.name,
         }));
-        setPreviews(prev => [...prev, ...newPreviews]);
+        setPreviews((prev) => [...prev, ...newPreviews]);
     };
 
     const removeFile = (index) => {
-        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-        setPreviews(prev => {
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+        setPreviews((prev) => {
             const newPreviews = prev.filter((_, i) => i !== index);
             URL.revokeObjectURL(prev[index].url);
             return newPreviews;
@@ -76,23 +78,26 @@ const CreateItemModal = ({ isOpen, onClose }) => {
         if (selectedFiles.length > 0) {
             // Upload images one by one (or Promise.all if supported)
             try {
-                const uploadPromises = selectedFiles.map(file => uploadImage(file));
+                const uploadPromises = selectedFiles.map((file) => uploadImage(file));
                 mediaUrls = await Promise.all(uploadPromises);
             } catch (error) {
-                console.error("Upload failed", error);
+                console.error('Upload failed', error);
                 return; // Stop on error
             }
         }
 
-        createItem({
-            ...formData,
-            price: parseFloat(formData.price),
-            images: mediaUrls
-        }, {
-            onSuccess: () => {
-                onClose();
-            }
-        });
+        createItem(
+            {
+                ...formData,
+                price: parseFloat(formData.price),
+                images: mediaUrls,
+            },
+            {
+                onSuccess: () => {
+                    onClose();
+                },
+            },
+        );
     };
 
     if (!isOpen) return null;
@@ -105,11 +110,13 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     className="create-item-modal"
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <div className="modal-header">
                         <h2>Sell an Item</h2>
-                        <button className="close-btn" onClick={onClose}><X size={24} /></button>
+                        <button className="close-btn" onClick={onClose}>
+                            <X size={24} />
+                        </button>
                     </div>
 
                     {!user.is_verified ? (
@@ -117,7 +124,10 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                             <div className="gate-content">
                                 <Shield size={64} className="gate-shield" />
                                 <h3>Verification Required</h3>
-                                <p>To prevent fraud and ensure a safe marketplace, sellers must complete a one-time human verification.</p>
+                                <p>
+                                    To prevent fraud and ensure a safe marketplace, sellers must
+                                    complete a one-time human verification.
+                                </p>
 
                                 <div className="gate-benefits">
                                     <div className="benefit">
@@ -143,7 +153,12 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                                 >
                                     Verify My Account (Ksh 20)
                                 </button>
-                                <p className="micro-text" style={{ marginTop: '1rem', opacity: 0.6 }}>One-time fee for lifetime access.</p>
+                                <p
+                                    className="micro-text"
+                                    style={{ marginTop: '1rem', opacity: 0.6 }}
+                                >
+                                    One-time fee for lifetime access.
+                                </p>
                             </div>
                         </div>
                     ) : (
@@ -253,7 +268,11 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                                     <div className="image-previews">
                                         {previews.map((prev, idx) => (
                                             <div key={idx} className="preview-container">
-                                                <img src={prev.url} alt="preview" className="preview-image" />
+                                                <img
+                                                    src={prev.url}
+                                                    alt="preview"
+                                                    className="preview-image"
+                                                />
                                                 <button
                                                     type="button"
                                                     className="remove-image-btn"
@@ -272,7 +291,11 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                                 className="submit-btn"
                                 disabled={isPending || isUploading}
                             >
-                                {isUploading ? 'Uploading Images...' : isPending ? 'Listing Item...' : 'List Item'}
+                                {isUploading
+                                    ? 'Uploading Images...'
+                                    : isPending
+                                      ? 'Listing Item...'
+                                      : 'List Item'}
                             </button>
                         </form>
                     )}

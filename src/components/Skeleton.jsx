@@ -17,7 +17,10 @@ const Skeleton = ({ className, width, height, circle }) => {
 
 export const PostSkeleton = () => (
     <div className="post-card skeleton-card">
-        <div className="post-header" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}>
+        <div
+            className="post-header"
+            style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}
+        >
             <Skeleton circle width="42px" height="42px" />
             <div style={{ flex: 1 }}>
                 <Skeleton width="40%" height="0.8rem" className="skeleton-text" />

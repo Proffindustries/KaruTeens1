@@ -23,7 +23,9 @@ const PostDetailPage = () => {
             <div className="container post-detail-page-error">
                 <h2>Post not found</h2>
                 <p>The post may have been deleted or the link is incorrect.</p>
-                <Link to="/feed" className="btn btn-primary">Back to Feed</Link>
+                <Link to="/feed" className="btn btn-primary">
+                    Back to Feed
+                </Link>
             </div>
         );
     }

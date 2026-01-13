@@ -1,10 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Calendar, Plus, Edit, Trash2, Eye, EyeOff, Download, Upload, RefreshCw, Search, 
-    Filter, Clock, MapPin, Users, UserCheck, UserPlus, UserMinus, CheckCircle, XCircle, 
-    TrendingUp, BarChart3, FileSpreadsheet, ExternalLink, Copy, Share2, Tag, 
-    Globe, Video, Building, DollarSign, Star, AlertTriangle, MessageSquare,
-    ChevronLeft, ChevronRight, Calendar as CalendarIcon, Repeat, Zap
+import {
+    Calendar,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    EyeOff,
+    Download,
+    Upload,
+    RefreshCw,
+    Search,
+    Filter,
+    Clock,
+    MapPin,
+    Users,
+    UserCheck,
+    UserPlus,
+    UserMinus,
+    CheckCircle,
+    XCircle,
+    TrendingUp,
+    BarChart3,
+    FileSpreadsheet,
+    ExternalLink,
+    Copy,
+    Share2,
+    Tag,
+    Globe,
+    Video,
+    Building,
+    DollarSign,
+    Star,
+    AlertTriangle,
+    MessageSquare,
+    ChevronLeft,
+    ChevronRight,
+    Calendar as CalendarIcon,
+    Repeat,
+    Zap,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -17,9 +50,9 @@ const EventManagementTab = () => {
         event_type: 'all',
         search: '',
         sortBy: 'start_datetime',
-        sortOrder: 'asc'
+        sortOrder: 'asc',
     });
-    
+
     const [selectedEvents, setSelectedEvents] = useState([]);
     const [bulkAction, setBulkAction] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -28,7 +61,7 @@ const EventManagementTab = () => {
     const [editingEvent, setEditingEvent] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    
+
     const { showToast } = useToast();
 
     // Mock data for events
@@ -36,7 +69,8 @@ const EventManagementTab = () => {
         {
             id: 'event_001',
             title: 'KaruTeens Annual Tech Conference 2024',
-            description: 'Join us for the biggest tech event of the year featuring industry leaders and innovators.',
+            description:
+                'Join us for the biggest tech event of the year featuring industry leaders and innovators.',
             location: 'Nairobi Convention Centre',
             location_type: 'physical',
             venue_name: 'Nairobi Convention Centre',
@@ -61,7 +95,7 @@ const EventManagementTab = () => {
             image_url: null,
             banner_url: null,
             featured: true,
-            ticket_price: 50.00,
+            ticket_price: 50.0,
             currency: 'KES',
             rsvp_required: true,
             waitlist_enabled: true,
@@ -72,13 +106,13 @@ const EventManagementTab = () => {
                 interested: 45,
                 going: 280,
                 maybe: 35,
-                not_going: 10
+                not_going: 10,
             },
             attendance_stats: {
                 checked_in: 260,
                 total_attendees: 320,
-                attendance_rate: 81.25
-            }
+                attendance_rate: 81.25,
+            },
         },
         {
             id: 'event_002',
@@ -108,7 +142,7 @@ const EventManagementTab = () => {
             image_url: null,
             banner_url: null,
             featured: false,
-            ticket_price: 0.00,
+            ticket_price: 0.0,
             currency: 'KES',
             rsvp_required: true,
             waitlist_enabled: false,
@@ -119,13 +153,13 @@ const EventManagementTab = () => {
                 interested: 20,
                 going: 75,
                 maybe: 10,
-                not_going: 5
+                not_going: 5,
             },
             attendance_stats: {
                 checked_in: 70,
                 total_attendees: 85,
-                attendance_rate: 82.35
-            }
+                attendance_rate: 82.35,
+            },
         },
         {
             id: 'event_003',
@@ -155,7 +189,7 @@ const EventManagementTab = () => {
             image_url: null,
             banner_url: null,
             featured: true,
-            ticket_price: 20.00,
+            ticket_price: 20.0,
             currency: 'KES',
             rsvp_required: true,
             waitlist_enabled: true,
@@ -166,13 +200,13 @@ const EventManagementTab = () => {
                 interested: 30,
                 going: 95,
                 maybe: 25,
-                not_going: 10
+                not_going: 10,
             },
             attendance_stats: {
                 checked_in: 88,
                 total_attendees: 120,
-                attendance_rate: 73.33
-            }
+                attendance_rate: 73.33,
+            },
         },
         {
             id: 'event_004',
@@ -202,7 +236,7 @@ const EventManagementTab = () => {
             image_url: null,
             banner_url: null,
             featured: false,
-            ticket_price: 0.00,
+            ticket_price: 0.0,
             currency: 'KES',
             rsvp_required: false,
             waitlist_enabled: false,
@@ -213,13 +247,13 @@ const EventManagementTab = () => {
                 interested: 0,
                 going: 45,
                 maybe: 0,
-                not_going: 0
+                not_going: 0,
             },
             attendance_stats: {
                 checked_in: 42,
                 total_attendees: 45,
-                attendance_rate: 93.33
-            }
+                attendance_rate: 93.33,
+            },
         },
         {
             id: 'event_005',
@@ -249,7 +283,7 @@ const EventManagementTab = () => {
             image_url: null,
             banner_url: null,
             featured: false,
-            ticket_price: 25.00,
+            ticket_price: 25.0,
             currency: 'KES',
             rsvp_required: true,
             waitlist_enabled: true,
@@ -260,14 +294,14 @@ const EventManagementTab = () => {
                 interested: 25,
                 going: 120,
                 maybe: 15,
-                not_going: 10
+                not_going: 10,
             },
             attendance_stats: {
                 checked_in: 0,
                 total_attendees: 150,
-                attendance_rate: 0.0
-            }
-        }
+                attendance_rate: 0.0,
+            },
+        },
     ];
 
     useEffect(() => {
@@ -280,7 +314,7 @@ const EventManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -290,36 +324,44 @@ const EventManagementTab = () => {
         }
 
         if (bulkAction === 'publish') {
-            setEvents(prev => prev.map(e => 
-                selectedEvents.includes(e.id) ? { ...e, status: 'published' } : e
-            ));
+            setEvents((prev) =>
+                prev.map((e) =>
+                    selectedEvents.includes(e.id) ? { ...e, status: 'published' } : e,
+                ),
+            );
             setSelectedEvents([]);
             setBulkAction('');
             showToast('Events published', 'success');
         } else if (bulkAction === 'cancel') {
-            setEvents(prev => prev.map(e => 
-                selectedEvents.includes(e.id) ? { ...e, status: 'cancelled' } : e
-            ));
+            setEvents((prev) =>
+                prev.map((e) =>
+                    selectedEvents.includes(e.id) ? { ...e, status: 'cancelled' } : e,
+                ),
+            );
             setSelectedEvents([]);
             setBulkAction('');
             showToast('Events cancelled', 'info');
         } else if (bulkAction === 'make_public') {
-            setEvents(prev => prev.map(e => 
-                selectedEvents.includes(e.id) ? { ...e, event_type: 'public' } : e
-            ));
+            setEvents((prev) =>
+                prev.map((e) =>
+                    selectedEvents.includes(e.id) ? { ...e, event_type: 'public' } : e,
+                ),
+            );
             setSelectedEvents([]);
             setBulkAction('');
             showToast('Events made public', 'success');
         } else if (bulkAction === 'make_private') {
-            setEvents(prev => prev.map(e => 
-                selectedEvents.includes(e.id) ? { ...e, event_type: 'private' } : e
-            ));
+            setEvents((prev) =>
+                prev.map((e) =>
+                    selectedEvents.includes(e.id) ? { ...e, event_type: 'private' } : e,
+                ),
+            );
             setSelectedEvents([]);
             setBulkAction('');
             showToast('Events made private', 'success');
         } else if (bulkAction === 'delete') {
             if (confirm(`Delete ${selectedEvents.length} events? This action cannot be undone.`)) {
-                setEvents(prev => prev.filter(e => !selectedEvents.includes(e.id)));
+                setEvents((prev) => prev.filter((e) => !selectedEvents.includes(e.id)));
                 setSelectedEvents([]);
                 setBulkAction('');
                 showToast('Events deleted', 'success');
@@ -328,31 +370,29 @@ const EventManagementTab = () => {
     };
 
     const handlePublishEvent = (eventId) => {
-        setEvents(prev => prev.map(e => 
-            e.id === eventId ? { ...e, status: 'published' } : e
-        ));
+        setEvents((prev) =>
+            prev.map((e) => (e.id === eventId ? { ...e, status: 'published' } : e)),
+        );
         showToast('Event published', 'success');
     };
 
     const handleCancelEvent = (eventId) => {
-        setEvents(prev => prev.map(e => 
-            e.id === eventId ? { ...e, status: 'cancelled' } : e
-        ));
+        setEvents((prev) =>
+            prev.map((e) => (e.id === eventId ? { ...e, status: 'cancelled' } : e)),
+        );
         showToast('Event cancelled', 'info');
     };
 
     const handleDeleteEvent = (eventId) => {
         if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-            setEvents(prev => prev.filter(e => e.id !== eventId));
+            setEvents((prev) => prev.filter((e) => e.id !== eventId));
             showToast('Event deleted', 'success');
         }
     };
 
     const toggleEventSelection = (eventId) => {
-        setSelectedEvents(prev => 
-            prev.includes(eventId) 
-                ? prev.filter(id => id !== eventId)
-                : [...prev, eventId]
+        setSelectedEvents((prev) =>
+            prev.includes(eventId) ? prev.filter((id) => id !== eventId) : [...prev, eventId],
         );
     };
 
@@ -360,35 +400,48 @@ const EventManagementTab = () => {
         if (selectedEvents.length === events.length) {
             setSelectedEvents([]);
         } else {
-            setSelectedEvents(events.map(e => e.id));
+            setSelectedEvents(events.map((e) => e.id));
         }
     };
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'published': return { color: 'green', text: 'Published', icon: <CheckCircle size={14} /> };
-            case 'draft': return { color: 'orange', text: 'Draft', icon: <Clock size={14} /> };
-            case 'cancelled': return { color: 'red', text: 'Cancelled', icon: <XCircle size={14} /> };
-            case 'completed': return { color: 'blue', text: 'Completed', icon: <TrendingUp size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertTriangle size={14} /> };
+            case 'published':
+                return { color: 'green', text: 'Published', icon: <CheckCircle size={14} /> };
+            case 'draft':
+                return { color: 'orange', text: 'Draft', icon: <Clock size={14} /> };
+            case 'cancelled':
+                return { color: 'red', text: 'Cancelled', icon: <XCircle size={14} /> };
+            case 'completed':
+                return { color: 'blue', text: 'Completed', icon: <TrendingUp size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertTriangle size={14} /> };
         }
     };
 
     const getLocationTypeBadge = (locationType) => {
         switch (locationType) {
-            case 'physical': return { color: 'blue', text: 'Physical', icon: <Building size={14} /> };
-            case 'virtual': return { color: 'purple', text: 'Virtual', icon: <Video size={14} /> };
-            case 'hybrid': return { color: 'green', text: 'Hybrid', icon: <Globe size={14} /> };
-            default: return { color: 'gray', text: locationType, icon: <AlertTriangle size={14} /> };
+            case 'physical':
+                return { color: 'blue', text: 'Physical', icon: <Building size={14} /> };
+            case 'virtual':
+                return { color: 'purple', text: 'Virtual', icon: <Video size={14} /> };
+            case 'hybrid':
+                return { color: 'green', text: 'Hybrid', icon: <Globe size={14} /> };
+            default:
+                return { color: 'gray', text: locationType, icon: <AlertTriangle size={14} /> };
         }
     };
 
     const getEventTypeBadge = (eventType) => {
         switch (eventType) {
-            case 'public': return { color: 'blue', text: 'Public', icon: <Globe size={14} /> };
-            case 'private': return { color: 'purple', text: 'Private', icon: <EyeOff size={14} /> };
-            case 'invite_only': return { color: 'orange', text: 'Invite Only', icon: <UserPlus size={14} /> };
-            default: return { color: 'gray', text: eventType, icon: <AlertTriangle size={14} /> };
+            case 'public':
+                return { color: 'blue', text: 'Public', icon: <Globe size={14} /> };
+            case 'private':
+                return { color: 'purple', text: 'Private', icon: <EyeOff size={14} /> };
+            case 'invite_only':
+                return { color: 'orange', text: 'Invite Only', icon: <UserPlus size={14} /> };
+            default:
+                return { color: 'gray', text: eventType, icon: <AlertTriangle size={14} /> };
         }
     };
 
@@ -414,7 +467,7 @@ const EventManagementTab = () => {
                     <p>Manage events, registrations, and attendance tracking</p>
                 </div>
                 <div className="header-actions">
-                    <button 
+                    <button
                         className={`btn-secondary ${showCalendarView ? 'active' : ''}`}
                         onClick={() => setShowCalendarView(!showCalendarView)}
                     >
@@ -429,10 +482,7 @@ const EventManagementTab = () => {
                         <Download size={18} />
                         Export Events
                     </button>
-                    <button 
-                        className="btn-primary"
-                        onClick={() => setShowAddModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
                         <Plus size={18} />
                         Add Event
                     </button>
@@ -451,9 +501,9 @@ const EventManagementTab = () => {
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
-                    
+
                     <div className="filter-group">
-                        <select 
+                        <select
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
                         >
@@ -463,8 +513,8 @@ const EventManagementTab = () => {
                             <option value="cancelled">Cancelled</option>
                             <option value="completed">Completed</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.location_type}
                             onChange={(e) => handleFilterChange('location_type', e.target.value)}
                         >
@@ -473,8 +523,8 @@ const EventManagementTab = () => {
                             <option value="virtual">Virtual</option>
                             <option value="hybrid">Hybrid</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.event_type}
                             onChange={(e) => handleFilterChange('event_type', e.target.value)}
                         >
@@ -483,8 +533,8 @@ const EventManagementTab = () => {
                             <option value="private">Private</option>
                             <option value="invite_only">Invite Only</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.category}
                             onChange={(e) => handleFilterChange('category', e.target.value)}
                         >
@@ -508,14 +558,9 @@ const EventManagementTab = () => {
             {/* Bulk Actions */}
             {selectedEvents.length > 0 && (
                 <div className="bulk-actions">
-                    <div className="selection-info">
-                        {selectedEvents.length} events selected
-                    </div>
+                    <div className="selection-info">{selectedEvents.length} events selected</div>
                     <div className="bulk-actions-controls">
-                        <select 
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="publish">Publish</option>
                             <option value="cancel">Cancel</option>
@@ -523,7 +568,7 @@ const EventManagementTab = () => {
                             <option value="make_private">Make Private</option>
                             <option value="delete">Delete Events</option>
                         </select>
-                        <button 
+                        <button
                             className="btn-primary"
                             onClick={handleBulkAction}
                             disabled={!bulkAction}
@@ -538,23 +583,44 @@ const EventManagementTab = () => {
             {showCalendarView && (
                 <div className="calendar-view">
                     <div className="calendar-header">
-                        <button 
+                        <button
                             className="calendar-nav"
-                            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                            onClick={() =>
+                                setCurrentMonth(
+                                    new Date(
+                                        currentMonth.getFullYear(),
+                                        currentMonth.getMonth() - 1,
+                                    ),
+                                )
+                            }
                         >
                             <ChevronLeft size={20} />
                         </button>
-                        <h3>{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h3>
-                        <button 
+                        <h3>
+                            {currentMonth.toLocaleDateString('en-US', {
+                                month: 'long',
+                                year: 'numeric',
+                            })}
+                        </h3>
+                        <button
                             className="calendar-nav"
-                            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                            onClick={() =>
+                                setCurrentMonth(
+                                    new Date(
+                                        currentMonth.getFullYear(),
+                                        currentMonth.getMonth() + 1,
+                                    ),
+                                )
+                            }
                         >
                             <ChevronRight size={20} />
                         </button>
                     </div>
                     <div className="calendar-grid">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                            <div key={day} className="calendar-day-header">{day}</div>
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                            <div key={day} className="calendar-day-header">
+                                {day}
+                            </div>
                         ))}
                         {/* Calendar days would be rendered here */}
                         <div className="calendar-placeholder">
@@ -578,7 +644,9 @@ const EventManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedEvents.length === events.length && events.length > 0}
+                                    checked={
+                                        selectedEvents.length === events.length && events.length > 0
+                                    }
                                     onChange={selectAllEvents}
                                 />
                                 <span>Select All</span>
@@ -599,7 +667,10 @@ const EventManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedEvents.length === events.length && events.length > 0}
+                                                checked={
+                                                    selectedEvents.length === events.length &&
+                                                    events.length > 0
+                                                }
                                                 onChange={selectAllEvents}
                                             />
                                         </th>
@@ -613,8 +684,15 @@ const EventManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {events.map(event => (
-                                        <tr key={event.id} className={event.status === 'cancelled' ? 'cancelled-event' : ''}>
+                                    {events.map((event) => (
+                                        <tr
+                                            key={event.id}
+                                            className={
+                                                event.status === 'cancelled'
+                                                    ? 'cancelled-event'
+                                                    : ''
+                                            }
+                                        >
                                             <td>
                                                 <input
                                                     type="checkbox"
@@ -639,12 +717,22 @@ const EventManagementTab = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="event-desc">{event.description}</div>
+                                                    <div className="event-desc">
+                                                        {event.description}
+                                                    </div>
                                                     <div className="event-meta">
-                                                        <span className="category-badge">{event.category}</span>
-                                                        {event.tags && event.tags.map(tag => (
-                                                            <span key={tag} className="tag-badge">{tag}</span>
-                                                        ))}
+                                                        <span className="category-badge">
+                                                            {event.category}
+                                                        </span>
+                                                        {event.tags &&
+                                                            event.tags.map((tag) => (
+                                                                <span
+                                                                    key={tag}
+                                                                    className="tag-badge"
+                                                                >
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
                                                     </div>
                                                 </div>
                                             </td>
@@ -652,20 +740,50 @@ const EventManagementTab = () => {
                                                 <div className="datetime-info">
                                                     <div className="date-row">
                                                         <Calendar size={14} />
-                                                        <span>{new Date(event.start_datetime).toLocaleDateString()}</span>
+                                                        <span>
+                                                            {new Date(
+                                                                event.start_datetime,
+                                                            ).toLocaleDateString()}
+                                                        </span>
                                                     </div>
                                                     <div className="time-row">
                                                         <Clock size={14} />
-                                                        <span>{new Date(event.start_datetime).toLocaleTimeString()} - {new Date(event.end_datetime).toLocaleTimeString()}</span>
+                                                        <span>
+                                                            {new Date(
+                                                                event.start_datetime,
+                                                            ).toLocaleTimeString()}{' '}
+                                                            -{' '}
+                                                            {new Date(
+                                                                event.end_datetime,
+                                                            ).toLocaleTimeString()}
+                                                        </span>
                                                     </div>
                                                     {event.status !== 'cancelled' && (
                                                         <div className="days-remaining">
-                                                            {getDaysUntilEvent(event.start_datetime) > 0 ? (
-                                                                <span className="days-soon">{getDaysUntilEvent(event.start_datetime)} days remaining</span>
-                                                            ) : getDaysUntilEvent(event.start_datetime) === 0 ? (
-                                                                <span className="days-today">Today</span>
+                                                            {getDaysUntilEvent(
+                                                                event.start_datetime,
+                                                            ) > 0 ? (
+                                                                <span className="days-soon">
+                                                                    {getDaysUntilEvent(
+                                                                        event.start_datetime,
+                                                                    )}{' '}
+                                                                    days remaining
+                                                                </span>
+                                                            ) : getDaysUntilEvent(
+                                                                  event.start_datetime,
+                                                              ) === 0 ? (
+                                                                <span className="days-today">
+                                                                    Today
+                                                                </span>
                                                             ) : (
-                                                                <span className="days-past">{Math.abs(getDaysUntilEvent(event.start_datetime))} days ago</span>
+                                                                <span className="days-past">
+                                                                    {Math.abs(
+                                                                        getDaysUntilEvent(
+                                                                            event.start_datetime,
+                                                                        ),
+                                                                    )}{' '}
+                                                                    days ago
+                                                                </span>
                                                             )}
                                                         </div>
                                                     )}
@@ -674,22 +792,48 @@ const EventManagementTab = () => {
                                             <td>
                                                 <div className="location-info">
                                                     <div className="location-type">
-                                                        <span className={`location-badge ${getLocationTypeBadge(event.location_type).color}`}>
-                                                            {getLocationTypeBadge(event.location_type).icon}
-                                                            {getLocationTypeBadge(event.location_type).text}
+                                                        <span
+                                                            className={`location-badge ${getLocationTypeBadge(event.location_type).color}`}
+                                                        >
+                                                            {
+                                                                getLocationTypeBadge(
+                                                                    event.location_type,
+                                                                ).icon
+                                                            }
+                                                            {
+                                                                getLocationTypeBadge(
+                                                                    event.location_type,
+                                                                ).text
+                                                            }
                                                         </span>
-                                                        <span className={`event-type-badge ${getEventTypeBadge(event.event_type).color}`}>
-                                                            {getEventTypeBadge(event.event_type).icon}
-                                                            {getEventTypeBadge(event.event_type).text}
+                                                        <span
+                                                            className={`event-type-badge ${getEventTypeBadge(event.event_type).color}`}
+                                                        >
+                                                            {
+                                                                getEventTypeBadge(event.event_type)
+                                                                    .icon
+                                                            }
+                                                            {
+                                                                getEventTypeBadge(event.event_type)
+                                                                    .text
+                                                            }
                                                         </span>
                                                     </div>
-                                                    <div className="location-name">{event.location}</div>
+                                                    <div className="location-name">
+                                                        {event.location}
+                                                    </div>
                                                     {event.venue_name && (
-                                                        <div className="venue-name">{event.venue_name}</div>
+                                                        <div className="venue-name">
+                                                            {event.venue_name}
+                                                        </div>
                                                     )}
                                                     {event.virtual_meeting_url && (
                                                         <div className="virtual-link">
-                                                            <a href={event.virtual_meeting_url} target="_blank" rel="noopener noreferrer">
+                                                            <a
+                                                                href={event.virtual_meeting_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                            >
                                                                 <ExternalLink size={12} />
                                                                 Join Meeting
                                                             </a>
@@ -701,17 +845,29 @@ const EventManagementTab = () => {
                                                 <div className="registration-info">
                                                     <div className="attendees-count">
                                                         <Users size={14} />
-                                                        <span>{event.current_attendees}/{event.max_attendees || 'Unlimited'}</span>
+                                                        <span>
+                                                            {event.current_attendees}/
+                                                            {event.max_attendees || 'Unlimited'}
+                                                        </span>
                                                     </div>
-                                                    {event.waitlist_enabled && event.waitlist_count > 0 && (
-                                                        <div className="waitlist-count">
-                                                            <UserPlus size={14} />
-                                                            <span>{event.waitlist_count} on waitlist</span>
-                                                        </div>
-                                                    )}
+                                                    {event.waitlist_enabled &&
+                                                        event.waitlist_count > 0 && (
+                                                            <div className="waitlist-count">
+                                                                <UserPlus size={14} />
+                                                                <span>
+                                                                    {event.waitlist_count} on
+                                                                    waitlist
+                                                                </span>
+                                                            </div>
+                                                        )}
                                                     <div className="ticket-price">
                                                         <DollarSign size={14} />
-                                                        <span>{formatCurrency(event.ticket_price || 0, event.currency)}</span>
+                                                        <span>
+                                                            {formatCurrency(
+                                                                event.ticket_price || 0,
+                                                                event.currency,
+                                                            )}
+                                                        </span>
                                                     </div>
                                                     {event.rsvp_required && (
                                                         <div className="rsvp-required">
@@ -725,49 +881,77 @@ const EventManagementTab = () => {
                                                 <div className="analytics-info">
                                                     <div className="rsvp-stats">
                                                         <div className="stat-item">
-                                                            <span className="stat-label">Going:</span>
-                                                            <span className="stat-value going">{event.rsvp_stats.going}</span>
+                                                            <span className="stat-label">
+                                                                Going:
+                                                            </span>
+                                                            <span className="stat-value going">
+                                                                {event.rsvp_stats.going}
+                                                            </span>
                                                         </div>
                                                         <div className="stat-item">
-                                                            <span className="stat-label">Maybe:</span>
-                                                            <span className="stat-value maybe">{event.rsvp_stats.maybe}</span>
+                                                            <span className="stat-label">
+                                                                Maybe:
+                                                            </span>
+                                                            <span className="stat-value maybe">
+                                                                {event.rsvp_stats.maybe}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <div className="attendance-stats">
                                                         <div className="stat-item">
-                                                            <span className="stat-label">Checked In:</span>
-                                                            <span className="stat-value checked-in">{event.attendance_stats.checked_in}</span>
+                                                            <span className="stat-label">
+                                                                Checked In:
+                                                            </span>
+                                                            <span className="stat-value checked-in">
+                                                                {event.attendance_stats.checked_in}
+                                                            </span>
                                                         </div>
                                                         <div className="stat-item">
-                                                            <span className="stat-label">Rate:</span>
-                                                            <span className="stat-value rate">{event.attendance_stats.attendance_rate.toFixed(1)}%</span>
+                                                            <span className="stat-label">
+                                                                Rate:
+                                                            </span>
+                                                            <span className="stat-value rate">
+                                                                {event.attendance_stats.attendance_rate.toFixed(
+                                                                    1,
+                                                                )}
+                                                                %
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="organizer-info">
-                                                    <div className="organizer-name">{event.organizer_name}</div>
-                                                    <div className="organizer-contact">{event.organizer_contact}</div>
+                                                    <div className="organizer-name">
+                                                        {event.organizer_name}
+                                                    </div>
+                                                    <div className="organizer-contact">
+                                                        {event.organizer_contact}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="action-buttons">
-                                                    <button 
+                                                    <button
                                                         className="action-btn view"
-                                                        onClick={() => window.open(`/event/${event.id}`, '_blank')}
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `/event/${event.id}`,
+                                                                '_blank',
+                                                            )
+                                                        }
                                                         title="View Event"
                                                     >
                                                         <ExternalLink size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn analytics"
                                                         onClick={() => {}}
                                                         title="View Analytics"
                                                     >
                                                         <BarChart3 size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn edit"
                                                         onClick={() => {
                                                             setEditingEvent(event);
@@ -778,23 +962,27 @@ const EventManagementTab = () => {
                                                         <Edit size={16} />
                                                     </button>
                                                     {event.status === 'published' ? (
-                                                        <button 
+                                                        <button
                                                             className="action-btn cancel"
-                                                            onClick={() => handleCancelEvent(event.id)}
+                                                            onClick={() =>
+                                                                handleCancelEvent(event.id)
+                                                            }
                                                             title="Cancel Event"
                                                         >
                                                             <XCircle size={16} />
                                                         </button>
                                                     ) : (
-                                                        <button 
+                                                        <button
                                                             className="action-btn publish"
-                                                            onClick={() => handlePublishEvent(event.id)}
+                                                            onClick={() =>
+                                                                handlePublishEvent(event.id)
+                                                            }
                                                             title="Publish Event"
                                                         >
                                                             <CheckCircle size={16} />
                                                         </button>
                                                     )}
-                                                    <button 
+                                                    <button
                                                         className="action-btn delete"
                                                         onClick={() => handleDeleteEvent(event.id)}
                                                         title="Delete Event"
@@ -815,17 +1003,27 @@ const EventManagementTab = () => {
             {/* Add Event Modal */}
             {showAddModal && (
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '900px' }}
+                    >
                         <div className="modal-header">
                             <h3>Add New Event</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Event Title *</label>
-                                        <input type="text" className="form-input" placeholder="Enter event title" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter event title"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Category *</label>
@@ -838,10 +1036,14 @@ const EventManagementTab = () => {
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div className="form-group">
                                     <label>Description *</label>
-                                    <textarea className="form-input" rows="4" placeholder="Enter event description"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="4"
+                                        placeholder="Enter event description"
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-row">
@@ -866,17 +1068,29 @@ const EventManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Location *</label>
-                                        <input type="text" className="form-input" placeholder="Enter location" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter location"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Venue Name (Optional)</label>
-                                        <input type="text" className="form-input" placeholder="Enter venue name" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter venue name"
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Venue Address (Optional)</label>
-                                    <input type="text" className="form-input" placeholder="Enter venue address" />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Enter venue address"
+                                    />
                                 </div>
 
                                 <div className="form-row">
@@ -904,17 +1118,29 @@ const EventManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Max Attendees (Optional)</label>
-                                        <input type="number" className="form-input" placeholder="Enter maximum attendees" />
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            placeholder="Enter maximum attendees"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Ticket Price (Optional)</label>
-                                        <input type="number" className="form-input" placeholder="Enter ticket price" />
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            placeholder="Enter ticket price"
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Tags (comma-separated)</label>
-                                    <input type="text" className="form-input" placeholder="tag1, tag2, tag3" />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="tag1, tag2, tag3"
+                                    />
                                 </div>
 
                                 <div className="form-section">
@@ -922,14 +1148,22 @@ const EventManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Organizer Contact</label>
-                                            <input type="email" className="form-input" placeholder="Enter organizer email" />
+                                            <input
+                                                type="email"
+                                                className="form-input"
+                                                placeholder="Enter organizer email"
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Virtual Meeting URL (for virtual events)</label>
-                                            <input type="url" className="form-input" placeholder="Enter meeting URL" />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="Enter meeting URL"
+                                            />
                                         </div>
                                     </div>
-                                    
+
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label className="checkbox-label">
@@ -953,7 +1187,11 @@ const EventManagementTab = () => {
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowAddModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -969,21 +1207,34 @@ const EventManagementTab = () => {
             {/* Edit Event Modal */}
             {showEditModal && editingEvent && (
                 <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '900px' }}
+                    >
                         <div className="modal-header">
                             <h3>Edit Event: {editingEvent.title}</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Event Title</label>
-                                        <input type="text" className="form-input" defaultValue={editingEvent.title} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingEvent.title}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Category</label>
-                                        <select className="form-input" defaultValue={editingEvent.category}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingEvent.category}
+                                        >
                                             <option value="Technology">Technology</option>
                                             <option value="Education">Education</option>
                                             <option value="Business">Business</option>
@@ -991,16 +1242,23 @@ const EventManagementTab = () => {
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div className="form-group">
                                     <label>Description</label>
-                                    <textarea className="form-input" rows="4" defaultValue={editingEvent.description}></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="4"
+                                        defaultValue={editingEvent.description}
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Location Type</label>
-                                        <select className="form-input" defaultValue={editingEvent.location_type}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingEvent.location_type}
+                                        >
                                             <option value="physical">Physical</option>
                                             <option value="virtual">Virtual</option>
                                             <option value="hybrid">Hybrid</option>
@@ -1008,7 +1266,10 @@ const EventManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Event Type</label>
-                                        <select className="form-input" defaultValue={editingEvent.event_type}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingEvent.event_type}
+                                        >
                                             <option value="public">Public</option>
                                             <option value="private">Private</option>
                                             <option value="invite_only">Invite Only</option>
@@ -1019,55 +1280,95 @@ const EventManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Location</label>
-                                        <input type="text" className="form-input" defaultValue={editingEvent.location} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingEvent.location}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Venue Name</label>
-                                        <input type="text" className="form-input" defaultValue={editingEvent.venue_name || ''} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingEvent.venue_name || ''}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Venue Address</label>
-                                    <input type="text" className="form-input" defaultValue={editingEvent.venue_address || ''} />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        defaultValue={editingEvent.venue_address || ''}
+                                    />
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Start Date & Time</label>
-                                        <input type="datetime-local" className="form-input" defaultValue={editingEvent.start_datetime} />
+                                        <input
+                                            type="datetime-local"
+                                            className="form-input"
+                                            defaultValue={editingEvent.start_datetime}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>End Date & Time</label>
-                                        <input type="datetime-local" className="form-input" defaultValue={editingEvent.end_datetime} />
+                                        <input
+                                            type="datetime-local"
+                                            className="form-input"
+                                            defaultValue={editingEvent.end_datetime}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Registration Start</label>
-                                        <input type="datetime-local" className="form-input" defaultValue={editingEvent.registration_start || ''} />
+                                        <input
+                                            type="datetime-local"
+                                            className="form-input"
+                                            defaultValue={editingEvent.registration_start || ''}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Registration End</label>
-                                        <input type="datetime-local" className="form-input" defaultValue={editingEvent.registration_end || ''} />
+                                        <input
+                                            type="datetime-local"
+                                            className="form-input"
+                                            defaultValue={editingEvent.registration_end || ''}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Max Attendees</label>
-                                        <input type="number" className="form-input" defaultValue={editingEvent.max_attendees || ''} />
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            defaultValue={editingEvent.max_attendees || ''}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Ticket Price</label>
-                                        <input type="number" className="form-input" defaultValue={editingEvent.ticket_price || ''} />
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            defaultValue={editingEvent.ticket_price || ''}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-group">
                                     <label>Tags</label>
-                                    <input type="text" className="form-input" defaultValue={editingEvent.tags?.join(', ') || ''} />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        defaultValue={editingEvent.tags?.join(', ') || ''}
+                                    />
                                 </div>
 
                                 <div className="form-section">
@@ -1075,30 +1376,49 @@ const EventManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Organizer Contact</label>
-                                            <input type="email" className="form-input" defaultValue={editingEvent.organizer_contact || ''} />
+                                            <input
+                                                type="email"
+                                                className="form-input"
+                                                defaultValue={editingEvent.organizer_contact || ''}
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Virtual Meeting URL</label>
-                                            <input type="url" className="form-input" defaultValue={editingEvent.virtual_meeting_url || ''} />
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                defaultValue={
+                                                    editingEvent.virtual_meeting_url || ''
+                                                }
+                                            />
                                         </div>
                                     </div>
-                                    
+
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingEvent.featured} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingEvent.featured}
+                                                />
                                                 Featured Event
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingEvent.rsvp_required} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingEvent.rsvp_required}
+                                                />
                                                 RSVP Required
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" defaultChecked={editingEvent.waitlist_enabled} />
+                                                <input
+                                                    type="checkbox"
+                                                    defaultChecked={editingEvent.waitlist_enabled}
+                                                />
                                                 Enable Waitlist
                                             </label>
                                         </div>
@@ -1106,7 +1426,11 @@ const EventManagementTab = () => {
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowEditModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">

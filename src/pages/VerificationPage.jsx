@@ -36,14 +36,15 @@ const VerificationPage = () => {
         // Format phone to 254...
         let formattedPhone = phone.replace('+', '');
         if (formattedPhone.startsWith('0')) formattedPhone = '254' + formattedPhone.slice(1);
-        if (formattedPhone.startsWith('7') || formattedPhone.startsWith('1')) formattedPhone = '254' + formattedPhone;
+        if (formattedPhone.startsWith('7') || formattedPhone.startsWith('1'))
+            formattedPhone = '254' + formattedPhone;
 
         setLoading(true);
         try {
             const { data } = await api.post('/payments/verify', {
                 phone: formattedPhone,
                 amount: 20,
-                tx_type: 'verification'
+                tx_type: 'verification',
             });
             setCheckoutId(data.checkout_request_id);
             setStep('processing');
@@ -87,7 +88,10 @@ const VerificationPage = () => {
                         // Refresh user data if needed?
                         const user = JSON.parse(localStorage.getItem('user'));
                         if (user) {
-                            localStorage.setItem('user', JSON.stringify({ ...user, is_verified: true }));
+                            localStorage.setItem(
+                                'user',
+                                JSON.stringify({ ...user, is_verified: true }),
+                            );
                         }
                     } else if (data.status === 'failed') {
                         setStep('pending');
@@ -114,21 +118,35 @@ const VerificationPage = () => {
                 {!isPaymentEnabled && step === 'pending' && (
                     <div className="auth-body" style={{ textAlign: 'center' }}>
                         <div className="verification-info" style={{ marginBottom: '2rem' }}>
-                            <div className="promo-badge" style={{
-                                background: 'linear-gradient(45deg, #FFD700, #FFA500)',
-                                color: '#fff',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '20px',
-                                display: 'inline-block',
-                                marginBottom: '1rem',
-                                fontWeight: 'bold',
-                                boxShadow: '0 4px 15px rgba(255, 165, 0, 0.3)'
-                            }}>
+                            <div
+                                className="promo-badge"
+                                style={{
+                                    background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                                    color: '#fff',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '20px',
+                                    display: 'inline-block',
+                                    marginBottom: '1rem',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 4px 15px rgba(255, 165, 0, 0.3)',
+                                }}
+                            >
                                 🎁 LIMITED OFFER
                             </div>
-                            <Shield size={64} color="#3742fa" style={{ marginBottom: '1rem', marginLeft: 'auto', marginRight: 'auto' }} />
+                            <Shield
+                                size={64}
+                                color="#3742fa"
+                                style={{
+                                    marginBottom: '1rem',
+                                    marginLeft: 'auto',
+                                    marginRight: 'auto',
+                                }}
+                            />
                             <h3>Verification is Currently FREE!</h3>
-                            <p>As part of our marketing campaign, you can verify your account for free today.</p>
+                            <p>
+                                As part of our marketing campaign, you can verify your account for
+                                free today.
+                            </p>
                         </div>
 
                         <button
@@ -137,23 +155,51 @@ const VerificationPage = () => {
                             disabled={loading}
                             style={{ padding: '1rem' }}
                         >
-                            {loading ? <Loader className="spin-anim" /> : 'Claim Free Verification Now'}
+                            {loading ? (
+                                <Loader className="spin-anim" />
+                            ) : (
+                                'Claim Free Verification Now'
+                            )}
                         </button>
                     </div>
                 )}
 
                 {isPaymentEnabled && step === 'pending' && (
                     <form className="auth-body" onSubmit={handleInitiatePayment}>
-                        <div className="verification-info" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <Shield size={64} color="#2ed573" style={{ marginBottom: '1rem', marginLeft: 'auto', marginRight: 'auto' }} />
-                            <p>One-time human verification fee of <strong>Ksh 20</strong>.</p>
-                            <p className="text-muted" style={{ fontSize: '0.85rem' }}>This helps us maintain a secure environment and prevent bots.</p>
+                        <div
+                            className="verification-info"
+                            style={{ textAlign: 'center', marginBottom: '2rem' }}
+                        >
+                            <Shield
+                                size={64}
+                                color="#2ed573"
+                                style={{
+                                    marginBottom: '1rem',
+                                    marginLeft: 'auto',
+                                    marginRight: 'auto',
+                                }}
+                            />
+                            <p>
+                                One-time human verification fee of <strong>Ksh 20</strong>.
+                            </p>
+                            <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                                This helps us maintain a secure environment and prevent bots.
+                            </p>
                         </div>
 
                         <div className="form-group">
                             <label>M-Pesa Phone Number</label>
                             <div style={{ position: 'relative' }}>
-                                <Smartphone size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                                <Smartphone
+                                    size={18}
+                                    style={{
+                                        position: 'absolute',
+                                        left: '12px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        color: '#666',
+                                    }}
+                                />
                                 <input
                                     type="text"
                                     className="form-input"
@@ -178,26 +224,46 @@ const VerificationPage = () => {
 
                 {step === 'processing' && (
                     <div className="auth-body" style={{ textAlign: 'center', padding: '3rem 0' }}>
-                        <Loader size={48} className="spin-anim" color="#3742fa" style={{ margin: '0 auto' }} />
+                        <Loader
+                            size={48}
+                            className="spin-anim"
+                            color="#3742fa"
+                            style={{ margin: '0 auto' }}
+                        />
                         <h3 style={{ marginTop: '1.5rem' }}>Waiting for Payment...</h3>
                         <p>Please check your phone and enter your M-Pesa PIN.</p>
-                        <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '1rem' }}>Processing Checkout ID: <br /><code>{checkoutId}</code></p>
+                        <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '1rem' }}>
+                            Processing Checkout ID: <br />
+                            <code>{checkoutId}</code>
+                        </p>
                     </div>
                 )}
 
                 {step === 'complete' && (
                     <div className="auth-body" style={{ textAlign: 'center', padding: '2rem 0' }}>
-                        <CheckCircle size={64} color="#2ed573" style={{ marginBottom: '1rem', margin: '0 auto' }} />
+                        <CheckCircle
+                            size={64}
+                            color="#2ed573"
+                            style={{ marginBottom: '1rem', margin: '0 auto' }}
+                        />
                         <h3>Account Verified!</h3>
                         <p>Welcome to KaruTeens. You now have full access.</p>
-                        <Link to="/feed" className="btn btn-primary btn-full" style={{ marginTop: '2rem', display: 'block' }}>
+                        <Link
+                            to="/feed"
+                            className="btn btn-primary btn-full"
+                            style={{ marginTop: '2rem', display: 'block' }}
+                        >
                             Start Exploring
                         </Link>
                     </div>
                 )}
 
                 <div className="auth-footer" style={{ marginTop: '2rem' }}>
-                    <p>{isPaymentEnabled ? 'Secure payments powered by Safaricom M-Pesa' : 'KaruTeens Community Verification'}</p>
+                    <p>
+                        {isPaymentEnabled
+                            ? 'Secure payments powered by Safaricom M-Pesa'
+                            : 'KaruTeens Community Verification'}
+                    </p>
                 </div>
             </div>
         </div>

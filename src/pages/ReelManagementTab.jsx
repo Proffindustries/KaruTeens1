@@ -1,17 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Video, Image, Clock, Calendar, Eye, EyeOff, Trash2, ShieldCheck, XCircle, AlertTriangle,
-    User, TrendingUp, BarChart3, Filter, Search, RefreshCw,
-    Download, Upload, Plus, Edit, CheckCircle, Ban, Shield, Users,
-    MessageCircle, ThumbsUp as ThumbsUp, AlertCircle, Zap,
-    Globe, Repeat, FileCheck, FileClock, FileSearch,
-    Play, Pause, RotateCcw, Share2, Heart, MessageSquare, Share,
-    Star, Crown, Sparkles, Timer, MapPin, Hash, AtSign,
-    Smartphone, Tablet, Laptop, Award, Trophy, Rocket, Flame, Sparkle, Gift,
-    Film, Clapperboard, Scissors, Settings, Database, Cpu, Wifi, WifiOff,
-    FileMinus, FilePlus, FileStack, FileWarning, FileX, FileSymlink,
-    HardDrive, Cloud, Server, Battery, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning,
-    Network, Zap as ZapIcon, Music
+    Video,
+    Image,
+    Clock,
+    Calendar,
+    Eye,
+    EyeOff,
+    Trash2,
+    ShieldCheck,
+    XCircle,
+    AlertTriangle,
+    User,
+    TrendingUp,
+    BarChart3,
+    Filter,
+    Search,
+    RefreshCw,
+    Download,
+    Upload,
+    Plus,
+    Edit,
+    CheckCircle,
+    Ban,
+    Shield,
+    Users,
+    MessageCircle,
+    ThumbsUp as ThumbsUp,
+    AlertCircle,
+    Zap,
+    Globe,
+    Repeat,
+    FileCheck,
+    FileClock,
+    FileSearch,
+    Play,
+    Pause,
+    RotateCcw,
+    Share2,
+    Heart,
+    MessageSquare,
+    Share,
+    Star,
+    Crown,
+    Sparkles,
+    Timer,
+    MapPin,
+    Hash,
+    AtSign,
+    Smartphone,
+    Tablet,
+    Laptop,
+    Award,
+    Trophy,
+    Rocket,
+    Flame,
+    Sparkle,
+    Gift,
+    Film,
+    Clapperboard,
+    Scissors,
+    Settings,
+    Database,
+    Cpu,
+    Wifi,
+    WifiOff,
+    FileMinus,
+    FilePlus,
+    FileStack,
+    FileWarning,
+    FileX,
+    FileSymlink,
+    HardDrive,
+    Cloud,
+    Server,
+    Battery,
+    BatteryCharging,
+    BatteryFull,
+    BatteryLow,
+    BatteryMedium,
+    BatteryWarning,
+    Network,
+    Zap as ZapIcon,
+    Music,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -36,7 +106,7 @@ const ReelManagementTab = () => {
         date_from: '',
         date_to: '',
         sort_by: 'created_at',
-        sort_order: 'desc'
+        sort_order: 'desc',
     });
 
     const [selectedReels, setSelectedReels] = useState([]);
@@ -63,7 +133,8 @@ const ReelManagementTab = () => {
             video_url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
             thumbnail_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
             title: 'Amazing Dance Routine',
-            description: 'Check out this amazing dance routine I worked on for weeks! #dance #tutorial',
+            description:
+                'Check out this amazing dance routine I worked on for weeks! #dance #tutorial',
             duration: 30.5,
             video_size: 1048576, // 1MB
             video_format: 'mp4',
@@ -112,11 +183,26 @@ const ReelManagementTab = () => {
             transcoding_error: null,
             available_qualities: ['360p', '480p', '720p', '1080p'],
             subtitles: [
-                { language: 'en', url: 'subtitles/en.vtt', format: 'vtt', created_at: '2024-01-15T10:02:00Z' }
+                {
+                    language: 'en',
+                    url: 'subtitles/en.vtt',
+                    format: 'vtt',
+                    created_at: '2024-01-15T10:02:00Z',
+                },
             ],
             captions: [
-                { text: 'Welcome to my dance tutorial!', start_time: 0.0, end_time: 3.0, language: 'en' },
-                { text: 'Let\'s start with the basics.', start_time: 3.0, end_time: 6.0, language: 'en' }
+                {
+                    text: 'Welcome to my dance tutorial!',
+                    start_time: 0.0,
+                    end_time: 3.0,
+                    language: 'en',
+                },
+                {
+                    text: "Let's start with the basics.",
+                    start_time: 3.0,
+                    end_time: 6.0,
+                    language: 'en',
+                },
             ],
             views: [
                 {
@@ -127,17 +213,21 @@ const ReelManagementTab = () => {
                     view_duration: 28.5,
                     completion_rate: 0.93,
                     is_replay: false,
-                    location: { latitude: -1.286389, longitude: 36.817223, label: 'Westlands, Nairobi' },
+                    location: {
+                        latitude: -1.286389,
+                        longitude: 36.817223,
+                        label: 'Westlands, Nairobi',
+                    },
                     device_info: 'iPhone 14 Pro',
-                    referrer: 'explore'
-                }
+                    referrer: 'explore',
+                },
             ],
             likes: [
                 {
                     user_id: 'user_002',
                     username: 'DanceFan',
-                    liked_at: '2024-01-15T10:07:00Z'
-                }
+                    liked_at: '2024-01-15T10:07:00Z',
+                },
             ],
             comments: [
                 {
@@ -151,8 +241,8 @@ const ReelManagementTab = () => {
                     deleted_at: null,
                     moderation_status: 'approved',
                     created_at: '2024-01-15T10:08:00Z',
-                    updated_at: '2024-01-15T10:08:00Z'
-                }
+                    updated_at: '2024-01-15T10:08:00Z',
+                },
             ],
             shares: [
                 {
@@ -160,8 +250,8 @@ const ReelManagementTab = () => {
                     username: 'DanceFan',
                     platform: 'instagram',
                     shared_at: '2024-01-15T10:10:00Z',
-                    share_type: 'story'
-                }
+                    share_type: 'story',
+                },
             ],
             duets: [
                 {
@@ -170,8 +260,8 @@ const ReelManagementTab = () => {
                     duet_user_id: 'user_004',
                     duet_username: 'DancePartner',
                     duet_type: 'left_right',
-                    created_at: '2024-01-15T12:00:00Z'
-                }
+                    created_at: '2024-01-15T12:00:00Z',
+                },
             ],
             stitches: [
                 {
@@ -180,16 +270,16 @@ const ReelManagementTab = () => {
                     stitch_user_id: 'user_005',
                     stitch_username: 'DanceStudent',
                     stitch_duration: 15.0,
-                    created_at: '2024-01-15T14:00:00Z'
-                }
+                    created_at: '2024-01-15T14:00:00Z',
+                },
             ],
             saves: [
                 {
                     user_id: 'user_002',
                     username: 'DanceFan',
                     saved_at: '2024-01-15T10:09:00Z',
-                    collection_name: 'Dance Tutorials'
-                }
+                    collection_name: 'Dance Tutorials',
+                },
             ],
             reports: [],
             moderation_history: [
@@ -197,8 +287,8 @@ const ReelManagementTab = () => {
                     action: 'approve',
                     reason: 'Content is appropriate and high quality',
                     notes: 'Approved by admin',
-                    created_at: '2024-01-15T10:03:00Z'
-                }
+                    created_at: '2024-01-15T10:03:00Z',
+                },
             ],
             analytics: [
                 {
@@ -217,9 +307,9 @@ const ReelManagementTab = () => {
                     engagement_rate: 0.24,
                     trending_score: 0.75,
                     virality_score: 0.65,
-                    created_at: '2024-01-15T23:59:59Z'
-                }
-            ]
+                    created_at: '2024-01-15T23:59:59Z',
+                },
+            ],
         },
         {
             id: 'reel_002',
@@ -229,7 +319,8 @@ const ReelManagementTab = () => {
             video_url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
             thumbnail_url: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea',
             title: 'Buy Cheap Products Now!',
-            description: 'Get the best deals on amazing products! Visit our website now for exclusive discounts!',
+            description:
+                'Get the best deals on amazing products! Visit our website now for exclusive discounts!',
             duration: 15.2,
             video_size: 2097152, // 2MB
             video_format: 'mp4',
@@ -291,18 +382,18 @@ const ReelManagementTab = () => {
                     reason: 'spam',
                     description: 'Promotional content',
                     reported_by_username: 'user_003',
-                    created_at: '2024-01-16T14:32:00Z'
-                }
+                    created_at: '2024-01-16T14:32:00Z',
+                },
             ],
             moderation_history: [
                 {
                     action: 'reject',
                     reason: 'Spam detected',
                     notes: 'Automatically flagged by AI moderation',
-                    created_at: '2024-01-16T14:35:00Z'
-                }
+                    created_at: '2024-01-16T14:35:00Z',
+                },
             ],
-            analytics: []
+            analytics: [],
         },
         {
             id: 'reel_003',
@@ -312,7 +403,8 @@ const ReelManagementTab = () => {
             video_url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4',
             thumbnail_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9',
             title: 'New Song Release',
-            description: 'My new song is out now! Listen to it and let me know what you think. #music #newrelease',
+            description:
+                'My new song is out now! Listen to it and let me know what you think. #music #newrelease',
             duration: 60.0,
             video_size: 5242880, // 5MB
             video_format: 'mp4',
@@ -361,12 +453,22 @@ const ReelManagementTab = () => {
             transcoding_error: null,
             available_qualities: ['360p', '480p', '720p', '1080p', '4K'],
             subtitles: [
-                { language: 'en', url: 'subtitles/en.vtt', format: 'vtt', created_at: '2024-01-17T09:18:00Z' },
-                { language: 'sw', url: 'subtitles/sw.vtt', format: 'vtt', created_at: '2024-01-17T09:19:00Z' }
+                {
+                    language: 'en',
+                    url: 'subtitles/en.vtt',
+                    format: 'vtt',
+                    created_at: '2024-01-17T09:18:00Z',
+                },
+                {
+                    language: 'sw',
+                    url: 'subtitles/sw.vtt',
+                    format: 'vtt',
+                    created_at: '2024-01-17T09:19:00Z',
+                },
             ],
             captions: [
                 { text: 'Welcome to my new song!', start_time: 0.0, end_time: 5.0, language: 'en' },
-                { text: 'Hope you enjoy it!', start_time: 5.0, end_time: 10.0, language: 'en' }
+                { text: 'Hope you enjoy it!', start_time: 5.0, end_time: 10.0, language: 'en' },
             ],
             views: [
                 {
@@ -379,15 +481,15 @@ const ReelManagementTab = () => {
                     is_replay: false,
                     location: { latitude: -1.2921, longitude: 36.8219, label: 'Nairobi, Kenya' },
                     device_info: 'Android Samsung S23',
-                    referrer: 'search'
-                }
+                    referrer: 'search',
+                },
             ],
             likes: [
                 {
                     user_id: 'user_001',
                     username: 'VideoCreator',
-                    liked_at: '2024-01-17T09:22:00Z'
-                }
+                    liked_at: '2024-01-17T09:22:00Z',
+                },
             ],
             comments: [
                 {
@@ -401,8 +503,8 @@ const ReelManagementTab = () => {
                     deleted_at: null,
                     moderation_status: 'approved',
                     created_at: '2024-01-17T09:25:00Z',
-                    updated_at: '2024-01-17T09:25:00Z'
-                }
+                    updated_at: '2024-01-17T09:25:00Z',
+                },
             ],
             shares: [
                 {
@@ -410,8 +512,8 @@ const ReelManagementTab = () => {
                     username: 'VideoCreator',
                     platform: 'facebook',
                     shared_at: '2024-01-17T09:30:00Z',
-                    share_type: 'feed'
-                }
+                    share_type: 'feed',
+                },
             ],
             duets: [
                 {
@@ -420,8 +522,8 @@ const ReelManagementTab = () => {
                     duet_user_id: 'user_005',
                     duet_username: 'SingerFriend',
                     duet_type: 'top_bottom',
-                    created_at: '2024-01-17T12:00:00Z'
-                }
+                    created_at: '2024-01-17T12:00:00Z',
+                },
             ],
             stitches: [
                 {
@@ -430,16 +532,16 @@ const ReelManagementTab = () => {
                     stitch_user_id: 'user_006',
                     stitch_username: 'Producer',
                     stitch_duration: 30.0,
-                    created_at: '2024-01-17T15:00:00Z'
-                }
+                    created_at: '2024-01-17T15:00:00Z',
+                },
             ],
             saves: [
                 {
                     user_id: 'user_001',
                     username: 'VideoCreator',
                     saved_at: '2024-01-17T09:23:00Z',
-                    collection_name: 'Music Inspiration'
-                }
+                    collection_name: 'Music Inspiration',
+                },
             ],
             reports: [],
             moderation_history: [
@@ -447,8 +549,8 @@ const ReelManagementTab = () => {
                     action: 'approve',
                     reason: 'Content is original and appropriate',
                     notes: 'Approved by admin',
-                    created_at: '2024-01-17T09:18:00Z'
-                }
+                    created_at: '2024-01-17T09:18:00Z',
+                },
             ],
             analytics: [
                 {
@@ -467,10 +569,10 @@ const ReelManagementTab = () => {
                     engagement_rate: 0.28,
                     trending_score: 0.88,
                     virality_score: 0.75,
-                    created_at: '2024-01-17T23:59:59Z'
-                }
-            ]
-        }
+                    created_at: '2024-01-17T23:59:59Z',
+                },
+            ],
+        },
     ];
 
     // Mock user stats
@@ -495,7 +597,7 @@ const ReelManagementTab = () => {
             avg_view_duration: 45.2,
             top_reel_id: 'reel_001',
             follower_growth: 1500,
-            last_reel_at: '2024-01-20T10:00:00Z'
+            last_reel_at: '2024-01-20T10:00:00Z',
         },
         {
             user_id: 'user_002',
@@ -517,7 +619,7 @@ const ReelManagementTab = () => {
             avg_view_duration: 5.2,
             top_reel_id: null,
             follower_growth: -50,
-            last_reel_at: '2024-01-16T14:30:00Z'
+            last_reel_at: '2024-01-16T14:30:00Z',
         },
         {
             user_id: 'user_003',
@@ -539,8 +641,8 @@ const ReelManagementTab = () => {
             avg_view_duration: 52.8,
             top_reel_id: 'reel_003',
             follower_growth: 5000,
-            last_reel_at: '2024-01-17T09:15:00Z'
-        }
+            last_reel_at: '2024-01-17T09:15:00Z',
+        },
     ];
 
     // Mock transcoding jobs
@@ -556,7 +658,7 @@ const ReelManagementTab = () => {
             started_at: '2024-01-15T09:55:00Z',
             completed_at: '2024-01-15T10:00:00Z',
             error_message: null,
-            worker_id: 'worker_001'
+            worker_id: 'worker_001',
         },
         {
             id: 'job_002',
@@ -569,7 +671,7 @@ const ReelManagementTab = () => {
             started_at: '2024-01-16T14:25:00Z',
             completed_at: null,
             error_message: 'Video format not supported',
-            worker_id: 'worker_002'
+            worker_id: 'worker_002',
         },
         {
             id: 'job_003',
@@ -582,7 +684,7 @@ const ReelManagementTab = () => {
             started_at: '2024-01-17T09:10:00Z',
             completed_at: '2024-01-17T09:15:00Z',
             error_message: null,
-            worker_id: 'worker_003'
+            worker_id: 'worker_003',
         },
         {
             id: 'job_004',
@@ -595,8 +697,8 @@ const ReelManagementTab = () => {
             started_at: '2024-01-18T10:00:00Z',
             completed_at: null,
             error_message: null,
-            worker_id: 'worker_004'
-        }
+            worker_id: 'worker_004',
+        },
     ];
 
     // Mock trending reels
@@ -609,7 +711,7 @@ const ReelManagementTab = () => {
             region: 'Kenya',
             trending_at: '2024-01-17T12:00:00Z',
             peak_trending_at: '2024-01-17T18:00:00Z',
-            trending_duration: 48
+            trending_duration: 48,
         },
         {
             reel_id: 'reel_001',
@@ -619,7 +721,7 @@ const ReelManagementTab = () => {
             region: 'Kenya',
             trending_at: '2024-01-15T15:00:00Z',
             peak_trending_at: '2024-01-15T20:00:00Z',
-            trending_duration: 24
+            trending_duration: 24,
         },
         {
             reel_id: 'reel_005',
@@ -629,8 +731,8 @@ const ReelManagementTab = () => {
             region: 'Kenya',
             trending_at: '2024-01-18T09:00:00Z',
             peak_trending_at: '2024-01-18T14:00:00Z',
-            trending_duration: 12
-        }
+            trending_duration: 12,
+        },
     ];
 
     useEffect(() => {
@@ -643,7 +745,7 @@ const ReelManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -653,44 +755,52 @@ const ReelManagementTab = () => {
         }
 
         if (bulkAction === 'approve') {
-            setReels(prev => prev.map(r =>
-                selectedReels.includes(r.id) ? { ...r, moderation_status: 'approved' } : r
-            ));
+            setReels((prev) =>
+                prev.map((r) =>
+                    selectedReels.includes(r.id) ? { ...r, moderation_status: 'approved' } : r,
+                ),
+            );
             setSelectedReels([]);
             setBulkAction('');
             showToast('Reels approved', 'success');
         } else if (bulkAction === 'reject') {
-            setReels(prev => prev.map(r =>
-                selectedReels.includes(r.id) ? { ...r, moderation_status: 'rejected' } : r
-            ));
+            setReels((prev) =>
+                prev.map((r) =>
+                    selectedReels.includes(r.id) ? { ...r, moderation_status: 'rejected' } : r,
+                ),
+            );
             setSelectedReels([]);
             setBulkAction('');
             showToast('Reels rejected', 'info');
         } else if (bulkAction === 'delete') {
             if (confirm(`Delete ${selectedReels.length} reels? This action cannot be undone.`)) {
-                setReels(prev => prev.filter(r => !selectedReels.includes(r.id)));
+                setReels((prev) => prev.filter((r) => !selectedReels.includes(r.id)));
                 setSelectedReels([]);
                 setBulkAction('');
                 showToast('Reels deleted', 'success');
             }
         } else if (bulkAction === 'mark_spam') {
-            setReels(prev => prev.map(r =>
-                selectedReels.includes(r.id) ? { ...r, moderation_status: 'spam' } : r
-            ));
+            setReels((prev) =>
+                prev.map((r) =>
+                    selectedReels.includes(r.id) ? { ...r, moderation_status: 'spam' } : r,
+                ),
+            );
             setSelectedReels([]);
             setBulkAction('');
             showToast('Reels marked as spam', 'info');
         } else if (bulkAction === 'enable_duet') {
-            setReels(prev => prev.map(r =>
-                selectedReels.includes(r.id) ? { ...r, duet_enabled: true } : r
-            ));
+            setReels((prev) =>
+                prev.map((r) => (selectedReels.includes(r.id) ? { ...r, duet_enabled: true } : r)),
+            );
             setSelectedReels([]);
             setBulkAction('');
             showToast('Duet enabled for selected reels', 'success');
         } else if (bulkAction === 'disable_comments') {
-            setReels(prev => prev.map(r =>
-                selectedReels.includes(r.id) ? { ...r, comments_enabled: false } : r
-            ));
+            setReels((prev) =>
+                prev.map((r) =>
+                    selectedReels.includes(r.id) ? { ...r, comments_enabled: false } : r,
+                ),
+            );
             setSelectedReels([]);
             setBulkAction('');
             showToast('Comments disabled for selected reels', 'info');
@@ -705,19 +815,27 @@ const ReelManagementTab = () => {
     const confirmModeration = () => {
         if (!moderatingReel || !moderationAction) return;
 
-        setReels(prev => prev.map(r =>
-            r.id === moderatingReel.id
-                ? {
-                    ...r,
-                    moderation_status: moderationAction === 'approve' ? 'approved' :
-                        moderationAction === 'reject' ? 'rejected' :
-                            moderationAction === 'delete' ? 'removed' :
-                                moderationAction === 'spam' ? 'spam' : r.moderation_status,
-                    moderation_notes: moderationReason,
-                    updated_at: new Date().toISOString()
-                }
-                : r
-        ));
+        setReels((prev) =>
+            prev.map((r) =>
+                r.id === moderatingReel.id
+                    ? {
+                          ...r,
+                          moderation_status:
+                              moderationAction === 'approve'
+                                  ? 'approved'
+                                  : moderationAction === 'reject'
+                                    ? 'rejected'
+                                    : moderationAction === 'delete'
+                                      ? 'removed'
+                                      : moderationAction === 'spam'
+                                        ? 'spam'
+                                        : r.moderation_status,
+                          moderation_notes: moderationReason,
+                          updated_at: new Date().toISOString(),
+                      }
+                    : r,
+            ),
+        );
 
         setShowModerationModal(false);
         setModeratingReel(null);
@@ -728,16 +846,14 @@ const ReelManagementTab = () => {
 
     const handleDeleteReel = (reelId) => {
         if (confirm('Are you sure you want to delete this reel? This action cannot be undone.')) {
-            setReels(prev => prev.filter(r => r.id !== reelId));
+            setReels((prev) => prev.filter((r) => r.id !== reelId));
             showToast('Reel deleted', 'success');
         }
     };
 
     const toggleReelSelection = (reelId) => {
-        setSelectedReels(prev =>
-            prev.includes(reelId)
-                ? prev.filter(id => id !== reelId)
-                : [...prev, reelId]
+        setSelectedReels((prev) =>
+            prev.includes(reelId) ? prev.filter((id) => id !== reelId) : [...prev, reelId],
         );
     };
 
@@ -745,39 +861,56 @@ const ReelManagementTab = () => {
         if (selectedReels.length === reels.length) {
             setSelectedReels([]);
         } else {
-            setSelectedReels(reels.map(r => r.id));
+            setSelectedReels(reels.map((r) => r.id));
         }
     };
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'approved': return { color: 'green', text: 'Approved', icon: <CheckCircle size={14} /> };
-            case 'pending': return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
-            case 'rejected': return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
-            case 'spam': return { color: 'purple', text: 'Spam', icon: <AlertTriangle size={14} /> };
-            case 'removed': return { color: 'gray', text: 'Removed', icon: <Trash2 size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
+            case 'approved':
+                return { color: 'green', text: 'Approved', icon: <CheckCircle size={14} /> };
+            case 'pending':
+                return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
+            case 'rejected':
+                return { color: 'red', text: 'Rejected', icon: <XCircle size={14} /> };
+            case 'spam':
+                return { color: 'purple', text: 'Spam', icon: <AlertTriangle size={14} /> };
+            case 'removed':
+                return { color: 'gray', text: 'Removed', icon: <Trash2 size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
         }
     };
 
     const getTranscodingStatusBadge = (status) => {
         switch (status) {
-            case 'completed': return { color: 'green', text: 'Completed', icon: <CheckCircle size={14} /> };
-            case 'processing': return { color: 'blue', text: 'Processing', icon: <RefreshCw size={14} /> };
-            case 'pending': return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
-            case 'failed': return { color: 'red', text: 'Failed', icon: <XCircle size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
+            case 'completed':
+                return { color: 'green', text: 'Completed', icon: <CheckCircle size={14} /> };
+            case 'processing':
+                return { color: 'blue', text: 'Processing', icon: <RefreshCw size={14} /> };
+            case 'pending':
+                return { color: 'orange', text: 'Pending', icon: <FileClock size={14} /> };
+            case 'failed':
+                return { color: 'red', text: 'Failed', icon: <XCircle size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertCircle size={14} /> };
         }
     };
 
     const getResolutionBadge = (resolution) => {
         switch (resolution) {
-            case '4K': return { color: 'purple', text: '4K', icon: <Video size={14} /> };
-            case '1080p': return { color: 'blue', text: '1080p', icon: <Video size={14} /> };
-            case '720p': return { color: 'green', text: '720p', icon: <Video size={14} /> };
-            case '480p': return { color: 'yellow', text: '480p', icon: <Video size={14} /> };
-            case '360p': return { color: 'orange', text: '360p', icon: <Video size={14} /> };
-            default: return { color: 'gray', text: resolution, icon: <AlertTriangle size={14} /> };
+            case '4K':
+                return { color: 'purple', text: '4K', icon: <Video size={14} /> };
+            case '1080p':
+                return { color: 'blue', text: '1080p', icon: <Video size={14} /> };
+            case '720p':
+                return { color: 'green', text: '720p', icon: <Video size={14} /> };
+            case '480p':
+                return { color: 'yellow', text: '480p', icon: <Video size={14} /> };
+            case '360p':
+                return { color: 'orange', text: '360p', icon: <Video size={14} /> };
+            default:
+                return { color: 'gray', text: resolution, icon: <AlertTriangle size={14} /> };
         }
     };
 
@@ -804,7 +937,8 @@ const ReelManagementTab = () => {
 
     const getPriorityColor = (spamScore, reportedCount, transcodingStatus) => {
         if (spamScore >= 0.8 || reportedCount >= 5 || transcodingStatus === 'failed') return 'red';
-        if (spamScore >= 0.5 || reportedCount >= 2 || transcodingStatus === 'processing') return 'orange';
+        if (spamScore >= 0.5 || reportedCount >= 2 || transcodingStatus === 'processing')
+            return 'orange';
         return 'green';
     };
 
@@ -832,7 +966,10 @@ const ReelManagementTab = () => {
             <div className="tab-header">
                 <div className="header-left">
                     <h2>Reel Management</h2>
-                    <p>Manage video content with advanced transcoding, social features, and engagement tracking</p>
+                    <p>
+                        Manage video content with advanced transcoding, social features, and
+                        engagement tracking
+                    </p>
                 </div>
                 <div className="header-actions">
                     <button className="btn-secondary">
@@ -843,10 +980,7 @@ const ReelManagementTab = () => {
                         <Download size={18} />
                         Export Reels
                     </button>
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowTranscodingModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowTranscodingModal(true)}>
                         <Cpu size={18} />
                         Transcoding Jobs
                     </button>
@@ -893,7 +1027,9 @@ const ReelManagementTab = () => {
 
                         <select
                             value={filters.transcoding_status}
-                            onChange={(e) => handleFilterChange('transcoding_status', e.target.value)}
+                            onChange={(e) =>
+                                handleFilterChange('transcoding_status', e.target.value)
+                            }
                         >
                             <option value="all">All Transcoding</option>
                             <option value="completed">Completed</option>
@@ -927,13 +1063,15 @@ const ReelManagementTab = () => {
                             type="number"
                             placeholder="Min trending score"
                             value={filters.trending_score_min}
-                            onChange={(e) => handleFilterChange('trending_score_min', e.target.value)}
+                            onChange={(e) =>
+                                handleFilterChange('trending_score_min', e.target.value)
+                            }
                         />
                     </div>
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => { }}>
+                    <button className="refresh-btn" onClick={() => {}}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
@@ -951,14 +1089,9 @@ const ReelManagementTab = () => {
             {/* Bulk Actions */}
             {selectedReels.length > 0 && (
                 <div className="bulk-actions">
-                    <div className="selection-info">
-                        {selectedReels.length} reels selected
-                    </div>
+                    <div className="selection-info">{selectedReels.length} reels selected</div>
                     <div className="bulk-actions-controls">
-                        <select
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="approve">Approve</option>
                             <option value="reject">Reject</option>
@@ -991,14 +1124,16 @@ const ReelManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedReels.length === reels.length && reels.length > 0}
+                                    checked={
+                                        selectedReels.length === reels.length && reels.length > 0
+                                    }
                                     onChange={selectAllReels}
                                 />
                                 <span>Select All</span>
                             </div>
                             <div className="table-actions">
                                 <span className="reel-count">{reels.length} reels found</span>
-                                <button className="refresh-btn" onClick={() => { }}>
+                                <button className="refresh-btn" onClick={() => {}}>
                                     <RefreshCw size={18} />
                                     Refresh
                                 </button>
@@ -1012,7 +1147,10 @@ const ReelManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedReels.length === reels.length && reels.length > 0}
+                                                checked={
+                                                    selectedReels.length === reels.length &&
+                                                    reels.length > 0
+                                                }
                                                 onChange={selectAllReels}
                                             />
                                         </th>
@@ -1025,8 +1163,17 @@ const ReelManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {reels.map(reel => (
-                                        <tr key={reel.id} className={reel.moderation_status === 'spam' ? 'spam-reel' : reel.moderation_status === 'rejected' ? 'rejected-reel' : ''}>
+                                    {reels.map((reel) => (
+                                        <tr
+                                            key={reel.id}
+                                            className={
+                                                reel.moderation_status === 'spam'
+                                                    ? 'spam-reel'
+                                                    : reel.moderation_status === 'rejected'
+                                                      ? 'rejected-reel'
+                                                      : ''
+                                            }
+                                        >
                                             <td>
                                                 <input
                                                     type="checkbox"
@@ -1037,41 +1184,60 @@ const ReelManagementTab = () => {
                                             <td>
                                                 <div className="reel-content">
                                                     <div className="reel-media-preview">
-                                                        <img src={reel.thumbnail_url} alt="Reel Thumbnail" className="reel-thumbnail" />
+                                                        <img
+                                                            src={reel.thumbnail_url}
+                                                            alt="Reel Thumbnail"
+                                                            className="reel-thumbnail"
+                                                        />
                                                         <div className="video-overlay">
                                                             <Play size={24} />
                                                         </div>
                                                         <div className="duration-overlay">
                                                             {formatDuration(reel.duration)}
                                                         </div>
-                                                        {getReelTypeIcon(!!reel.music_track, !!reel.effects, !!reel.filters)}
+                                                        {getReelTypeIcon(
+                                                            !!reel.music_track,
+                                                            !!reel.effects,
+                                                            !!reel.filters,
+                                                        )}
                                                     </div>
                                                     <div className="reel-info">
                                                         <div className="reel-title">
-                                                            <strong>{reel.title || 'Untitled Reel'}</strong>
+                                                            <strong>
+                                                                {reel.title || 'Untitled Reel'}
+                                                            </strong>
                                                             {reel.is_private && (
-                                                                <span className="private-badge">Private</span>
+                                                                <span className="private-badge">
+                                                                    Private
+                                                                </span>
                                                             )}
                                                             {reel.age_restriction !== 'none' && (
-                                                                <span className="age-restriction-badge">{reel.age_restriction}</span>
+                                                                <span className="age-restriction-badge">
+                                                                    {reel.age_restriction}
+                                                                </span>
                                                             )}
                                                         </div>
                                                         <div className="reel-description">
                                                             <p>{reel.description}</p>
                                                         </div>
                                                         <div className="reel-meta">
-                                                            <span className="reel-id">Reel: {reel.id}</span>
+                                                            <span className="reel-id">
+                                                                Reel: {reel.id}
+                                                            </span>
                                                             {reel.location && (
                                                                 <span className="location-info">
                                                                     <MapPin size={12} />
                                                                     {reel.location.label}
                                                                 </span>
                                                             )}
-                                                            {reel.hashtags && reel.hashtags.length > 0 && (
-                                                                <span className="hashtags-info">
-                                                                    {reel.hashtags.map(tag => `#${tag}`).join(' ')}
-                                                                </span>
-                                                            )}
+                                                            {reel.hashtags &&
+                                                                reel.hashtags.length > 0 && (
+                                                                    <span className="hashtags-info">
+                                                                        {reel.hashtags
+                                                                            .map((tag) => `#${tag}`)
+                                                                            .join(' ')}
+                                                                    </span>
+                                                                )}
                                                             {reel.music_track && (
                                                                 <span className="music-info">
                                                                     <Music size={12} />
@@ -1085,42 +1251,89 @@ const ReelManagementTab = () => {
                                             <td>
                                                 <div className="status-info">
                                                     <div className="status-badge">
-                                                        <span className={`status-pill ${getStatusBadge(reel.moderation_status).color}`}>
-                                                            {getStatusBadge(reel.moderation_status).icon}
-                                                            {getStatusBadge(reel.moderation_status).text}
+                                                        <span
+                                                            className={`status-pill ${getStatusBadge(reel.moderation_status).color}`}
+                                                        >
+                                                            {
+                                                                getStatusBadge(
+                                                                    reel.moderation_status,
+                                                                ).icon
+                                                            }
+                                                            {
+                                                                getStatusBadge(
+                                                                    reel.moderation_status,
+                                                                ).text
+                                                            }
                                                         </span>
-                                                        <span className={`transcoding-pill ${getTranscodingStatusBadge(reel.transcoding_status).color}`}>
-                                                            {getTranscodingStatusBadge(reel.transcoding_status).icon}
-                                                            {getTranscodingStatusBadge(reel.transcoding_status).text}
+                                                        <span
+                                                            className={`transcoding-pill ${getTranscodingStatusBadge(reel.transcoding_status).color}`}
+                                                        >
+                                                            {
+                                                                getTranscodingStatusBadge(
+                                                                    reel.transcoding_status,
+                                                                ).icon
+                                                            }
+                                                            {
+                                                                getTranscodingStatusBadge(
+                                                                    reel.transcoding_status,
+                                                                ).text
+                                                            }
                                                         </span>
-                                                        <span className={`resolution-pill ${getResolutionBadge(reel.resolution).color}`}>
-                                                            {getResolutionBadge(reel.resolution).icon}
-                                                            {getResolutionBadge(reel.resolution).text}
+                                                        <span
+                                                            className={`resolution-pill ${getResolutionBadge(reel.resolution).color}`}
+                                                        >
+                                                            {
+                                                                getResolutionBadge(reel.resolution)
+                                                                    .icon
+                                                            }
+                                                            {
+                                                                getResolutionBadge(reel.resolution)
+                                                                    .text
+                                                            }
                                                         </span>
                                                     </div>
                                                     <div className="status-dates">
                                                         <div className="status-date">
                                                             <Calendar size={12} />
-                                                            <span>Created: {new Date(reel.created_at).toLocaleDateString()}</span>
+                                                            <span>
+                                                                Created:{' '}
+                                                                {new Date(
+                                                                    reel.created_at,
+                                                                ).toLocaleDateString()}
+                                                            </span>
                                                         </div>
                                                         <div className="status-date">
                                                             <Timer size={12} />
-                                                            <span>Duration: {formatDuration(reel.duration)}</span>
+                                                            <span>
+                                                                Duration:{' '}
+                                                                {formatDuration(reel.duration)}
+                                                            </span>
                                                         </div>
                                                         <div className="status-date">
                                                             <Database size={12} />
-                                                            <span>Size: {formatFileSize(reel.video_size)}</span>
+                                                            <span>
+                                                                Size:{' '}
+                                                                {formatFileSize(reel.video_size)}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <div className="feature-flags">
-                                                        <span className={`feature-flag ${reel.duet_enabled ? 'enabled' : 'disabled'}`}>
+                                                        <span
+                                                            className={`feature-flag ${reel.duet_enabled ? 'enabled' : 'disabled'}`}
+                                                        >
                                                             Duet: {reel.duet_enabled ? 'Yes' : 'No'}
                                                         </span>
-                                                        <span className={`feature-flag ${reel.stitch_enabled ? 'enabled' : 'disabled'}`}>
-                                                            Stitch: {reel.stitch_enabled ? 'Yes' : 'No'}
+                                                        <span
+                                                            className={`feature-flag ${reel.stitch_enabled ? 'enabled' : 'disabled'}`}
+                                                        >
+                                                            Stitch:{' '}
+                                                            {reel.stitch_enabled ? 'Yes' : 'No'}
                                                         </span>
-                                                        <span className={`feature-flag ${reel.comments_enabled ? 'enabled' : 'disabled'}`}>
-                                                            Comments: {reel.comments_enabled ? 'Yes' : 'No'}
+                                                        <span
+                                                            className={`feature-flag ${reel.comments_enabled ? 'enabled' : 'disabled'}`}
+                                                        >
+                                                            Comments:{' '}
+                                                            {reel.comments_enabled ? 'Yes' : 'No'}
                                                         </span>
                                                     </div>
                                                     {reel.moderation_notes && (
@@ -1145,11 +1358,23 @@ const ReelManagementTab = () => {
                                                     <div className="date-info">
                                                         <div className="created-date">
                                                             <Calendar size={12} />
-                                                            <span>Created: {new Date(reel.created_at).toLocaleDateString()}</span>
+                                                            <span>
+                                                                Created:{' '}
+                                                                {new Date(
+                                                                    reel.created_at,
+                                                                ).toLocaleDateString()}
+                                                            </span>
                                                         </div>
                                                         <div className="published-date">
                                                             <Clock size={12} />
-                                                            <span>Published: {reel.published_at ? new Date(reel.published_at).toLocaleDateString() : 'Not published'}</span>
+                                                            <span>
+                                                                Published:{' '}
+                                                                {reel.published_at
+                                                                    ? new Date(
+                                                                          reel.published_at,
+                                                                      ).toLocaleDateString()
+                                                                    : 'Not published'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <div className="user-actions">
@@ -1169,55 +1394,79 @@ const ReelManagementTab = () => {
                                                     <div className="analytics-metrics">
                                                         <div className="metric-item">
                                                             <Eye size={14} />
-                                                            <span className="metric-value">{reel.view_count.toLocaleString()}</span>
+                                                            <span className="metric-value">
+                                                                {reel.view_count.toLocaleString()}
+                                                            </span>
                                                             <small>Views</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <ThumbsUp size={14} />
-                                                            <span className="metric-value">{reel.like_count.toLocaleString()}</span>
+                                                            <span className="metric-value">
+                                                                {reel.like_count.toLocaleString()}
+                                                            </span>
                                                             <small>Likes</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <MessageCircle size={14} />
-                                                            <span className="metric-value">{reel.comment_count}</span>
+                                                            <span className="metric-value">
+                                                                {reel.comment_count}
+                                                            </span>
                                                             <small>Comments</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <Share2 size={14} />
-                                                            <span className="metric-value">{reel.share_count}</span>
+                                                            <span className="metric-value">
+                                                                {reel.share_count}
+                                                            </span>
                                                             <small>Shares</small>
                                                         </div>
                                                     </div>
                                                     <div className="analytics-metrics">
                                                         <div className="metric-item">
                                                             <Video size={14} />
-                                                            <span className="metric-value">{reel.duet_count}</span>
+                                                            <span className="metric-value">
+                                                                {reel.duet_count}
+                                                            </span>
                                                             <small>Duets</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <Scissors size={14} />
-                                                            <span className="metric-value">{reel.stitch_count}</span>
+                                                            <span className="metric-value">
+                                                                {reel.stitch_count}
+                                                            </span>
                                                             <small>Stitches</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <Download size={14} />
-                                                            <span className="metric-value">{reel.save_count}</span>
+                                                            <span className="metric-value">
+                                                                {reel.save_count}
+                                                            </span>
                                                             <small>Saves</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <TrendingUp size={14} />
-                                                            <span className="metric-value">{reel.engagement_score.toFixed(2)}</span>
+                                                            <span className="metric-value">
+                                                                {reel.engagement_score.toFixed(2)}
+                                                            </span>
                                                             <small>Engagement</small>
                                                         </div>
                                                     </div>
                                                     <div className="analytics-actions">
                                                         <div className="trending-score">
-                                                            <span className="trending-label">Trending:</span>
-                                                            <span className="trending-value">{reel.trending_score.toFixed(2)}</span>
+                                                            <span className="trending-label">
+                                                                Trending:
+                                                            </span>
+                                                            <span className="trending-value">
+                                                                {reel.trending_score.toFixed(2)}
+                                                            </span>
                                                         </div>
                                                         <div className="virality-score">
-                                                            <span className="virality-label">Virality:</span>
-                                                            <span className="virality-value">{reel.virality_score.toFixed(2)}</span>
+                                                            <span className="virality-label">
+                                                                Virality:
+                                                            </span>
+                                                            <span className="virality-value">
+                                                                {reel.virality_score.toFixed(2)}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1227,33 +1476,70 @@ const ReelManagementTab = () => {
                                                     <div className="analysis-metrics">
                                                         <div className="metric-item">
                                                             <AlertTriangle size={14} />
-                                                            <span className={`spam-score ${getSpamLevel(reel.spam_score || 0).color}`}>
-                                                                {formatSpamScore(reel.spam_score || 0)}
+                                                            <span
+                                                                className={`spam-score ${getSpamLevel(reel.spam_score || 0).color}`}
+                                                            >
+                                                                {formatSpamScore(
+                                                                    reel.spam_score || 0,
+                                                                )}
                                                             </span>
                                                             <small>Spam Score</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <TrendingUp size={14} />
-                                                            <span className={`sentiment-score ${getSentimentLevel(reel.sentiment_score || 0).color}`}>
-                                                                {reel.sentiment_score > 0 ? '+' : ''}{(reel.sentiment_score || 0).toFixed(1)}
+                                                            <span
+                                                                className={`sentiment-score ${getSentimentLevel(reel.sentiment_score || 0).color}`}
+                                                            >
+                                                                {reel.sentiment_score > 0
+                                                                    ? '+'
+                                                                    : ''}
+                                                                {(
+                                                                    reel.sentiment_score || 0
+                                                                ).toFixed(1)}
                                                             </span>
                                                             <small>Sentiment</small>
                                                         </div>
                                                         <div className="metric-item">
                                                             <Clock size={14} />
                                                             <span className="transcoding-progress">
-                                                                {reel.transcoding_progress ? `${(reel.transcoding_progress * 100).toFixed(0)}%` : 'N/A'}
+                                                                {reel.transcoding_progress
+                                                                    ? `${(reel.transcoding_progress * 100).toFixed(0)}%`
+                                                                    : 'N/A'}
                                                             </span>
                                                             <small>Progress</small>
                                                         </div>
                                                     </div>
                                                     <div className="analysis-actions">
-                                                        <div className="priority-badge" style={{ backgroundColor: getPriorityColor(reel.spam_score || 0, reel.reported_count, reel.transcoding_status) }}>
-                                                            Priority: {getPriorityColor(reel.spam_score || 0, reel.reported_count, reel.transcoding_status) === 'red' ? 'High' : getPriorityColor(reel.spam_score || 0, reel.reported_count, reel.transcoding_status) === 'orange' ? 'Medium' : 'Low'}
+                                                        <div
+                                                            className="priority-badge"
+                                                            style={{
+                                                                backgroundColor: getPriorityColor(
+                                                                    reel.spam_score || 0,
+                                                                    reel.reported_count,
+                                                                    reel.transcoding_status,
+                                                                ),
+                                                            }}
+                                                        >
+                                                            Priority:{' '}
+                                                            {getPriorityColor(
+                                                                reel.spam_score || 0,
+                                                                reel.reported_count,
+                                                                reel.transcoding_status,
+                                                            ) === 'red'
+                                                                ? 'High'
+                                                                : getPriorityColor(
+                                                                        reel.spam_score || 0,
+                                                                        reel.reported_count,
+                                                                        reel.transcoding_status,
+                                                                    ) === 'orange'
+                                                                  ? 'Medium'
+                                                                  : 'Low'}
                                                         </div>
                                                         <div className="reports-count">
                                                             <AlertCircle size={12} />
-                                                            <span>{reel.reported_count} reports</span>
+                                                            <span>
+                                                                {reel.reported_count} reports
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1262,7 +1548,12 @@ const ReelManagementTab = () => {
                                                 <div className="action-buttons">
                                                     <button
                                                         className="action-btn view"
-                                                        onClick={() => window.open(`/reel/${reel.id}`, '_blank')}
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `/reel/${reel.id}`,
+                                                                '_blank',
+                                                            )
+                                                        }
                                                         title="View Reel"
                                                     >
                                                         <Eye size={16} />
@@ -1281,7 +1572,9 @@ const ReelManagementTab = () => {
                                                                 onClick={() => {
                                                                     setModeratingReel(reel);
                                                                     setModerationAction('approve');
-                                                                    setModerationReason('Content is appropriate');
+                                                                    setModerationReason(
+                                                                        'Content is appropriate',
+                                                                    );
                                                                     confirmModeration();
                                                                 }}
                                                                 title="Approve Reel"
@@ -1293,7 +1586,9 @@ const ReelManagementTab = () => {
                                                                 onClick={() => {
                                                                     setModeratingReel(reel);
                                                                     setModerationAction('reject');
-                                                                    setModerationReason('Inappropriate content');
+                                                                    setModerationReason(
+                                                                        'Inappropriate content',
+                                                                    );
                                                                     confirmModeration();
                                                                 }}
                                                                 title="Reject Reel"
@@ -1323,20 +1618,34 @@ const ReelManagementTab = () => {
             {/* Moderation Modal */}
             {showModerationModal && moderatingReel && (
                 <div className="modal-overlay" onClick={() => setShowModerationModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>Moderate Reel</h3>
-                            <button className="close-btn" onClick={() => setShowModerationModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowModerationModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="moderation-reel-preview">
                                 <div className="reel-preview-header">
                                     <strong>{moderatingReel.username}</strong>
-                                    <span className="reel-date">{new Date(moderatingReel.created_at).toLocaleString()}</span>
+                                    <span className="reel-date">
+                                        {new Date(moderatingReel.created_at).toLocaleString()}
+                                    </span>
                                 </div>
                                 <div className="reel-preview-content">
                                     <div className="reel-media">
-                                        <img src={moderatingReel.thumbnail_url} alt="Reel Thumbnail" />
+                                        <img
+                                            src={moderatingReel.thumbnail_url}
+                                            alt="Reel Thumbnail"
+                                        />
                                         <div className="video-overlay">
                                             <Play size={32} />
                                         </div>
@@ -1346,41 +1655,66 @@ const ReelManagementTab = () => {
                                     </div>
                                     <div className="reel-info">
                                         <div className="reel-title">
-                                            <strong>{moderatingReel.title || 'Untitled Reel'}</strong>
+                                            <strong>
+                                                {moderatingReel.title || 'Untitled Reel'}
+                                            </strong>
                                         </div>
                                         <div className="reel-description">
                                             {moderatingReel.description}
                                         </div>
                                         <div className="reel-meta">
-                                            <span className="reel-resolution">{moderatingReel.resolution}</span>
-                                            <span className="reel-duration">{formatDuration(moderatingReel.duration)}</span>
-                                            <span className="reel-size">{formatFileSize(moderatingReel.video_size)}</span>
+                                            <span className="reel-resolution">
+                                                {moderatingReel.resolution}
+                                            </span>
+                                            <span className="reel-duration">
+                                                {formatDuration(moderatingReel.duration)}
+                                            </span>
+                                            <span className="reel-size">
+                                                {formatFileSize(moderatingReel.video_size)}
+                                            </span>
                                         </div>
                                         {moderatingReel.music_track && (
                                             <div className="reel-music">
                                                 <span className="music-label">Music:</span>
-                                                <span className="music-title">{moderatingReel.music_track}</span>
+                                                <span className="music-title">
+                                                    {moderatingReel.music_track}
+                                                </span>
                                             </div>
                                         )}
-                                        {moderatingReel.effects && moderatingReel.effects.length > 0 && (
-                                            <div className="reel-effects">
-                                                <span className="effects-label">Effects:</span>
-                                                <span className="effects-list">{moderatingReel.effects.join(', ')}</span>
-                                            </div>
-                                        )}
-                                        {moderatingReel.filters && moderatingReel.filters.length > 0 && (
-                                            <div className="reel-filters">
-                                                <span className="filters-label">Filters:</span>
-                                                <span className="filters-list">{moderatingReel.filters.join(', ')}</span>
-                                            </div>
-                                        )}
+                                        {moderatingReel.effects &&
+                                            moderatingReel.effects.length > 0 && (
+                                                <div className="reel-effects">
+                                                    <span className="effects-label">Effects:</span>
+                                                    <span className="effects-list">
+                                                        {moderatingReel.effects.join(', ')}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        {moderatingReel.filters &&
+                                            moderatingReel.filters.length > 0 && (
+                                                <div className="reel-filters">
+                                                    <span className="filters-label">Filters:</span>
+                                                    <span className="filters-list">
+                                                        {moderatingReel.filters.join(', ')}
+                                                    </span>
+                                                </div>
+                                            )}
                                     </div>
                                 </div>
                                 <div className="reel-preview-meta">
-                                    <span className="spam-score-preview">Spam Score: {formatSpamScore(moderatingReel.spam_score || 0)}</span>
-                                    <span className="reports-count-preview">Reports: {moderatingReel.reported_count}</span>
-                                    <span className="views-count-preview">Views: {moderatingReel.view_count.toLocaleString()}</span>
-                                    <span className="engagement-preview">Engagement: {moderatingReel.engagement_score.toFixed(2)}</span>
+                                    <span className="spam-score-preview">
+                                        Spam Score:{' '}
+                                        {formatSpamScore(moderatingReel.spam_score || 0)}
+                                    </span>
+                                    <span className="reports-count-preview">
+                                        Reports: {moderatingReel.reported_count}
+                                    </span>
+                                    <span className="views-count-preview">
+                                        Views: {moderatingReel.view_count.toLocaleString()}
+                                    </span>
+                                    <span className="engagement-preview">
+                                        Engagement: {moderatingReel.engagement_score.toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
 
@@ -1415,30 +1749,47 @@ const ReelManagementTab = () => {
                                     {moderationAction === 'reject' && (
                                         <div className="warning-box">
                                             <AlertCircle size={16} />
-                                            <span>Rejecting this reel will mark it as inappropriate</span>
+                                            <span>
+                                                Rejecting this reel will mark it as inappropriate
+                                            </span>
                                         </div>
                                     )}
                                     {moderationAction === 'delete' && (
                                         <div className="warning-box">
                                             <XCircle size={16} />
-                                            <span>Deleting this reel is permanent and cannot be undone</span>
+                                            <span>
+                                                Deleting this reel is permanent and cannot be undone
+                                            </span>
                                         </div>
                                     )}
                                     {moderationAction === 'spam' && (
                                         <div className="warning-box">
                                             <AlertTriangle size={16} />
-                                            <span>Marking as spam will affect the user's reputation score</span>
+                                            <span>
+                                                Marking as spam will affect the user's reputation
+                                                score
+                                            </span>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                         <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={() => setShowModerationModal(false)}>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowModerationModal(false)}
+                            >
                                 Cancel
                             </button>
-                            <button type="button" className="btn-primary" onClick={confirmModeration}>
-                                Apply {moderationAction.charAt(0).toUpperCase() + moderationAction.slice(1)}
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={confirmModeration}
+                            >
+                                Apply{' '}
+                                {moderationAction.charAt(0).toUpperCase() +
+                                    moderationAction.slice(1)}
                             </button>
                         </div>
                     </div>
@@ -1448,14 +1799,20 @@ const ReelManagementTab = () => {
             {/* User Stats Modal */}
             {showStatsModal && (
                 <div className="modal-overlay" onClick={() => setShowStatsModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1200px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1200px' }}
+                    >
                         <div className="modal-header">
                             <h3>User Reel Statistics</h3>
-                            <button className="close-btn" onClick={() => setShowStatsModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowStatsModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="stats-grid">
-                                {mockUserStats.map(stats => (
+                                {mockUserStats.map((stats) => (
                                     <div key={stats.user_id} className="stat-card">
                                         <div className="stat-header">
                                             <div className="user-info">
@@ -1463,8 +1820,12 @@ const ReelManagementTab = () => {
                                                 <span className="user-id">ID: {stats.user_id}</span>
                                             </div>
                                             <div className="stat-actions">
-                                                <button className="stat-action-btn">View Profile</button>
-                                                <button className="stat-action-btn">Block User</button>
+                                                <button className="stat-action-btn">
+                                                    View Profile
+                                                </button>
+                                                <button className="stat-action-btn">
+                                                    Block User
+                                                </button>
                                             </div>
                                         </div>
 
@@ -1494,7 +1855,9 @@ const ReelManagementTab = () => {
                                                 <div className="metric-item">
                                                     <Crown size={20} />
                                                     <div>
-                                                        <strong>{stats.top_reel_id || 'N/A'}</strong>
+                                                        <strong>
+                                                            {stats.top_reel_id || 'N/A'}
+                                                        </strong>
                                                         <span>Top Reel</span>
                                                     </div>
                                                 </div>
@@ -1504,14 +1867,18 @@ const ReelManagementTab = () => {
                                                 <div className="metric-item">
                                                     <Eye size={20} />
                                                     <div>
-                                                        <strong>{stats.total_views.toLocaleString()}</strong>
+                                                        <strong>
+                                                            {stats.total_views.toLocaleString()}
+                                                        </strong>
                                                         <span>Total Views</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
                                                     <ThumbsUp size={20} />
                                                     <div>
-                                                        <strong>{stats.total_likes.toLocaleString()}</strong>
+                                                        <strong>
+                                                            {stats.total_likes.toLocaleString()}
+                                                        </strong>
                                                         <span>Total Likes</span>
                                                     </div>
                                                 </div>
@@ -1556,7 +1923,9 @@ const ReelManagementTab = () => {
                                                 <div className="metric-item">
                                                     <TrendingUp size={20} />
                                                     <div>
-                                                        <strong>{stats.avg_engagement_rate.toFixed(2)}%</strong>
+                                                        <strong>
+                                                            {stats.avg_engagement_rate.toFixed(2)}%
+                                                        </strong>
                                                         <span>Engagement Rate</span>
                                                     </div>
                                                 </div>
@@ -1566,21 +1935,27 @@ const ReelManagementTab = () => {
                                                 <div className="metric-item">
                                                     <Clock size={20} />
                                                     <div>
-                                                        <strong>{stats.avg_view_duration.toFixed(1)}s</strong>
+                                                        <strong>
+                                                            {stats.avg_view_duration.toFixed(1)}s
+                                                        </strong>
                                                         <span>Avg Duration</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
                                                     <TrendingUp size={20} />
                                                     <div>
-                                                        <strong>{stats.avg_trending_score.toFixed(2)}</strong>
+                                                        <strong>
+                                                            {stats.avg_trending_score.toFixed(2)}
+                                                        </strong>
                                                         <span>Avg Trending</span>
                                                     </div>
                                                 </div>
                                                 <div className="metric-item">
                                                     <Rocket size={20} />
                                                     <div>
-                                                        <strong>{stats.avg_virality_score.toFixed(2)}</strong>
+                                                        <strong>
+                                                            {stats.avg_virality_score.toFixed(2)}
+                                                        </strong>
                                                         <span>Avg Virality</span>
                                                     </div>
                                                 </div>
@@ -1596,12 +1971,23 @@ const ReelManagementTab = () => {
 
                                         <div className="stat-footer">
                                             <span className="last-activity">
-                                                Last Reel: {stats.last_reel_at ? new Date(stats.last_reel_at).toLocaleString() : 'Never'}
+                                                Last Reel:{' '}
+                                                {stats.last_reel_at
+                                                    ? new Date(stats.last_reel_at).toLocaleString()
+                                                    : 'Never'}
                                             </span>
                                             <div className="user-reputation">
-                                                <span className="reputation-label">Creator Level:</span>
-                                                <span className={`reputation-score ${stats.avg_engagement_rate > 0.25 ? 'excellent' : stats.avg_engagement_rate > 0.15 ? 'good' : 'poor'}`}>
-                                                    {stats.avg_engagement_rate > 0.25 ? 'Top Creator' : stats.avg_engagement_rate > 0.15 ? 'Active' : 'New'}
+                                                <span className="reputation-label">
+                                                    Creator Level:
+                                                </span>
+                                                <span
+                                                    className={`reputation-score ${stats.avg_engagement_rate > 0.25 ? 'excellent' : stats.avg_engagement_rate > 0.15 ? 'good' : 'poor'}`}
+                                                >
+                                                    {stats.avg_engagement_rate > 0.25
+                                                        ? 'Top Creator'
+                                                        : stats.avg_engagement_rate > 0.15
+                                                          ? 'Active'
+                                                          : 'New'}
                                                 </span>
                                             </div>
                                         </div>
@@ -1616,22 +2002,35 @@ const ReelManagementTab = () => {
             {/* Transcoding Jobs Modal */}
             {showTranscodingModal && (
                 <div className="modal-overlay" onClick={() => setShowTranscodingModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '1000px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1000px' }}
+                    >
                         <div className="modal-header">
                             <h3>Reel Transcoding Jobs</h3>
-                            <button className="close-btn" onClick={() => setShowTranscodingModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowTranscodingModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="transcoding-jobs-list">
-                                {mockTranscodingJobs.map(job => (
+                                {mockTranscodingJobs.map((job) => (
                                     <div key={job.id} className="transcoding-job-item">
                                         <div className="job-header">
                                             <div className="job-info">
                                                 <strong>Job: {job.id}</strong>
-                                                <span className="job-reel-id">Reel: {job.reel_id}</span>
+                                                <span className="job-reel-id">
+                                                    Reel: {job.reel_id}
+                                                </span>
                                             </div>
                                             <div className="job-status">
-                                                <span className={`status-pill ${getTranscodingStatusBadge(job.status).color}`}>
+                                                <span
+                                                    className={`status-pill ${getTranscodingStatusBadge(job.status).color}`}
+                                                >
                                                     {getTranscodingStatusBadge(job.status).icon}
                                                     {getTranscodingStatusBadge(job.status).text}
                                                 </span>
@@ -1640,18 +2039,32 @@ const ReelManagementTab = () => {
 
                                         <div className="job-details">
                                             <div className="job-meta">
-                                                <span className="job-worker">Worker: {job.worker_id}</span>
-                                                <span className="job-started">Started: {new Date(job.started_at).toLocaleString()}</span>
+                                                <span className="job-worker">
+                                                    Worker: {job.worker_id}
+                                                </span>
+                                                <span className="job-started">
+                                                    Started:{' '}
+                                                    {new Date(job.started_at).toLocaleString()}
+                                                </span>
                                                 {job.completed_at && (
-                                                    <span className="job-completed">Completed: {new Date(job.completed_at).toLocaleString()}</span>
+                                                    <span className="job-completed">
+                                                        Completed:{' '}
+                                                        {new Date(
+                                                            job.completed_at,
+                                                        ).toLocaleString()}
+                                                    </span>
                                                 )}
                                             </div>
 
                                             <div className="job-qualities">
-                                                <span className="qualities-label">Target Qualities:</span>
+                                                <span className="qualities-label">
+                                                    Target Qualities:
+                                                </span>
                                                 <div className="qualities-list">
-                                                    {job.target_qualities.map(quality => (
-                                                        <span key={quality} className="quality-tag">{quality}</span>
+                                                    {job.target_qualities.map((quality) => (
+                                                        <span key={quality} className="quality-tag">
+                                                            {quality}
+                                                        </span>
                                                     ))}
                                                 </div>
                                             </div>
@@ -1663,20 +2076,26 @@ const ReelManagementTab = () => {
                                                         style={{ width: `${job.progress * 100}%` }}
                                                     ></div>
                                                 </div>
-                                                <span className="progress-text">{(job.progress * 100).toFixed(0)}% Complete</span>
+                                                <span className="progress-text">
+                                                    {(job.progress * 100).toFixed(0)}% Complete
+                                                </span>
                                             </div>
 
                                             {job.current_quality && (
                                                 <div className="current-quality">
                                                     <span className="quality-label">Current:</span>
-                                                    <span className="quality-value">{job.current_quality}</span>
+                                                    <span className="quality-value">
+                                                        {job.current_quality}
+                                                    </span>
                                                 </div>
                                             )}
 
                                             {job.error_message && (
                                                 <div className="job-error">
                                                     <span className="error-label">Error:</span>
-                                                    <span className="error-message">{job.error_message}</span>
+                                                    <span className="error-message">
+                                                        {job.error_message}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
@@ -1697,37 +2116,72 @@ const ReelManagementTab = () => {
             {/* Trending Reels Modal */}
             {showTrendingModal && (
                 <div className="modal-overlay" onClick={() => setShowTrendingModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>Trending Reels</h3>
-                            <button className="close-btn" onClick={() => setShowTrendingModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowTrendingModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="trending-reels-list">
-                                {mockTrendingReels.map(trending => (
+                                {mockTrendingReels.map((trending) => (
                                     <div key={trending.reel_id} className="trending-reel-item">
                                         <div className="trending-header">
                                             <div className="trending-info">
                                                 <strong>Reel: {trending.reel_id}</strong>
-                                                <span className="trending-category">Category: {trending.category}</span>
-                                                <span className="trending-region">Region: {trending.region}</span>
+                                                <span className="trending-category">
+                                                    Category: {trending.category}
+                                                </span>
+                                                <span className="trending-region">
+                                                    Region: {trending.region}
+                                                </span>
                                             </div>
                                             <div className="trending-scores">
-                                                <span className="trending-score">Trending: {trending.trending_score.toFixed(2)}</span>
-                                                <span className="virality-score">Virality: {trending.virality_score.toFixed(2)}</span>
+                                                <span className="trending-score">
+                                                    Trending: {trending.trending_score.toFixed(2)}
+                                                </span>
+                                                <span className="virality-score">
+                                                    Virality: {trending.virality_score.toFixed(2)}
+                                                </span>
                                             </div>
                                         </div>
 
                                         <div className="trending-meta">
-                                            <span className="trending-started">Started: {new Date(trending.trending_at).toLocaleString()}</span>
-                                            <span className="trending-peak">Peak: {trending.peak_trending_at ? new Date(trending.peak_trending_at).toLocaleString() : 'N/A'}</span>
-                                            <span className="trending-duration">Duration: {trending.trending_duration} hours</span>
+                                            <span className="trending-started">
+                                                Started:{' '}
+                                                {new Date(trending.trending_at).toLocaleString()}
+                                            </span>
+                                            <span className="trending-peak">
+                                                Peak:{' '}
+                                                {trending.peak_trending_at
+                                                    ? new Date(
+                                                          trending.peak_trending_at,
+                                                      ).toLocaleString()
+                                                    : 'N/A'}
+                                            </span>
+                                            <span className="trending-duration">
+                                                Duration: {trending.trending_duration} hours
+                                            </span>
                                         </div>
 
                                         <div className="trending-actions">
-                                            <button className="trending-action-btn">View Reel</button>
-                                            <button className="trending-action-btn">Boost Trending</button>
-                                            <button className="trending-action-btn">Remove from Trending</button>
+                                            <button className="trending-action-btn">
+                                                View Reel
+                                            </button>
+                                            <button className="trending-action-btn">
+                                                Boost Trending
+                                            </button>
+                                            <button className="trending-action-btn">
+                                                Remove from Trending
+                                            </button>
                                         </div>
                                     </div>
                                 ))}

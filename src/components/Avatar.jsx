@@ -10,7 +10,10 @@ const Avatar = ({ src, name, size = 'md', className = '', onClick }) => {
 
     const getInitials = (n) => {
         if (!n) return '?';
-        const parts = n.trim().split(' ').filter(p => p.length > 0);
+        const parts = n
+            .trim()
+            .split(' ')
+            .filter((p) => p.length > 0);
         if (parts.length === 0) return n[0]?.toUpperCase() || '?';
         if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -23,19 +26,17 @@ const Avatar = ({ src, name, size = 'md', className = '', onClick }) => {
         lg: 48,
         xl: 64,
         '2xl': 96,
-        '3xl': 128
+        '3xl': 128,
     };
 
     const dimension = sizeMap[size] || (typeof size === 'number' ? size : parseInt(size)) || 40;
 
-    const colors = [
-        '#3498db', '#2ecc71', '#f1c40f',
-        '#e74c3c', '#9b59b6', '#ff6b6b', '#48dbfb'
-    ];
+    const colors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#ff6b6b', '#48dbfb'];
 
     let colorIndex = 0;
     if (name) {
-        colorIndex = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+        colorIndex =
+            name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     }
     const bgColor = colors[colorIndex];
 
@@ -67,6 +68,7 @@ const Avatar = ({ src, name, size = 'md', className = '', onClick }) => {
             style={style}
             onError={() => setImgError(true)}
             onClick={onClick}
+            loading="lazy" // Add native lazy loading
         />
     );
 };

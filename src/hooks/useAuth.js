@@ -28,7 +28,7 @@ export const useRegister = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Registration failed', 'error');
-        }
+        },
     });
 };
 
@@ -53,7 +53,7 @@ export const useLogin = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Login failed', 'error');
-        }
+        },
     });
 };
 
@@ -67,8 +67,8 @@ export const useLogout = () => {
         queryClient.clear();
         navigate('/login');
         window.location.reload(); // Force reload to clear WS
-    }
-}
+    };
+};
 
 export const useForgotPassword = () => {
     const { showToast } = useToast();
@@ -82,7 +82,7 @@ export const useForgotPassword = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to request reset', 'error');
-        }
+        },
     });
 };
 
@@ -100,7 +100,7 @@ export const useResetPassword = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Password reset failed', 'error');
-        }
+        },
     });
 };
 
@@ -122,6 +122,6 @@ export const useUpdateProfile = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to update profile', 'error');
-        }
+        },
     });
 };

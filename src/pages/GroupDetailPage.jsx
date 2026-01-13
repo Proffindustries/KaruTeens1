@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Settings, LogOut, ChevronLeft, Loader, Send, Image as ImageIcon } from 'lucide-react';
+import {
+    Users,
+    Settings,
+    LogOut,
+    ChevronLeft,
+    Loader,
+    Send,
+    Image as ImageIcon,
+} from 'lucide-react';
 import { useGroup, useGroupPosts, useLeaveGroup, useCreateGroupPost } from '../hooks/useGroups';
 import { useToast } from '../context/ToastContext';
 import '../styles/GroupDetailPage.css';
@@ -23,7 +31,7 @@ const GroupDetailPage = () => {
                 onSuccess: () => {
                     showToast('Left group', 'info');
                     navigate('/groups');
-                }
+                },
             });
         }
     };
@@ -44,8 +52,8 @@ const GroupDetailPage = () => {
                 onError: (err) => {
                     showToast(err.response?.data?.error || 'Failed to post', 'error');
                     setIsPosting(false);
-                }
-            }
+                },
+            },
         );
     };
 
@@ -81,7 +89,9 @@ const GroupDetailPage = () => {
                     className="group-cover-large"
                     style={{
                         backgroundImage: group.cover_url ? `url(${group.cover_url})` : 'none',
-                        backgroundColor: group.cover_url ? 'transparent' : `hsl(${Math.random() * 360}, 70%, 80%)`
+                        backgroundColor: group.cover_url
+                            ? 'transparent'
+                            : `hsl(${Math.random() * 360}, 70%, 80%)`,
                     }}
                 />
                 <div className="group-header-content">
@@ -96,7 +106,9 @@ const GroupDetailPage = () => {
                         <p>{group.description}</p>
                         <div className="group-meta-detail">
                             <span className="category-badge">{group.category}</span>
-                            <span><Users size={16} /> {group.member_count} members</span>
+                            <span>
+                                <Users size={16} /> {group.member_count} members
+                            </span>
                             {group.is_private && <span className="privacy-badge">Private</span>}
                         </div>
                     </div>
@@ -122,7 +134,12 @@ const GroupDetailPage = () => {
                                 rows="3"
                             />
                             <div className="post-actions">
-                                <button type="button" className="btn-icon" title="Add image (coming soon)" disabled>
+                                <button
+                                    type="button"
+                                    className="btn-icon"
+                                    title="Add image (coming soon)"
+                                    disabled
+                                >
                                     <ImageIcon size={20} />
                                 </button>
                                 <button
@@ -143,7 +160,7 @@ const GroupDetailPage = () => {
                             <p>Loading posts...</p>
                         </div>
                     ) : posts && posts.length > 0 ? (
-                        posts.map(post => (
+                        posts.map((post) => (
                             <div key={post.id} className="card post-card">
                                 <div className="post-header">
                                     <Avatar

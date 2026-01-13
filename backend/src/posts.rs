@@ -10,36 +10,11 @@ use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
-use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, User, Profile};
+use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, User};
 use crate::auth::AuthUser;
 use futures::stream::StreamExt;
 
 // --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct CreatePostRequest {
-    pub title: String,
-    pub content: String,
-    pub excerpt: Option<String>,
-    pub category: String,
-    pub tags: Option<Vec<String>>,
-    pub post_type: String,
-    pub featured_image: Option<String>,
-    pub gallery_images: Option<Vec<String>>,
-    pub video_url: Option<String>,
-    pub audio_url: Option<String>,
-    pub scheduled_publish_date: Option<String>,
-    pub language: String,
-    pub is_featured: bool,
-    pub is_premium: bool,
-    pub allow_comments: bool,
-    pub allow_sharing: bool,
-    pub seo_title: Option<String>,
-    pub seo_description: Option<String>,
-    pub seo_keywords: Option<Vec<String>>,
-    pub meta_data: Option<serde_json::Value>,
-    pub content_rating: Option<String>,
-}
 
 #[derive(Deserialize)]
 pub struct UpdatePostRequest {
@@ -49,10 +24,6 @@ pub struct UpdatePostRequest {
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
     pub post_type: Option<String>,
-    pub featured_image: Option<String>,
-    pub gallery_images: Option<Vec<String>>,
-    pub video_url: Option<String>,
-    pub audio_url: Option<String>,
     pub scheduled_publish_date: Option<String>,
     pub language: Option<String>,
     pub is_featured: Option<bool>,
@@ -78,7 +49,6 @@ pub struct PostFilter {
     pub status: Option<String>,
     pub post_type: Option<String>,
     pub category: Option<String>,
-    pub author: Option<String>,
     pub search: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
@@ -273,88 +243,6 @@ pub async fn get_post_handler(
     Ok((StatusCode::OK, Json(post_info)))
 }
 
-pub async fn create_post_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Json(payload): Json<CreatePostRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let posts = state.mongo.collection::<Post>("posts");
-    
-    // Generate slug from title
-    let slug = generate_slug(&payload.title);
-    
-    // Calculate reading time
-    let reading_time = calculate_reading_time(&payload.content);
-
-    // Get author info
-    let profiles = state.mongo.collection::<Profile>("profiles");
-    let author_profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Author profile not found"}))))?;
-
-    let mut media_urls = Vec::new();
-    if let Some(url) = payload.featured_image { media_urls.push(url); }
-    if let Some(urls) = payload.gallery_images { media_urls.extend(urls); }
-    if let Some(url) = payload.video_url { media_urls.push(url); }
-    if let Some(url) = payload.audio_url { media_urls.push(url); }
-
-    let new_post = Post {
-        id: None,
-        title: payload.title,
-        content: payload.content,
-        excerpt: payload.excerpt,
-        slug,
-        status: "draft".to_string(),
-        post_type: payload.post_type,
-        category: payload.category,
-        tags: payload.tags,
-        author_id: user.user_id,
-        author_name: author_profile.username,
-        media_urls: if media_urls.is_empty() { None } else { Some(media_urls) },
-        location: None,
-        scheduled_publish_date: payload.scheduled_publish_date.map(|s| chrono::DateTime::parse_from_rfc3339(&s).unwrap().into()),
-        published_at: None,
-        approved_at: None,
-        approved_by: None,
-        rejected_at: None,
-        rejected_by: None,
-        rejection_reason: None,
-        view_count: 0,
-        like_count: 0,
-        comment_count: 0,
-        share_count: 0,
-        reading_time: Some(reading_time),
-        language: payload.language,
-        is_featured: payload.is_featured,
-        is_premium: payload.is_premium,
-        allow_comments: payload.allow_comments,
-        allow_sharing: payload.allow_sharing,
-        seo_title: payload.seo_title,
-        seo_description: payload.seo_description,
-        seo_keywords: payload.seo_keywords,
-        meta_data: payload.meta_data,
-        source_url: None,
-        source_author: None,
-        plagiarism_score: None,
-        content_rating: payload.content_rating,
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
-    };
-
-    let result = posts.insert_one(new_post, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Create initial revision
-    create_post_revision(&state, result.inserted_id.as_object_id().unwrap(), &user, "Initial draft").await?;
-
-    Ok((StatusCode::CREATED, Json(json!({
-        "message": "Post created successfully",
-        "post_id": result.inserted_id.as_object_id().unwrap().to_hex()
-    }))))
-}
-
 pub async fn update_post_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
@@ -436,10 +324,6 @@ pub async fn update_post_handler(
         doc! { "$set": update_doc.clone() },
         None
     ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Create revision
-    let changes = format!("Updated post: {}", update_doc.keys().map(|k| k.as_str()).collect::<Vec<_>>().join(", "));
-    create_post_revision(&state, oid, &user, &changes).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Post updated successfully"}))))
 }
@@ -791,54 +675,7 @@ async fn build_post_response(
     })
 }
 
-async fn create_post_revision(
-    state: &Arc<AppState>,
-    post_id: ObjectId,
-    user: &AuthUser,
-    changes: &str,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let profiles = state.mongo.collection::<Profile>("profiles");
-    let author_profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Author profile not found"}))))?;
-
-    let revisions = state.mongo.collection::<PostRevision>("post_revisions");
-    let revision = PostRevision {
-        id: None,
-        post_id,
-        title: "".to_string(), // Would need to get current title
-        content: "".to_string(), // Would need to get current content
-        excerpt: None,
-        author_id: user.user_id,
-        author_name: author_profile.username,
-        changes: Some(changes.to_string()),
-        created_at: DateTime::now(),
-    };
-
-    revisions.insert_one(revision, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok(())
-}
-
-fn generate_slug(title: &str) -> String {
-    title.to_lowercase()
-        .chars()
-        .filter(|c| c.is_alphanumeric() || c.is_whitespace())
-        .collect::<String>()
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join("-")
-}
-
-fn calculate_reading_time(content: &str) -> i32 {
-    let word_count = content.split_whitespace().count();
-    let words_per_minute = 200;
-    (word_count / words_per_minute) as i32 + 1
-}
-
-pub fn post_routes() -> Router<Arc<AppState>> {
-    Router::new()
+pub fn post_routes() -> Router<Arc<AppState>> {    Router::new()
         .route("/", get(list_posts_handler))
         .route("/:id", get(get_post_handler).put(update_post_handler).delete(delete_post_handler))
         .route("/:id/approve", post(approve_post_handler))

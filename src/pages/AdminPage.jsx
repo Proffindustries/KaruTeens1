@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
-import { Users, DollarSign, FileText, Shield, Settings, TrendingUp, Ban, CheckCircle, Loader } from 'lucide-react';
+import {
+    Users,
+    DollarSign,
+    FileText,
+    Shield,
+    Settings,
+    TrendingUp,
+    Ban,
+    CheckCircle,
+    Loader,
+} from 'lucide-react';
 import '../styles/AdminPage.css';
-import { useAdminStats, useAdminUsers, useBanUser, useVerifyUser, useUpdateUserRole } from '../hooks/useAdmin';
+import {
+    useAdminStats,
+    useAdminUsers,
+    useBanUser,
+    useVerifyUser,
+    useUpdateUserRole,
+} from '../hooks/useAdmin';
 import { useToast } from '../context/ToastContext';
 
 const AdminPage = () => {
@@ -58,7 +74,9 @@ const AdminPage = () => {
 
                 <div className="admin-content">
                     {activeTab === 'overview' && <OverviewTab />}
-                    {activeTab === 'users' && <UsersTab isSuperAdmin={user.role === 'superadmin'} />}
+                    {activeTab === 'users' && (
+                        <UsersTab isSuperAdmin={user.role === 'superadmin'} />
+                    )}
                     {activeTab === 'content' && <ContentTab />}
                 </div>
             </div>
@@ -101,7 +119,10 @@ const OverviewTab = () => {
                     <div className="stat-content">
                         <p className="stat-label">Premium Users</p>
                         <h2>{stats.premium_users.toLocaleString()}</h2>
-                        <small>{Math.round((stats.premium_users / stats.total_users) * 100)}% conversion</small>
+                        <small>
+                            {Math.round((stats.premium_users / stats.total_users) * 100)}%
+                            conversion
+                        </small>
                     </div>
                 </div>
 
@@ -123,7 +144,9 @@ const OverviewTab = () => {
                     <div className="stat-content">
                         <p className="stat-label">Events & Groups</p>
                         <h2>{(stats.total_events + stats.total_groups).toLocaleString()}</h2>
-                        <small>{stats.total_events} events, {stats.total_groups} groups</small>
+                        <small>
+                            {stats.total_events} events, {stats.total_groups} groups
+                        </small>
                     </div>
                 </div>
 
@@ -134,7 +157,9 @@ const OverviewTab = () => {
                     <div className="stat-content">
                         <p className="stat-label">Banned Users</p>
                         <h2>{stats.banned_users.toLocaleString()}</h2>
-                        <small>{Math.round((stats.banned_users / stats.total_users) * 100)}% of total</small>
+                        <small>
+                            {Math.round((stats.banned_users / stats.total_users) * 100)}% of total
+                        </small>
                     </div>
                 </div>
             </div>
@@ -143,7 +168,12 @@ const OverviewTab = () => {
 };
 
 const UsersTab = ({ isSuperAdmin }) => {
-    const [filters, setFilters] = useState({ role: 'all', verified: undefined, premium: undefined, search: '' });
+    const [filters, setFilters] = useState({
+        role: 'all',
+        verified: undefined,
+        premium: undefined,
+        search: '',
+    });
     const { data: users, isLoading } = useAdminUsers(filters);
     const { mutate: banUser } = useBanUser();
     const { mutate: verifyUser } = useVerifyUser();
@@ -153,26 +183,34 @@ const UsersTab = ({ isSuperAdmin }) => {
     const handleBanToggle = (userId, currentBanStatus) => {
         const action = currentBanStatus ? 'unban' : 'ban';
         if (confirm(`Are you sure you want to ${action} this user?`)) {
-            banUser({ userId, banned: !currentBanStatus }, {
-                onSuccess: () => showToast(`User ${action}ned successfully`, 'success'),
-                onError: (err) => showToast(err.response?.data?.error || `Failed to ${action} user`, 'error')
-            });
+            banUser(
+                { userId, banned: !currentBanStatus },
+                {
+                    onSuccess: () => showToast(`User ${action}ned successfully`, 'success'),
+                    onError: (err) =>
+                        showToast(err.response?.data?.error || `Failed to ${action} user`, 'error'),
+                },
+            );
         }
     };
 
     const handleVerify = (userId) => {
         verifyUser(userId, {
             onSuccess: () => showToast('User verified', 'success'),
-            onError: (err) => showToast(err.response?.data?.error || 'Failed to verify', 'error')
+            onError: (err) => showToast(err.response?.data?.error || 'Failed to verify', 'error'),
         });
     };
 
     const handleRoleChange = (userId, newRole) => {
         if (confirm(`Change user role to ${newRole}?`)) {
-            updateRole({ userId, role: newRole }, {
-                onSuccess: () => showToast('Role updated', 'success'),
-                onError: (err) => showToast(err.response?.data?.error || 'Failed to update role', 'error')
-            });
+            updateRole(
+                { userId, role: newRole },
+                {
+                    onSuccess: () => showToast('Role updated', 'success'),
+                    onError: (err) =>
+                        showToast(err.response?.data?.error || 'Failed to update role', 'error'),
+                },
+            );
         }
     };
 
@@ -194,7 +232,12 @@ const UsersTab = ({ isSuperAdmin }) => {
                 <select
                     className="form-select"
                     value={filters.verified ?? ''}
-                    onChange={(e) => setFilters({ ...filters, verified: e.target.value === '' ? undefined : e.target.value === 'true' })}
+                    onChange={(e) =>
+                        setFilters({
+                            ...filters,
+                            verified: e.target.value === '' ? undefined : e.target.value === 'true',
+                        })
+                    }
                 >
                     <option value="">All Users</option>
                     <option value="true">Verified Only</option>
@@ -228,56 +271,72 @@ const UsersTab = ({ isSuperAdmin }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {users && users.map(user => (
-                                <tr key={user.id} className={user.is_banned ? 'banned-row' : ''}>
-                                    <td>{user.username || 'N/A'}</td>
-                                    <td>{user.email}</td>
-                                    <td>
-                                        {isSuperAdmin ? (
-                                            <select
-                                                className="role-select"
-                                                value={user.role}
-                                                onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                            >
-                                                <option value="user">User</option>
-                                                <option value="premium">Premium</option>
-                                                <option value="admin">Admin</option>
-                                                <option value="superadmin">SuperAdmin</option>
-                                            </select>
-                                        ) : (
-                                            <span className={`role-badge ${user.role}`}>{user.role}</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className="status-badges">
-                                            {user.is_verified && <span className="badge verified">Verified</span>}
-                                            {user.is_premium && <span className="badge premium">Premium</span>}
-                                            {user.is_banned && <span className="badge banned">Banned</span>}
-                                        </div>
-                                    </td>
-                                    <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            {!user.is_verified && (
-                                                <button
-                                                    className="btn-icon-small"
-                                                    onClick={() => handleVerify(user.id)}
-                                                    title="Verify user"
+                            {users &&
+                                users.map((user) => (
+                                    <tr
+                                        key={user.id}
+                                        className={user.is_banned ? 'banned-row' : ''}
+                                    >
+                                        <td>{user.username || 'N/A'}</td>
+                                        <td>{user.email}</td>
+                                        <td>
+                                            {isSuperAdmin ? (
+                                                <select
+                                                    className="role-select"
+                                                    value={user.role}
+                                                    onChange={(e) =>
+                                                        handleRoleChange(user.id, e.target.value)
+                                                    }
                                                 >
-                                                    <CheckCircle size={16} />
-                                                </button>
+                                                    <option value="user">User</option>
+                                                    <option value="premium">Premium</option>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="superadmin">SuperAdmin</option>
+                                                </select>
+                                            ) : (
+                                                <span className={`role-badge ${user.role}`}>
+                                                    {user.role}
+                                                </span>
                                             )}
-                                            <button
-                                                className={`btn-icon-small ${user.is_banned ? 'unban' : 'ban'}`}
-                                                onClick={() => handleBanToggle(user.id, user.is_banned)}
-                                                title={user.is_banned ? 'Unban' : 'Ban'}
-                                            >
-                                                <Ban size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td>
+                                            <div className="status-badges">
+                                                {user.is_verified && (
+                                                    <span className="badge verified">Verified</span>
+                                                )}
+                                                {user.is_premium && (
+                                                    <span className="badge premium">Premium</span>
+                                                )}
+                                                {user.is_banned && (
+                                                    <span className="badge banned">Banned</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>{new Date(user.created_at).toLocaleDateString()}</td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                {!user.is_verified && (
+                                                    <button
+                                                        className="btn-icon-small"
+                                                        onClick={() => handleVerify(user.id)}
+                                                        title="Verify user"
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className={`btn-icon-small ${user.is_banned ? 'unban' : 'ban'}`}
+                                                    onClick={() =>
+                                                        handleBanToggle(user.id, user.is_banned)
+                                                    }
+                                                    title={user.is_banned ? 'Unban' : 'Ban'}
+                                                >
+                                                    <Ban size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
                         </tbody>
                     </table>
                 </div>

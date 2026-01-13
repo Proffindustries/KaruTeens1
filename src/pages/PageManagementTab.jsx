@@ -1,9 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    FileText, Plus, Edit, Trash2, Eye, EyeOff, Download, Upload, RefreshCw, Search, 
-    Filter, Calendar, Clock, Globe, Lock, Unlock, TrendingUp, BarChart3, 
-    FileSpreadsheet, ExternalLink, Copy, Share2, Tag, Folder, Code, 
-    CheckCircle, XCircle, AlertTriangle, User, MessageSquare
+import {
+    FileText,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    EyeOff,
+    Download,
+    Upload,
+    RefreshCw,
+    Search,
+    Filter,
+    Calendar,
+    Clock,
+    Globe,
+    Lock,
+    Unlock,
+    TrendingUp,
+    BarChart3,
+    FileSpreadsheet,
+    ExternalLink,
+    Copy,
+    Share2,
+    Tag,
+    Folder,
+    Code,
+    CheckCircle,
+    XCircle,
+    AlertTriangle,
+    User,
+    MessageSquare,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -16,9 +42,9 @@ const PageManagementTab = () => {
         author: '',
         search: '',
         sortBy: 'created_at',
-        sortOrder: 'desc'
+        sortOrder: 'desc',
     });
-    
+
     const [selectedPages, setSelectedPages] = useState([]);
     const [bulkAction, setBulkAction] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -27,7 +53,7 @@ const PageManagementTab = () => {
     const [editingPage, setEditingPage] = useState(null);
     const [analyticsPage, setAnalyticsPage] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const { showToast } = useToast();
 
     // Mock data for pages
@@ -55,7 +81,7 @@ const PageManagementTab = () => {
             comments_count: 12,
             published_at: '2024-01-10T08:30:00Z',
             created_at: '2024-01-09T14:20:00Z',
-            updated_at: '2024-01-10T08:30:00Z'
+            updated_at: '2024-01-10T08:30:00Z',
         },
         {
             id: 'page_002',
@@ -80,7 +106,7 @@ const PageManagementTab = () => {
             comments_count: 5,
             published_at: '2024-01-08T10:15:00Z',
             created_at: '2024-01-07T16:45:00Z',
-            updated_at: '2024-01-08T10:15:00Z'
+            updated_at: '2024-01-08T10:15:00Z',
         },
         {
             id: 'page_003',
@@ -105,7 +131,7 @@ const PageManagementTab = () => {
             comments_count: 8,
             published_at: '2024-01-05T12:00:00Z',
             created_at: '2024-01-04T09:30:00Z',
-            updated_at: '2024-01-05T12:00:00Z'
+            updated_at: '2024-01-05T12:00:00Z',
         },
         {
             id: 'page_004',
@@ -130,7 +156,7 @@ const PageManagementTab = () => {
             comments_count: 0,
             published_at: null,
             created_at: '2024-01-15T08:00:00Z',
-            updated_at: '2024-01-15T08:00:00Z'
+            updated_at: '2024-01-15T08:00:00Z',
         },
         {
             id: 'page_005',
@@ -155,8 +181,8 @@ const PageManagementTab = () => {
             comments_count: 0,
             published_at: '2024-01-01T00:00:00Z',
             created_at: '2023-12-31T23:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-        }
+            updated_at: '2024-01-01T00:00:00Z',
+        },
     ];
 
     useEffect(() => {
@@ -169,7 +195,7 @@ const PageManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -179,36 +205,48 @@ const PageManagementTab = () => {
         }
 
         if (bulkAction === 'publish') {
-            setPages(prev => prev.map(p => 
-                selectedPages.includes(p.id) ? { ...p, status: 'published', published_at: new Date().toISOString() } : p
-            ));
+            setPages((prev) =>
+                prev.map((p) =>
+                    selectedPages.includes(p.id)
+                        ? { ...p, status: 'published', published_at: new Date().toISOString() }
+                        : p,
+                ),
+            );
             setSelectedPages([]);
             setBulkAction('');
             showToast('Pages published', 'success');
         } else if (bulkAction === 'unpublish') {
-            setPages(prev => prev.map(p => 
-                selectedPages.includes(p.id) ? { ...p, status: 'draft', published_at: null } : p
-            ));
+            setPages((prev) =>
+                prev.map((p) =>
+                    selectedPages.includes(p.id)
+                        ? { ...p, status: 'draft', published_at: null }
+                        : p,
+                ),
+            );
             setSelectedPages([]);
             setBulkAction('');
             showToast('Pages unpublished', 'success');
         } else if (bulkAction === 'make_public') {
-            setPages(prev => prev.map(p => 
-                selectedPages.includes(p.id) ? { ...p, visibility: 'public' } : p
-            ));
+            setPages((prev) =>
+                prev.map((p) =>
+                    selectedPages.includes(p.id) ? { ...p, visibility: 'public' } : p,
+                ),
+            );
             setSelectedPages([]);
             setBulkAction('');
             showToast('Pages made public', 'success');
         } else if (bulkAction === 'make_private') {
-            setPages(prev => prev.map(p => 
-                selectedPages.includes(p.id) ? { ...p, visibility: 'private' } : p
-            ));
+            setPages((prev) =>
+                prev.map((p) =>
+                    selectedPages.includes(p.id) ? { ...p, visibility: 'private' } : p,
+                ),
+            );
             setSelectedPages([]);
             setBulkAction('');
             showToast('Pages made private', 'success');
         } else if (bulkAction === 'delete') {
             if (confirm(`Delete ${selectedPages.length} pages? This action cannot be undone.`)) {
-                setPages(prev => prev.filter(p => !selectedPages.includes(p.id)));
+                setPages((prev) => prev.filter((p) => !selectedPages.includes(p.id)));
                 setSelectedPages([]);
                 setBulkAction('');
                 showToast('Pages deleted', 'success');
@@ -217,31 +255,33 @@ const PageManagementTab = () => {
     };
 
     const handlePublishPage = (pageId) => {
-        setPages(prev => prev.map(p => 
-            p.id === pageId ? { ...p, status: 'published', published_at: new Date().toISOString() } : p
-        ));
+        setPages((prev) =>
+            prev.map((p) =>
+                p.id === pageId
+                    ? { ...p, status: 'published', published_at: new Date().toISOString() }
+                    : p,
+            ),
+        );
         showToast('Page published', 'success');
     };
 
     const handleUnpublishPage = (pageId) => {
-        setPages(prev => prev.map(p => 
-            p.id === pageId ? { ...p, status: 'draft', published_at: null } : p
-        ));
+        setPages((prev) =>
+            prev.map((p) => (p.id === pageId ? { ...p, status: 'draft', published_at: null } : p)),
+        );
         showToast('Page unpublished', 'success');
     };
 
     const handleDeletePage = (pageId) => {
         if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-            setPages(prev => prev.filter(p => p.id !== pageId));
+            setPages((prev) => prev.filter((p) => p.id !== pageId));
             showToast('Page deleted', 'success');
         }
     };
 
     const togglePageSelection = (pageId) => {
-        setSelectedPages(prev => 
-            prev.includes(pageId) 
-                ? prev.filter(id => id !== pageId)
-                : [...prev, pageId]
+        setSelectedPages((prev) =>
+            prev.includes(pageId) ? prev.filter((id) => id !== pageId) : [...prev, pageId],
         );
     };
 
@@ -249,25 +289,33 @@ const PageManagementTab = () => {
         if (selectedPages.length === pages.length) {
             setSelectedPages([]);
         } else {
-            setSelectedPages(pages.map(p => p.id));
+            setSelectedPages(pages.map((p) => p.id));
         }
     };
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'published': return { color: 'green', text: 'Published', icon: <CheckCircle size={14} /> };
-            case 'draft': return { color: 'orange', text: 'Draft', icon: <Clock size={14} /> };
-            case 'archived': return { color: 'red', text: 'Archived', icon: <XCircle size={14} /> };
-            default: return { color: 'gray', text: status, icon: <AlertTriangle size={14} /> };
+            case 'published':
+                return { color: 'green', text: 'Published', icon: <CheckCircle size={14} /> };
+            case 'draft':
+                return { color: 'orange', text: 'Draft', icon: <Clock size={14} /> };
+            case 'archived':
+                return { color: 'red', text: 'Archived', icon: <XCircle size={14} /> };
+            default:
+                return { color: 'gray', text: status, icon: <AlertTriangle size={14} /> };
         }
     };
 
     const getVisibilityBadge = (visibility) => {
         switch (visibility) {
-            case 'public': return { color: 'blue', text: 'Public', icon: <Globe size={14} /> };
-            case 'private': return { color: 'purple', text: 'Private', icon: <Lock size={14} /> };
-            case 'hidden': return { color: 'gray', text: 'Hidden', icon: <EyeOff size={14} /> };
-            default: return { color: 'gray', text: visibility, icon: <AlertTriangle size={14} /> };
+            case 'public':
+                return { color: 'blue', text: 'Public', icon: <Globe size={14} /> };
+            case 'private':
+                return { color: 'purple', text: 'Private', icon: <Lock size={14} /> };
+            case 'hidden':
+                return { color: 'gray', text: 'Hidden', icon: <EyeOff size={14} /> };
+            default:
+                return { color: 'gray', text: visibility, icon: <AlertTriangle size={14} /> };
         }
     };
 
@@ -288,10 +336,7 @@ const PageManagementTab = () => {
                         <Download size={18} />
                         Export Pages
                     </button>
-                    <button 
-                        className="btn-primary"
-                        onClick={() => setShowAddModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
                         <Plus size={18} />
                         Add Page
                     </button>
@@ -310,9 +355,9 @@ const PageManagementTab = () => {
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
-                    
+
                     <div className="filter-group">
-                        <select 
+                        <select
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
                         >
@@ -321,8 +366,8 @@ const PageManagementTab = () => {
                             <option value="draft">Draft</option>
                             <option value="archived">Archived</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.visibility}
                             onChange={(e) => handleFilterChange('visibility', e.target.value)}
                         >
@@ -331,8 +376,8 @@ const PageManagementTab = () => {
                             <option value="private">Private</option>
                             <option value="hidden">Hidden</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.category}
                             onChange={(e) => handleFilterChange('category', e.target.value)}
                         >
@@ -356,14 +401,9 @@ const PageManagementTab = () => {
             {/* Bulk Actions */}
             {selectedPages.length > 0 && (
                 <div className="bulk-actions">
-                    <div className="selection-info">
-                        {selectedPages.length} pages selected
-                    </div>
+                    <div className="selection-info">{selectedPages.length} pages selected</div>
                     <div className="bulk-actions-controls">
-                        <select 
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="publish">Publish</option>
                             <option value="unpublish">Unpublish</option>
@@ -371,7 +411,7 @@ const PageManagementTab = () => {
                             <option value="make_private">Make Private</option>
                             <option value="delete">Delete Pages</option>
                         </select>
-                        <button 
+                        <button
                             className="btn-primary"
                             onClick={handleBulkAction}
                             disabled={!bulkAction}
@@ -395,7 +435,9 @@ const PageManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedPages.length === pages.length && pages.length > 0}
+                                    checked={
+                                        selectedPages.length === pages.length && pages.length > 0
+                                    }
                                     onChange={selectAllPages}
                                 />
                                 <span>Select All</span>
@@ -416,7 +458,10 @@ const PageManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedPages.length === pages.length && pages.length > 0}
+                                                checked={
+                                                    selectedPages.length === pages.length &&
+                                                    pages.length > 0
+                                                }
                                                 onChange={selectAllPages}
                                             />
                                         </th>
@@ -430,7 +475,7 @@ const PageManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pages.map(page => (
+                                    {pages.map((page) => (
                                         <tr key={page.id}>
                                             <td>
                                                 <input
@@ -443,31 +488,51 @@ const PageManagementTab = () => {
                                                 <div className="page-info">
                                                     <div className="page-title">
                                                         <h4>{page.title}</h4>
-                                                        <span className="page-slug">/{page.slug}</span>
+                                                        <span className="page-slug">
+                                                            /{page.slug}
+                                                        </span>
                                                     </div>
-                                                    <div className="page-excerpt">{page.excerpt}</div>
+                                                    <div className="page-excerpt">
+                                                        {page.excerpt}
+                                                    </div>
                                                     <div className="page-meta">
-                                                        <span className="category-badge">{page.category}</span>
-                                                        {page.tags && page.tags.map(tag => (
-                                                            <span key={tag} className="tag-badge">{tag}</span>
-                                                        ))}
+                                                        <span className="category-badge">
+                                                            {page.category}
+                                                        </span>
+                                                        {page.tags &&
+                                                            page.tags.map((tag) => (
+                                                                <span
+                                                                    key={tag}
+                                                                    className="tag-badge"
+                                                                >
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="status-info">
-                                                    <span className={`status-badge ${getStatusBadge(page.status).color}`}>
+                                                    <span
+                                                        className={`status-badge ${getStatusBadge(page.status).color}`}
+                                                    >
                                                         {getStatusBadge(page.status).icon}
                                                         {getStatusBadge(page.status).text}
                                                     </span>
-                                                    <span className={`visibility-badge ${getVisibilityBadge(page.visibility).color}`}>
+                                                    <span
+                                                        className={`visibility-badge ${getVisibilityBadge(page.visibility).color}`}
+                                                    >
                                                         {getVisibilityBadge(page.visibility).icon}
                                                         {getVisibilityBadge(page.visibility).text}
                                                     </span>
                                                     {page.published_at && (
                                                         <div className="published-date">
                                                             <Calendar size={14} />
-                                                            <span>{new Date(page.published_at).toLocaleDateString()}</span>
+                                                            <span>
+                                                                {new Date(
+                                                                    page.published_at,
+                                                                ).toLocaleDateString()}
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -475,7 +540,10 @@ const PageManagementTab = () => {
                                             <td>
                                                 <div className="seo-score">
                                                     <div className="score-circle">
-                                                        <svg viewBox="0 0 36 36" className="circular-chart">
+                                                        <svg
+                                                            viewBox="0 0 36 36"
+                                                            className="circular-chart"
+                                                        >
                                                             <path
                                                                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                                                 fill="none"
@@ -491,7 +559,13 @@ const PageManagementTab = () => {
                                                                 strokeDasharray={`${page.seo_score || 0}, 100`}
                                                                 className="circle"
                                                             />
-                                                            <text x="18" y="20.5" className="percentage">{Math.round(page.seo_score || 0)}%</text>
+                                                            <text
+                                                                x="18"
+                                                                y="20.5"
+                                                                className="percentage"
+                                                            >
+                                                                {Math.round(page.seo_score || 0)}%
+                                                            </text>
                                                         </svg>
                                                     </div>
                                                 </div>
@@ -500,7 +574,9 @@ const PageManagementTab = () => {
                                                 <div className="analytics-info">
                                                     <div className="metric">
                                                         <Eye size={14} />
-                                                        <span>{page.view_count.toLocaleString()} views</span>
+                                                        <span>
+                                                            {page.view_count.toLocaleString()} views
+                                                        </span>
                                                     </div>
                                                     <div className="metric">
                                                         <MessageSquare size={14} />
@@ -514,26 +590,39 @@ const PageManagementTab = () => {
                                             </td>
                                             <td>
                                                 <div className="author-info">
-                                                    <div className="author-name">{page.author_name}</div>
-                                                    <div className="author-id">ID: {page.author_id}</div>
+                                                    <div className="author-name">
+                                                        {page.author_name}
+                                                    </div>
+                                                    <div className="author-id">
+                                                        ID: {page.author_id}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="date-info">
                                                     <Calendar size={14} />
-                                                    <span>{new Date(page.created_at).toLocaleDateString()}</span>
+                                                    <span>
+                                                        {new Date(
+                                                            page.created_at,
+                                                        ).toLocaleDateString()}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="action-buttons">
-                                                    <button 
+                                                    <button
                                                         className="action-btn view"
-                                                        onClick={() => window.open(`/page/${page.slug}`, '_blank')}
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `/page/${page.slug}`,
+                                                                '_blank',
+                                                            )
+                                                        }
                                                         title="View Page"
                                                     >
                                                         <ExternalLink size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn analytics"
                                                         onClick={() => {
                                                             setAnalyticsPage(page);
@@ -543,7 +632,7 @@ const PageManagementTab = () => {
                                                     >
                                                         <BarChart3 size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn edit"
                                                         onClick={() => {
                                                             setEditingPage(page);
@@ -554,23 +643,27 @@ const PageManagementTab = () => {
                                                         <Edit size={16} />
                                                     </button>
                                                     {page.status === 'published' ? (
-                                                        <button 
+                                                        <button
                                                             className="action-btn unpublish"
-                                                            onClick={() => handleUnpublishPage(page.id)}
+                                                            onClick={() =>
+                                                                handleUnpublishPage(page.id)
+                                                            }
                                                             title="Unpublish Page"
                                                         >
                                                             <EyeOff size={16} />
                                                         </button>
                                                     ) : (
-                                                        <button 
+                                                        <button
                                                             className="action-btn publish"
-                                                            onClick={() => handlePublishPage(page.id)}
+                                                            onClick={() =>
+                                                                handlePublishPage(page.id)
+                                                            }
                                                             title="Publish Page"
                                                         >
                                                             <Eye size={16} />
                                                         </button>
                                                     )}
-                                                    <button 
+                                                    <button
                                                         className="action-btn delete"
                                                         onClick={() => handleDeletePage(page.id)}
                                                         title="Delete Page"
@@ -591,32 +684,54 @@ const PageManagementTab = () => {
             {/* Add Page Modal */}
             {showAddModal && (
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>Add New Page</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Page Title *</label>
-                                        <input type="text" className="form-input" placeholder="Enter page title" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter page title"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Slug *</label>
-                                        <input type="text" className="form-input" placeholder="auto-generated-from-title" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="auto-generated-from-title"
+                                        />
                                     </div>
                                 </div>
-                                
+
                                 <div className="form-group">
                                     <label>Content *</label>
-                                    <textarea className="form-input" rows="8" placeholder="Enter page content (supports HTML)"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="8"
+                                        placeholder="Enter page content (supports HTML)"
+                                    ></textarea>
                                 </div>
-                                
+
                                 <div className="form-group">
                                     <label>Excerpt</label>
-                                    <textarea className="form-input" rows="3" placeholder="Enter page excerpt"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        placeholder="Enter page excerpt"
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-row">
@@ -662,27 +777,47 @@ const PageManagementTab = () => {
 
                                 <div className="form-group">
                                     <label>Tags (comma-separated)</label>
-                                    <input type="text" className="form-input" placeholder="tag1, tag2, tag3" />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="tag1, tag2, tag3"
+                                    />
                                 </div>
 
                                 <div className="form-section">
                                     <h4>SEO Settings</h4>
                                     <div className="form-group">
                                         <label>Meta Title</label>
-                                        <input type="text" className="form-input" placeholder="Enter meta title" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter meta title"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Meta Description</label>
-                                        <textarea className="form-input" rows="3" placeholder="Enter meta description"></textarea>
+                                        <textarea
+                                            className="form-input"
+                                            rows="3"
+                                            placeholder="Enter meta description"
+                                        ></textarea>
                                     </div>
                                     <div className="form-group">
                                         <label>Meta Keywords</label>
-                                        <input type="text" className="form-input" placeholder="keyword1, keyword2, keyword3" />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="keyword1, keyword2, keyword3"
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowAddModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -698,38 +833,63 @@ const PageManagementTab = () => {
             {/* Edit Page Modal */}
             {showEditModal && editingPage && (
                 <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '800px' }}
+                    >
                         <div className="modal-header">
                             <h3>Edit Page: {editingPage.title}</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Page Title</label>
-                                        <input type="text" className="form-input" defaultValue={editingPage.title} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingPage.title}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Slug</label>
-                                        <input type="text" className="form-input" defaultValue={editingPage.slug} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingPage.slug}
+                                        />
                                     </div>
                                 </div>
-                                
+
                                 <div className="form-group">
                                     <label>Content</label>
-                                    <textarea className="form-input" rows="8" defaultValue={editingPage.content}></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="8"
+                                        defaultValue={editingPage.content}
+                                    ></textarea>
                                 </div>
-                                
+
                                 <div className="form-group">
                                     <label>Excerpt</label>
-                                    <textarea className="form-input" rows="3" defaultValue={editingPage.excerpt || ''}></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        defaultValue={editingPage.excerpt || ''}
+                                    ></textarea>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Category</label>
-                                        <select className="form-input" defaultValue={editingPage.category}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPage.category}
+                                        >
                                             <option value="About">About</option>
                                             <option value="Legal">Legal</option>
                                             <option value="Announcements">Announcements</option>
@@ -738,7 +898,10 @@ const PageManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Template</label>
-                                        <select className="form-input" defaultValue={editingPage.template}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPage.template}
+                                        >
                                             <option value="default">Default</option>
                                             <option value="legal">Legal</option>
                                             <option value="announcement">Announcement</option>
@@ -750,7 +913,10 @@ const PageManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Status</label>
-                                        <select className="form-input" defaultValue={editingPage.status}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPage.status}
+                                        >
                                             <option value="draft">Draft</option>
                                             <option value="published">Published</option>
                                             <option value="archived">Archived</option>
@@ -758,7 +924,10 @@ const PageManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Visibility</label>
-                                        <select className="form-input" defaultValue={editingPage.visibility}>
+                                        <select
+                                            className="form-input"
+                                            defaultValue={editingPage.visibility}
+                                        >
                                             <option value="public">Public</option>
                                             <option value="private">Private</option>
                                             <option value="hidden">Hidden</option>
@@ -768,27 +937,49 @@ const PageManagementTab = () => {
 
                                 <div className="form-group">
                                     <label>Tags</label>
-                                    <input type="text" className="form-input" defaultValue={editingPage.tags?.join(', ') || ''} />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        defaultValue={editingPage.tags?.join(', ') || ''}
+                                    />
                                 </div>
 
                                 <div className="form-section">
                                     <h4>SEO Settings</h4>
                                     <div className="form-group">
                                         <label>Meta Title</label>
-                                        <input type="text" className="form-input" defaultValue={editingPage.meta_title || ''} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={editingPage.meta_title || ''}
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Meta Description</label>
-                                        <textarea className="form-input" rows="3" defaultValue={editingPage.meta_description || ''}></textarea>
+                                        <textarea
+                                            className="form-input"
+                                            rows="3"
+                                            defaultValue={editingPage.meta_description || ''}
+                                        ></textarea>
                                     </div>
                                     <div className="form-group">
                                         <label>Meta Keywords</label>
-                                        <input type="text" className="form-input" defaultValue={editingPage.meta_keywords?.join(', ') || ''} />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            defaultValue={
+                                                editingPage.meta_keywords?.join(', ') || ''
+                                            }
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowEditModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -804,16 +995,27 @@ const PageManagementTab = () => {
             {/* Analytics Modal */}
             {showAnalyticsModal && analyticsPage && (
                 <div className="modal-overlay" onClick={() => setShowAnalyticsModal(false)}>
-                    <div className="modal-content analytics-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '1000px' }}>
+                    <div
+                        className="modal-content analytics-modal"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '1000px' }}
+                    >
                         <div className="modal-header">
                             <h3>Analytics: {analyticsPage.title}</h3>
-                            <button className="close-btn" onClick={() => setShowAnalyticsModal(false)}>×</button>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowAnalyticsModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="analytics-grid">
                                 <div className="analytics-card">
                                     <h4>Total Views</h4>
-                                    <div className="metric-value">{analyticsPage.view_count.toLocaleString()}</div>
+                                    <div className="metric-value">
+                                        {analyticsPage.view_count.toLocaleString()}
+                                    </div>
                                     <div className="metric-change">+12.5% from last week</div>
                                 </div>
                                 <div className="analytics-card">
@@ -832,7 +1034,7 @@ const PageManagementTab = () => {
                                     <div className="metric-change">-3.1% from last week</div>
                                 </div>
                             </div>
-                            
+
                             <div className="analytics-chart">
                                 <h4>Page Views (Last 30 Days)</h4>
                                 <div className="chart-placeholder">
@@ -858,7 +1060,7 @@ const PageManagementTab = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="analytics-section">
                                     <h4>Traffic by Hour</h4>
                                     <div className="hourly-traffic">

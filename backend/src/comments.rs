@@ -17,14 +17,6 @@ use futures::stream::StreamExt;
 // --- DTOs ---
 
 #[derive(Deserialize)]
-pub struct CreateCommentRequest {
-    pub content_id: String,
-    pub content_type: String,
-    pub parent_id: Option<String>,
-    pub content: String,
-}
-
-#[derive(Deserialize)]
 pub struct UpdateCommentRequest {
     pub content: String,
     pub moderation_notes: Option<String>,

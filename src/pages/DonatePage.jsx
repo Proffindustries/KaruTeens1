@@ -12,9 +12,9 @@ const DonatePage = () => {
     const percentage = (raised / goal) * 100;
 
     const recentDonors = [
-        { name: "Anonymous", amount: 500, time: "2m ago" },
-        { name: "John Doe", amount: 1000, time: "1h ago" },
-        { name: "Sarah K.", amount: 200, time: "3h ago" },
+        { name: 'Anonymous', amount: 500, time: '2m ago' },
+        { name: 'John Doe', amount: 1000, time: '1h ago' },
+        { name: 'Sarah K.', amount: 200, time: '3h ago' },
     ];
 
     return (
@@ -72,7 +72,9 @@ const DonatePage = () => {
                     </div>
 
                     <div className="card recent-donors-card">
-                        <h3><TrendingUp size={18} /> Recent Donors</h3>
+                        <h3>
+                            <TrendingUp size={18} /> Recent Donors
+                        </h3>
                         <div className="donors-list">
                             {recentDonors.map((d, i) => (
                                 <div key={i} className="donor-row">

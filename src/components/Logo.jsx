@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Logo = ({ className = "", width = "180px", height = "60px" }) => {
+const Logo = ({ className = '', width = '180px', height = '60px' }) => {
     return (
         <svg
             width={width}
@@ -42,7 +42,8 @@ const Logo = ({ className = "", width = "180px", height = "60px" }) => {
             <circle cx="60" cy="60" r="48" fill="#2563EB" className="pulse" />
 
             {/* Chat bubble */}
-            <path d="M40 40
+            <path
+                d="M40 40
                    h40
                    a10 10 0 0 1 10 10
                    v18
@@ -54,34 +55,44 @@ const Logo = ({ className = "", width = "180px", height = "60px" }) => {
                    a10 10 0 0 1 -10 -10
                    v-18
                    a10 10 0 0 1 10 -10z"
-                fill="#ffffff" />
+                fill="#ffffff"
+            />
 
             {/* K letter */}
-            <text x="50" y="72"
+            <text
+                x="50"
+                y="72"
                 fontSize="30"
                 fontWeight="bold"
                 fill="#2563EB"
-                fontFamily="Arial, Helvetica, sans-serif">
+                fontFamily="Arial, Helvetica, sans-serif"
+            >
                 K
             </text>
 
             {/* Brand text */}
-            <text x="130" y="56"
+            <text
+                x="130"
+                y="56"
                 fontSize="38"
                 fontWeight="800"
                 fill="#2563EB"
                 letterSpacing="0.5"
                 fontFamily="Arial, Helvetica, sans-serif"
-                className="fade-in">
+                className="fade-in"
+            >
                 Karu
             </text>
 
-            <text x="132" y="92"
+            <text
+                x="132"
+                y="92"
                 fontSize="26"
                 fontWeight="600"
                 fill="#22C55E"
                 fontFamily="Arial, Helvetica, sans-serif"
-                className="fade-in fade-in-delay">
+                className="fade-in fade-in-delay"
+            >
                 Teens
             </text>
         </svg>

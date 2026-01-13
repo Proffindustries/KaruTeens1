@@ -1,0 +1,42 @@
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-text h1 {
+    font-size: 2rem;
+    color: rgb(var(--text-main));
+    margin-bottom: 0.5rem;
+}
+
+.header-text p {
+    color: rgb(var(--text-muted));
+}
+
+.search-bar-lg {
+    position: relative;
+    max-width: 600px;
+    margin-bottom: 3rem;
+}
+
+.search-bar-lg svg {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgb(var(--text-muted));
+}
+
+.search-bar-lg input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    background: white;
+    border: 1px solid rgba(var(--border), 0.8);
+    border-radius: var(--radius-lg);
+    font-size: 1.1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}

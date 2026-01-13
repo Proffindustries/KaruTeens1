@@ -8,7 +8,7 @@ export const useStudyRooms = () => {
             const { data } = await api.get('/study-rooms');
             return data;
         },
-        refetchInterval: 10000 // Refresh every 10s to show active rooms
+        refetchInterval: 10000, // Refresh every 10s to show active rooms
     });
 };
 
@@ -19,7 +19,7 @@ export const useStudyRoom = (roomId) => {
             const { data } = await api.get(`/study-rooms/${roomId}`);
             return data;
         },
-        enabled: !!roomId
+        enabled: !!roomId,
     });
 };
 
@@ -32,7 +32,7 @@ export const useCreateRoom = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyRooms'] });
-        }
+        },
     });
 };
 
@@ -46,7 +46,7 @@ export const useJoinRoom = () => {
         onSuccess: (_, roomId) => {
             queryClient.invalidateQueries({ queryKey: ['studyRooms'] });
             queryClient.invalidateQueries({ queryKey: ['studyRoom', roomId] });
-        }
+        },
     });
 };
 
@@ -59,7 +59,7 @@ export const useLeaveRoom = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyRooms'] });
-        }
+        },
     });
 };
 
@@ -72,7 +72,7 @@ export const useDeleteRoom = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyRooms'] });
-        }
+        },
     });
 };
 
@@ -81,7 +81,7 @@ export const useGenerateInviteLink = () => {
         mutationFn: async (roomId) => {
             const { data } = await api.get(`/study-rooms/${roomId}/invite`);
             return data;
-        }
+        },
     });
 };
 
@@ -94,6 +94,6 @@ export const useRemoveUser = () => {
         },
         onSuccess: (_, { roomId }) => {
             queryClient.invalidateQueries({ queryKey: ['studyRoom', roomId] });
-        }
+        },
     });
 };

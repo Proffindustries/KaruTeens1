@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { MapPin, Calendar, Edit2, Twitter, Instagram, Youtube, Video, Share2, Quote, User as UserIcon, CheckCircle, Zap, ShieldCheck } from 'lucide-react';
+import {
+    MapPin,
+    Calendar,
+    Edit2,
+    Twitter,
+    Instagram,
+    Youtube,
+    Video,
+    Share2,
+    Quote,
+    User as UserIcon,
+    CheckCircle,
+    Zap,
+    ShieldCheck,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import PostCard from '../components/PostCard.jsx';
 import { PostSkeleton } from '../components/Skeleton.jsx';
@@ -47,7 +61,9 @@ const ProfilePage = () => {
         } else {
             document.body.style.overflow = 'unset';
         }
-        return () => { document.body.style.overflow = 'unset'; };
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isEditing]);
 
     const [editForm, setEditForm] = useState({
@@ -62,8 +78,8 @@ const ProfilePage = () => {
             tiktok: '',
             youtube: '',
             twitter: '',
-            other: ''
-        }
+            other: '',
+        },
     });
 
     const isOwnProfile = !urlUsername || urlUsername === currentUser.username;
@@ -82,20 +98,23 @@ const ProfilePage = () => {
                 tiktok: profile?.social_links?.tiktok || '',
                 youtube: profile?.social_links?.youtube || '',
                 twitter: profile?.social_links?.twitter || '',
-                other: profile?.social_links?.other || ''
-            }
+                other: profile?.social_links?.other || '',
+            },
         });
         setIsEditing(true);
     };
 
     const handleUpdate = () => {
-        updateProfile({
-            ...editForm,
-            year_of_study: editForm.year_of_study ? parseInt(editForm.year_of_study) : null,
-            age: editForm.age ? parseInt(editForm.age) : null
-        }, {
-            onSuccess: () => setIsEditing(false)
-        });
+        updateProfile(
+            {
+                ...editForm,
+                year_of_study: editForm.year_of_study ? parseInt(editForm.year_of_study) : null,
+                age: editForm.age ? parseInt(editForm.age) : null,
+            },
+            {
+                onSuccess: () => setIsEditing(false),
+            },
+        );
     };
 
     if (isLoading) return <div className="container">Loading profile...</div>;
@@ -104,18 +123,23 @@ const ProfilePage = () => {
 
     // Use fetched data instead of dummy data
     const user = {
-        name: profile.full_name || "New User",
+        name: profile.full_name || 'New User',
         username: `@${profile.username}`,
-        bio: profile.bio || "No bio yet.",
-        school: profile.school || "Unspecified School",
-        year: profile.year_of_study ? `Year ${profile.year_of_study}` : "N/A",
-        age: profile.age || "N/A",
-        gender: profile.gender || "Unspecified",
-        joined: profile.created_at ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : "Recently",
+        bio: profile.bio || 'No bio yet.',
+        school: profile.school || 'Unspecified School',
+        year: profile.year_of_study ? `Year ${profile.year_of_study}` : 'N/A',
+        age: profile.age || 'N/A',
+        gender: profile.gender || 'Unspecified',
+        joined: profile.created_at
+            ? new Date(profile.created_at).toLocaleDateString(undefined, {
+                  month: 'long',
+                  year: 'numeric',
+              })
+            : 'Recently',
         followers: 0,
         following: 0,
-        quote: "Knowledge increases by sharing, not by saving.",
-        socials: profile.social_links || {}
+        quote: 'Knowledge increases by sharing, not by saving.',
+        socials: profile.social_links || {},
     };
 
     const userPosts = []; // Fetch posts by user handler next
@@ -155,7 +179,11 @@ const ProfilePage = () => {
                     </div>
                     <div className="profile-actions">
                         {isOwnProfile && (
-                            <button className="btn btn-outline btn-sm" onClick={openEditModal} disabled={isUploadingMedia}>
+                            <button
+                                className="btn btn-outline btn-sm"
+                                onClick={openEditModal}
+                                disabled={isUploadingMedia}
+                            >
                                 <Edit2 size={16} /> Edit Profile
                             </button>
                         )}
@@ -163,10 +191,27 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-text-content">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            flexWrap: 'wrap',
+                        }}
+                    >
                         <h1>{user.name}</h1>
-                        {profile.is_verified && <CheckCircle size={20} color="#2ed573" fill="#2ed573" style={{ color: 'white' }} title="Verified Student" />}
-                        {profile.is_premium && <Zap size={20} color="#f1c40f" fill="#f1c40f" title="Campus Pro" />}
+                        {profile.is_verified && (
+                            <CheckCircle
+                                size={20}
+                                color="#2ed573"
+                                fill="#2ed573"
+                                style={{ color: 'white' }}
+                                title="Verified Student"
+                            />
+                        )}
+                        {profile.is_premium && (
+                            <Zap size={20} color="#f1c40f" fill="#f1c40f" title="Campus Pro" />
+                        )}
                     </div>
                     <p className="profile-username">
                         {user.username}
@@ -175,14 +220,24 @@ const ProfilePage = () => {
                     <p className="profile-bio">{user.bio}</p>
 
                     <div className="profile-meta-grid">
-                        <span><MapPin size={16} /> Kenya</span>
-                        <span>🎓 {user.school} • {user.year}</span>
-                        <span><Calendar size={16} /> Member</span>
+                        <span>
+                            <MapPin size={16} /> Kenya
+                        </span>
+                        <span>
+                            🎓 {user.school} • {user.year}
+                        </span>
+                        <span>
+                            <Calendar size={16} /> Member
+                        </span>
                     </div>
 
                     <div className="profile-stats">
-                        <div><strong>{user.followers}</strong> <span>Followers</span></div>
-                        <div><strong>{user.following}</strong> <span>Following</span></div>
+                        <div>
+                            <strong>{user.followers}</strong> <span>Followers</span>
+                        </div>
+                        <div>
+                            <strong>{user.following}</strong> <span>Following</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -203,16 +258,58 @@ const ProfilePage = () => {
                     <div className="card info-card">
                         <h3>About</h3>
                         <ul>
-                            <li><strong>Age:</strong> {user.age}</li>
-                            <li><strong>Gender:</strong> {user.gender}</li>
-                            <li><strong>School:</strong> {user.school}</li>
+                            <li>
+                                <strong>Age:</strong> {user.age}
+                            </li>
+                            <li>
+                                <strong>Gender:</strong> {user.gender}
+                            </li>
+                            <li>
+                                <strong>School:</strong> {user.school}
+                            </li>
                         </ul>
                         <div className="social-links-profile">
-                            {user.socials.instagram && <a href={`https://instagram.com/${user.socials.instagram}`} target="_blank" rel="noreferrer"><Instagram size={20} /></a>}
-                            {user.socials.twitter && <a href={`https://twitter.com/${user.socials.twitter}`} target="_blank" rel="noreferrer"><Twitter size={20} /></a>}
-                            {user.socials.tiktok && <a href={`https://tiktok.com/@${user.socials.tiktok}`} target="_blank" rel="noreferrer"><Video size={20} /></a>}
-                            {user.socials.youtube && <a href={`https://youtube.com/@${user.socials.youtube}`} target="_blank" rel="noreferrer"><Youtube size={20} /></a>}
-                            {user.socials.other && <a href={user.socials.other} target="_blank" rel="noreferrer"><Share2 size={20} /></a>}
+                            {user.socials.instagram && (
+                                <a
+                                    href={`https://instagram.com/${user.socials.instagram}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Instagram size={20} />
+                                </a>
+                            )}
+                            {user.socials.twitter && (
+                                <a
+                                    href={`https://twitter.com/${user.socials.twitter}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Twitter size={20} />
+                                </a>
+                            )}
+                            {user.socials.tiktok && (
+                                <a
+                                    href={`https://tiktok.com/@${user.socials.tiktok}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Video size={20} />
+                                </a>
+                            )}
+                            {user.socials.youtube && (
+                                <a
+                                    href={`https://youtube.com/@${user.socials.youtube}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Youtube size={20} />
+                                </a>
+                            )}
+                            {user.socials.other && (
+                                <a href={user.socials.other} target="_blank" rel="noreferrer">
+                                    <Share2 size={20} />
+                                </a>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -220,13 +317,14 @@ const ProfilePage = () => {
                 <div className="main-column">
                     <div className="posts-feed">
                         {isLoading ? (
-                            [1, 2].map(i => <PostSkeleton key={i} />)
+                            [1, 2].map((i) => <PostSkeleton key={i} />)
                         ) : userPosts?.length > 0 ? (
-                            userPosts.map(post => (
-                                <PostCard key={post.id} post={post} />
-                            ))
+                            userPosts.map((post) => <PostCard key={post.id} post={post} />)
                         ) : (
-                            <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
+                            <div
+                                className="empty-state card"
+                                style={{ padding: '3rem', textAlign: 'center' }}
+                            >
                                 <p>No posts by this user yet.</p>
                             </div>
                         )}
@@ -237,10 +335,12 @@ const ProfilePage = () => {
             {/* Edit Modal */}
             {isEditing && (
                 <div className="modal-overlay" onClick={() => setIsEditing(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Edit Profile</h3>
-                            <button className="close-btn" onClick={() => setIsEditing(false)}>×</button>
+                            <button className="close-btn" onClick={() => setIsEditing(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
@@ -248,7 +348,9 @@ const ProfilePage = () => {
                                 <input
                                     className="form-input"
                                     value={editForm.full_name}
-                                    onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, full_name: e.target.value })
+                                    }
                                 />
                             </div>
                             <div className="form-group">
@@ -257,7 +359,9 @@ const ProfilePage = () => {
                                     className="form-input"
                                     rows="3"
                                     value={editForm.bio}
-                                    onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, bio: e.target.value })
+                                    }
                                 ></textarea>
                             </div>
                             <div className="form-group">
@@ -265,7 +369,9 @@ const ProfilePage = () => {
                                 <input
                                     className="form-input"
                                     value={editForm.school}
-                                    onChange={e => setEditForm({ ...editForm, school: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, school: e.target.value })
+                                    }
                                 />
                             </div>
                             <div className="form-group">
@@ -273,7 +379,9 @@ const ProfilePage = () => {
                                 <select
                                     className="form-input"
                                     value={editForm.year_of_study}
-                                    onChange={e => setEditForm({ ...editForm, year_of_study: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, year_of_study: e.target.value })
+                                    }
                                 >
                                     <option value="">Select Year</option>
                                     <option value="1">Year 1</option>
@@ -282,14 +390,23 @@ const ProfilePage = () => {
                                     <option value="4">Year 4</option>
                                 </select>
                             </div>
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div
+                                className="form-row"
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '1rem',
+                                }}
+                            >
                                 <div className="form-group">
                                     <label>Age</label>
                                     <input
                                         type="number"
                                         className="form-input"
                                         value={editForm.age}
-                                        onChange={e => setEditForm({ ...editForm, age: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, age: e.target.value })
+                                        }
                                     />
                                 </div>
                                 <div className="form-group">
@@ -297,7 +414,9 @@ const ProfilePage = () => {
                                     <select
                                         className="form-input"
                                         value={editForm.gender}
-                                        onChange={e => setEditForm({ ...editForm, gender: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, gender: e.target.value })
+                                        }
                                     >
                                         <option value="">Select</option>
                                         <option value="Male">Male</option>
@@ -312,7 +431,15 @@ const ProfilePage = () => {
                                     className="form-input"
                                     placeholder="@username"
                                     value={editForm.social_links.instagram}
-                                    onChange={e => setEditForm({ ...editForm, social_links: { ...editForm.social_links, instagram: e.target.value } })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                instagram: e.target.value,
+                                            },
+                                        })
+                                    }
                                 />
                             </div>
                             <div className="form-group">
@@ -321,7 +448,15 @@ const ProfilePage = () => {
                                     className="form-input"
                                     placeholder="@username"
                                     value={editForm.social_links.tiktok}
-                                    onChange={e => setEditForm({ ...editForm, social_links: { ...editForm.social_links, tiktok: e.target.value } })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                tiktok: e.target.value,
+                                            },
+                                        })
+                                    }
                                 />
                             </div>
                             <div className="form-group">
@@ -330,7 +465,15 @@ const ProfilePage = () => {
                                     className="form-input"
                                     placeholder="@handle"
                                     value={editForm.social_links.youtube}
-                                    onChange={e => setEditForm({ ...editForm, social_links: { ...editForm.social_links, youtube: e.target.value } })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                youtube: e.target.value,
+                                            },
+                                        })
+                                    }
                                 />
                             </div>
                             <div className="form-group">
@@ -339,7 +482,15 @@ const ProfilePage = () => {
                                     className="form-input"
                                     placeholder="@username"
                                     value={editForm.social_links.twitter}
-                                    onChange={e => setEditForm({ ...editForm, social_links: { ...editForm.social_links, twitter: e.target.value } })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                twitter: e.target.value,
+                                            },
+                                        })
+                                    }
                                 />
                             </div>
                             <div className="form-group">
@@ -348,7 +499,15 @@ const ProfilePage = () => {
                                     className="form-input"
                                     placeholder="https://..."
                                     value={editForm.social_links.other}
-                                    onChange={e => setEditForm({ ...editForm, social_links: { ...editForm.social_links, other: e.target.value } })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                other: e.target.value,
+                                            },
+                                        })
+                                    }
                                 />
                             </div>
                         </div>

@@ -1,8 +1,36 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { PenTool, Mic, Video, Monitor, MessageSquare, Users, Trash2, PlusCircle, LogOut, Loader, Send, Eraser, X, Upload, Download, File, PhoneOff, Phone, VideoOff } from 'lucide-react';
+import {
+    PenTool,
+    Mic,
+    Video,
+    Monitor,
+    MessageSquare,
+    Users,
+    Trash2,
+    PlusCircle,
+    LogOut,
+    Loader,
+    Send,
+    Eraser,
+    X,
+    Upload,
+    Download,
+    File,
+    PhoneOff,
+    Phone,
+    VideoOff,
+} from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/StudyRoomsPage.css';
-import { useStudyRooms, useCreateRoom, useJoinRoom, useLeaveRoom, useStudyRoom, useGenerateInviteLink, useRemoveUser } from '../hooks/useStudyRooms';
+import {
+    useStudyRooms,
+    useCreateRoom,
+    useJoinRoom,
+    useLeaveRoom,
+    useStudyRoom,
+    useGenerateInviteLink,
+    useRemoveUser,
+} from '../hooks/useStudyRooms';
 import { useAbly } from '../context/AblyContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../hooks/useAuth';
@@ -44,18 +72,21 @@ const RoomLobby = () => {
             return;
         }
 
-        createRoom({ name: roomName, subject: roomSubject }, {
-            onSuccess: (data) => {
-                showToast('Room created!', 'success');
-                setShowCreateModal(false);
-                setRoomName('');
-                setRoomSubject('');
-                navigate(`/study-rooms/${data.id}`);
+        createRoom(
+            { name: roomName, subject: roomSubject },
+            {
+                onSuccess: (data) => {
+                    showToast('Room created!', 'success');
+                    setShowCreateModal(false);
+                    setRoomName('');
+                    setRoomSubject('');
+                    navigate(`/study-rooms/${data.id}`);
+                },
+                onError: (err) => {
+                    showToast(err.response?.data?.error || 'Failed to create room', 'error');
+                },
             },
-            onError: (err) => {
-                showToast(err.response?.data?.error || 'Failed to create room', 'error');
-            }
-        });
+        );
     };
 
     const handleJoinRoom = (id) => {
@@ -65,7 +96,7 @@ const RoomLobby = () => {
             },
             onError: (err) => {
                 showToast(err.response?.data?.error || 'Failed to join room', 'error');
-            }
+            },
         });
     };
 
@@ -89,7 +120,7 @@ const RoomLobby = () => {
             ) : (
                 <div className="rooms-grid">
                     {rooms && rooms.length > 0 ? (
-                        rooms.map(room => (
+                        rooms.map((room) => (
                             <div key={room.id} className="room-card card">
                                 <div className="room-card-header">
                                     <h3>{room.name}</h3>
@@ -102,10 +133,14 @@ const RoomLobby = () => {
                                 )}
                                 <div className="room-info">
                                     <span className="participants-count">
-                                        <Users size={16} /> {room.participant_count}/{room.max_participants}
+                                        <Users size={16} /> {room.participant_count}/
+                                        {room.max_participants}
                                     </span>
                                     <span className="room-time">
-                                        {new Date(room.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {new Date(room.created_at).toLocaleTimeString([], {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
                                     </span>
                                 </div>
                                 <button
@@ -113,7 +148,9 @@ const RoomLobby = () => {
                                     onClick={() => handleJoinRoom(room.id)}
                                     disabled={room.participant_count >= room.max_participants}
                                 >
-                                    {room.participant_count >= room.max_participants ? 'Full' : 'Join Room'}
+                                    {room.participant_count >= room.max_participants
+                                        ? 'Full'
+                                        : 'Join Room'}
                                 </button>
                             </div>
                         ))
@@ -121,7 +158,10 @@ const RoomLobby = () => {
                         <div className="empty-state">
                             <Monitor size={64} color="#ccc" />
                             <p>No active study rooms</p>
-                            <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => setShowCreateModal(true)}
+                            >
                                 Create the First Room
                             </button>
                         </div>
@@ -132,10 +172,16 @@ const RoomLobby = () => {
             {/* Create Room Modal */}
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '450px' }}
+                    >
                         <div className="modal-header">
                             <h3>Create Study Room</h3>
-                            <button className="close-btn" onClick={() => setShowCreateModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowCreateModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
@@ -336,15 +382,15 @@ const ActiveRoom = ({ roomId }) => {
         const cChannel = ably.channels.get(chatChannelName);
 
         cChannel.subscribe('message', (message) => {
-            setMessages(prev => [...prev, message.data]);
+            setMessages((prev) => [...prev, message.data]);
         });
 
         cChannel.subscribe('typing', (message) => {
-            setTypingUsers(prev => new Set([...prev, message.data.username]));
+            setTypingUsers((prev) => new Set([...prev, message.data.username]));
         });
 
         cChannel.subscribe('stop-typing', (message) => {
-            setTypingUsers(prev => {
+            setTypingUsers((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(message.data.username);
                 return newSet;
@@ -358,7 +404,7 @@ const ActiveRoom = ({ roomId }) => {
         const fChannel = ably.channels.get(filesChannelName);
 
         fChannel.subscribe('file-shared', (message) => {
-            setSharedFiles(prev => [...prev, message.data]);
+            setSharedFiles((prev) => [...prev, message.data]);
             showToast(`${message.data.username} shared a file`, 'info');
         });
 
@@ -403,9 +449,9 @@ const ActiveRoom = ({ roomId }) => {
     useEffect(() => {
         return () => {
             if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
+                localStream.getTracks().forEach((track) => track.stop());
             }
-            Object.values(peerConnectionsRef.current).forEach(pc => pc.close());
+            Object.values(peerConnectionsRef.current).forEach((pc) => pc.close());
         };
     }, [localStream]);
 
@@ -414,7 +460,7 @@ const ActiveRoom = ({ roomId }) => {
         const rect = canvas.getBoundingClientRect();
         lastPosRef.current = {
             x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            y: e.clientY - rect.top,
         };
         // Save canvas state before starting to draw
         saveCanvasState();
@@ -435,11 +481,12 @@ const ActiveRoom = ({ roomId }) => {
 
         if (whiteboardChannel) {
             whiteboardChannel.publish('draw', {
-                x, y,
+                x,
+                y,
                 prevX: lastPosRef.current.x,
                 prevY: lastPosRef.current.y,
                 color: drawColor,
-                width: drawWidth
+                width: drawWidth,
             });
         }
 
@@ -452,7 +499,6 @@ const ActiveRoom = ({ roomId }) => {
 
     // Whiteboard logic consolidated to use the useCallback version above
 
-
     const handleUndo = () => {
         const canvas = canvasRef.current;
         if (!canvas || undoStack.length === 0) return;
@@ -464,8 +510,8 @@ const ActiveRoom = ({ roomId }) => {
         img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
-            setRedoStack(prev => [...prev, undoStack[undoStack.length - 1]]);
-            setUndoStack(prev => prev.slice(0, -1));
+            setRedoStack((prev) => [...prev, undoStack[undoStack.length - 1]]);
+            setUndoStack((prev) => prev.slice(0, -1));
         };
         img.src = lastState;
     };
@@ -481,8 +527,8 @@ const ActiveRoom = ({ roomId }) => {
         img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
-            setUndoStack(prev => [...prev, redoStack[redoStack.length - 1]]);
-            setRedoStack(prev => prev.slice(0, -1));
+            setUndoStack((prev) => [...prev, redoStack[redoStack.length - 1]]);
+            setRedoStack((prev) => prev.slice(0, -1));
         };
         img.src = nextState;
     };
@@ -513,11 +559,11 @@ const ActiveRoom = ({ roomId }) => {
             username: user?.username || 'Anonymous',
             content: chatMessage,
             timestamp: new Date().toISOString(),
-            avatar: user?.avatar_url
+            avatar: user?.avatar_url,
         };
 
         chatChannel.publish('message', message);
-        setMessages(prev => [...prev, message]);
+        setMessages((prev) => [...prev, message]);
         setChatMessage('');
 
         // Stop typing indicator
@@ -549,13 +595,13 @@ const ActiveRoom = ({ roomId }) => {
                 size: file.size,
                 type: file.type,
                 username: user?.username || 'Anonymous',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
 
             if (filesChannel) {
                 filesChannel.publish('file-shared', fileData);
             }
-            setSharedFiles(prev => [...prev, fileData]);
+            setSharedFiles((prev) => [...prev, fileData]);
             showToast('File uploaded successfully', 'success');
         } catch (error) {
             showToast('Failed to upload file', 'error');
@@ -568,7 +614,10 @@ const ActiveRoom = ({ roomId }) => {
     const toggleAudio = async () => {
         if (!isAudioEnabled) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false,
+                });
                 setLocalStream(stream);
                 setIsAudioEnabled(true);
                 showToast('Microphone enabled', 'success');
@@ -577,7 +626,7 @@ const ActiveRoom = ({ roomId }) => {
             }
         } else {
             if (localStream) {
-                localStream.getAudioTracks().forEach(track => track.stop());
+                localStream.getAudioTracks().forEach((track) => track.stop());
                 setLocalStream(null);
             }
             setIsAudioEnabled(false);
@@ -588,7 +637,10 @@ const ActiveRoom = ({ roomId }) => {
     const toggleVideo = async () => {
         if (!isVideoEnabled) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: isAudioEnabled, video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: isAudioEnabled,
+                    video: true,
+                });
                 setLocalStream(stream);
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
@@ -600,7 +652,7 @@ const ActiveRoom = ({ roomId }) => {
             }
         } else {
             if (localStream) {
-                localStream.getVideoTracks().forEach(track => track.stop());
+                localStream.getVideoTracks().forEach((track) => track.stop());
                 if (!isAudioEnabled) {
                     setLocalStream(null);
                 }
@@ -615,7 +667,7 @@ const ActiveRoom = ({ roomId }) => {
             try {
                 const screenStream = await navigator.mediaDevices.getDisplayMedia({
                     video: true,
-                    audio: false
+                    audio: false,
                 });
 
                 setScreenStream(screenStream);
@@ -632,7 +684,7 @@ const ActiveRoom = ({ roomId }) => {
             }
         } else {
             if (screenStream) {
-                screenStream.getTracks().forEach(track => track.stop());
+                screenStream.getTracks().forEach((track) => track.stop());
                 setScreenStream(null);
             }
             setIsScreenSharing(false);
@@ -657,14 +709,14 @@ const ActiveRoom = ({ roomId }) => {
 
     const handleLeaveRoom = () => {
         if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+            localStream.getTracks().forEach((track) => track.stop());
         }
 
         leaveRoom(roomId, {
             onSuccess: () => {
                 showToast('Left room', 'info');
                 navigate('/study-rooms');
-            }
+            },
         });
     };
 
@@ -681,7 +733,7 @@ const ActiveRoom = ({ roomId }) => {
             },
             onSettled: () => {
                 setIsGeneratingInvite(false);
-            }
+            },
         });
     };
 
@@ -708,8 +760,8 @@ const ActiveRoom = ({ roomId }) => {
                 },
                 onError: (err) => {
                     showToast(err.response?.data?.error || 'Failed to remove user', 'error');
-                }
-            }
+                },
+            },
         );
     };
 
@@ -729,21 +781,21 @@ const ActiveRoom = ({ roomId }) => {
                     <button
                         className={`control-btn ${isAudioEnabled ? 'active' : ''}`}
                         onClick={toggleAudio}
-                        title={isAudioEnabled ? "Mute" : "Unmute"}
+                        title={isAudioEnabled ? 'Mute' : 'Unmute'}
                     >
                         {isAudioEnabled ? <Mic size={20} /> : <PhoneOff size={20} />}
                     </button>
                     <button
                         className={`control-btn ${isVideoEnabled ? 'active' : ''}`}
                         onClick={toggleVideo}
-                        title={isVideoEnabled ? "Stop Video" : "Start Video"}
+                        title={isVideoEnabled ? 'Stop Video' : 'Start Video'}
                     >
                         {isVideoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
                     </button>
                     <button
                         className={`control-btn ${isScreenSharing ? 'active' : ''}`}
                         onClick={toggleScreenShare}
-                        title={isScreenSharing ? "Stop Screen Share" : "Start Screen Share"}
+                        title={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
                     >
                         <Monitor size={20} />
                     </button>
@@ -753,7 +805,11 @@ const ActiveRoom = ({ roomId }) => {
                         disabled={isGeneratingInvite}
                         title="Generate Invite Link"
                     >
-                        {isGeneratingInvite ? <Loader size={20} className="spin-anim" /> : <PlusCircle size={20} />}
+                        {isGeneratingInvite ? (
+                            <Loader size={20} className="spin-anim" />
+                        ) : (
+                            <PlusCircle size={20} />
+                        )}
                     </button>
                     <button
                         className={`control-btn ${showChat ? 'active' : ''}`}
@@ -794,15 +850,21 @@ const ActiveRoom = ({ roomId }) => {
                                     {participant.user_id === room?.creator_id && (
                                         <span className="creator-badge">Host</span>
                                     )}
-                                    {user?.user_id === room?.creator_id && participant.user_id !== room?.creator_id && (
-                                        <button
-                                            className="remove-user-btn"
-                                            onClick={() => handleRemoveUser(participant.user_id, participant.username)}
-                                            title="Remove User"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    )}
+                                    {user?.user_id === room?.creator_id &&
+                                        participant.user_id !== room?.creator_id && (
+                                            <button
+                                                className="remove-user-btn"
+                                                onClick={() =>
+                                                    handleRemoveUser(
+                                                        participant.user_id,
+                                                        participant.username,
+                                                    )
+                                                }
+                                                title="Remove User"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
                                 </div>
                             ))}
                         </div>
@@ -817,7 +879,11 @@ const ActiveRoom = ({ roomId }) => {
                                     disabled={uploadingFile}
                                     title="Upload File"
                                 >
-                                    {uploadingFile ? <Loader size={16} className="spin-anim" /> : <Upload size={16} />}
+                                    {uploadingFile ? (
+                                        <Loader size={16} className="spin-anim" />
+                                    ) : (
+                                        <Upload size={16} />
+                                    )}
                                 </button>
                                 <input
                                     ref={fileInputRef}
@@ -834,11 +900,17 @@ const ActiveRoom = ({ roomId }) => {
                                         <div key={idx} className="file-item">
                                             <File size={16} />
                                             <div className="file-info">
-                                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="file-name">
+                                                <a
+                                                    href={file.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="file-name"
+                                                >
                                                     {file.filename}
                                                 </a>
                                                 <span className="file-meta">
-                                                    {file.username} • {(file.size / 1024).toFixed(1)} KB
+                                                    {file.username} •{' '}
+                                                    {(file.size / 1024).toFixed(1)} KB
                                                 </span>
                                             </div>
                                             <a href={file.url} download className="btn-icon-small">
@@ -920,32 +992,90 @@ const ActiveRoom = ({ roomId }) => {
                                     <option value="5">Thick</option>
                                     <option value="8">Very Thick</option>
                                 </select>
-                                <button className="tool-btn" onClick={handleUndo} title="Undo" disabled={undoStack.length === 0}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <button
+                                    className="tool-btn"
+                                    onClick={handleUndo}
+                                    title="Undo"
+                                    disabled={undoStack.length === 0}
+                                >
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
                                         <path d="M3 7v6h6"></path>
                                         <path d="M3 10l4-4 4 4"></path>
                                         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
                                     </svg>
                                 </button>
-                                <button className="tool-btn" onClick={handleRedo} title="Redo" disabled={redoStack.length === 0}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <button
+                                    className="tool-btn"
+                                    onClick={handleRedo}
+                                    title="Redo"
+                                    disabled={redoStack.length === 0}
+                                >
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
                                         <path d="M21 7v6h-6"></path>
                                         <path d="M21 10l-4-4-4 4"></path>
                                         <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
                                     </svg>
                                 </button>
-                                <button className="tool-btn" onClick={handleSaveCanvas} title="Save Canvas">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <button
+                                    className="tool-btn"
+                                    onClick={handleSaveCanvas}
+                                    title="Save Canvas"
+                                >
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
                                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                         <polyline points="7 3 7 8 15 8"></polyline>
                                     </svg>
                                 </button>
-                                <button className="tool-btn" onClick={handleClearCanvas} title="Clear All">
+                                <button
+                                    className="tool-btn"
+                                    onClick={handleClearCanvas}
+                                    title="Clear All"
+                                >
                                     <Trash2 size={16} />
                                 </button>
-                                <button className="tool-btn" onClick={handleSaveCanvas} title="Save Canvas">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <button
+                                    className="tool-btn"
+                                    onClick={handleSaveCanvas}
+                                    title="Save Canvas"
+                                >
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
                                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                         <polyline points="7 3 7 8 15 8"></polyline>
@@ -964,7 +1094,10 @@ const ActiveRoom = ({ roomId }) => {
                             onMouseLeave={stopDrawing}
                         />
                         <div className="canvas-tip">
-                            <p><strong>💡 Pro Tip:</strong> All participants can see your drawings in real-time!</p>
+                            <p>
+                                <strong>💡 Pro Tip:</strong> All participants can see your drawings
+                                in real-time!
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -992,7 +1125,10 @@ const ActiveRoom = ({ roomId }) => {
                                             <div className="message-header">
                                                 <strong>{msg.username}</strong>
                                                 <span className="message-time">
-                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(msg.timestamp).toLocaleTimeString(
+                                                        [],
+                                                        { hour: '2-digit', minute: '2-digit' },
+                                                    )}
                                                 </span>
                                             </div>
                                             <p>{msg.content}</p>
@@ -1010,7 +1146,8 @@ const ActiveRoom = ({ roomId }) => {
                                         <span></span>
                                     </div>
                                     <span className="typing-text">
-                                        {Array.from(typingUsers).join(', ')} {typingUsers.size === 1 ? 'is' : 'are'} typing...
+                                        {Array.from(typingUsers).join(', ')}{' '}
+                                        {typingUsers.size === 1 ? 'is' : 'are'} typing...
                                     </span>
                                 </div>
                             )}
@@ -1040,10 +1177,19 @@ const ActiveRoom = ({ roomId }) => {
                 {/* Invite Link Modal */}
                 {showInviteModal && (
                     <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
-                        <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div
+                            className="modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ maxWidth: '500px' }}
+                        >
                             <div className="modal-header">
                                 <h3>Share Room Invite</h3>
-                                <button className="close-btn" onClick={() => setShowInviteModal(false)}>×</button>
+                                <button
+                                    className="close-btn"
+                                    onClick={() => setShowInviteModal(false)}
+                                >
+                                    ×
+                                </button>
                             </div>
                             <div className="modal-body">
                                 <div className="invite-link-container">
@@ -1056,12 +1202,16 @@ const ActiveRoom = ({ roomId }) => {
                                             readOnly
                                             style={{ flex: 1 }}
                                         />
-                                        <button className="btn btn-primary" onClick={handleCopyInviteLink}>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleCopyInviteLink}
+                                        >
                                             Copy Link
                                         </button>
                                     </div>
                                     <p className="invite-tip">
-                                        <strong>💡 Tip:</strong> Share this link with friends to invite them to your study room.
+                                        <strong>💡 Tip:</strong> Share this link with friends to
+                                        invite them to your study room.
                                     </p>
                                 </div>
                             </div>
@@ -1072,15 +1222,30 @@ const ActiveRoom = ({ roomId }) => {
                 {/* Remove User Confirmation Modal */}
                 {showRemoveModal && userToRemove && (
                     <div className="modal-overlay" onClick={() => setShowRemoveModal(false)}>
-                        <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div
+                            className="modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ maxWidth: '400px' }}
+                        >
                             <div className="modal-header">
                                 <h3>Remove User</h3>
-                                <button className="close-btn" onClick={() => setShowRemoveModal(false)}>×</button>
+                                <button
+                                    className="close-btn"
+                                    onClick={() => setShowRemoveModal(false)}
+                                >
+                                    ×
+                                </button>
                             </div>
                             <div className="modal-body">
-                                <p>Are you sure you want to remove <strong>{userToRemove.username}</strong> from this room?</p>
+                                <p>
+                                    Are you sure you want to remove{' '}
+                                    <strong>{userToRemove.username}</strong> from this room?
+                                </p>
                                 <div className="modal-actions">
-                                    <button className="btn btn-outline" onClick={() => setShowRemoveModal(false)}>
+                                    <button
+                                        className="btn btn-outline"
+                                        onClick={() => setShowRemoveModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button className="btn btn-danger" onClick={confirmRemoveUser}>

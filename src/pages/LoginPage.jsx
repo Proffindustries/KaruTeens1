@@ -17,10 +17,7 @@ const LoginPage = () => {
     };
 
     return (
-        <AuthLayout
-            title="Welcome Back"
-            subtitle="Login to continue your journey."
-        >
+        <AuthLayout title="Welcome Back" subtitle="Login to continue your journey.">
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label htmlFor="email">Email</label>
@@ -39,7 +36,7 @@ const LoginPage = () => {
                     <label htmlFor="password">Password</label>
                     <div className="password-wrapper">
                         <input
-                            type={showPassword ? "text" : "password"}
+                            type={showPassword ? 'text' : 'password'}
                             id="password"
                             className="form-input"
                             placeholder="••••••••"
@@ -55,9 +52,10 @@ const LoginPage = () => {
                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </button>
                     </div>
-                    <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
+                    <Link to="/forgot-password" className="forgot-link">
+                        Forgot Password?
+                    </Link>
                 </div>
-
 
                 <button type="submit" className="btn btn-primary auth-submit" disabled={isPending}>
                     {isPending ? 'Logging in...' : 'Log In'}

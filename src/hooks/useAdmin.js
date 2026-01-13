@@ -7,7 +7,7 @@ export const useAdminStats = () => {
         queryFn: async () => {
             const { data } = await api.get('/admin/stats');
             return data;
-        }
+        },
     });
 };
 
@@ -23,7 +23,7 @@ export const useAdminUsers = (filters = {}) => {
 
             const { data } = await api.get(`/admin/users?${params}`);
             return data;
-        }
+        },
     });
 };
 
@@ -37,7 +37,7 @@ export const useUpdateUserRole = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
             queryClient.invalidateQueries({ queryKey: ['adminStats'] });
-        }
+        },
     });
 };
 
@@ -51,7 +51,7 @@ export const useBanUser = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
             queryClient.invalidateQueries({ queryKey: ['adminStats'] });
-        }
+        },
     });
 };
 
@@ -65,7 +65,7 @@ export const useVerifyUser = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
             queryClient.invalidateQueries({ queryKey: ['adminStats'] });
-        }
+        },
     });
 };
 
@@ -79,6 +79,6 @@ export const useDeletePost = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['posts'] });
             queryClient.invalidateQueries({ queryKey: ['adminStats'] });
-        }
+        },
     });
 };

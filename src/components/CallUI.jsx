@@ -46,7 +46,7 @@ export const ActiveCallScreen = ({
     callDuration,
     onToggleMute,
     onToggleVideo,
-    onEndCall
+    onEndCall,
 }) => {
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
@@ -167,11 +167,7 @@ export const ActiveCallScreen = ({
                     </button>
                 )}
 
-                <button
-                    className="call-control-btn end-call"
-                    onClick={onEndCall}
-                    title="End call"
-                >
+                <button className="call-control-btn end-call" onClick={onEndCall} title="End call">
                     <PhoneOff size={24} />
                 </button>
             </div>

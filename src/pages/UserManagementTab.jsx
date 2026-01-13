@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Search, Filter, Plus, Edit, Trash2, UserCheck, UserX, Shield, 
-    ShieldCheck, Eye, EyeOff, Download, Upload, RefreshCw,
-    Calendar, Mail, User, Users, Star, Clock, CheckCircle, XCircle
+import {
+    Search,
+    Filter,
+    Plus,
+    Edit,
+    Trash2,
+    UserCheck,
+    UserX,
+    Shield,
+    ShieldCheck,
+    Eye,
+    EyeOff,
+    Download,
+    Upload,
+    RefreshCw,
+    Calendar,
+    Mail,
+    User,
+    Users,
+    Star,
+    Clock,
+    CheckCircle,
+    XCircle,
 } from 'lucide-react';
 import { useAdminUsers, useBanUser, useVerifyUser, useUpdateUserRole } from '../hooks/useAdmin';
 import { useToast } from '../context/ToastContext';
@@ -15,13 +34,13 @@ const UserManagementTab = () => {
         banned: 'all',
         search: '',
         sortBy: 'created_at',
-        sortOrder: 'desc'
+        sortOrder: 'desc',
     });
-    
+
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [bulkAction, setBulkAction] = useState('');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-    
+
     const { data: users, isLoading, refetch } = useAdminUsers(filters);
     const { mutate: banUser } = useBanUser();
     const { mutate: verifyUser } = useVerifyUser();
@@ -29,7 +48,7 @@ const UserManagementTab = () => {
     const { showToast } = useToast();
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -40,34 +59,43 @@ const UserManagementTab = () => {
 
         if (bulkAction === 'ban') {
             if (confirm(`Ban ${selectedUsers.length} users?`)) {
-                selectedUsers.forEach(userId => {
-                    banUser({ userId, banned: true }, {
-                        onSuccess: () => showToast('Users banned', 'success'),
-                        onError: () => showToast('Failed to ban users', 'error')
-                    });
+                selectedUsers.forEach((userId) => {
+                    banUser(
+                        { userId, banned: true },
+                        {
+                            onSuccess: () => showToast('Users banned', 'success'),
+                            onError: () => showToast('Failed to ban users', 'error'),
+                        },
+                    );
                 });
             }
         } else if (bulkAction === 'unban') {
-            selectedUsers.forEach(userId => {
-                banUser({ userId, banned: false }, {
-                    onSuccess: () => showToast('Users unbanned', 'success'),
-                    onError: () => showToast('Failed to unban users', 'error')
-                });
+            selectedUsers.forEach((userId) => {
+                banUser(
+                    { userId, banned: false },
+                    {
+                        onSuccess: () => showToast('Users unbanned', 'success'),
+                        onError: () => showToast('Failed to unban users', 'error'),
+                    },
+                );
             });
         } else if (bulkAction === 'verify') {
-            selectedUsers.forEach(userId => {
+            selectedUsers.forEach((userId) => {
                 verifyUser(userId, {
                     onSuccess: () => showToast('Users verified', 'success'),
-                    onError: () => showToast('Failed to verify users', 'error')
+                    onError: () => showToast('Failed to verify users', 'error'),
                 });
             });
         } else if (bulkAction === 'promote') {
             if (confirm('Promote to Premium?')) {
-                selectedUsers.forEach(userId => {
-                    updateRole({ userId, role: 'premium' }, {
-                        onSuccess: () => showToast('Users promoted', 'success'),
-                        onError: () => showToast('Failed to promote users', 'error')
-                    });
+                selectedUsers.forEach((userId) => {
+                    updateRole(
+                        { userId, role: 'premium' },
+                        {
+                            onSuccess: () => showToast('Users promoted', 'success'),
+                            onError: () => showToast('Failed to promote users', 'error'),
+                        },
+                    );
                 });
             }
         }
@@ -79,45 +107,56 @@ const UserManagementTab = () => {
 
     const handleUserAction = (userId, action, data = {}) => {
         if (action === 'ban') {
-            banUser({ userId, banned: true }, {
-                onSuccess: () => {
-                    showToast('User banned', 'success');
-                    refetch();
+            banUser(
+                { userId, banned: true },
+                {
+                    onSuccess: () => {
+                        showToast('User banned', 'success');
+                        refetch();
+                    },
+                    onError: (err) =>
+                        showToast(err.response?.data?.error || 'Failed to ban user', 'error'),
                 },
-                onError: (err) => showToast(err.response?.data?.error || 'Failed to ban user', 'error')
-            });
+            );
         } else if (action === 'unban') {
-            banUser({ userId, banned: false }, {
-                onSuccess: () => {
-                    showToast('User unbanned', 'success');
-                    refetch();
+            banUser(
+                { userId, banned: false },
+                {
+                    onSuccess: () => {
+                        showToast('User unbanned', 'success');
+                        refetch();
+                    },
+                    onError: (err) =>
+                        showToast(err.response?.data?.error || 'Failed to unban user', 'error'),
                 },
-                onError: (err) => showToast(err.response?.data?.error || 'Failed to unban user', 'error')
-            });
+            );
         } else if (action === 'verify') {
             verifyUser(userId, {
                 onSuccess: () => {
                     showToast('User verified', 'success');
                     refetch();
                 },
-                onError: (err) => showToast(err.response?.data?.error || 'Failed to verify user', 'error')
+                onError: (err) =>
+                    showToast(err.response?.data?.error || 'Failed to verify user', 'error'),
             });
         } else if (action === 'role') {
-            updateRole({ userId, role: data.role }, {
-                onSuccess: () => {
-                    showToast('Role updated', 'success');
-                    refetch();
+            updateRole(
+                { userId, role: data.role },
+                {
+                    onSuccess: () => {
+                        showToast('Role updated', 'success');
+                        refetch();
+                    },
+                    onError: (err) =>
+                        showToast(err.response?.data?.error || 'Failed to update role', 'error'),
                 },
-                onError: (err) => showToast(err.response?.data?.error || 'Failed to update role', 'error')
-            });
+            );
         }
     };
 
     const toggleUserSelection = (userId) => {
-        setSelectedUsers(prev => 
-            prev.includes(userId) 
-                ? prev.filter(id => id !== userId)
-                : [...prev, userId]
+        setSelectedUsers((prev) =>
+            prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
         );
     };
 
@@ -125,17 +164,22 @@ const UserManagementTab = () => {
         if (selectedUsers.length === users.length) {
             setSelectedUsers([]);
         } else {
-            setSelectedUsers(users.map(u => u.id));
+            setSelectedUsers(users.map((u) => u.id));
         }
     };
 
     const getRoleColor = (role) => {
         switch (role) {
-            case 'superadmin': return '#9b59b6';
-            case 'admin': return '#3498db';
-            case 'premium': return '#f1c40f';
-            case 'user': return '#95a5a6';
-            default: return '#95a5a6';
+            case 'superadmin':
+                return '#9b59b6';
+            case 'admin':
+                return '#3498db';
+            case 'premium':
+                return '#f1c40f';
+            case 'user':
+                return '#95a5a6';
+            default:
+                return '#95a5a6';
         }
     };
 
@@ -175,9 +219,9 @@ const UserManagementTab = () => {
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
-                    
+
                     <div className="filter-group">
-                        <select 
+                        <select
                             value={filters.role}
                             onChange={(e) => handleFilterChange('role', e.target.value)}
                         >
@@ -187,8 +231,8 @@ const UserManagementTab = () => {
                             <option value="admin">Admin</option>
                             <option value="superadmin">Super Admin</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.verified}
                             onChange={(e) => handleFilterChange('verified', e.target.value)}
                         >
@@ -196,8 +240,8 @@ const UserManagementTab = () => {
                             <option value="true">Verified Only</option>
                             <option value="false">Unverified Only</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.banned}
                             onChange={(e) => handleFilterChange('banned', e.target.value)}
                         >
@@ -208,7 +252,7 @@ const UserManagementTab = () => {
                     </div>
                 </div>
 
-                <button 
+                <button
                     className="advanced-filters-toggle"
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 >
@@ -228,7 +272,7 @@ const UserManagementTab = () => {
                                 <input type="date" placeholder="To" />
                             </div>
                         </div>
-                        
+
                         <div className="filter-item">
                             <label>Last Active</label>
                             <select>
@@ -239,7 +283,7 @@ const UserManagementTab = () => {
                                 <option value="inactive">Inactive (30+ days)</option>
                             </select>
                         </div>
-                        
+
                         <div className="filter-item">
                             <label>Content Count</label>
                             <div className="number-range">
@@ -254,21 +298,16 @@ const UserManagementTab = () => {
             {/* Bulk Actions */}
             {selectedUsers.length > 0 && (
                 <div className="bulk-actions">
-                    <div className="selection-info">
-                        {selectedUsers.length} users selected
-                    </div>
+                    <div className="selection-info">{selectedUsers.length} users selected</div>
                     <div className="bulk-actions-controls">
-                        <select 
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="verify">Verify Users</option>
                             <option value="ban">Ban Users</option>
                             <option value="unban">Unban Users</option>
                             <option value="promote">Promote to Premium</option>
                         </select>
-                        <button 
+                        <button
                             className="btn-primary"
                             onClick={handleBulkAction}
                             disabled={!bulkAction}
@@ -292,7 +331,9 @@ const UserManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedUsers.length === users.length && users.length > 0}
+                                    checked={
+                                        selectedUsers.length === users.length && users.length > 0
+                                    }
                                     onChange={selectAllUsers}
                                 />
                                 <span>Select All</span>
@@ -313,7 +354,10 @@ const UserManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedUsers.length === users.length && users.length > 0}
+                                                checked={
+                                                    selectedUsers.length === users.length &&
+                                                    users.length > 0
+                                                }
                                                 onChange={selectAllUsers}
                                             />
                                         </th>
@@ -328,8 +372,11 @@ const UserManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map(user => (
-                                        <tr key={user.id} className={user.is_banned ? 'banned-row' : ''}>
+                                    {users.map((user) => (
+                                        <tr
+                                            key={user.id}
+                                            className={user.is_banned ? 'banned-row' : ''}
+                                        >
                                             <td>
                                                 <input
                                                     type="checkbox"
@@ -340,10 +387,14 @@ const UserManagementTab = () => {
                                             <td>
                                                 <div className="user-info">
                                                     <div className="avatar">
-                                                        {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                                                        {user.username
+                                                            ? user.username.charAt(0).toUpperCase()
+                                                            : 'U'}
                                                     </div>
                                                     <div className="user-details">
-                                                        <div className="username">{user.username || 'Anonymous'}</div>
+                                                        <div className="username">
+                                                            {user.username || 'Anonymous'}
+                                                        </div>
                                                         <div className="user-id">ID: {user.id}</div>
                                                     </div>
                                                 </div>
@@ -355,9 +406,12 @@ const UserManagementTab = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <span 
+                                                <span
                                                     className="role-badge"
-                                                    style={{ backgroundColor: `${getRoleColor(user.role)}20`, color: getRoleColor(user.role) }}
+                                                    style={{
+                                                        backgroundColor: `${getRoleColor(user.role)}20`,
+                                                        color: getRoleColor(user.role),
+                                                    }}
                                                 >
                                                     {user.role.toUpperCase()}
                                                 </span>
@@ -384,7 +438,11 @@ const UserManagementTab = () => {
                                             <td>
                                                 <div className="date-info">
                                                     <Calendar size={14} />
-                                                    <span>{new Date(user.created_at).toLocaleDateString()}</span>
+                                                    <span>
+                                                        {new Date(
+                                                            user.created_at,
+                                                        ).toLocaleDateString()}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td>
@@ -398,45 +456,51 @@ const UserManagementTab = () => {
                                             </td>
                                             <td>
                                                 <div className="action-buttons">
-                                                    <button 
+                                                    <button
                                                         className="action-btn view"
                                                         title="View Profile"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     {!user.is_verified && (
-                                                        <button 
+                                                        <button
                                                             className="action-btn verify"
-                                                            onClick={() => handleUserAction(user.id, 'verify')}
+                                                            onClick={() =>
+                                                                handleUserAction(user.id, 'verify')
+                                                            }
                                                             title="Verify User"
                                                         >
                                                             <UserCheck size={16} />
                                                         </button>
                                                     )}
                                                     {user.is_banned ? (
-                                                        <button 
+                                                        <button
                                                             className="action-btn unban"
-                                                            onClick={() => handleUserAction(user.id, 'unban')}
+                                                            onClick={() =>
+                                                                handleUserAction(user.id, 'unban')
+                                                            }
                                                             title="Unban User"
                                                         >
                                                             <UserCheck size={16} />
                                                         </button>
                                                     ) : (
-                                                        <button 
+                                                        <button
                                                             className="action-btn ban"
-                                                            onClick={() => handleUserAction(user.id, 'ban')}
+                                                            onClick={() =>
+                                                                handleUserAction(user.id, 'ban')
+                                                            }
                                                             title="Ban User"
                                                         >
                                                             <UserX size={16} />
                                                         </button>
                                                     )}
-                                                    <button 
+                                                    <button
                                                         className="action-btn edit"
                                                         title="Edit User"
                                                     >
                                                         <Edit size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn delete"
                                                         title="Delete User"
                                                     >

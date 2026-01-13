@@ -8,22 +8,13 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
-use mongodb::bson::{doc, oid::ObjectId, DateTime};
+use mongodb::bson::{doc, oid::ObjectId};
 use crate::db::AppState;
 use crate::models::{Group, GroupPost, User, Profile};
 use crate::auth::AuthUser;
 use futures::stream::StreamExt;
 
 // --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct CreateGroupRequest {
-    pub name: String,
-    pub description: String,
-    pub category: String,
-    pub is_private: bool,
-    pub max_members: Option<i32>,
-}
 
 #[derive(Deserialize)]
 pub struct UpdateGroupRequest {
@@ -160,39 +151,6 @@ pub async fn get_group_handler(
 
     let group_info = build_group_response(&group, &state).await?;
     Ok((StatusCode::OK, Json(group_info)))
-}
-
-pub async fn create_group_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Json(payload): Json<CreateGroupRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let groups = state.mongo.collection::<Group>("groups");
-    
-    let new_group = Group {
-        id: None,
-        name: payload.name,
-        description: payload.description,
-        category: payload.category,
-        avatar_url: None,
-        cover_url: None,
-        creator_id: user.user_id,
-        admins: vec![user.user_id],
-        members: vec![user.user_id],
-        is_private: payload.is_private,
-        max_members: payload.max_members,
-        created_at: DateTime::now(),
-    };
-
-    let result = groups.insert_one(new_group, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::CREATED, Json(json!({
-        "message": "Group created successfully",
-        "group_id": result.inserted_id.as_object_id().unwrap().to_hex()
-    }))))
 }
 
 pub async fn update_group_handler(

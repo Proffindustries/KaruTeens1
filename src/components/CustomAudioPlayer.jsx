@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Music } from 'lucide-react'; // Add Music icon for placeholder
+import { useInView } from 'react-intersection-observer'; // Import useInView
 import '../styles/CustomAudioPlayer.css';
 
 const CustomAudioPlayer = ({ src, filename }) => {
@@ -11,9 +12,25 @@ const CustomAudioPlayer = ({ src, filename }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
+    const { ref, inView } = useInView({
+        // Use useInView hook
+        triggerOnce: true, // Load audio only once when it enters view
+        threshold: 0.1, // Trigger when 10% of the audio player is visible
+    });
+
+    // Combine refs for the container and inView observer
+    const setRefs = React.useCallback(
+        (node) => {
+            containerRef.current = node;
+            ref(node);
+        },
+        [ref],
+    );
+
     useEffect(() => {
         const audio = audioRef.current;
-        if (!audio) return;
+        // Only attach event listeners if the audio is loaded (inView)
+        if (!audio || !inView) return;
 
         const updateProgress = () => {
             const progress = (audio.currentTime / audio.duration) * 100;
@@ -39,13 +56,13 @@ const CustomAudioPlayer = ({ src, filename }) => {
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
             audio.removeEventListener('ended', handleEnded);
         };
-    }, []);
+    }, [inView]); // Re-run effect when inView changes to attach/detach listeners
 
     // Auto-pause when scrolled out of view
     useEffect(() => {
         const audio = audioRef.current;
         const container = containerRef.current;
-        if (!audio || !container) return;
+        if (!audio || !container || !inView) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -59,7 +76,7 @@ const CustomAudioPlayer = ({ src, filename }) => {
             },
             {
                 threshold: 0.5, // Trigger when 50% of audio player is out of view
-            }
+            },
         );
 
         observer.observe(container);
@@ -67,10 +84,11 @@ const CustomAudioPlayer = ({ src, filename }) => {
         return () => {
             observer.disconnect();
         };
-    }, []);
+    }, [inView]);
 
-    // Draw waveform visualization
+    // Draw waveform visualization (only if inView)
     useEffect(() => {
+        if (!inView) return; // Only draw if component is in view
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -100,10 +118,11 @@ const CustomAudioPlayer = ({ src, filename }) => {
 
             ctx.fillRect(x, y, barWidth, barHeight);
         }
-    }, [progress]);
+    }, [progress, inView]); // Re-run when inView changes
 
-    // Initial waveform render on mount
+    // Initial waveform render on mount (only if inView)
     useEffect(() => {
+        if (!inView) return; // Only draw if component is in view
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -124,7 +143,7 @@ const CustomAudioPlayer = ({ src, filename }) => {
             ctx.fillStyle = 'rgba(24, 119, 242, 0.15)';
             ctx.fillRect(x, y, barWidth, barHeight);
         }
-    }, []);
+    }, [inView]); // Re-run when inView changes
 
     const togglePlayPause = () => {
         const audio = audioRef.current;
@@ -133,7 +152,7 @@ const CustomAudioPlayer = ({ src, filename }) => {
         if (isPlaying) {
             audio.pause();
         } else {
-            audio.play().catch(err => {
+            audio.play().catch((err) => {
                 console.error('Audio play failed:', err);
             });
         }
@@ -156,30 +175,41 @@ const CustomAudioPlayer = ({ src, filename }) => {
     };
 
     return (
-        <div className="custom-audio-player" ref={containerRef}>
-            <audio ref={audioRef} src={src} />
-
-            <div className="audio-info">
-                <span className="audio-filename">{filename || 'Audio File'}</span>
-                <span className="audio-time">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-            </div>
-
-            <div className="audio-controls-row">
-                <button className="play-pause-btn" onClick={togglePlayPause}>
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                </button>
-
-                <div className="waveform-container" onClick={handleProgressClick}>
-                    <canvas
-                        ref={canvasRef}
-                        width={800}
-                        height={80}
-                        className="waveform-canvas"
-                    />
+        <div className="custom-audio-player" ref={setRefs}>
+            {inView ? (
+                <audio ref={audioRef} src={src} preload="none" />
+            ) : (
+                <div className="audio-placeholder">
+                    <Music size={48} color="#00b894" />
+                    <span className="audio-filename">{filename || 'Audio File'}</span>
                 </div>
-            </div>
+            )}
+
+            {inView && (
+                <>
+                    <div className="audio-info">
+                        <span className="audio-filename">{filename || 'Audio File'}</span>
+                        <span className="audio-time">
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                    </div>
+
+                    <div className="audio-controls-row">
+                        <button className="play-pause-btn" onClick={togglePlayPause}>
+                            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                        </button>
+
+                        <div className="waveform-container" onClick={handleProgressClick}>
+                            <canvas
+                                ref={canvasRef}
+                                width={800}
+                                height={80}
+                                className="waveform-canvas"
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

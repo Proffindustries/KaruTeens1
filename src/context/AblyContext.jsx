@@ -47,7 +47,7 @@ export const AblyProvider = ({ children }) => {
                     setTimeout(() => callback(err, null), 5000);
                 }
             },
-            closeOnUnload: true
+            closeOnUnload: true,
         });
 
         client.connection.on('connected', () => {
@@ -94,11 +94,11 @@ export const AblyProvider = ({ children }) => {
         globalChannel.presence.enter({
             username: user.username,
             avatar: user.avatar_url,
-            userId: user.id
+            userId: user.id,
         });
 
         globalChannel.presence.subscribe(['enter', 'leave', 'update', 'present'], (member) => {
-            setPresenceData(prev => {
+            setPresenceData((prev) => {
                 const newData = { ...prev };
                 if (member.action === 'leave') {
                     delete newData[member.clientId || member.data?.userId];
@@ -107,7 +107,7 @@ export const AblyProvider = ({ children }) => {
                     newData[id] = {
                         status: 'online',
                         ...member.data,
-                        lastSeen: new Date()
+                        lastSeen: new Date(),
                     };
                 }
                 return newData;
@@ -117,7 +117,7 @@ export const AblyProvider = ({ children }) => {
         globalChannel.presence.get((err, members) => {
             if (!err) {
                 const initial = {};
-                members.forEach(m => {
+                members.forEach((m) => {
                     const id = m.clientId || m.data?.userId;
                     initial[id] = { status: 'online', ...m.data };
                 });
@@ -130,11 +130,7 @@ export const AblyProvider = ({ children }) => {
         };
     }, [ably, userId, username, user?.avatar_url]);
 
-    return (
-        <AblyContext.Provider value={{ ably, presenceData }}>
-            {children}
-        </AblyContext.Provider>
-    );
+    return <AblyContext.Provider value={{ ably, presenceData }}>{children}</AblyContext.Provider>;
 };
 
 export const useAbly = () => {

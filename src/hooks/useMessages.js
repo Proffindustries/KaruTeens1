@@ -42,7 +42,7 @@ export const useCreateChat = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to start chat', 'error');
-        }
+        },
     });
 };
 
@@ -62,7 +62,7 @@ export const useCreateGroup = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to create group', 'error');
-        }
+        },
     });
 };
 
@@ -93,9 +93,11 @@ export const useSendMessage = (chatId) => {
                 is_me: true,
                 is_deleted: false,
                 reactions: [],
-                reply_to: newMessage.reply_to_id ? { id: newMessage.reply_to_id, username: '...' } : null,
+                reply_to: newMessage.reply_to_id
+                    ? { id: newMessage.reply_to_id, username: '...' }
+                    : null,
                 read_at: null,
-                viewed_at: null
+                viewed_at: null,
             };
 
             queryClient.setQueryData(['messages', chatId], (old) => {
@@ -123,13 +125,17 @@ export const useForwardMessage = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ chatId, content, attachment_url, attachment_type }) => {
-            const { data } = await api.post(`/messages/${chatId}/messages`, { content, attachment_url, attachment_type });
+            const { data } = await api.post(`/messages/${chatId}/messages`, {
+                content,
+                attachment_url,
+                attachment_type,
+            });
             return data;
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['messages', variables.chatId] });
             queryClient.invalidateQueries({ queryKey: ['chats'] });
-        }
+        },
     });
 };
 
@@ -147,7 +153,7 @@ export const useAddParticipants = (chatId) => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to add participants', 'error');
-        }
+        },
     });
 };
 
@@ -165,7 +171,7 @@ export const useRemoveParticipant = (chatId) => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to remove participant', 'error');
-        }
+        },
     });
 };
 
@@ -183,7 +189,7 @@ export const useLeaveGroup = (chatId) => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to leave group', 'error');
-        }
+        },
     });
 };
 
@@ -199,7 +205,7 @@ export const useMuteChat = () => {
         onSuccess: (_, { mute }) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             showToast(mute ? 'Chat muted' : 'Chat unmuted', 'success');
-        }
+        },
     });
 };
 
@@ -215,7 +221,7 @@ export const useBlockUser = () => {
         onSuccess: (_, { block }) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             showToast(block ? 'User blocked' : 'User unblocked', 'success');
-        }
+        },
     });
 };
 
@@ -230,7 +236,7 @@ export const useSetDisappearing = (chatId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             showToast('Disappearing messages updated', 'success');
-        }
+        },
     });
 };
 
@@ -244,7 +250,7 @@ export const useReactMessage = (chatId) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-        }
+        },
     });
 };
 
@@ -258,7 +264,7 @@ export const useMarkRead = (chatId) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-        }
+        },
     });
 };
 
@@ -267,12 +273,14 @@ export const useVotePoll = (chatId) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ messageId, optionIndex }) => {
-            const { data } = await api.post(`/messages/messages/${messageId}/vote`, { option_index: optionIndex });
+            const { data } = await api.post(`/messages/messages/${messageId}/vote`, {
+                option_index: optionIndex,
+            });
             return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-        }
+        },
     });
 };
 
@@ -285,7 +293,7 @@ export const useMarkViewed = (chatId) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-        }
+        },
     });
 };
 
@@ -304,7 +312,7 @@ export const useDeleteMessage = (chatId) => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to delete message', 'error');
-        }
+        },
     });
 };
 
@@ -319,7 +327,7 @@ export const useUpdateGroup = (chatId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             showToast('Group info updated', 'success');
-        }
+        },
     });
 };
 
@@ -334,6 +342,6 @@ export const useToggleAdmin = (chatId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             showToast('Admin role updated', 'success');
-        }
+        },
     });
 };

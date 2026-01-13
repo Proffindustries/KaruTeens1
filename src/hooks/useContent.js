@@ -9,8 +9,8 @@ export const useInfiniteFeed = () => {
             const { data } = await api.get('/posts/feed', {
                 params: {
                     last_id: pageParam,
-                    limit: 10
-                }
+                    limit: 10,
+                },
             });
             return data.posts;
         },
@@ -61,7 +61,7 @@ export const useCreatePost = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to create post', 'error');
-        }
+        },
     });
 };
 export const useLikePost = () => {
@@ -77,7 +77,7 @@ export const useLikePost = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to like post', 'error');
-        }
+        },
     });
 };
 
@@ -94,7 +94,7 @@ export const useUnlikePost = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to unlike post', 'error');
-        }
+        },
     });
 };
 
@@ -105,7 +105,7 @@ export const useAddComment = () => {
         mutationFn: async ({ postId, content, parent_comment_id = null }) => {
             const { data } = await api.post(`/posts/${postId}/comment`, {
                 content,
-                parent_comment_id
+                parent_comment_id,
             });
             return data;
         },
@@ -126,7 +126,7 @@ export const useAddComment = () => {
                 username: currentUser?.username || 'You',
                 user_avatar: currentUser?.avatar_url,
                 created_at: new Date().toISOString(),
-                is_optimistic: true
+                is_optimistic: true,
             };
 
             queryClient.setQueryData(['comments', newComment.postId], (old) => {
@@ -150,7 +150,7 @@ export const useAddComment = () => {
         onSettled: (data, error, { postId }) => {
             // Always refetch after error or success to ensure we are in sync with server
             queryClient.invalidateQueries({ queryKey: ['comments', postId] });
-        }
+        },
     });
 };
 

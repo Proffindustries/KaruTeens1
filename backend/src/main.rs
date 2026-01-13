@@ -114,14 +114,6 @@ async fn main() {
         .nest("/api/study-rooms", study_rooms::study_room_routes())
         // Management/Admin routes
         .nest("/api/admin", admin::admin_routes())
-        .nest("/api/admin/posts", posts::post_routes())
-        .nest("/api/admin/events", events::event_routes())
-        .nest("/api/admin/comments", comments::comment_routes())
-        .nest("/api/admin/stories", stories::story_routes())
-        .nest("/api/admin/reels", reels::reel_routes())
-        .nest("/api/admin/groups", groups::group_routes())
-        .nest("/api/admin/pages", pages::page_routes())
-        .nest("/api/admin/ads", ads::ad_routes())
         .layer(
             tower_http::cors::CorsLayer::new()
                 .allow_origin(origins)

@@ -1,12 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import {
-    Users, FileText, DollarSign, Activity, Settings, LogOut, TrendingUp,
-    Shield, Calendar, MessageSquare, Eye, EyeOff, Video, Image,
-    BarChart3, FileSpreadsheet, AlertTriangle, Globe,
-    Hash, Filter, Search, RefreshCw, Download, Upload,
-    Plus, Edit, Trash2, Clock, CheckCircle, XCircle,
-    UserCheck, UserX, ShieldCheck, AlertCircle
+    Users,
+    FileText,
+    DollarSign,
+    Activity,
+    Settings,
+    LogOut,
+    TrendingUp,
+    Shield,
+    Calendar,
+    MessageSquare,
+    Eye,
+    EyeOff,
+    Video,
+    Image,
+    BarChart3,
+    FileSpreadsheet,
+    AlertTriangle,
+    Globe,
+    Hash,
+    Filter,
+    Search,
+    RefreshCw,
+    Download,
+    Upload,
+    Plus,
+    Edit,
+    Trash2,
+    Clock,
+    CheckCircle,
+    XCircle,
+    UserCheck,
+    UserX,
+    ShieldCheck,
+    AlertCircle,
 } from 'lucide-react';
 import '../styles/AdminDashboard.css';
 import '../styles/UserManagementTab.css';
@@ -75,7 +103,7 @@ const AdminDashboard = () => {
         { id: 'activity', label: 'User Activity', icon: Activity },
         { id: 'security', label: 'Security', icon: ShieldCheck },
         { id: 'abuse', label: 'Abuse Detection', icon: AlertTriangle },
-        { id: 'hashtags', label: 'Hashtag Virality', icon: Hash }
+        { id: 'hashtags', label: 'Hashtag Virality', icon: Hash },
     ];
 
     return (
@@ -86,7 +114,9 @@ const AdminDashboard = () => {
                     <Shield size={28} />
                     <div>
                         <h2>Karu Admin</h2>
-                        <span className="admin-role">{user.role === 'superadmin' ? 'Super Admin' : 'Admin'}</span>
+                        <span className="admin-role">
+                            {user.role === 'superadmin' ? 'Super Admin' : 'Admin'}
+                        </span>
                     </div>
                 </div>
 
@@ -124,7 +154,7 @@ const AdminDashboard = () => {
                         >
                             <Filter size={24} />
                         </button>
-                        <h1>{tabs.find(t => t.id === activeTab)?.label}</h1>
+                        <h1>{tabs.find((t) => t.id === activeTab)?.label}</h1>
                     </div>
                     <div className="header-actions">
                         <button className="action-btn">
@@ -138,9 +168,7 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
-                <div className="admin-content">
-                    {renderTabContent(activeTab, setActiveTab)}
-                </div>
+                <div className="admin-content">{renderTabContent(activeTab, setActiveTab)}</div>
             </main>
         </div>
     );
@@ -156,7 +184,7 @@ const OverviewTab = ({ setActiveTab }) => {
         total_groups: 0,
         total_events: 0,
         total_stories: 0,
-        total_reports: 0
+        total_reports: 0,
     });
     const [loading, setLoading] = useState(true);
 
@@ -166,7 +194,7 @@ const OverviewTab = ({ setActiveTab }) => {
                 const { data } = await api.get('/admin/stats');
                 setStatsData(data);
             } catch (error) {
-                console.error("Failed to fetch admin stats:", error);
+                console.error('Failed to fetch admin stats:', error);
             } finally {
                 setLoading(false);
             }
@@ -176,14 +204,62 @@ const OverviewTab = ({ setActiveTab }) => {
     }, []);
 
     const stats = [
-        { label: "Total Users", value: statsData.total_users?.toLocaleString() || "0", icon: Users, change: "+0%", color: "#3498db" },
-        { label: "Active Users", value: statsData.active_users?.toLocaleString() || "0", icon: Activity, change: "+0%", color: "#2ecc71" },
-        { label: "Total Posts", value: statsData.total_posts?.toLocaleString() || "0", icon: FileText, change: "+0%", color: "#9b59b6" },
-        { label: "Revenue", value: `Ksh ${statsData.total_revenue?.toLocaleString() || "0"}`, icon: DollarSign, change: "+0%", color: "#f1c40f" },
-        { label: "Groups", value: statsData.total_groups?.toLocaleString() || "0", icon: Users, change: "+0%", color: "#e74c3c" },
-        { label: "Events", value: statsData.total_events?.toLocaleString() || "0", icon: Calendar, change: "+0%", color: "#34495e" },
-        { label: "Stories", value: statsData.total_stories?.toLocaleString() || "0", icon: Eye, change: "+0%", color: "#95a5a6" },
-        { label: "Reports", value: statsData.total_reports?.toLocaleString() || "0", icon: FileSpreadsheet, change: "+0%", color: "#f39c12" }
+        {
+            label: 'Total Users',
+            value: statsData.total_users?.toLocaleString() || '0',
+            icon: Users,
+            change: '+0%',
+            color: '#3498db',
+        },
+        {
+            label: 'Active Users',
+            value: statsData.active_users?.toLocaleString() || '0',
+            icon: Activity,
+            change: '+0%',
+            color: '#2ecc71',
+        },
+        {
+            label: 'Total Posts',
+            value: statsData.total_posts?.toLocaleString() || '0',
+            icon: FileText,
+            change: '+0%',
+            color: '#9b59b6',
+        },
+        {
+            label: 'Revenue',
+            value: `Ksh ${statsData.total_revenue?.toLocaleString() || '0'}`,
+            icon: DollarSign,
+            change: '+0%',
+            color: '#f1c40f',
+        },
+        {
+            label: 'Groups',
+            value: statsData.total_groups?.toLocaleString() || '0',
+            icon: Users,
+            change: '+0%',
+            color: '#e74c3c',
+        },
+        {
+            label: 'Events',
+            value: statsData.total_events?.toLocaleString() || '0',
+            icon: Calendar,
+            change: '+0%',
+            color: '#34495e',
+        },
+        {
+            label: 'Stories',
+            value: statsData.total_stories?.toLocaleString() || '0',
+            icon: Eye,
+            change: '+0%',
+            color: '#95a5a6',
+        },
+        {
+            label: 'Reports',
+            value: statsData.total_reports?.toLocaleString() || '0',
+            icon: FileSpreadsheet,
+            change: '+0%',
+            color: '#f39c12',
+        },
     ];
 
     return (
@@ -192,8 +268,15 @@ const OverviewTab = ({ setActiveTab }) => {
                 {stats.map((stat, index) => {
                     const Icon = stat.icon;
                     return (
-                        <div key={index} className="stat-card" style={{ borderLeft: `4px solid ${stat.color}` }}>
-                            <div className="stat-icon" style={{ background: `${stat.color}20`, color: stat.color }}>
+                        <div
+                            key={index}
+                            className="stat-card"
+                            style={{ borderLeft: `4px solid ${stat.color}` }}
+                        >
+                            <div
+                                className="stat-icon"
+                                style={{ background: `${stat.color}20`, color: stat.color }}
+                            >
                                 <Icon size={24} />
                             </div>
                             <div className="stat-content">
@@ -255,7 +338,7 @@ const SettingsTab = () => {
                 const { data } = await api.get('/admin/settings');
                 setSettings(data);
             } catch (error) {
-                console.error("Failed to fetch settings:", error);
+                console.error('Failed to fetch settings:', error);
             } finally {
                 setLoading(false);
             }
@@ -279,21 +362,32 @@ const SettingsTab = () => {
     return (
         <div className="settings-tab card" style={{ padding: '2rem' }}>
             <h2>System Global Settings</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Control global platform behavior.</p>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+                Control global platform behavior.
+            </p>
 
             <div className="settings-group" style={{ maxWidth: '600px' }}>
-                <div className="setting-item" style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '1.5rem',
-                    background: 'rgba(var(--primary), 0.05)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid rgba(var(--primary), 0.1)'
-                }}>
+                <div
+                    className="setting-item"
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '1.5rem',
+                        background: 'rgba(var(--primary), 0.05)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid rgba(var(--primary), 0.1)',
+                    }}
+                >
                     <div>
                         <h4 style={{ margin: 0 }}>Enable Monetization (M-Pesa)</h4>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        <p
+                            style={{
+                                margin: '4px 0 0',
+                                fontSize: '0.9rem',
+                                color: 'var(--text-muted)',
+                            }}
+                        >
                             When disabled, verification and other premium features will be free.
                         </p>
                     </div>
@@ -305,22 +399,26 @@ const SettingsTab = () => {
                             height: '30px',
                             borderRadius: '15px',
                             border: 'none',
-                            background: settings.is_payment_enabled ? 'var(--primary-color)' : '#ccc',
+                            background: settings.is_payment_enabled
+                                ? 'var(--primary-color)'
+                                : '#ccc',
                             position: 'relative',
                             cursor: 'pointer',
-                            transition: 'all 0.3s'
+                            transition: 'all 0.3s',
                         }}
                     >
-                        <div style={{
-                            width: '24px',
-                            height: '24px',
-                            background: 'white',
-                            borderRadius: '50%',
-                            position: 'absolute',
-                            top: '3px',
-                            left: settings.is_payment_enabled ? '33px' : '3px',
-                            transition: 'all 0.3s'
-                        }}></div>
+                        <div
+                            style={{
+                                width: '24px',
+                                height: '24px',
+                                background: 'white',
+                                borderRadius: '50%',
+                                position: 'absolute',
+                                top: '3px',
+                                left: settings.is_payment_enabled ? '33px' : '3px',
+                                transition: 'all 0.3s',
+                            }}
+                        ></div>
                     </button>
                 </div>
             </div>
@@ -366,7 +464,6 @@ const renderTabContent = (activeTab, setActiveTab) => {
         case 'settings':
             return <SettingsTab />;
         case 'logs':
-
             return <div className="tab-content">System Logs Interface</div>;
         case 'activity':
             return <div className="tab-content">User Activity Interface</div>;

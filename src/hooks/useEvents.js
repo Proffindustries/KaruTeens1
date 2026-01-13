@@ -12,7 +12,7 @@ export const useEvents = (filters = {}) => {
             const { data } = await api.get(`/events?${params}`);
             return data;
         },
-        refetchInterval: 30000 // Refresh every 30s
+        refetchInterval: 30000, // Refresh every 30s
     });
 };
 
@@ -23,7 +23,7 @@ export const useEvent = (eventId) => {
             const { data } = await api.get(`/events/${eventId}`);
             return data;
         },
-        enabled: !!eventId
+        enabled: !!eventId,
     });
 };
 
@@ -36,7 +36,7 @@ export const useCreateEvent = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['events'] });
-        }
+        },
     });
 };
 
@@ -50,7 +50,7 @@ export const useRSVPEvent = () => {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['events'] });
             queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
-        }
+        },
     });
 };
 
@@ -64,6 +64,6 @@ export const useRemoveRSVP = () => {
         onSuccess: (_, eventId) => {
             queryClient.invalidateQueries({ queryKey: ['events'] });
             queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-        }
+        },
     });
 };

@@ -29,10 +29,12 @@ const MapPreview = ({ location, size = 'md' }) => {
     return (
         <div className={`map-preview-container ${size}`} onClick={handleMapClick}>
             <div className="map-image-wrapper">
-                {(!apiKey || imgError) ? (
+                {!apiKey || imgError ? (
                     <div className="map-placeholder">
                         <MapPin size={32} className="pin-icon" />
-                        <span className="location-label-text">{location.label || '📍 Location Shared'}</span>
+                        <span className="location-label-text">
+                            {location.label || '📍 Location Shared'}
+                        </span>
                         <div className="map-grid-pattern"></div>
                     </div>
                 ) : (
@@ -53,7 +55,9 @@ const MapPreview = ({ location, size = 'md' }) => {
             </div>
 
             <div className="map-overlay-info">
-                <span>{location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}</span>
+                <span>
+                    {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                </span>
                 <ExternalLink size={14} />
             </div>
 
@@ -62,8 +66,15 @@ const MapPreview = ({ location, size = 'md' }) => {
                     <div className="confirm-bubble">
                         <p>Open in Google Maps?</p>
                         <div className="confirm-actions">
-                            <button className="confirm-btn yes" onClick={confirmExternal}>Continue</button>
-                            <button className="confirm-btn no" onClick={() => setShowConfirm(false)}>Cancel</button>
+                            <button className="confirm-btn yes" onClick={confirmExternal}>
+                                Continue
+                            </button>
+                            <button
+                                className="confirm-btn no"
+                                onClick={() => setShowConfirm(false)}
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>

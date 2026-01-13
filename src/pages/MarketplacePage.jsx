@@ -11,9 +11,13 @@ const MarketplacePage = () => {
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { data: items, isLoading, error } = useMarketplaceItems({
+    const {
+        data: items,
+        isLoading,
+        error,
+    } = useMarketplaceItems({
         category: filter,
-        search
+        search,
     });
 
     return (
@@ -41,15 +45,17 @@ const MarketplacePage = () => {
                     />
                 </div>
                 <div className="categories-scroll">
-                    {['all', 'Books', 'Electronics', 'Furniture', 'Clothing', 'Notes', 'Other'].map(cat => (
-                        <button
-                            key={cat}
-                            className={`cat-pill ${filter === cat ? 'active' : ''}`}
-                            onClick={() => setFilter(cat)}
-                        >
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                        </button>
-                    ))}
+                    {['all', 'Books', 'Electronics', 'Furniture', 'Clothing', 'Notes', 'Other'].map(
+                        (cat) => (
+                            <button
+                                key={cat}
+                                className={`cat-pill ${filter === cat ? 'active' : ''}`}
+                                onClick={() => setFilter(cat)}
+                            >
+                                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                            </button>
+                        ),
+                    )}
                 </div>
             </div>
 
@@ -58,7 +64,7 @@ const MarketplacePage = () => {
                 {isLoading ? (
                     <div className="loading-state">Loading items...</div>
                 ) : items?.length > 0 ? (
-                    items.map(item => (
+                    items.map((item) => (
                         <motion.div
                             key={item.id}
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -67,27 +73,51 @@ const MarketplacePage = () => {
                             whileHover={{ y: -5 }}
                             className="market-item-card"
                         >
-                            <Link to={`/marketplace/item/${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <Link
+                                to={`/marketplace/item/${item.id}`}
+                                style={{ textDecoration: 'none', color: 'inherit' }}
+                            >
                                 <div className="item-image-container">
                                     <img
-                                        src={item.images?.[0] || 'https://via.placeholder.com/300?text=No+Image'}
+                                        src={
+                                            item.images?.[0] ||
+                                            'https://via.placeholder.com/300?text=No+Image'
+                                        }
                                         alt={item.title}
                                         className="item-image"
                                     />
-                                    <div className="item-price">{item.currency} {item.price}</div>
+                                    <div className="item-price">
+                                        {item.currency} {item.price}
+                                    </div>
                                     <div className="item-condition-badge">{item.condition}</div>
                                 </div>
                                 <div className="item-details">
                                     <h3>{item.title}</h3>
                                     <div className="item-meta">
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                            }}
+                                        >
                                             {item.seller_name}
-                                            {item.seller_is_verified && <CheckCircle size={14} color="#2ed573" fill="#2ed573" title="Verified Seller" />}
+                                            {item.seller_is_verified && (
+                                                <CheckCircle
+                                                    size={14}
+                                                    color="#2ed573"
+                                                    fill="#2ed573"
+                                                    title="Verified Seller"
+                                                />
+                                            )}
                                         </span>
                                         <span>•</span>
                                         <span>{item.category}</span>
                                     </div>
-                                    <button className="btn btn-outline btn-sm btn-full-width" style={{ marginTop: '0.5rem' }}>
+                                    <button
+                                        className="btn btn-outline btn-sm btn-full-width"
+                                        style={{ marginTop: '0.5rem' }}
+                                    >
                                         View Details
                                     </button>
                                 </div>

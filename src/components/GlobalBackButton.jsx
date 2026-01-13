@@ -11,7 +11,7 @@ const GlobalBackButton = () => {
     // If we are on login/register/landing, maybe we don't need it?
     // User said "all the pages".
     // But going back from Login might act weird if it's the start.
-    // Let's just put it everywhere except possibly root if we want? 
+    // Let's just put it everywhere except possibly root if we want?
     // Actually, on root '/', back might leave the app or do nothing.
     if (location.pathname === '/' || location.pathname === '/messages') return null;
 

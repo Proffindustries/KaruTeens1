@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Users, Plus, Edit, Trash2, UserPlus, UserMinus, Shield, 
-    ShieldCheck, Eye, EyeOff, Download, Upload, RefreshCw, Search, 
-    Filter, Calendar, Hash, Globe, Lock, Unlock, UserCheck, UserX
+import {
+    Users,
+    Plus,
+    Edit,
+    Trash2,
+    UserPlus,
+    UserMinus,
+    Shield,
+    ShieldCheck,
+    Eye,
+    EyeOff,
+    Download,
+    Upload,
+    RefreshCw,
+    Search,
+    Filter,
+    Calendar,
+    Hash,
+    Globe,
+    Lock,
+    Unlock,
+    UserCheck,
+    UserX,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -13,16 +32,16 @@ const GroupManagementTab = () => {
         isPrivate: 'all',
         search: '',
         sortBy: 'created_at',
-        sortOrder: 'desc'
+        sortOrder: 'desc',
     });
-    
+
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [bulkAction, setBulkAction] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingGroup, setEditingGroup] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const { showToast } = useToast();
 
     // Mock data for groups
@@ -40,7 +59,7 @@ const GroupManagementTab = () => {
             is_private: false,
             max_members: 100,
             member_count: 4,
-            created_at: '2024-01-10T08:30:00Z'
+            created_at: '2024-01-10T08:30:00Z',
         },
         {
             id: 'group_002',
@@ -55,7 +74,7 @@ const GroupManagementTab = () => {
             is_private: true,
             max_members: 20,
             member_count: 3,
-            created_at: '2024-01-12T14:20:00Z'
+            created_at: '2024-01-12T14:20:00Z',
         },
         {
             id: 'group_003',
@@ -70,8 +89,8 @@ const GroupManagementTab = () => {
             is_private: true,
             max_members: 10,
             member_count: 3,
-            created_at: '2024-01-01T10:00:00Z'
-        }
+            created_at: '2024-01-01T10:00:00Z',
+        },
     ];
 
     useEffect(() => {
@@ -84,7 +103,7 @@ const GroupManagementTab = () => {
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleBulkAction = () => {
@@ -96,22 +115,22 @@ const GroupManagementTab = () => {
         if (bulkAction === 'delete') {
             if (confirm(`Delete ${selectedGroups.length} groups? This action cannot be undone.`)) {
                 // Simulate bulk delete
-                setGroups(prev => prev.filter(g => !selectedGroups.includes(g.id)));
+                setGroups((prev) => prev.filter((g) => !selectedGroups.includes(g.id)));
                 setSelectedGroups([]);
                 setBulkAction('');
                 showToast('Groups deleted', 'success');
             }
         } else if (bulkAction === 'make_public') {
-            setGroups(prev => prev.map(g => 
-                selectedGroups.includes(g.id) ? { ...g, is_private: false } : g
-            ));
+            setGroups((prev) =>
+                prev.map((g) => (selectedGroups.includes(g.id) ? { ...g, is_private: false } : g)),
+            );
             setSelectedGroups([]);
             setBulkAction('');
             showToast('Groups made public', 'success');
         } else if (bulkAction === 'make_private') {
-            setGroups(prev => prev.map(g => 
-                selectedGroups.includes(g.id) ? { ...g, is_private: true } : g
-            ));
+            setGroups((prev) =>
+                prev.map((g) => (selectedGroups.includes(g.id) ? { ...g, is_private: true } : g)),
+            );
             setSelectedGroups([]);
             setBulkAction('');
             showToast('Groups made private', 'success');
@@ -119,58 +138,62 @@ const GroupManagementTab = () => {
     };
 
     const handleAddMember = (groupId, username) => {
-        setGroups(prev => prev.map(g => {
-            if (g.id === groupId) {
-                return {
-                    ...g,
-                    members: [...g.members, `user_${Math.random().toString(36).substr(2, 9)}`],
-                    member_count: g.member_count + 1
-                };
-            }
-            return g;
-        }));
+        setGroups((prev) =>
+            prev.map((g) => {
+                if (g.id === groupId) {
+                    return {
+                        ...g,
+                        members: [...g.members, `user_${Math.random().toString(36).substr(2, 9)}`],
+                        member_count: g.member_count + 1,
+                    };
+                }
+                return g;
+            }),
+        );
         showToast(`Added ${username} to group`, 'success');
     };
 
     const handleRemoveMember = (groupId, memberId) => {
-        setGroups(prev => prev.map(g => {
-            if (g.id === groupId) {
-                return {
-                    ...g,
-                    members: g.members.filter(id => id !== memberId),
-                    member_count: g.member_count - 1
-                };
-            }
-            return g;
-        }));
+        setGroups((prev) =>
+            prev.map((g) => {
+                if (g.id === groupId) {
+                    return {
+                        ...g,
+                        members: g.members.filter((id) => id !== memberId),
+                        member_count: g.member_count - 1,
+                    };
+                }
+                return g;
+            }),
+        );
         showToast('Member removed from group', 'info');
     };
 
     const handleMakeAdmin = (groupId, memberId) => {
-        setGroups(prev => prev.map(g => {
-            if (g.id === groupId) {
-                return {
-                    ...g,
-                    admins: [...g.admins, memberId]
-                };
-            }
-            return g;
-        }));
+        setGroups((prev) =>
+            prev.map((g) => {
+                if (g.id === groupId) {
+                    return {
+                        ...g,
+                        admins: [...g.admins, memberId],
+                    };
+                }
+                return g;
+            }),
+        );
         showToast('User promoted to admin', 'success');
     };
 
     const handleDeleteGroup = (groupId) => {
         if (confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
-            setGroups(prev => prev.filter(g => g.id !== groupId));
+            setGroups((prev) => prev.filter((g) => g.id !== groupId));
             showToast('Group deleted', 'success');
         }
     };
 
     const toggleGroupSelection = (groupId) => {
-        setSelectedGroups(prev => 
-            prev.includes(groupId) 
-                ? prev.filter(id => id !== groupId)
-                : [...prev, groupId]
+        setSelectedGroups((prev) =>
+            prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId],
         );
     };
 
@@ -178,22 +201,22 @@ const GroupManagementTab = () => {
         if (selectedGroups.length === groups.length) {
             setSelectedGroups([]);
         } else {
-            setSelectedGroups(groups.map(g => g.id));
+            setSelectedGroups(groups.map((g) => g.id));
         }
     };
 
     const getMemberInfo = (groupId, memberId) => {
         // Mock member info
         const mockUsers = {
-            'user_123': { username: 'dev_john', full_name: 'John Developer' },
-            'user_234': { username: 'math_prof', full_name: 'Prof. Math' },
-            'user_345': { username: 'student_001', full_name: 'Student One' },
-            'user_456': { username: 'tech_lead', full_name: 'Tech Lead' },
-            'user_789': { username: 'designer', full_name: 'UI Designer' },
-            'user_101': { username: 'backend_dev', full_name: 'Backend Dev' },
-            'admin_001': { username: 'super_admin', full_name: 'Super Admin' },
-            'admin_002': { username: 'moderator', full_name: 'Moderator' },
-            'admin_003': { username: 'support', full_name: 'Support Team' }
+            user_123: { username: 'dev_john', full_name: 'John Developer' },
+            user_234: { username: 'math_prof', full_name: 'Prof. Math' },
+            user_345: { username: 'student_001', full_name: 'Student One' },
+            user_456: { username: 'tech_lead', full_name: 'Tech Lead' },
+            user_789: { username: 'designer', full_name: 'UI Designer' },
+            user_101: { username: 'backend_dev', full_name: 'Backend Dev' },
+            admin_001: { username: 'super_admin', full_name: 'Super Admin' },
+            admin_002: { username: 'moderator', full_name: 'Moderator' },
+            admin_003: { username: 'support', full_name: 'Support Team' },
         };
         return mockUsers[memberId] || { username: 'Unknown', full_name: 'Unknown User' };
     };
@@ -215,10 +238,7 @@ const GroupManagementTab = () => {
                         <Download size={18} />
                         Export Groups
                     </button>
-                    <button 
-                        className="btn-primary"
-                        onClick={() => setShowAddModal(true)}
-                    >
+                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
                         <Plus size={18} />
                         Add Group
                     </button>
@@ -237,9 +257,9 @@ const GroupManagementTab = () => {
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
-                    
+
                     <div className="filter-group">
-                        <select 
+                        <select
                             value={filters.category}
                             onChange={(e) => handleFilterChange('category', e.target.value)}
                         >
@@ -250,8 +270,8 @@ const GroupManagementTab = () => {
                             <option value="Entertainment">Entertainment</option>
                             <option value="Sports">Sports</option>
                         </select>
-                        
-                        <select 
+
+                        <select
                             value={filters.isPrivate}
                             onChange={(e) => handleFilterChange('isPrivate', e.target.value)}
                         >
@@ -273,20 +293,15 @@ const GroupManagementTab = () => {
             {/* Bulk Actions */}
             {selectedGroups.length > 0 && (
                 <div className="bulk-actions">
-                    <div className="selection-info">
-                        {selectedGroups.length} groups selected
-                    </div>
+                    <div className="selection-info">{selectedGroups.length} groups selected</div>
                     <div className="bulk-actions-controls">
-                        <select 
-                            value={bulkAction}
-                            onChange={(e) => setBulkAction(e.target.value)}
-                        >
+                        <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)}>
                             <option value="">Bulk Actions</option>
                             <option value="make_public">Make Public</option>
                             <option value="make_private">Make Private</option>
                             <option value="delete">Delete Groups</option>
                         </select>
-                        <button 
+                        <button
                             className="btn-primary"
                             onClick={handleBulkAction}
                             disabled={!bulkAction}
@@ -310,7 +325,9 @@ const GroupManagementTab = () => {
                             <div className="select-all">
                                 <input
                                     type="checkbox"
-                                    checked={selectedGroups.length === groups.length && groups.length > 0}
+                                    checked={
+                                        selectedGroups.length === groups.length && groups.length > 0
+                                    }
                                     onChange={selectAllGroups}
                                 />
                                 <span>Select All</span>
@@ -331,7 +348,10 @@ const GroupManagementTab = () => {
                                         <th>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedGroups.length === groups.length && groups.length > 0}
+                                                checked={
+                                                    selectedGroups.length === groups.length &&
+                                                    groups.length > 0
+                                                }
                                                 onChange={selectAllGroups}
                                             />
                                         </th>
@@ -345,7 +365,7 @@ const GroupManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {groups.map(group => (
+                                    {groups.map((group) => (
                                         <tr key={group.id}>
                                             <td>
                                                 <input
@@ -360,28 +380,46 @@ const GroupManagementTab = () => {
                                                         {group.name.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div className="group-details">
-                                                        <div className="group-name">{group.name}</div>
-                                                        <div className="group-desc">{group.description}</div>
+                                                        <div className="group-name">
+                                                            {group.name}
+                                                        </div>
+                                                        <div className="group-desc">
+                                                            {group.description}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <span className="category-badge">{group.category}</span>
+                                                <span className="category-badge">
+                                                    {group.category}
+                                                </span>
                                             </td>
                                             <td>
                                                 <div className="members-info">
                                                     <div className="member-count">
-                                                        {group.member_count}/{group.max_members || 'Unlimited'}
+                                                        {group.member_count}/
+                                                        {group.max_members || 'Unlimited'}
                                                     </div>
                                                     <div className="member-list">
-                                                        {group.members.slice(0, 3).map(memberId => {
-                                                            const member = getMemberInfo(group.id, memberId);
-                                                            return (
-                                                                <div key={memberId} className="member-avatar" title={member.username}>
-                                                                    {member.username.charAt(0).toUpperCase()}
-                                                                </div>
-                                                            );
-                                                        })}
+                                                        {group.members
+                                                            .slice(0, 3)
+                                                            .map((memberId) => {
+                                                                const member = getMemberInfo(
+                                                                    group.id,
+                                                                    memberId,
+                                                                );
+                                                                return (
+                                                                    <div
+                                                                        key={memberId}
+                                                                        className="member-avatar"
+                                                                        title={member.username}
+                                                                    >
+                                                                        {member.username
+                                                                            .charAt(0)
+                                                                            .toUpperCase()}
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         {group.members.length > 3 && (
                                                             <div className="member-more">
                                                                 +{group.members.length - 3}
@@ -391,32 +429,45 @@ const GroupManagementTab = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <span className={`privacy-badge ${group.is_private ? 'private' : 'public'}`}>
-                                                    {group.is_private ? <Lock size={14} /> : <Unlock size={14} />}
+                                                <span
+                                                    className={`privacy-badge ${group.is_private ? 'private' : 'public'}`}
+                                                >
+                                                    {group.is_private ? (
+                                                        <Lock size={14} />
+                                                    ) : (
+                                                        <Unlock size={14} />
+                                                    )}
                                                     {group.is_private ? 'Private' : 'Public'}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div className="creator-info">
-                                                    {getMemberInfo(group.id, group.creator_id).username}
+                                                    {
+                                                        getMemberInfo(group.id, group.creator_id)
+                                                            .username
+                                                    }
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="date-info">
                                                     <Calendar size={14} />
-                                                    <span>{new Date(group.created_at).toLocaleDateString()}</span>
+                                                    <span>
+                                                        {new Date(
+                                                            group.created_at,
+                                                        ).toLocaleDateString()}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="action-buttons">
-                                                    <button 
+                                                    <button
                                                         className="action-btn view"
                                                         onClick={() => {}}
                                                         title="View Group"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn edit"
                                                         onClick={() => {
                                                             setEditingGroup(group);
@@ -426,7 +477,7 @@ const GroupManagementTab = () => {
                                                     >
                                                         <Edit size={16} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn delete"
                                                         onClick={() => handleDeleteGroup(group.id)}
                                                         title="Delete Group"
@@ -447,20 +498,34 @@ const GroupManagementTab = () => {
             {/* Add Group Modal */}
             {showAddModal && (
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '500px' }}
+                    >
                         <div className="modal-header">
                             <h3>Add New Group</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-group">
                                     <label>Group Name *</label>
-                                    <input type="text" className="form-input" placeholder="Enter group name" />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Enter group name"
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>Description *</label>
-                                    <textarea className="form-input" rows="3" placeholder="Enter group description"></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        placeholder="Enter group description"
+                                    ></textarea>
                                 </div>
                                 <div className="form-group">
                                     <label>Category *</label>
@@ -477,7 +542,12 @@ const GroupManagementTab = () => {
                                     <label>Privacy Settings</label>
                                     <div className="privacy-options">
                                         <label className="radio-option">
-                                            <input type="radio" name="privacy" value="public" defaultChecked />
+                                            <input
+                                                type="radio"
+                                                name="privacy"
+                                                value="public"
+                                                defaultChecked
+                                            />
                                             <span>Public</span>
                                         </label>
                                         <label className="radio-option">
@@ -488,10 +558,18 @@ const GroupManagementTab = () => {
                                 </div>
                                 <div className="form-group">
                                     <label>Maximum Members (Optional)</label>
-                                    <input type="number" className="form-input" placeholder="Leave empty for unlimited" />
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        placeholder="Leave empty for unlimited"
+                                    />
                                 </div>
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowAddModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -507,24 +585,41 @@ const GroupManagementTab = () => {
             {/* Edit Group Modal */}
             {showEditModal && editingGroup && (
                 <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '500px' }}
+                    >
                         <div className="modal-header">
                             <h3>Edit Group</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
                             <form>
                                 <div className="form-group">
                                     <label>Group Name</label>
-                                    <input type="text" className="form-input" defaultValue={editingGroup.name} />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        defaultValue={editingGroup.name}
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>Description</label>
-                                    <textarea className="form-input" rows="3" defaultValue={editingGroup.description}></textarea>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        defaultValue={editingGroup.description}
+                                    ></textarea>
                                 </div>
                                 <div className="form-group">
                                     <label>Category</label>
-                                    <select className="form-input" defaultValue={editingGroup.category}>
+                                    <select
+                                        className="form-input"
+                                        defaultValue={editingGroup.category}
+                                    >
                                         <option value="Technology">Technology</option>
                                         <option value="Education">Education</option>
                                         <option value="Administration">Administration</option>
@@ -536,21 +631,39 @@ const GroupManagementTab = () => {
                                     <label>Privacy Settings</label>
                                     <div className="privacy-options">
                                         <label className="radio-option">
-                                            <input type="radio" name="privacy" value="public" defaultChecked={!editingGroup.is_private} />
+                                            <input
+                                                type="radio"
+                                                name="privacy"
+                                                value="public"
+                                                defaultChecked={!editingGroup.is_private}
+                                            />
                                             <span>Public</span>
                                         </label>
                                         <label className="radio-option">
-                                            <input type="radio" name="privacy" value="private" defaultChecked={editingGroup.is_private} />
+                                            <input
+                                                type="radio"
+                                                name="privacy"
+                                                value="private"
+                                                defaultChecked={editingGroup.is_private}
+                                            />
                                             <span>Private</span>
                                         </label>
                                     </div>
                                 </div>
                                 <div className="form-group">
                                     <label>Maximum Members</label>
-                                    <input type="number" className="form-input" defaultValue={editingGroup.max_members || ''} />
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        defaultValue={editingGroup.max_members || ''}
+                                    />
                                 </div>
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowEditModal(false)}
+                                    >
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary">

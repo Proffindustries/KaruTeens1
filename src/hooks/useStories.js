@@ -8,7 +8,7 @@ export const useStories = () => {
             const { data } = await api.get('/stories');
             return data;
         },
-        refetchInterval: 60000 // Refresh every minute
+        refetchInterval: 60000, // Refresh every minute
     });
 };
 
@@ -19,7 +19,7 @@ export const useUserStories = (userId) => {
             const { data } = await api.get(`/stories/user/${userId}`);
             return data;
         },
-        enabled: !!userId
+        enabled: !!userId,
     });
 };
 
@@ -32,7 +32,7 @@ export const useCreateStory = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['stories'] });
-        }
+        },
     });
 };
 
@@ -45,7 +45,7 @@ export const useMarkStoryViewed = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['stories'] });
-        }
+        },
     });
 };
 
@@ -56,6 +56,6 @@ export const useStoryViewers = (storyId) => {
             const { data } = await api.get(`/stories/${storyId}/viewers`);
             return data;
         },
-        enabled: !!storyId
+        enabled: !!storyId,
     });
 };

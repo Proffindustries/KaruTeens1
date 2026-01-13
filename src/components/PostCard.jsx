@@ -1,5 +1,21 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Music, FileText, Download, EyeOff, Flag, Link2, UserMinus, Eye, Trash2, Shield } from 'lucide-react';
+import {
+    Heart,
+    MessageCircle,
+    Share2,
+    Bookmark,
+    MoreHorizontal,
+    Music,
+    FileText,
+    Download,
+    EyeOff,
+    Flag,
+    Link2,
+    UserMinus,
+    Eye,
+    Trash2,
+    Shield,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/PostCard.css';
@@ -10,6 +26,21 @@ import CustomAudioPlayer from './CustomAudioPlayer.jsx';
 import Comment from './Comment.jsx';
 import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
+
+// Helper function for Cloudinary optimization
+const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_600') => {
+    // Regex to match common Cloudinary URLs
+    const cloudinaryRegex =
+        /(https?:\/\/(?:res\.cloudinary\.com\/(?:[^\/]+)\/image\/upload\/)(?:v\d+\/)?)([^\/]+\/.+)/;
+    const match = url.match(cloudinaryRegex);
+
+    if (match && match[1] && match[2]) {
+        // Construct the optimized URL
+        // Insert transformations after 'upload/' and before the version/public_id
+        return `${match[1]}${transformations}/${match[2]}`;
+    }
+    return url; // Return original URL if not a Cloudinary URL
+};
 
 const PostCard = ({ post }) => {
     const navigate = useNavigate();
@@ -43,7 +74,9 @@ const PostCard = ({ post }) => {
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
     const { mutate: addComment, isPending: isSubmittingComment } = useAddComment();
-    const { data: comments, isLoading: isLoadingComments } = useComments(showComments ? postId : null);
+    const { data: comments, isLoading: isLoadingComments } = useComments(
+        showComments ? postId : null,
+    );
 
     const handleLikeToggle = () => {
         const previousLiked = isLiked;
@@ -60,7 +93,7 @@ const PostCard = ({ post }) => {
                     setIsLiked(true);
                     setLikesCount(previousCount);
                     showToast('Failed to unlike post', 'error');
-                }
+                },
             });
         } else {
             likePost(postId, {
@@ -69,7 +102,7 @@ const PostCard = ({ post }) => {
                     setIsLiked(false);
                     setLikesCount(previousCount);
                     showToast('Failed to like post', 'error');
-                }
+                },
             });
         }
     };
@@ -84,7 +117,7 @@ const PostCard = ({ post }) => {
                     setShowComments(false);
                 }
             },
-            { threshold: 0 }
+            { threshold: 0 },
         );
 
         if (cardRef.current) {
@@ -128,7 +161,11 @@ const PostCard = ({ post }) => {
         const url = `${window.location.origin}/post/${postId}`;
         const shareData = {
             title: `Post by ${post.user} | Karu Teens`,
-            text: post.content ? (post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content) : 'Check out this post on Karu Teens!',
+            text: post.content
+                ? post.content.length > 100
+                    ? post.content.substring(0, 100) + '...'
+                    : post.content
+                : 'Check out this post on Karu Teens!',
             url: url,
         };
 
@@ -167,12 +204,15 @@ const PostCard = ({ post }) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
-        addComment({ postId: postId, content: commentText, parent_comment_id: null }, {
-            onError: () => {
-                setCommentsCount(previousCount);
-                showToast('Failed to post comment', 'error');
-            }
-        });
+        addComment(
+            { postId: postId, content: commentText, parent_comment_id: null },
+            {
+                onError: () => {
+                    setCommentsCount(previousCount);
+                    showToast('Failed to post comment', 'error');
+                },
+            },
+        );
         setCommentText('');
     };
 
@@ -180,16 +220,19 @@ const PostCard = ({ post }) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
-        addComment({
-            postId: postId,
-            content: replyContent,
-            parent_comment_id: parentCommentId
-        }, {
-            onError: () => {
-                setCommentsCount(previousCount);
-                showToast('Failed to post reply', 'error');
-            }
-        });
+        addComment(
+            {
+                postId: postId,
+                content: replyContent,
+                parent_comment_id: parentCommentId,
+            },
+            {
+                onError: () => {
+                    setCommentsCount(previousCount);
+                    showToast('Failed to post reply', 'error');
+                },
+            },
+        );
     };
 
     // Organize comments into nested structure
@@ -200,12 +243,12 @@ const PostCard = ({ post }) => {
         const topLevelComments = [];
 
         // First pass: create a map of all comments
-        comments.forEach(comment => {
+        comments.forEach((comment) => {
             commentMap[comment._id] = { ...comment, replies: [] };
         });
 
         // Second pass: organize into tree structure
-        comments.forEach(comment => {
+        comments.forEach((comment) => {
             if (comment.parent_comment_id) {
                 // This is a reply
                 const parent = commentMap[comment.parent_comment_id];
@@ -213,7 +256,7 @@ const PostCard = ({ post }) => {
                     // Attach parent info to the reply for WhatsApp style preview
                     commentMap[comment._id].parentInfo = {
                         username: parent.username,
-                        content: parent.content
+                        content: parent.content,
                     };
                     parent.replies.push(commentMap[comment._id]);
                 }
@@ -234,11 +277,19 @@ const PostCard = ({ post }) => {
 
         return parts.map((part, i) => {
             if (part.startsWith('#')) {
-                return <span key={i} className="hashtag" onClick={(e) => {
-                    e.stopPropagation();
-                    // Future: Navigate to search with this tag
-                    alert(`Filtering by ${part}`);
-                }}>{part}</span>;
+                return (
+                    <span
+                        key={i}
+                        className="hashtag"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Future: Navigate to search with this tag
+                            alert(`Filtering by ${part}`);
+                        }}
+                    >
+                        {part}
+                    </span>
+                );
             }
             return part;
         });
@@ -256,8 +307,12 @@ const PostCard = ({ post }) => {
                 <EyeOff size={40} style={{ opacity: 0.3 }} />
                 <p>Post hidden from your feed</p>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="undo-hide-btn" onClick={() => setIsHidden(false)}>Undo</button>
-                    <button className="action-btn" onClick={handleReportPost}>Report</button>
+                    <button className="undo-hide-btn" onClick={() => setIsHidden(false)}>
+                        Undo
+                    </button>
+                    <button className="action-btn" onClick={handleReportPost}>
+                        Report
+                    </button>
                 </div>
             </motion.div>
         );
@@ -274,24 +329,43 @@ const PostCard = ({ post }) => {
             {/* Post Header */}
             <div className="post-header">
                 <div className="post-user-info">
-                    <Avatar
-                        src={post.user_avatar}
-                        name={post.user}
-                        className="post-avatar"
-                    />
+                    <Avatar src={post.user_avatar} name={post.user} className="post-avatar" />
                     <div className="post-meta">
                         <span className="post-username">
-                            <Link to={`/profile/${post.user}`} className="username-link" style={{ color: 'inherit', textDecoration: 'none' }}>{post.user}</Link>
+                            <Link
+                                to={`/profile/${post.user}`}
+                                className="username-link"
+                                style={{ color: 'inherit', textDecoration: 'none' }}
+                            >
+                                {post.user}
+                            </Link>
                             {post.group_name && (
                                 <>
-                                    <span style={{ fontWeight: 'normal', color: '#636e72', margin: '0 4px' }}>▶</span>
-                                    <Link to={`/groups/${post.group_id}`} style={{ color: 'var(--primary-color)', fontWeight: '600', textDecoration: 'none' }}>
+                                    <span
+                                        style={{
+                                            fontWeight: 'normal',
+                                            color: '#636e72',
+                                            margin: '0 4px',
+                                        }}
+                                    >
+                                        ▶
+                                    </span>
+                                    <Link
+                                        to={`/groups/${post.group_id}`}
+                                        style={{
+                                            color: 'var(--primary-color)',
+                                            fontWeight: '600',
+                                            textDecoration: 'none',
+                                        }}
+                                    >
                                         {post.group_name}
                                     </Link>
                                 </>
                             )}
                         </span>
-                        <span className="post-time">{new Date(post.created_at).toLocaleString()}</span>
+                        <span className="post-time">
+                            {new Date(post.created_at).toLocaleString()}
+                        </span>
                     </div>
                 </div>
                 <div className="post-options-wrapper" ref={menuRef}>
@@ -310,7 +384,13 @@ const PostCard = ({ post }) => {
                                         <EyeOff size={18} />
                                         Not Interested
                                     </button>
-                                    <button className="menu-item" onClick={() => { showToast(`Unfollowed @${post.user}`, 'info'); setShowMenu(false); }}>
+                                    <button
+                                        className="menu-item"
+                                        onClick={() => {
+                                            showToast(`Unfollowed @${post.user}`, 'info');
+                                            setShowMenu(false);
+                                        }}
+                                    >
                                         <UserMinus size={18} />
                                         Unfollow @{post.user}
                                     </button>
@@ -326,7 +406,10 @@ const PostCard = ({ post }) => {
                             )}
                             {isOwner && (
                                 <>
-                                    <button className="menu-item" onClick={() => setShowMenu(false)}>
+                                    <button
+                                        className="menu-item"
+                                        onClick={() => setShowMenu(false)}
+                                    >
                                         <FileText size={18} />
                                         Edit Post
                                     </button>
@@ -353,12 +436,20 @@ const PostCard = ({ post }) => {
 
                 {/* Media Attachments */}
                 {post.media_urls && post.media_urls.length > 0 && (
-                    <div className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}>
+                    <div
+                        className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}
+                    >
                         {post.media_urls.slice(0, 4).map((url, idx) => {
-                            const isVideo = url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv)$/i) || post.post_type === 'video';
-                            const isAudio = url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) || post.post_type === 'audio';
+                            const isVideo =
+                                url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv)$/i) ||
+                                post.post_type === 'video';
+                            const isAudio =
+                                url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) ||
+                                post.post_type === 'audio';
                             const isPDF = url.match(/\.pdf$/i);
-                            const isImage = url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) || (!isVideo && !isAudio && !isPDF);
+                            const isImage =
+                                url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
+                                (!isVideo && !isAudio && !isPDF);
                             const isLastVisible = idx === 3 && post.media_urls.length > 4;
                             const remainingCount = post.media_urls.length - 3;
 
@@ -368,23 +459,66 @@ const PostCard = ({ post }) => {
                             };
 
                             return (
-                                <div key={idx} className="media-item" onClick={handleMediaClick} style={{ cursor: 'pointer' }}>
+                                <div
+                                    key={idx}
+                                    className="media-item"
+                                    onClick={handleMediaClick}
+                                    style={{ cursor: 'pointer' }}
+                                >
                                     {isVideo ? (
                                         <CustomVideoPlayer src={url} />
                                     ) : isAudio ? (
-                                        <CustomAudioPlayer src={url} filename={`Audio ${idx + 1}`} />
+                                        <CustomAudioPlayer
+                                            src={url}
+                                            filename={`Audio ${idx + 1}`}
+                                        />
                                     ) : isPDF ? (
-                                        <div className="file-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <div
+                                            className="file-wrapper-mini"
+                                            style={{
+                                                padding: '20px',
+                                                background: '#1a1a1a',
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                            }}
+                                        >
                                             <FileText size={32} color="var(--primary-color)" />
-                                            {post.media_urls.length === 1 && <span style={{ color: 'white', fontSize: '10px' }}>Open Document</span>}
+                                            {post.media_urls.length === 1 && (
+                                                <span style={{ color: 'white', fontSize: '10px' }}>
+                                                    Open Document
+                                                </span>
+                                            )}
                                         </div>
                                     ) : isImage ? (
-                                        <img src={url} alt={`Post content ${idx + 1}`} className="post-image" loading="lazy" />
+                                        <img
+                                            src={getOptimizedCloudinaryUrl(url)}
+                                            alt={`Post content ${idx + 1}`}
+                                            className="post-image"
+                                            loading="lazy"
+                                        />
                                     ) : (
                                         // Fallback for unknown file types
-                                        <div className="file-wrapper-mini" style={{ padding: '20px', background: '#1a1a1a', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <div
+                                            className="file-wrapper-mini"
+                                            style={{
+                                                padding: '20px',
+                                                background: '#1a1a1a',
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                            }}
+                                        >
                                             <FileText size={32} color="var(--primary-color)" />
-                                            <span style={{ color: 'white', fontSize: '10px' }}>File</span>
+                                            <span style={{ color: 'white', fontSize: '10px' }}>
+                                                File
+                                            </span>
                                         </div>
                                     )}
 
@@ -419,7 +553,7 @@ const PostCard = ({ post }) => {
                     onClick={handleLikeToggle}
                     style={{ color: isLiked ? '#ff4757' : 'inherit' }}
                 >
-                    <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+                    <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
                     <span>Like</span>
                 </button>
 
@@ -437,7 +571,7 @@ const PostCard = ({ post }) => {
                     className={`action-btn ${saved ? 'active-save' : ''}`}
                     onClick={() => setSaved(!saved)}
                 >
-                    <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
+                    <Bookmark size={20} fill={saved ? 'currentColor' : 'none'} />
                     <span>Save</span>
                 </button>
             </div>
@@ -446,32 +580,51 @@ const PostCard = ({ post }) => {
             {showComments && (
                 <div className="comments-section">
                     {!currentUser?.is_verified ? (
-                        <div className="verification-notice-card" style={{
-                            padding: '1.5rem',
-                            textAlign: 'center',
-                            background: 'rgba(var(--primary), 0.05)',
-                            borderRadius: 'var(--radius-md)',
-                            marginBottom: '1rem',
-                            border: '1px dashed rgba(var(--primary), 0.2)'
-                        }}>
+                        <div
+                            className="verification-notice-card"
+                            style={{
+                                padding: '1.5rem',
+                                textAlign: 'center',
+                                background: 'rgba(var(--primary), 0.05)',
+                                borderRadius: 'var(--radius-md)',
+                                marginBottom: '1rem',
+                                border: '1px dashed rgba(var(--primary), 0.2)',
+                            }}
+                        >
                             <Shield size={32} color="#2ed573" style={{ marginBottom: '0.75rem' }} />
-                            <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: '500' }}>
+                            <p
+                                style={{
+                                    fontSize: '0.9rem',
+                                    color: 'var(--text-primary)',
+                                    fontWeight: '500',
+                                }}
+                            >
                                 Verification required to join the conversation.
                             </p>
-                            <Link to="/verification" style={{
-                                color: 'rgb(var(--primary))',
-                                fontSize: '0.85rem',
-                                fontWeight: '600',
-                                textDecoration: 'underline',
-                                marginTop: '0.5rem',
-                                display: 'inline-block'
-                            }}>
+                            <Link
+                                to="/verification"
+                                style={{
+                                    color: 'rgb(var(--primary))',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '600',
+                                    textDecoration: 'underline',
+                                    marginTop: '0.5rem',
+                                    display: 'inline-block',
+                                }}
+                            >
                                 Verify now for Ksh 20
                             </Link>
                         </div>
                     ) : (
-                        <div className="comment-form" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <Avatar src={currentUser?.avatar_url} name={currentUser?.username} size="sm" />
+                        <div
+                            className="comment-form"
+                            style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+                        >
+                            <Avatar
+                                src={currentUser?.avatar_url}
+                                name={currentUser?.username}
+                                size="sm"
+                            />
                             <form onSubmit={handleCommentSubmit} style={{ flex: 1 }}>
                                 <input
                                     placeholder="Write a comment..."
@@ -489,7 +642,7 @@ const PostCard = ({ post }) => {
                         {isLoadingComments ? (
                             <p className="loading-text">Loading comments...</p>
                         ) : (
-                            organizedComments.map(comment => (
+                            organizedComments.map((comment) => (
                                 <Comment
                                     key={comment._id}
                                     comment={comment}

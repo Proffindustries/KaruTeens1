@@ -11,7 +11,7 @@ export const useGroups = (filters = {}) => {
 
             const { data } = await api.get(`/groups?${params}`);
             return data;
-        }
+        },
     });
 };
 
@@ -22,7 +22,7 @@ export const useGroup = (groupId) => {
             const { data } = await api.get(`/groups/${groupId}`);
             return data;
         },
-        enabled: !!groupId
+        enabled: !!groupId,
     });
 };
 
@@ -33,7 +33,7 @@ export const useGroupPosts = (groupId) => {
             const { data } = await api.get(`/groups/${groupId}/posts`);
             return data;
         },
-        enabled: !!groupId
+        enabled: !!groupId,
     });
 };
 
@@ -46,7 +46,7 @@ export const useCreateGroup = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
-        }
+        },
     });
 };
 
@@ -60,7 +60,7 @@ export const useJoinGroup = () => {
         onSuccess: (_, groupId) => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-        }
+        },
     });
 };
 
@@ -74,7 +74,7 @@ export const useLeaveGroup = () => {
         onSuccess: (_, groupId) => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-        }
+        },
     });
 };
 
@@ -87,6 +87,6 @@ export const useCreateGroupPost = () => {
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groupPosts', variables.groupId] });
-        }
+        },
     });
 };

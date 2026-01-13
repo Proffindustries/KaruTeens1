@@ -25,6 +25,87 @@ use mongodb::bson::doc;
 use bson::oid::ObjectId;
 use rand::Rng;
 
+pub enum AuthError {
+    Mongo(mongodb::error::Error),
+    Redis(redis::RedisError),
+    PasswordHash(argon2::password_hash::Error),
+    Jwt(jsonwebtoken::errors::Error),
+    InvalidToken,
+    UserNotFound,
+    EmailExists,
+    UsernameExists,
+    WrongPassword,
+    TokenCreation,
+    InvalidHash,
+    InvalidUserIdInToken,
+    MissingToken,
+    AlphanumericUsername,
+    FreeVerificationNotAvailable,
+    Bson(bson::ser::Error),
+    BsonOid(bson::oid::Error),
+}
+
+impl From<mongodb::error::Error> for AuthError {
+    fn from(err: mongodb::error::Error) -> Self {
+        AuthError::Mongo(err)
+    }
+}
+
+impl From<redis::RedisError> for AuthError {
+    fn from(err: redis::RedisError) -> Self {
+        AuthError::Redis(err)
+    }
+}
+
+impl From<argon2::password_hash::Error> for AuthError {
+    fn from(err: argon2::password_hash::Error) -> Self {
+        AuthError::PasswordHash(err)
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for AuthError {
+    fn from(err: jsonwebtoken::errors::Error) -> Self {
+        AuthError::Jwt(err)
+    }
+}
+
+impl From<bson::ser::Error> for AuthError {
+    fn from(err: bson::ser::Error) -> Self {
+        AuthError::Bson(err)
+    }
+}
+
+impl From<bson::oid::Error> for AuthError {
+    fn from(err: bson::oid::Error) -> Self {
+        AuthError::BsonOid(err)
+    }
+}
+
+impl IntoResponse for AuthError {
+    fn into_response(self) -> axum::response::Response {
+        let (status, error_message) = match self {
+            AuthError::Mongo(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)),
+            AuthError::Redis(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Cache error: {}", e)),
+            AuthError::PasswordHash(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Hashing error: {}", e)),
+            AuthError::Jwt(e) => (StatusCode::UNAUTHORIZED, format!("Token error: {}", e)),
+            AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".to_string()),
+            AuthError::UserNotFound => (StatusCode::NOT_FOUND, "User not found".to_string()),
+            AuthError::EmailExists => (StatusCode::CONFLICT, "Email already registered".to_string()),
+            AuthError::UsernameExists => (StatusCode::CONFLICT, "Username already taken".to_string()),
+            AuthError::WrongPassword => (StatusCode::UNAUTHORIZED, "Invalid email or password".to_string()),
+            AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation failed".to_string()),
+            AuthError::InvalidHash => (StatusCode::INTERNAL_SERVER_ERROR, "Invalid hash format".to_string()),
+            AuthError::InvalidUserIdInToken => (StatusCode::UNAUTHORIZED, "Invalid user ID in token".to_string()),
+            AuthError::MissingToken => (StatusCode::UNAUTHORIZED, "Missing token".to_string()),
+            AuthError::AlphanumericUsername => (StatusCode::BAD_REQUEST, "Username must only contain alphanumeric characters".to_string()),
+            AuthError::FreeVerificationNotAvailable => (StatusCode::FORBIDDEN, "Free verification is not available at this time. Please use M-Pesa.".to_string()),
+            AuthError::Bson(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON serialization error: {}", e)),
+            AuthError::BsonOid(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON OID error: {}", e)),
+        };
+        (status, Json(json!({ "error": error_message }))).into_response()
+    }
+}
+
 // --- DTOs ---
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -100,7 +181,7 @@ where
     Arc<AppState>: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = (StatusCode, Json<serde_json::Value>);
+    type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let app_state = Arc::from_ref(state);
@@ -110,34 +191,26 @@ where
             .get("Authorization")
             .and_then(|h| h.to_str().ok())
             .and_then(|s| s.strip_prefix("Bearer "))
-            .ok_or((StatusCode::UNAUTHORIZED, Json(json!({"error": "Missing token"}))))?;
+            .ok_or(AuthError::MissingToken)?;
 
         let token_data = decode::<Claims>(
             auth_header,
             &DecodingKey::from_secret(app_state.jwt_secret.as_bytes()),
             &Validation::default(),
-        )
-        .map_err(|e| {
-            tracing::error!("Token decode error: {}", e);
-            (StatusCode::UNAUTHORIZED, Json(json!({"error": "Invalid token"})))
-        })?;
+        )?;
 
         let user_id = ObjectId::parse_str(&token_data.claims.sub)
-            .map_err(|_| (StatusCode::UNAUTHORIZED, Json(json!({"error": "Invalid user ID in token"}))))?;
+            .map_err(|_| AuthError::InvalidUserIdInToken)?;
 
         // --- Presence Tracking (Redis) ---
-        let mut conn = app_state.redis.get_async_connection().await
-            .map_err(|e| {
-                tracing::error!("Redis connection error: {}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Resource error"})))
-            })?;
+        let mut conn = app_state.redis.get_async_connection().await?;
         
         let presence_key = format!("user:presence:{}", user_id.to_hex());
-        let _: () = conn.set_ex(&presence_key, "online", 300).await.unwrap_or_default();
+        conn.set_ex(&presence_key, "online", 300).await?;
 
         // Throttled MongoDB update for last_seen_at
         let mongo_update_key = format!("user:last_seen_mongo_update:{}", user_id.to_hex());
-        let needs_mongo_update: bool = conn.get::<_, Option<String>>(&mongo_update_key).await.map(|v| v.is_none()).unwrap_or(true);
+        let needs_mongo_update: bool = conn.get::<_, Option<String>>(&mongo_update_key).await?.is_none();
         
         if needs_mongo_update {
             let mongo = app_state.mongo.clone();
@@ -150,7 +223,7 @@ where
                     None
                 ).await;
             });
-            let _: () = conn.set_ex(&mongo_update_key, "1", 60).await.unwrap_or_default();
+            conn.set_ex(&mongo_update_key, "1", 60).await?;
         }
 
         Ok(AuthUser {
@@ -164,35 +237,40 @@ where
 pub async fn register_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, AuthError> {
     let users_collection = state.mongo.collection::<User>("users");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     // 1. Validate Username (Alphanumeric only)
     if !payload.username.chars().all(|c| c.is_alphanumeric()) {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Username must only contain alphanumeric characters"}))));
+        return Err(AuthError::AlphanumericUsername);
     }
 
     // 2. Check if user exists
-
-
     let existing_user = users_collection
         .find_one(doc! { "email": &payload.email }, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        .await?;
 
     if existing_user.is_some() {
-        return Err((StatusCode::CONFLICT, Json(json!({"error": "Email already registered"}))));
+        return Err(AuthError::EmailExists);
+    }
+    
+    // Check if username exists
+    let existing_profile = profiles_collection
+        .find_one(doc! { "username": &payload.username }, None)
+        .await?;
+        
+    if existing_profile.is_some() {
+        return Err(AuthError::UsernameExists);
     }
 
-    // 2. Hash Password
+    // 3. Hash Password
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(payload.password.as_bytes(), &salt)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Hashing failed"}))))?
+    let password_hash = argon2.hash_password(payload.password.as_bytes(), &salt)?
         .to_string();
 
-    // 3. Insert User
+    // 4. Insert User
     let new_user = User {
         id: None,
         email: payload.email.clone(),
@@ -209,12 +287,11 @@ pub async fn register_handler(
 
     let insert_result = users_collection
         .insert_one(new_user, None)
-        .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create user"}))))?;
+        .await?;
 
-    let user_id = insert_result.inserted_id.as_object_id().unwrap();
+    let user_id = insert_result.inserted_id.as_object_id().ok_or(AuthError::InvalidUserIdInToken)?;
 
-    // 4. Create Profile
+    // 5. Create Profile
     let new_profile = Profile {
         id: None,
         user_id,
@@ -237,8 +314,7 @@ pub async fn register_handler(
 
     profiles_collection
         .insert_one(new_profile, None)
-        .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create profile"}))))?;
+        .await?;
 
     Ok((StatusCode::CREATED, Json(json!({"message": "User registered successfully"}))))
 }
@@ -246,29 +322,23 @@ pub async fn register_handler(
 pub async fn login_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<LoginRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, AuthError> {
     tracing::info!("Attempting login for email: {}", payload.email);
     let users_collection = state.mongo.collection::<User>("users");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     let user = users_collection
         .find_one(doc! { "email": &payload.email }, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        .await?
+        .ok_or(AuthError::WrongPassword)?; // Use WrongPassword for security
 
-    let user = match user {
-        Some(u) => u,
-        None => return Err((StatusCode::UNAUTHORIZED, Json(json!({"error": "Invalid email or password"})))),
-    };
-
-    let parsed_hash = PasswordHash::new(&user.password_hash)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Invalid hash format"}))))?;
+    let parsed_hash = PasswordHash::new(&user.password_hash)?;
     
     if Argon2::default().verify_password(payload.password.as_bytes(), &parsed_hash).is_err() {
-        return Err((StatusCode::UNAUTHORIZED, Json(json!({"error": "Invalid email or password"}))));
+        return Err(AuthError::WrongPassword);
     }
 
-    let user_id = user.id.unwrap();
+    let user_id = user.id.ok_or(AuthError::UserNotFound)?;
 
     // Check Premium Expiry
     let mut current_role = user.role.clone();
@@ -299,10 +369,9 @@ pub async fn login_handler(
         role: current_role.clone(),
     };
 
-    let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(state.jwt_secret.as_bytes()))
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Token creation failed"}))))?;
+    let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(state.jwt_secret.as_bytes()))?;
 
-    let profile = profiles_collection.find_one(doc! { "user_id": user_id }, None).await.unwrap_or(None);
+    let profile = profiles_collection.find_one(doc! { "user_id": user_id }, None).await?;
 
     let auth_response = AuthResponse {
         token,
@@ -323,12 +392,11 @@ pub async fn login_handler(
 pub async fn forgot_password_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<ForgotPasswordRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, AuthError> {
     let users_collection = state.mongo.collection::<User>("users");
     
     // 1. Check if user exists
-    let user = users_collection.find_one(doc! { "email": &payload.email }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let user = users_collection.find_one(doc! { "email": &payload.email }, None).await?;
     
     if user.is_none() {
         // Return 200 anyway for security (don't reveal if email exists)
@@ -342,12 +410,10 @@ pub async fn forgot_password_handler(
     };
 
     // 3. Store in Redis with 15min expiry
-    let mut conn = state.redis.get_async_connection().await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Redis error"}))))?;
+    let mut conn = state.redis.get_async_connection().await?;
     
     let redis_key = format!("reset_otp:{}", payload.email);
-    let _: () = conn.set_ex(&redis_key, &otp_str, 900).await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to store OTP"}))))?;
+    conn.set_ex(&redis_key, &otp_str, 900).await?;
 
     tracing::info!("🔑 Reset code for {}: {}", payload.email, otp_str);
 
@@ -393,14 +459,12 @@ pub async fn forgot_password_handler(
 pub async fn reset_password_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<ResetPasswordRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, AuthError> {
     // 1. Verify OTP in Redis
-    let mut conn = state.redis.get_async_connection().await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Redis error"}))))?;
+    let mut conn = state.redis.get_async_connection().await?;
     
     let redis_key = format!("reset_otp:{}", payload.email);
-    let stored_otp: Option<String> = conn.get(&redis_key).await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Redis error"}))))?;
+    let stored_otp: Option<String> = conn.get(&redis_key).await?;
 
     match stored_otp {
         Some(otp) if otp == payload.code => {
@@ -408,8 +472,7 @@ pub async fn reset_password_handler(
             // 2. Hash new password
             let salt = SaltString::generate(&mut OsRng);
             let argon2 = Argon2::default();
-            let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)
-                .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Hashing failed"}))))?
+            let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)?
                 .to_string();
 
             // 3. Update user in Mongo
@@ -418,14 +481,14 @@ pub async fn reset_password_handler(
                 doc! { "email": &payload.email },
                 doc! { "$set": { "password_hash": password_hash } },
                 None
-            ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            ).await?;
 
             // 4. Clear OTP
-            let _: () = conn.del(&redis_key).await.unwrap_or_default();
+            conn.del(&redis_key).await?;
 
             Ok(Json(json!({"message": "Password reset successfully. You can now login with your new password."})))
         },
-        _ => Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid or expired reset code"}))))
+        _ => Err(AuthError::InvalidToken)
     }
 }
 
@@ -433,26 +496,23 @@ pub async fn change_password_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Json(payload): Json<ChangePasswordRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, AuthError> {
     let users_collection = state.mongo.collection::<User>("users");
 
-    let user_doc = users_collection.find_one(doc! { "_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "User not found"}))))?;
+    let user_doc = users_collection.find_one(doc! { "_id": user.user_id }, None).await?
+        .ok_or(AuthError::UserNotFound)?;
 
     // Verify current password
-    let parsed_hash = PasswordHash::new(&user_doc.password_hash)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Stored password format invalid"}))))?;
+    let parsed_hash = PasswordHash::new(&user_doc.password_hash)?;
     
     if Argon2::default().verify_password(payload.current_password.as_bytes(), &parsed_hash).is_err() {
-        return Err((StatusCode::UNAUTHORIZED, Json(json!({"error": "Incorrect current password"}))));
+        return Err(AuthError::WrongPassword);
     }
 
     // Hash new password
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Hashing failed"}))))?
+    let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)?
         .to_string();
 
     // Update in Mongo
@@ -460,7 +520,7 @@ pub async fn change_password_handler(
         doc! { "_id": user.user_id },
         doc! { "$set": { "password_hash": password_hash } },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     Ok(Json(json!({"message": "Password updated successfully"})))
 }
@@ -468,19 +528,18 @@ pub async fn change_password_handler(
 pub async fn verify_free_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, AuthError> {
     // 1. Check if payments are disabled
     let settings_collection = state.mongo.collection::<serde_json::Value>("settings");
-    let settings = settings_collection.find_one(doc! {}, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let settings = settings_collection.find_one(doc! {}, None).await?;
 
     let is_payment_enabled = match settings {
-        Some(s) => s.get("is_payment_enabled").and_then(|v| v.as_bool()).unwrap_or(true),
-        None => true,
+        Some(s) => s.get("is_payment_enabled").and_then(|v| v.as_bool()).unwrap_or(true), // unwrap_or(true) means if setting not found, payment is enabled by default
+        None => true, // if no settings document, payment is enabled
     };
 
     if is_payment_enabled {
-        return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Free verification is not available at this time. Please use M-Pesa."}))));
+        return Err(AuthError::FreeVerificationNotAvailable);
     }
 
     // 2. Verify the user
@@ -489,7 +548,7 @@ pub async fn verify_free_handler(
         doc! { "_id": user.user_id },
         doc! { "$set": { "is_verified": true } },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     Ok(Json(json!({"message": "Verification successful! You are now a verified KaruTeen."})))
 }

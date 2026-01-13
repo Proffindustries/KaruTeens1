@@ -10,41 +10,11 @@ use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
-use crate::models::{Event, EventRSVP, EventAttendee, EventComment, EventNotification, EventAnalytics, User, Profile};
+use crate::models::{Event, EventRSVP, EventAttendee, EventComment, EventNotification, EventAnalytics, User};
 use crate::auth::AuthUser;
 use futures::stream::StreamExt;
 
 // --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct CreateEventRequest {
-    pub title: String,
-    pub description: String,
-    pub location: String,
-    pub location_type: String,
-    pub venue_name: Option<String>,
-    pub venue_address: Option<String>,
-    pub virtual_meeting_url: Option<String>,
-    pub start_datetime: String,
-    pub end_datetime: String,
-    pub registration_start: Option<String>,
-    pub registration_end: Option<String>,
-    pub max_attendees: Option<i32>,
-    pub category: String,
-    pub tags: Option<Vec<String>>,
-    pub event_type: String,
-    pub status: String,
-    pub is_recurring: bool,
-    pub recurrence_pattern: Option<String>,
-    pub recurrence_end_date: Option<String>,
-    pub image_url: Option<String>,
-    pub banner_url: Option<String>,
-    pub featured: bool,
-    pub ticket_price: Option<f64>,
-    pub currency: Option<String>,
-    pub rsvp_required: bool,
-    pub waitlist_enabled: bool,
-}
 
 #[derive(Deserialize)]
 pub struct UpdateEventRequest {
@@ -77,12 +47,6 @@ pub struct UpdateEventRequest {
 }
 
 #[derive(Deserialize)]
-pub struct RSVPRequest {
-    pub status: String, // interested, going, maybe, not_going
-    pub notes: Option<String>,
-}
-
-#[derive(Deserialize)]
 pub struct CheckInRequest {
     pub user_id: String,
     pub attended: bool,
@@ -94,7 +58,6 @@ pub struct EventFilter {
     pub category: Option<String>,
     pub location_type: Option<String>,
     pub event_type: Option<String>,
-    pub organizer: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
     pub search: Option<String>,
@@ -312,78 +275,6 @@ pub async fn get_event_handler(
 
     let event_info = build_event_response(&event, &state).await?;
     Ok((StatusCode::OK, Json(event_info)))
-}
-
-pub async fn create_event_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Json(payload): Json<CreateEventRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let events = state.mongo.collection::<Event>("events");
-    
-    // Validate datetime format
-    let start_datetime = chrono::DateTime::parse_from_rfc3339(&payload.start_datetime)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid start datetime format"}))))?;
-    
-    let end_datetime = chrono::DateTime::parse_from_rfc3339(&payload.end_datetime)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid end datetime format"}))))?;
-
-    if start_datetime >= end_datetime {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Start time must be before end time"}))));
-    }
-
-    // Get organizer info
-    let profiles = state.mongo.collection::<Profile>("profiles");
-    let organizer_profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Organizer profile not found"}))))?;
-
-    let new_event = Event {
-        id: None,
-        title: payload.title,
-        description: payload.description,
-        location: payload.location,
-        location_type: payload.location_type,
-        venue_name: payload.venue_name,
-        venue_address: payload.venue_address,
-        virtual_meeting_url: payload.virtual_meeting_url,
-        start_datetime: start_datetime.into(),
-        end_datetime: end_datetime.into(),
-        registration_start: payload.registration_start.map(|s| chrono::DateTime::parse_from_rfc3339(&s).unwrap().into()),
-        registration_end: payload.registration_end.map(|s| chrono::DateTime::parse_from_rfc3339(&s).unwrap().into()),
-        max_attendees: payload.max_attendees,
-        current_attendees: 0,
-        category: payload.category,
-        tags: payload.tags,
-        organizer_id: user.user_id,
-        organizer_name: organizer_profile.username,
-        organizer_contact: None,
-        event_type: payload.event_type,
-        status: payload.status,
-        is_recurring: payload.is_recurring,
-        recurrence_pattern: payload.recurrence_pattern,
-        recurrence_end_date: payload.recurrence_end_date.map(|s| chrono::DateTime::parse_from_rfc3339(&s).unwrap().into()),
-        image_url: payload.image_url,
-        banner_url: payload.banner_url,
-        featured: payload.featured,
-        ticket_price: payload.ticket_price,
-        currency: payload.currency,
-        rsvp_required: payload.rsvp_required,
-        waitlist_enabled: payload.waitlist_enabled,
-        waitlist_count: 0,
-        created_at: DateTime::now(),
-        updated_at: DateTime::now(),
-    };
-
-    let result = events.insert_one(new_event, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::CREATED, Json(json!({
-        "message": "Event created successfully",
-        "event_id": result.inserted_id.as_object_id().unwrap().to_hex()
-    }))))
 }
 
 pub async fn update_event_handler(

@@ -21,7 +21,7 @@ const GifPicker = ({ onSelect, onClose }) => {
             const data = await response.json();
             setGifs(data.data || []);
         } catch (error) {
-            console.error("Error fetching GIFs:", error);
+            console.error('Error fetching GIFs:', error);
         } finally {
             setLoading(false);
         }
@@ -41,7 +41,9 @@ const GifPicker = ({ onSelect, onClose }) => {
             <div className="gif-picker-container">
                 <div className="gif-picker-header">
                     <h3>Select GIF</h3>
-                    <button className="icon-btn" onClick={onClose}><X size={20} /></button>
+                    <button className="icon-btn" onClick={onClose}>
+                        <X size={20} />
+                    </button>
                 </div>
 
                 <form className="gif-search-form" onSubmit={handleSearch}>
@@ -51,16 +53,26 @@ const GifPicker = ({ onSelect, onClose }) => {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
-                    <button type="submit" className="icon-btn"><Search size={18} /></button>
+                    <button type="submit" className="icon-btn">
+                        <Search size={18} />
+                    </button>
                 </form>
 
                 <div className="gif-results-grid">
                     {loading ? (
                         <div className="gif-loading">Loading...</div>
                     ) : (
-                        gifs.map(gif => (
-                            <div key={gif.id} className="gif-item" onClick={() => onSelect(gif.images.fixed_height.url)}>
-                                <img src={gif.images.fixed_height.url} alt={gif.title} loading="lazy" />
+                        gifs.map((gif) => (
+                            <div
+                                key={gif.id}
+                                className="gif-item"
+                                onClick={() => onSelect(gif.images.fixed_height.url)}
+                            >
+                                <img
+                                    src={gif.images.fixed_height.url}
+                                    alt={gif.title}
+                                    loading="lazy"
+                                />
                             </div>
                         ))
                     )}
