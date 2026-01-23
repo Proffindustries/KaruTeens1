@@ -3,8 +3,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgb(var(--background)) 0%, rgba(var(--primary), 0.05) 100%);
+    background: linear-gradient(135deg, rgb(247, 249, 252) 0%, rgba(255, 107, 107, 0.05) 100%);
     padding: 1rem;
+    overflow: visible;
 }
 
 .auth-card {
@@ -15,11 +16,15 @@
     border-radius: var(--radius-lg);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.08);
+    overflow: visible;
 }
 
 .auth-header {
     text-align: center;
     margin-bottom: 2rem;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
 }
 
 .auth-logo {
@@ -157,5 +162,11 @@
 }
 
 .back-link:hover {
-    color: rgb(var(--text-main));
+    color: rgb(45, 52, 54);
+}
+
+.auth-body {
+    position: relative;
+    z-index: 1;
+    min-height: 300px;
 }
