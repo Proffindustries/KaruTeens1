@@ -1,22 +1,58 @@
 .auth-container {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     background: linear-gradient(135deg, rgb(247, 249, 252) 0%, rgba(255, 107, 107, 0.05) 100%);
     padding: 1rem;
     overflow: visible;
+    padding-top: 2rem;
 }
 
 .auth-card {
     background: #ffffff;
     width: 100%;
     max-width: 450px;
-    padding: 2.5rem;
+    padding: 2rem;
+    padding-bottom: 2rem;
     border-radius: var(--radius-lg);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.08);
     overflow: visible;
+    margin-top: 0;
+}
+
+/* Mobile styles - ensure form is visible */
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 0.5rem;
+        padding-top: 1rem;
+        align-items: flex-start;
+    }
+    
+    .auth-card {
+        padding: 1.5rem;
+        max-width: 100%;
+        margin-top: 0;
+    }
+    
+    .auth-card * {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .form-group {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: block !important;
+    }
+    
+    .form-input {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: block !important;
+    }
 }
 
 .auth-header {
@@ -61,42 +97,24 @@
     margin-bottom: 0.5rem;
     font-weight: 500;
     font-size: 0.9rem;
-    color: rgb(var(--text-main));
+    color: rgb(45, 52, 54);
 }
 
 .form-input {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 2px solid #e2e8f0 !important;
+    border: 1px solid #e2e8f0;
     border-radius: var(--radius-md);
-    background: #ffffff !important;
-    color: #1a202c !important;
+    background: #ffffff;
+    color: #1a202c;
     font-size: 1rem;
     transition: all var(--transition-fast);
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .form-input::placeholder {
     color: #a0aec0;
-}
-
-/* Debug: Add red border to form groups */
-.form-group {
-    margin-bottom: 1.25rem;
-    border: 1px dashed red;
-    padding: 0.5rem;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-/* Debug: Add blue border to step content */
-.step-content {
-    border: 1px dashed blue;
-    padding: 1rem;
-    opacity: 1 !important;
-    visibility: visible !important;
 }
 
 .form-input:focus {
@@ -190,11 +208,4 @@
     position: relative;
     z-index: 1;
     min-height: 300px;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-/* Debug: Add green border to auth-body */
-.auth-body {
-    border: 2px dashed green;
 }
