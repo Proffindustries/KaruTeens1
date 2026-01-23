@@ -206,7 +206,7 @@ where
         let mut conn = app_state.redis.get_async_connection().await?;
         
         let presence_key = format!("user:presence:{}", user_id.to_hex());
-        conn.set_ex(&presence_key, "online", 300).await?;
+        conn.set_ex::<_, _, ()>(&presence_key, "online", 300).await?;
 
         // Throttled MongoDB update for last_seen_at
         let mongo_update_key = format!("user:last_seen_mongo_update:{}", user_id.to_hex());
@@ -223,7 +223,7 @@ where
                     None
                 ).await;
             });
-            conn.set_ex(&mongo_update_key, "1", 60).await?;
+            conn.set_ex::<_, _, ()>(&mongo_update_key, "1", 60).await?;
         }
 
         Ok(AuthUser {
@@ -413,7 +413,7 @@ pub async fn forgot_password_handler(
     let mut conn = state.redis.get_async_connection().await?;
     
     let redis_key = format!("reset_otp:{}", payload.email);
-    conn.set_ex(&redis_key, &otp_str, 900).await?;
+    conn.set_ex::<_, _, ()>(&redis_key, &otp_str, 900).await?;
 
     tracing::info!("🔑 Reset code for {}: {}", payload.email, otp_str);
 
@@ -484,7 +484,7 @@ pub async fn reset_password_handler(
             ).await?;
 
             // 4. Clear OTP
-            conn.del(&redis_key).await?;
+            conn.del::<_, ()>(&redis_key).await?;
 
             Ok(Json(json!({"message": "Password reset successfully. You can now login with your new password."})))
         },

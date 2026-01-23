@@ -29,13 +29,13 @@ const requiredFiles = [
     'src/pages/AdManagementTab.jsx',
     'src/pages/VideoManagementTab.jsx',
     'src/pages/MediaManagementTab.jsx',
-    'backend/src/admin.rs'
+    'backend/src/admin.rs',
 ];
 
 const missingFiles = [];
 const existingFiles = [];
 
-requiredFiles.forEach(file => {
+requiredFiles.forEach((file) => {
     if (fs.existsSync(file)) {
         existingFiles.push(file);
         console.log(`✅ ${file}`);
@@ -50,7 +50,7 @@ console.log(`   Files Found: ${existingFiles.length}/${requiredFiles.length}`);
 
 if (missingFiles.length > 0) {
     console.log(`\n❌ Missing Files:`);
-    missingFiles.forEach(file => console.log(`   - ${file}`));
+    missingFiles.forEach((file) => console.log(`   - ${file}`));
     process.exit(1);
 }
 
@@ -68,11 +68,11 @@ const cssFiles = [
     'src/styles/ReelManagementTab.css',
     'src/styles/AdManagementTab.css',
     'src/styles/VideoManagementTab.css',
-    'src/styles/MediaManagementTab.css'
+    'src/styles/MediaManagementTab.css',
 ];
 
 console.log(`\n🎨 Checking CSS Files:`);
-cssFiles.forEach(file => {
+cssFiles.forEach((file) => {
     if (fs.existsSync(file)) {
         console.log(`✅ ${file}`);
     } else {
@@ -85,8 +85,8 @@ console.log(`\n📦 Checking Dependencies:`);
 if (fs.existsSync('package.json')) {
     const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     const requiredDeps = ['react', 'react-dom', 'lucide-react', '@tanstack/react-query'];
-    
-    requiredDeps.forEach(dep => {
+
+    requiredDeps.forEach((dep) => {
         if (packageJson.dependencies[dep]) {
             console.log(`✅ ${dep}: ${packageJson.dependencies[dep]}`);
         } else {
@@ -102,8 +102,8 @@ console.log(`\n🔧 Checking Backend Dependencies:`);
 if (fs.existsSync('backend/Cargo.toml')) {
     const cargoToml = fs.readFileSync('backend/Cargo.toml', 'utf8');
     const requiredBackendDeps = ['axum', 'mongodb', 'serde', 'tokio'];
-    
-    requiredBackendDeps.forEach(dep => {
+
+    requiredBackendDeps.forEach((dep) => {
         if (cargoToml.includes(dep)) {
             console.log(`✅ ${dep}: Found`);
         } else {
@@ -116,4 +116,6 @@ if (fs.existsSync('backend/Cargo.toml')) {
 
 console.log(`\n🎉 Build Test Complete!`);
 console.log(`   All admin dashboard components are properly structured and ready for building.`);
-console.log(`   The system includes 18 different management sections with comprehensive functionality.`);
+console.log(
+    `   The system includes 18 different management sections with comprehensive functionality.`,
+);
