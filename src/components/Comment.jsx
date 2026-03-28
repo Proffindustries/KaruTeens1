@@ -1,35 +1,60 @@
-import React, { useState } from 'react';
-import { Reply, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useCallback, useRef } from 'react';
+import { Reply, ChevronDown, ChevronUp, Image, X, File } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from './Avatar.jsx';
 import '../styles/Comment.css';
 
-const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
+const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const [showReplies, setShowReplies] = useState(false);
     const [isReplying, setIsReplying] = useState(false);
     const [replyText, setReplyText] = useState('');
+    const [replyMedia, setReplyMedia] = useState(null);
+    const fileInputRef = useRef(null);
 
-    const handleReplyClick = () => {
+    const handleReplyClick = useCallback(() => {
         setIsReplying(true);
-    };
+    }, []);
 
-    const handleReplySubmit = (e) => {
-        e.preventDefault();
-        if (!replyText.trim()) return;
+    const handleReplySubmit = useCallback(
+        (e) => {
+            e.preventDefault();
+            if (!replyText.trim() && !replyMedia) return;
 
-        onReply(comment._id, replyText);
-        setReplyText('');
+            onReply(comment._id, replyText, replyMedia);
+            setReplyText('');
+            setReplyMedia(null);
+            setIsReplying(false);
+            setShowReplies(true);
+        },
+        [comment._id, onReply, replyText, replyMedia],
+    );
+
+    const handleCancelReply = useCallback(() => {
         setIsReplying(false);
-        setShowReplies(true); // Auto-expand to show new reply
-    };
-
-    const handleCancelReply = () => {
-        setIsReplying(false);
         setReplyText('');
-    };
+        setReplyMedia(null);
+    }, []);
+
+    const handleMediaSelect = useCallback((e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setReplyMedia(file);
+        }
+    }, []);
+
+    const handleRemoveMedia = useCallback(() => {
+        setReplyMedia(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }, []);
+
+    const toggleReplies = useCallback(() => {
+        setShowReplies((prev) => !prev);
+    }, []);
 
     const hasReplies = replies && replies.length > 0;
-    const maxNestingLevel = 3; // Limit nesting to avoid too deep threads
+    const maxNestingLevel = 3;
 
     return (
         <div
@@ -74,7 +99,7 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
                         {hasReplies && (
                             <button
                                 className="comment-action-btn toggle-replies-btn"
-                                onClick={() => setShowReplies(!showReplies)}
+                                onClick={toggleReplies}
                             >
                                 {showReplies ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 {comment.replies_count}{' '}
@@ -104,6 +129,33 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
                                 autoFocus
                             />
                             <div className="reply-actions">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleMediaSelect}
+                                    accept="image/*,video/*"
+                                    hidden
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="btn-media"
+                                    title="Add media"
+                                >
+                                    <Image size={16} />
+                                </button>
+                                {replyMedia && (
+                                    <div className="media-preview">
+                                        <span>{replyMedia.name}</span>
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveMedia}
+                                            className="btn-remove-media"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                )}
                                 <button
                                     type="button"
                                     onClick={handleCancelReply}
@@ -114,7 +166,7 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
                                 <button
                                     type="submit"
                                     className="btn-reply"
-                                    disabled={!replyText.trim()}
+                                    disabled={!replyText.trim() && !replyMedia}
                                 >
                                     Reply
                                 </button>
@@ -147,6 +199,6 @@ const Comment = ({ comment, onReply, level = 0, replies = [] }) => {
             </AnimatePresence>
         </div>
     );
-};
+});
 
 export default Comment;

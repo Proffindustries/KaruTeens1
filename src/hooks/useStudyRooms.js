@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 export const useStudyRooms = () => {
     return useQuery({
@@ -8,6 +9,7 @@ export const useStudyRooms = () => {
             const { data } = await api.get('/study-rooms');
             return data;
         },
+        staleTime: STALE_TIMES.STUDY_ROOMS,
         refetchInterval: 10000, // Refresh every 10s to show active rooms
     });
 };
@@ -20,6 +22,7 @@ export const useStudyRoom = (roomId) => {
             return data;
         },
         enabled: !!roomId,
+        staleTime: STALE_TIMES.STUDY_ROOM_DETAIL,
     });
 };
 

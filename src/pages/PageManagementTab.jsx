@@ -56,142 +56,18 @@ const PageManagementTab = () => {
 
     const { showToast } = useToast();
 
-    // Mock data for pages
-    const mockPages = [
-        {
-            id: 'page_001',
-            title: 'About KaruTeens',
-            slug: 'about-karuteens',
-            excerpt: 'Learn more about our platform and mission',
-            featured_image: null,
-            meta_title: 'About KaruTeens - Our Story',
-            meta_description: 'Discover the story behind KaruTeens platform',
-            meta_keywords: ['about', 'karuteens', 'story'],
-            status: 'published',
-            visibility: 'public',
-            author_id: 'admin_001',
-            author_name: 'Super Admin',
-            category: 'About',
-            tags: ['about', 'company'],
-            template: 'default',
-            redirect_url: null,
-            seo_score: 85.5,
-            view_count: 1250,
-            likes_count: 45,
-            comments_count: 12,
-            published_at: '2024-01-10T08:30:00Z',
-            created_at: '2024-01-09T14:20:00Z',
-            updated_at: '2024-01-10T08:30:00Z',
-        },
-        {
-            id: 'page_002',
-            title: 'Privacy Policy',
-            slug: 'privacy-policy',
-            excerpt: 'Our commitment to protecting your privacy',
-            featured_image: null,
-            meta_title: 'Privacy Policy - KaruTeens',
-            meta_description: 'Read our privacy policy to understand how we protect your data',
-            meta_keywords: ['privacy', 'policy', 'data protection'],
-            status: 'published',
-            visibility: 'public',
-            author_id: 'admin_002',
-            author_name: 'Privacy Officer',
-            category: 'Legal',
-            tags: ['privacy', 'legal', 'policy'],
-            template: 'legal',
-            redirect_url: null,
-            seo_score: 92.0,
-            view_count: 890,
-            likes_count: 23,
-            comments_count: 5,
-            published_at: '2024-01-08T10:15:00Z',
-            created_at: '2024-01-07T16:45:00Z',
-            updated_at: '2024-01-08T10:15:00Z',
-        },
-        {
-            id: 'page_003',
-            title: 'Terms of Service',
-            slug: 'terms-of-service',
-            excerpt: 'Terms and conditions for using our platform',
-            featured_image: null,
-            meta_title: 'Terms of Service - KaruTeens',
-            meta_description: 'Please read our terms of service before using our platform',
-            meta_keywords: ['terms', 'service', 'legal'],
-            status: 'published',
-            visibility: 'public',
-            author_id: 'admin_002',
-            author_name: 'Legal Team',
-            category: 'Legal',
-            tags: ['terms', 'legal', 'service'],
-            template: 'legal',
-            redirect_url: null,
-            seo_score: 88.5,
-            view_count: 750,
-            likes_count: 18,
-            comments_count: 8,
-            published_at: '2024-01-05T12:00:00Z',
-            created_at: '2024-01-04T09:30:00Z',
-            updated_at: '2024-01-05T12:00:00Z',
-        },
-        {
-            id: 'page_004',
-            title: 'New Feature Announcement',
-            slug: 'new-feature-announcement',
-            excerpt: 'Exciting new features coming soon!',
-            featured_image: null,
-            meta_title: 'New Features - Coming Soon',
-            meta_description: 'Stay tuned for our exciting new features',
-            meta_keywords: ['features', 'announcement', 'updates'],
-            status: 'draft',
-            visibility: 'private',
-            author_id: 'admin_001',
-            author_name: 'Product Team',
-            category: 'Announcements',
-            tags: ['features', 'announcement'],
-            template: 'announcement',
-            redirect_url: null,
-            seo_score: null,
-            view_count: 0,
-            likes_count: 0,
-            comments_count: 0,
-            published_at: null,
-            created_at: '2024-01-15T08:00:00Z',
-            updated_at: '2024-01-15T08:00:00Z',
-        },
-        {
-            id: 'page_005',
-            title: '404 Error Page',
-            slug: '404',
-            excerpt: 'Page not found - custom error page',
-            featured_image: null,
-            meta_title: '404 - Page Not Found',
-            meta_description: 'The page you are looking for does not exist',
-            meta_keywords: ['404', 'error', 'not found'],
-            status: 'published',
-            visibility: 'hidden',
-            author_id: 'admin_003',
-            author_name: 'Dev Team',
-            category: 'System',
-            tags: ['404', 'error', 'system'],
-            template: 'error',
-            redirect_url: null,
-            seo_score: 75.0,
-            view_count: 150,
-            likes_count: 2,
-            comments_count: 0,
-            published_at: '2024-01-01T00:00:00Z',
-            created_at: '2023-12-31T23:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z',
-        },
-    ];
-
     useEffect(() => {
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setPages(mockPages);
-            setIsLoading(false);
-        }, 1000);
+        // Fetch real data from API
+        api.get('/pages')
+            .then((res) => {
+                setPages(res.data);
+            })
+            .catch((error) => {
+                console.error('Failed to load pages:', error);
+                setPages([]); // Empty state on error
+            })
+            .finally(() => setIsLoading(false));
     }, [filters]);
 
     const handleFilterChange = (key, value) => {

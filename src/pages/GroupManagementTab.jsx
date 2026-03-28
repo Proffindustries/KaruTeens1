@@ -44,63 +44,36 @@ const GroupManagementTab = () => {
 
     const { showToast } = useToast();
 
-    // Mock data for groups
-    const mockGroups = [
-        {
-            id: 'group_001',
-            name: 'KaruTeens Developers',
-            description: 'Group for developers working on KaruTeens platform',
-            category: 'Technology',
-            avatar_url: null,
-            cover_url: null,
-            creator_id: 'user_123',
-            admins: ['user_123', 'user_456'],
-            members: ['user_123', 'user_456', 'user_789', 'user_101'],
-            is_private: false,
-            max_members: 100,
-            member_count: 4,
-            created_at: '2024-01-10T08:30:00Z',
-        },
-        {
-            id: 'group_002',
-            name: 'Study Group - Math 101',
-            description: 'Mathematics study group for university students',
-            category: 'Education',
-            avatar_url: null,
-            cover_url: null,
-            creator_id: 'user_234',
-            admins: ['user_234'],
-            members: ['user_234', 'user_345', 'user_456'],
-            is_private: true,
-            max_members: 20,
-            member_count: 3,
-            created_at: '2024-01-12T14:20:00Z',
-        },
-        {
-            id: 'group_003',
-            name: 'KaruTeens Admins',
-            description: 'Administrative group for platform management',
-            category: 'Administration',
-            avatar_url: null,
-            cover_url: null,
-            creator_id: 'admin_001',
-            admins: ['admin_001', 'admin_002'],
-            members: ['admin_001', 'admin_002', 'admin_003'],
-            is_private: true,
-            max_members: 10,
-            member_count: 3,
-            created_at: '2024-01-01T10:00:00Z',
-        },
-    ];
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setGroups(mockGroups);
-            setIsLoading(false);
-        }, 1000);
-    }, [filters]);
+        let isMounted = true;
+
+        const loadGroups = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch real data from API
+                const groupsRes = await api.get('/groups');
+                if (isMounted) {
+                    setGroups(groupsRes.data);
+                }
+            } catch (error) {
+                console.error('Failed to load groups:', error);
+                if (isMounted) {
+                    setGroups([]); // Empty state on error
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadGroups();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -205,20 +178,24 @@ const GroupManagementTab = () => {
         }
     };
 
-    const getMemberInfo = (groupId, memberId) => {
-        // Mock member info
-        const mockUsers = {
-            user_123: { username: 'dev_john', full_name: 'John Developer' },
-            user_234: { username: 'math_prof', full_name: 'Prof. Math' },
-            user_345: { username: 'student_001', full_name: 'Student One' },
-            user_456: { username: 'tech_lead', full_name: 'Tech Lead' },
-            user_789: { username: 'designer', full_name: 'UI Designer' },
-            user_101: { username: 'backend_dev', full_name: 'Backend Dev' },
-            admin_001: { username: 'super_admin', full_name: 'Super Admin' },
-            admin_002: { username: 'moderator', full_name: 'Moderator' },
-            admin_003: { username: 'support', full_name: 'Support Team' },
-        };
-        return mockUsers[memberId] || { username: 'Unknown', full_name: 'Unknown User' };
+    const [userCache, setUserCache] = useState({});
+
+    const getMemberInfo = async (groupId, memberId) => {
+        // Check cache first
+        if (userCache[memberId]) {
+            return userCache[memberId];
+        }
+
+        // Fetch from API if not in cache
+        try {
+            const { data } = await api.get(`/users/${memberId}`);
+            // Update cache
+            setUserCache((prev) => ({ ...prev, [memberId]: data }));
+            return data;
+        } catch (error) {
+            console.error(`Failed to fetch user ${memberId}:`, error);
+            return { username: 'Unknown', full_name: 'Unknown User' };
+        }
     };
 
     return (

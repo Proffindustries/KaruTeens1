@@ -286,29 +286,31 @@ pub async fn list_stories_handler(
     let limit = params.limit.unwrap_or(20);
     let skip = (page - 1) * limit;
 
-    let _sort_doc = match sort_order.as_str() {
+    let sort_doc = match sort_order.as_str() {
         "desc" => doc! { sort_by: -1 },
         _ => doc! { sort_by: 1 },
     };
 
-    let mut cursor = stories.find(query, None).await
+    let total_count = stories.count_documents(query.clone(), None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let mut stories_list = Vec::new();
-    let mut total_count = 0;
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(sort_doc)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
+        .build();
+
+    let mut cursor = stories.find(query, find_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut paginated_stories = Vec::new();
     
     while let Some(story) = cursor.next().await {
         if let Ok(s) = story {
             let story_info = build_story_response(&s, &state).await?;
-            stories_list.push(story_info);
-            total_count += 1;
+            paginated_stories.push(story_info);
         }
     }
-
-    // Apply pagination
-    let start = skip as usize;
-    let end = (start + limit as usize).min(stories_list.len());
-    let paginated_stories = stories_list.into_iter().skip(start).take(end - start).collect::<Vec<_>>();
 
     Ok((StatusCode::OK, Json(json!({
         "stories": paginated_stories,
@@ -317,7 +319,7 @@ pub async fn list_stories_handler(
             "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
             "total_items": total_count,
             "items_per_page": limit,
-            "has_next": end < total_count,
+            "has_next": (skip + limit) < total_count as i64,
             "has_prev": page > 1
         }
     }))))

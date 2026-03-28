@@ -76,186 +76,6 @@ const AdManagementTab = () => {
 
     const { showToast } = useToast();
 
-    // Mock data for campaigns
-    const mockCampaigns = [
-        {
-            id: 'campaign_001',
-            name: 'Summer Sale Campaign',
-            description: 'Promote summer sale products with targeted ads',
-            status: 'active',
-            start_date: '2024-06-01T00:00:00Z',
-            end_date: '2024-08-31T23:59:59Z',
-            budget: {
-                daily_budget: 500.0,
-                lifetime_budget: 15000.0,
-                budget_type: 'lifetime',
-                budget_delivery: 'standard',
-                currency: 'USD',
-                spent_today: 450.0,
-                spent_lifetime: 8500.0,
-                remaining_daily: 50.0,
-                remaining_lifetime: 6500.0,
-                budget_utilization: 0.57,
-            },
-            optimization_goal: 'conversions',
-            bidding_strategy: 'automatic_cpc',
-            daily_budget: 500.0,
-            lifetime_budget: 15000.0,
-            target_roas: 3.5,
-            target_cpa: 25.0,
-            campaign_type: 'shopping',
-            objective: 'conversions',
-            tracking_pixel_id: 'pixel_001',
-            conversion_actions: ['purchase', 'add_to_cart'],
-            attribution_model: 'last_click',
-            frequency_capping: {
-                impressions: 3,
-                time_period: 'day',
-                user_type: 'all',
-            },
-            exclusion_rules: [
-                { rule_type: 'content', rule_value: 'adult_content', rule_operator: 'exclude' },
-            ],
-            created_at: '2024-05-25T10:00:00Z',
-            updated_at: '2024-06-01T10:00:00Z',
-            created_by: 'admin_user',
-            updated_by: null,
-            groups_count: 5,
-            creatives_count: 15,
-            total_spend: 8500.0,
-            total_impressions: 250000,
-            total_clicks: 12500,
-            total_conversions: 500,
-            ctr: 0.05,
-            cpm: 34.0,
-            cpc: 0.68,
-            roas: 3.2,
-            conversion_rate: 0.04,
-            quality_score: 8.5,
-            ad_rank: 1.2,
-            performance_score: 85.0,
-            last_updated: '2024-06-15T14:30:00Z',
-        },
-        {
-            id: 'campaign_002',
-            name: 'Brand Awareness Campaign',
-            description: 'Increase brand visibility and awareness',
-            status: 'paused',
-            start_date: '2024-05-01T00:00:00Z',
-            end_date: '2024-12-31T23:59:59Z',
-            budget: {
-                daily_budget: 200.0,
-                lifetime_budget: null,
-                budget_type: 'daily',
-                budget_delivery: 'accelerated',
-                currency: 'USD',
-                spent_today: 180.0,
-                spent_lifetime: 12000.0,
-                remaining_daily: 20.0,
-                remaining_lifetime: null,
-                budget_utilization: 0.9,
-            },
-            optimization_goal: 'impressions',
-            bidding_strategy: 'cpm',
-            daily_budget: 200.0,
-            lifetime_budget: null,
-            target_roas: null,
-            target_cpa: null,
-            campaign_type: 'display',
-            objective: 'brand_awareness',
-            tracking_pixel_id: 'pixel_002',
-            conversion_actions: ['view_content'],
-            attribution_model: 'first_click',
-            frequency_capping: {
-                impressions: 5,
-                time_period: 'week',
-                user_type: 'new',
-            },
-            exclusion_rules: [
-                {
-                    rule_type: 'audience',
-                    rule_value: 'existing_customers',
-                    rule_operator: 'exclude',
-                },
-            ],
-            created_at: '2024-04-20T10:00:00Z',
-            updated_at: '2024-05-01T10:00:00Z',
-            created_by: 'marketing_user',
-            updated_by: 'admin_user',
-            groups_count: 3,
-            creatives_count: 8,
-            total_spend: 12000.0,
-            total_impressions: 1500000,
-            total_clicks: 8000,
-            total_conversions: 200,
-            ctr: 0.0053,
-            cpm: 8.0,
-            cpc: 1.5,
-            roas: 1.8,
-            conversion_rate: 0.025,
-            quality_score: 7.2,
-            ad_rank: 0.8,
-            performance_score: 72.0,
-            last_updated: '2024-06-10T09:15:00Z',
-        },
-        {
-            id: 'campaign_003',
-            name: 'Lead Generation Campaign',
-            description: 'Generate qualified leads for B2B services',
-            status: 'active',
-            start_date: '2024-06-10T00:00:00Z',
-            end_date: '2024-09-30T23:59:59Z',
-            budget: {
-                daily_budget: 300.0,
-                lifetime_budget: 25000.0,
-                budget_type: 'lifetime',
-                budget_delivery: 'standard',
-                currency: 'USD',
-                spent_today: 280.0,
-                spent_lifetime: 6500.0,
-                remaining_daily: 20.0,
-                remaining_lifetime: 18500.0,
-                budget_utilization: 0.26,
-            },
-            optimization_goal: 'leads',
-            bidding_strategy: 'cpa',
-            daily_budget: 300.0,
-            lifetime_budget: 25000.0,
-            target_roas: null,
-            target_cpa: 45.0,
-            campaign_type: 'search',
-            objective: 'leads',
-            tracking_pixel_id: 'pixel_003',
-            conversion_actions: ['form_submission', 'phone_call'],
-            attribution_model: 'linear',
-            frequency_capping: {
-                impressions: 2,
-                time_period: 'day',
-                user_type: 'all',
-            },
-            exclusion_rules: [],
-            created_at: '2024-06-05T10:00:00Z',
-            updated_at: '2024-06-10T10:00:00Z',
-            created_by: 'sales_user',
-            updated_by: null,
-            groups_count: 4,
-            creatives_count: 12,
-            total_spend: 6500.0,
-            total_impressions: 85000,
-            total_clicks: 1700,
-            total_conversions: 36,
-            ctr: 0.02,
-            cpm: 76.47,
-            cpc: 3.82,
-            roas: 2.1,
-            conversion_rate: 0.021,
-            quality_score: 9.1,
-            ad_rank: 1.5,
-            performance_score: 91.0,
-            last_updated: '2024-06-18T16:45:00Z',
-        },
-    ];
-
     // Mock data for ad groups
     const mockAdGroups = [
         {
@@ -585,15 +405,51 @@ const AdManagementTab = () => {
     ];
 
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setCampaigns(mockCampaigns);
-            setAdGroups(mockAdGroups);
-            setAdCreatives(mockAdCreatives);
-            setIsLoading(false);
-        }, 1000);
-    }, [filters]);
+        let isMounted = true;
+
+        const loadInitialData = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch real data from API
+                const [campaignsRes, groupsRes, creativesRes, perfRes, reportsRes] =
+                    await Promise.all([
+                        api.get('/ad-campaigns'),
+                        api.get('/ad-groups'),
+                        api.get('/ad-creatives'),
+                        api.get('/ad-performance'),
+                        api.get('/ad-reports'),
+                    ]);
+
+                if (isMounted) {
+                    setCampaigns(campaignsRes.data);
+                    setAdGroups(groupsRes.data);
+                    setAdCreatives(creativesRes.data);
+                    setPerformanceData(perfRes.data);
+                    setReports(reportsRes.data);
+                }
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+                // Set empty states on error
+                if (isMounted) {
+                    setCampaigns([]);
+                    setAdGroups([]);
+                    setAdCreatives([]);
+                    setPerformanceData([]);
+                    setReports([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadInitialData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -2998,12 +2854,56 @@ const AdManagementTab = () => {
                             </button>
                         </div>
                         <div className="modal-body">
-                            <div className="analytics-grid">
-                                {/* Analytics content would go here */}
-                                <div className="analytics-placeholder">
-                                    <BarChart3 size={48} />
-                                    <p>Advanced analytics dashboard coming soon</p>
-                                    <p>Includes charts, graphs, and detailed performance metrics</p>
+                            <div className="analytics-dashboard">
+                                <div className="analytics-stats">
+                                    <div className="stat-card">
+                                        <div className="stat-label">Impressions</div>
+                                        <div className="stat-value">
+                                            {mockPerformanceData
+                                                .reduce((sum, p) => sum + p.impressions, 0)
+                                                .toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-label">Clicks</div>
+                                        <div className="stat-value">
+                                            {mockPerformanceData
+                                                .reduce((sum, p) => sum + p.clicks, 0)
+                                                .toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-label">CTR</div>
+                                        <div className="stat-value">
+                                            {(
+                                                (mockPerformanceData.reduce(
+                                                    (sum, p) => sum + p.clicks,
+                                                    0,
+                                                ) /
+                                                    mockPerformanceData.reduce(
+                                                        (sum, p) => sum + p.impressions,
+                                                        0,
+                                                    )) *
+                                                100
+                                            ).toFixed(2)}
+                                            %
+                                        </div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-label">Conversions</div>
+                                        <div className="stat-value">
+                                            {mockPerformanceData
+                                                .reduce((sum, p) => sum + p.conversions, 0)
+                                                .toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="analytics-chart">
+                                    <h4>Performance Over Time</h4>
+                                    <div className="chart-placeholder">
+                                        <BarChart3 size={32} />
+                                        <p>Chart visualization</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

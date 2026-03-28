@@ -10,7 +10,6 @@ use crate::db::AppState;
 use crate::auth::AuthUser;
 use sha1::{Sha1, Digest};
 use std::collections::BTreeMap;
-use hex;
 use chrono::Utc;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::Client as S3Client;

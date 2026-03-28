@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 export const useAdminStats = () => {
     return useQuery({
@@ -8,6 +9,7 @@ export const useAdminStats = () => {
             const { data } = await api.get('/admin/stats');
             return data;
         },
+        staleTime: STALE_TIMES.STATIC_CONFIG, // 1 hour for admin stats
     });
 };
 
@@ -24,6 +26,7 @@ export const useAdminUsers = (filters = {}) => {
             const { data } = await api.get(`/admin/users?${params}`);
             return data;
         },
+        staleTime: STALE_TIMES.STATIC_CONFIG, // 1 hour for admin users
     });
 };
 

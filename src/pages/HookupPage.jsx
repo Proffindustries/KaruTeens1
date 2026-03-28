@@ -113,7 +113,7 @@ const HookupPage = () => {
             }, 10000);
         }
         return () => clearInterval(interval);
-    }, [paymentStep, checkoutId]);
+    }, [paymentStep, checkoutId, showToast]);
 
     const handleSwipe = (direction, targetId) => {
         const type = direction === 'right' ? 'like' : 'pass';

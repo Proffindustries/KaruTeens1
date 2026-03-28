@@ -2,7 +2,7 @@ use axum::{
     extract::{State, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post},
+    routing::{get, post, put, delete},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
-use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, User};
+use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, User, Profile};
 use crate::auth::AuthUser;
 use futures::stream::StreamExt;
 
@@ -38,17 +38,47 @@ pub struct UpdatePostRequest {
 }
 
 #[derive(Deserialize)]
+pub struct CreatePostRequest {
+    pub title: Option<String>,
+    pub content: String,
+    pub excerpt: Option<String>,
+    pub category: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub post_type: Option<String>,
+    pub scheduled_publish_date: Option<String>,
+    pub language: Option<String>,
+    pub is_featured: Option<bool>,
+    pub is_premium: Option<bool>,
+    pub allow_comments: Option<bool>,
+    pub allow_sharing: Option<bool>,
+    pub seo_title: Option<String>,
+    pub seo_description: Option<String>,
+    pub seo_keywords: Option<Vec<String>>,
+    pub media_urls: Option<Vec<String>>,
+    pub meta_data: Option<serde_json::Value>,
+    pub content_rating: Option<String>,
+    pub status: Option<String>,
+    pub is_nsfw: Option<bool>,
+    pub is_anonymous: Option<bool>,
+}
+
+#[derive(Deserialize)]
 pub struct ApprovePostRequest {
     pub status: String, // approved, rejected
     pub comments: Option<String>,
     pub rejection_reason: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct PostFilter {
     pub status: Option<String>,
     pub post_type: Option<String>,
     pub category: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub language: Option<String>,
+    pub is_featured: Option<bool>,
+    pub is_premium: Option<bool>,
+    pub scheduled_publish_date: Option<String>,
     pub search: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
@@ -92,6 +122,8 @@ pub struct PostResponse {
     pub seo_title: Option<String>,
     pub seo_description: Option<String>,
     pub seo_keywords: Option<Vec<String>>,
+    pub is_nsfw: Option<bool>,
+    pub is_anonymous: bool,
     pub source_url: Option<String>,
     pub source_author: Option<String>,
     pub plagiarism_score: Option<f64>,
@@ -144,7 +176,18 @@ pub async fn list_posts_handler(
     Query(params): Query<PostFilter>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     check_admin(user.user_id, &state).await?;
-
+    
+    // Create a cache key based on the query parameters
+    let cache_key = format!(
+        "posts:list:{:?}",
+        params
+    );
+    
+    // Try to get from cache first (cache for 2 minutes for list queries)
+    if let Some(cached_result) = state.cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok((StatusCode::OK, Json(cached_result)));
+    }
+    
     let posts = state.mongo.collection::<Post>("posts");
     
     let mut query = doc! {};
@@ -162,66 +205,74 @@ pub async fn list_posts_handler(
     }
     
     if let Some(search) = &params.search {
+        let escaped_search = regex::escape(search);
         query.insert("$or", vec![
-            doc! { "title": { "$regex": search, "$options": "i" } },
-            doc! { "content": { "$regex": search, "$options": "i" } },
-            doc! { "excerpt": { "$regex": search, "$options": "i" } },
+            doc! { "title": { "$regex": &escaped_search, "$options": "i" } },
+            doc! { "content": { "$regex": &escaped_search, "$options": "i" } },
+            doc! { "excerpt": { "$regex": &escaped_search, "$options": "i" } },
         ]);
     }
-
+    
     if let Some(date_from) = &params.date_from {
         if let Ok(date) = chrono::DateTime::parse_from_rfc3339(date_from) {
             query.insert("created_at", doc! { "$gte": date });
         }
     }
-
+    
     if let Some(date_to) = &params.date_to {
         if let Ok(date) = chrono::DateTime::parse_from_rfc3339(date_to) {
             query.insert("created_at", doc! { "$lte": date });
         }
     }
-
+    
     let sort_by = params.sort_by.unwrap_or_else(|| "created_at".to_string());
     let sort_order = params.sort_order.unwrap_or_else(|| "desc".to_string());
     let page = params.page.unwrap_or(1);
     let limit = params.limit.unwrap_or(20);
     let skip = (page - 1) * limit;
-
-    let _sort_doc = match sort_order.as_str() {
+    
+    let sort_doc = match sort_order.as_str() {
         "desc" => doc! { sort_by: -1 },
         _ => doc! { sort_by: 1 },
     };
-
-    let mut cursor = posts.find(query, None).await
+    
+    let total_count = posts.count_documents(query.clone(), None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut posts_list = Vec::new();
-    let mut total_count = 0;
+    
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(sort_doc)
+        .skip(skip as u64)
+        .limit(limit)
+        .build();
+    
+    let mut cursor = posts.find(query, find_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut paginated_posts = Vec::new();
     
     while let Some(post) = cursor.next().await {
         if let Ok(p) = post {
             let post_info = build_post_response(&p, &state).await?;
-            posts_list.push(post_info);
-            total_count += 1;
+            paginated_posts.push(post_info);
         }
     }
-
-    // Apply pagination
-    let start = skip as usize;
-    let end = (start + limit as usize).min(posts_list.len());
-    let paginated_posts = posts_list.into_iter().skip(start).take(end - start).collect::<Vec<_>>();
-
-    Ok((StatusCode::OK, Json(json!({
+    
+    let response = Json(json!({
         "posts": paginated_posts,
         "pagination": {
             "current_page": page,
             "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
             "total_items": total_count,
             "items_per_page": limit,
-            "has_next": end < total_count,
+            "has_next": (skip + limit) < (total_count as i64),
             "has_prev": page > 1
         }
-    }))))
+    }));
+    
+    // Cache the response for 2 minutes
+    let _ = state.cache.set(&cache_key, &response.0, 120).await;
+    
+    Ok((StatusCode::OK, response))
 }
 
 pub async fn get_post_handler(
@@ -380,8 +431,8 @@ pub async fn approve_post_handler(
         post_id: oid,
         approver_id: user.user_id,
         approver_name: post.author_name,
-        status: payload.status,
-        comments: payload.comments,
+        status: payload.status.clone(),
+        comments: payload.comments.clone(),
         reviewed_at: DateTime::now(),
         created_at: DateTime::now(),
     };
@@ -657,6 +708,8 @@ async fn build_post_response(
         seo_title: post.seo_title.clone(),
         seo_description: post.seo_description.clone(),
         seo_keywords: post.seo_keywords.clone(),
+        is_nsfw: post.is_nsfw,
+        is_anonymous: post.is_anonymous,
         source_url: post.source_url.clone(),
         source_author: post.source_author.clone(),
         plagiarism_score: post.plagiarism_score,
@@ -675,11 +728,92 @@ async fn build_post_response(
     })
 }
 
-pub fn post_routes() -> Router<Arc<AppState>> {    Router::new()
-        .route("/", get(list_posts_handler))
-        .route("/:id", get(get_post_handler).put(update_post_handler).delete(delete_post_handler))
+pub async fn create_post_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<CreatePostRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    // Get user profile for username
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+    let profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Profile not found"}))))?;
+
+    let posts_collection = state.mongo.collection::<Post>("posts");
+    
+    let new_post = Post {
+        id: None,
+        author_id: user.user_id,
+        author_name: profile.username.clone(),
+        title: payload.title.clone().unwrap_or_else(|| "Untitled Post".to_string()),
+        content: payload.content,
+        excerpt: payload.excerpt,
+        slug: "".to_string(), // Will be generated by the model if needed
+        status: payload.status.unwrap_or_else(|| "draft".to_string()),
+        post_type: payload.post_type.clone().unwrap_or_else(|| "text".to_string()),
+        category: payload.category.clone().unwrap_or_else(|| "general".to_string()),
+        tags: payload.tags,
+        media_urls: payload.media_urls,
+        scheduled_publish_date: payload.scheduled_publish_date.map(|s| {
+            chrono::DateTime::parse_from_rfc3339(&s).unwrap().with_timezone(&chrono::Utc).into()
+        }),
+        language: payload.language.clone().unwrap_or_else(|| "en".to_string()),
+        is_featured: payload.is_featured.unwrap_or(false),
+        is_premium: payload.is_premium.unwrap_or(false),
+        allow_comments: payload.allow_comments.unwrap_or(true),
+        allow_sharing: payload.allow_sharing.unwrap_or(true),
+        seo_title: payload.seo_title.clone(),
+        seo_description: payload.seo_description.clone(),
+        seo_keywords: payload.seo_keywords,
+        meta_data: payload.meta_data,
+        content_rating: payload.content_rating,
+        is_nsfw: payload.is_nsfw,
+        is_anonymous: payload.is_anonymous.unwrap_or(false),
+        location: None,
+        poll: None,
+        published_at: None,
+        view_count: 0,
+        like_count: 0,
+        comment_count: 0,
+        share_count: 0,
+        reading_time: None,
+        plagiarism_score: None,
+        source_url: None,
+        source_author: None,
+        approved_at: None,
+        approved_by: None,
+        rejected_at: None,
+        rejected_by: None,
+        rejection_reason: None,
+        created_at: bson::DateTime::now(),
+        updated_at: bson::DateTime::now(),
+    };
+
+    let result = posts_collection.insert_one(new_post, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    // Clear relevant caches
+    let _ = state.cache.invalidate_pattern("posts:list:*").await;
+    let _ = state.cache.invalidate_pattern("feed:*").await;
+
+    Ok((StatusCode::CREATED, Json(json!({
+        "id": result.inserted_id.as_object_id().unwrap().to_hex(),
+        "message": "Post created successfully"
+    }))))
+}
+
+
+
+pub fn post_routes() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/", get(list_posts_handler).post(create_post_handler))
+        .route("/:id", get(get_post_handler))
+        .route("/:id", put(update_post_handler))
+        .route("/:id", delete(delete_post_handler))
         .route("/:id/approve", post(approve_post_handler))
         .route("/:id/publish", post(publish_post_handler))
         .route("/:id/workflow", get(get_post_workflow_handler))
         .route("/:id/analytics", get(get_post_analytics_handler))
 }
+
+// Add CreatePostRequest DTO near the top with other DTOs

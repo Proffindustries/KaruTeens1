@@ -195,13 +195,14 @@ const OverviewTab = ({ setActiveTab }) => {
                 setStatsData(data);
             } catch (error) {
                 console.error('Failed to fetch admin stats:', error);
+                showToast('Failed to load admin statistics', 'error');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchStats();
-    }, []);
+    }, [showToast]);
 
     const stats = [
         {

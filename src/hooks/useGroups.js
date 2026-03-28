@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 export const useGroups = (filters = {}) => {
     return useQuery({
@@ -12,6 +13,7 @@ export const useGroups = (filters = {}) => {
             const { data } = await api.get(`/groups?${params}`);
             return data;
         },
+        staleTime: STALE_TIMES.GROUPS, // 5 minutes
     });
 };
 
@@ -23,6 +25,7 @@ export const useGroup = (groupId) => {
             return data;
         },
         enabled: !!groupId,
+        staleTime: STALE_TIMES.GROUPS, // 5 minutes
     });
 };
 

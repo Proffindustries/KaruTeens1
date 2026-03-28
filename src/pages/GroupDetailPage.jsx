@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Users,
@@ -8,15 +8,29 @@ import {
     Loader,
     Send,
     Image as ImageIcon,
+    Shield,
+    X,
 } from 'lucide-react';
 import { useGroup, useGroupPosts, useLeaveGroup, useCreateGroupPost } from '../hooks/useGroups';
 import { useToast } from '../context/ToastContext';
 import '../styles/GroupDetailPage.css';
 import Avatar from '../components/Avatar.jsx';
+import { shouldBlur } from '../utils/contentFilters.js';
 
 const GroupDetailPage = () => {
     const { groupId } = useParams();
     const navigate = useNavigate();
+    const [groupColor, setGroupColor] = useState(() => {
+        // Generate a stable color based on groupId or use a fallback
+        if (!groupId) return `hsl(${Math.random() * 360}, 70%, 80%)`;
+        // Use a hash of groupId to generate consistent color
+        let hash = 0;
+        for (let i = 0; i < groupId.length; i++) {
+            hash = groupId.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const h = Math.abs(hash) % 360;
+        return `hsl(${h}, 70%, 80%)`;
+    });
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
     const { data: posts, isLoading: postsLoading } = useGroupPosts(groupId);
     const { mutate: leaveGroup } = useLeaveGroup();
@@ -24,6 +38,9 @@ const GroupDetailPage = () => {
     const { showToast } = useToast();
     const [postContent, setPostContent] = useState('');
     const [isPosting, setIsPosting] = useState(false);
+    const [revealedNsfwPosts, setRevealedNsfwPosts] = useState(new Set());
+    const [selectedImages, setSelectedImages] = useState([]);
+    const fileInputRef = useRef(null);
 
     const handleLeaveGroup = () => {
         if (confirm('Are you sure you want to leave this group?')) {
@@ -36,13 +53,29 @@ const GroupDetailPage = () => {
         }
     };
 
+    const handleImageSelect = (e) => {
+        const files = Array.from(e.target.files);
+        const newImages = files.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file),
+        }));
+        setSelectedImages((prev) => [...prev, ...newImages]);
+    };
+
+    const removeImage = (index) => {
+        setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    };
+
     const handleCreatePost = (e) => {
         e.preventDefault();
-        if (!postContent.trim()) return;
+        if (!postContent.trim() && selectedImages.length === 0) return;
 
         setIsPosting(true);
+
+        // For now, we'll just send the content. Image upload would require
+        // additional API integration for file uploads
         createPost(
-            { groupId, content: postContent, media_urls: [] },
+            { groupId, content: postContent, media_urls: selectedImages.map((img) => img.preview) },
             {
                 onSuccess: () => {
                     setPostContent('');
@@ -89,9 +122,7 @@ const GroupDetailPage = () => {
                     className="group-cover-large"
                     style={{
                         backgroundImage: group.cover_url ? `url(${group.cover_url})` : 'none',
-                        backgroundColor: group.cover_url
-                            ? 'transparent'
-                            : `hsl(${Math.random() * 360}, 70%, 80%)`,
+                        backgroundColor: group.cover_url ? 'transparent' : groupColor,
                     }}
                 />
                 <div className="group-header-content">
@@ -133,19 +164,48 @@ const GroupDetailPage = () => {
                                 onChange={(e) => setPostContent(e.target.value)}
                                 rows="3"
                             />
+                            {selectedImages.length > 0 && (
+                                <div className="selected-images mb-3">
+                                    <div className="images-preview">
+                                        {selectedImages.map((img, index) => (
+                                            <div key={index} className="image-preview-item">
+                                                <img src={img.preview} alt="Selected" />
+                                                <button
+                                                    type="button"
+                                                    className="remove-image"
+                                                    onClick={() => removeImage(index)}
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             <div className="post-actions">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageSelect}
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                />
                                 <button
                                     type="button"
                                     className="btn-icon"
-                                    title="Add image (coming soon)"
-                                    disabled
+                                    title="Add image"
+                                    onClick={() => fileInputRef.current?.click()}
                                 >
                                     <ImageIcon size={20} />
                                 </button>
                                 <button
                                     type="submit"
                                     className="btn btn-primary btn-sm"
-                                    disabled={!postContent.trim() || isPosting}
+                                    disabled={
+                                        (!postContent.trim() && selectedImages.length === 0) ||
+                                        isPosting
+                                    }
                                 >
                                     {isPosting ? 'Posting...' : 'Post'}
                                 </button>
@@ -175,13 +235,29 @@ const GroupDetailPage = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="post-content">
+                                <div
+                                    className={`post-content ${shouldBlur(post) && !revealedNsfwPosts.has(post.id) ? 'nsfw-blurred' : ''}`}
+                                >
                                     <p>{post.content}</p>
                                     {post.media_urls && post.media_urls.length > 0 && (
                                         <div className="post-media">
                                             {post.media_urls.map((url, idx) => (
                                                 <img key={idx} src={url} alt="Post media" />
                                             ))}
+                                        </div>
+                                    )}
+                                    {shouldBlur(post) && !revealedNsfwPosts.has(post.id) && (
+                                        <div
+                                            className="nsfw-overlay"
+                                            onClick={() =>
+                                                setRevealedNsfwPosts((prev) =>
+                                                    new Set(prev).add(post.id),
+                                                )
+                                            }
+                                        >
+                                            <Shield size={32} />
+                                            <p>Sensitive Content</p>
+                                            <button className="reveal-btn">Tap to View</button>
                                         </div>
                                     )}
                                 </div>

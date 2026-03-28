@@ -1,6 +1,10 @@
 .hero-section {
     padding: 6rem 0 4rem;
-    background: linear-gradient(135deg, rgba(var(--primary), 0.05) 0%, rgba(var(--secondary), 0.05) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(var(--primary), 0.05) 0%,
+        rgba(var(--secondary), 0.05) 100%
+    );
     overflow: hidden;
     position: relative;
 }
@@ -386,4 +390,118 @@
     .footer-content {
         gap: 1.5rem;
     }
+}
+
+/* Campus Pulse Section */
+.pulse-section {
+    padding: 4rem 0;
+    background: linear-gradient(
+        135deg,
+        rgba(var(--primary-rgb), 0.05),
+        rgba(var(--secondary-rgb), 0.05)
+    );
+}
+
+.pulse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.pulse-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: rgb(var(--surface));
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(var(--border), 0.5);
+}
+
+.pulse-icon {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--primary-rgb), 0.1);
+    border-radius: 50%;
+    color: rgb(var(--primary));
+}
+
+.pulse-icon .pulse-dot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #2ecc71;
+    border-radius: 50%;
+    border: 2px solid rgb(var(--surface));
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.pulse-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.pulse-content strong {
+    font-size: 1.5rem;
+    color: rgb(var(--text-main));
+}
+
+.pulse-content span {
+    font-size: 0.85rem;
+    color: rgb(var(--text-secondary));
+}
+
+.trending-topics {
+    text-align: center;
+}
+
+.trending-topics h4 {
+    margin-bottom: 1rem;
+    color: rgb(var(--text-main));
+}
+
+.topic-tags {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.topic-tag {
+    padding: 0.5rem 1rem;
+    background: rgb(var(--surface));
+    border: 1px solid rgba(var(--border), 0.5);
+    border-radius: 20px;
+    text-decoration: none;
+    color: rgb(var(--text-main));
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.topic-tag:hover {
+    background: rgb(var(--primary));
+    color: white;
+    border-color: rgb(var(--primary));
 }

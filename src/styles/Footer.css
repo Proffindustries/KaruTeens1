@@ -1,9 +1,8 @@
 .footer {
     background-color: rgb(var(--background));
     border-top: 1px solid rgba(var(--border), 0.5);
-    padding: 4rem 0 2rem;
+    padding: 2rem 0 1rem;
     margin-top: auto;
-    /* Push to bottom if content is short */
 }
 
 .footer-content {
@@ -35,10 +34,13 @@
 .footer-section ul {
     list-style: none;
     padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .footer-section ul li {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0;
 }
 
 .footer-section ul li a {

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import '../styles/GlobalBackButton.css';
 
-const GlobalBackButton = () => {
+const GlobalBackButton = React.memo(() => {
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -20,6 +20,6 @@ const GlobalBackButton = () => {
             <ArrowLeft size={24} />
         </button>
     );
-};
+});
 
 export default GlobalBackButton;

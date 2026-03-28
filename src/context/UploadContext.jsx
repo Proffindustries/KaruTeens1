@@ -40,20 +40,26 @@ export const UploadProvider = ({ children }) => {
         );
     }, []);
 
-    const completeUpload = useCallback((uploadId, result) => {
-        setUploads((prev) =>
-            prev.map((upload) =>
-                upload.id === uploadId
-                    ? { ...upload, status: 'completed', progress: 100, result }
-                    : upload,
-            ),
-        );
-
-        // Auto-remove completed uploads after 5 seconds
-        setTimeout(() => {
-            removeUpload(uploadId);
-        }, 5000);
+    const removeUpload = useCallback((uploadId) => {
+        setUploads((prev) => prev.filter((upload) => upload.id !== uploadId));
     }, []);
+
+    const completeUpload = useCallback(
+        (uploadId, result) => {
+            setUploads((prev) =>
+                prev.map((upload) =>
+                    upload.id === uploadId
+                        ? { ...upload, status: 'completed', progress: 100, result }
+                        : upload,
+                ),
+            );
+
+            setTimeout(() => {
+                removeUpload(uploadId);
+            }, 5000);
+        },
+        [removeUpload],
+    );
 
     const failUpload = useCallback((uploadId, error) => {
         setUploads((prev) =>
@@ -78,12 +84,8 @@ export const UploadProvider = ({ children }) => {
 
             setTimeout(() => removeUpload(uploadId), 2000);
         },
-        [uploads],
+        [uploads, removeUpload],
     );
-
-    const removeUpload = useCallback((uploadId) => {
-        setUploads((prev) => prev.filter((upload) => upload.id !== uploadId));
-    }, []);
 
     const setCancelToken = useCallback((uploadId, cancelToken) => {
         setUploads((prev) =>

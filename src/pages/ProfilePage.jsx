@@ -13,28 +13,49 @@ import {
     CheckCircle,
     Zap,
     ShieldCheck,
+    Flame,
+    Trophy,
+    Eye,
+    Award,
+    Star,
+    Lock,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PostCard from '../components/PostCard.jsx';
 import { PostSkeleton } from '../components/Skeleton.jsx';
-import '../styles/ProfilePage.css'; // Creating this next
+import '../styles/ProfilePage.css';
 
 import { useParams } from 'react-router-dom';
-import { useProfile, useUpdateProfile } from '../hooks/useUser.js';
+import { useProfile, useUpdateProfile, useFollow, useUnfollow } from '../hooks/useUser.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
+import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
+
+const { data: gamificationRes, isLoading: isLoadingGamification } = useGamification(targetUsername);
 
 const ProfilePage = () => {
     const { username: urlUsername } = useParams();
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const targetUsername = urlUsername || currentUser.username;
 
-    const { data: profile, isLoading, error } = useProfile(targetUsername);
+    const { data: profileRes, isLoading, error } = useProfile(targetUsername);
     const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
+    const { mutate: follow, isPending: isFollowingAction } = useFollow();
+    const { mutate: unfollow, isPending: isUnfollowingAction } = useUnfollow();
     const { uploadImage, isUploading: isUploadingMedia } = useMediaUpload();
+    const { showToast } = useToast();
+
+    const profile = profileRes?.profile;
+    const stats = {
+        followers: profileRes?.followers_count || 0,
+        following: profileRes?.following_count || 0,
+        isFollowing: profileRes?.is_following || false,
+    };
 
     const avatarInputRef = React.useRef(null);
     const [isEditing, setIsEditing] = useState(false);
+
+    const isOwnProfile = !urlUsername || urlUsername === currentUser.username;
 
     const handleAvatarClick = () => {
         if (isOwnProfile) {
@@ -50,21 +71,17 @@ const ProfilePage = () => {
             const url = await uploadImage(file);
             updateProfile({ avatar_url: url });
         } catch (err) {
-            console.error('Avatar upload failed:', err);
+            showToast('Avatar upload failed. Please try again.', 'error');
         }
     };
 
-    // Disable body scroll when modal is open
-    React.useEffect(() => {
-        if (isEditing) {
-            document.body.style.overflow = 'hidden';
+    const handleFollowToggle = () => {
+        if (stats.isFollowing) {
+            unfollow(targetUsername);
         } else {
-            document.body.style.overflow = 'unset';
+            follow(targetUsername);
         }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isEditing]);
+    };
 
     const [editForm, setEditForm] = useState({
         bio: '',
@@ -73,6 +90,7 @@ const ProfilePage = () => {
         year_of_study: '',
         age: '',
         gender: '',
+        is_locked: false,
         social_links: {
             instagram: '',
             tiktok: '',
@@ -82,17 +100,16 @@ const ProfilePage = () => {
         },
     });
 
-    const isOwnProfile = !urlUsername || urlUsername === currentUser.username;
-
     // We'll set the form initial values when opening modal
     const openEditModal = () => {
         setEditForm({
             bio: profile?.bio || '',
             full_name: profile?.full_name || '',
             school: profile?.school || '',
-            year_of_study: profile?.year_of_study || '',
-            age: profile?.age || '',
+            year_of_study: profile?.year_of_study?.toString() || '',
+            age: profile?.age?.toString() || '',
             gender: profile?.gender || '',
+            is_locked: profile?.is_locked || false,
             social_links: {
                 instagram: profile?.social_links?.instagram || '',
                 tiktok: profile?.social_links?.tiktok || '',
@@ -117,11 +134,31 @@ const ProfilePage = () => {
         );
     };
 
-    if (isLoading) return <div className="container">Loading profile...</div>;
-    if (error) return <div className="container">Error: {error.message}</div>;
-    if (!profile) return <div className="container">Profile not found</div>;
+    if (isLoading)
+        return (
+            <div className="container" style={{ padding: '2rem' }}>
+                Loading profile...
+            </div>
+        );
+    if (error)
+        return (
+            <div className="container error-container">
+                <div className="error-content">
+                    <h2>Unable to load profile</h2>
+                    <p>Something went wrong while loading this profile.</p>
+                    <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    if (!profile)
+        return (
+            <div className="container" style={{ padding: '2rem' }}>
+                Profile not found
+            </div>
+        );
 
-    // Use fetched data instead of dummy data
     const user = {
         name: profile.full_name || 'New User',
         username: `@${profile.username}`,
@@ -136,13 +173,14 @@ const ProfilePage = () => {
                   year: 'numeric',
               })
             : 'Recently',
-        followers: 0,
-        following: 0,
+        followers: stats.followers,
+        following: stats.following,
         quote: 'Knowledge increases by sharing, not by saving.',
         socials: profile.social_links || {},
     };
 
-    const userPosts = []; // Fetch posts by user handler next
+    const isLocked = profile.is_locked && !isOwnProfile && !stats.isFollowing;
+    const userPosts = []; // Post fetching to be integrated
 
     return (
         <div className="container profile-page">
@@ -178,13 +216,21 @@ const ProfilePage = () => {
                         />
                     </div>
                     <div className="profile-actions">
-                        {isOwnProfile && (
+                        {isOwnProfile ? (
                             <button
                                 className="btn btn-outline btn-sm"
                                 onClick={openEditModal}
                                 disabled={isUploadingMedia}
                             >
                                 <Edit2 size={16} /> Edit Profile
+                            </button>
+                        ) : (
+                            <button
+                                className={`btn btn-sm ${stats.isFollowing ? 'btn-outline' : 'btn-primary'}`}
+                                onClick={handleFollowToggle}
+                                disabled={isFollowingAction || isUnfollowingAction}
+                            >
+                                {stats.isFollowing ? 'Following' : 'Follow'}
                             </button>
                         )}
                     </div>
@@ -212,6 +258,9 @@ const ProfilePage = () => {
                         {profile.is_premium && (
                             <Zap size={20} color="#f1c40f" fill="#f1c40f" title="Campus Pro" />
                         )}
+                        {profile.is_locked && (
+                            <ShieldCheck size={20} color="#747d8c" title="Locked Profile" />
+                        )}
                     </div>
                     <p className="profile-username">
                         {user.username}
@@ -238,6 +287,35 @@ const ProfilePage = () => {
                         <div>
                             <strong>{user.following}</strong> <span>Following</span>
                         </div>
+                        {isOwnProfile && (
+                            <div>
+                                <strong>{mockGamification.profileViews}</strong> <span>Views</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Gamification Stats */}
+                    <div className="profile-gamification">
+                        <div className="gamification-item points" title="KaruPoints">
+                            <Star size={16} fill="#f1c40f" color="#f1c40f" />
+                            <span>{(gamificationRes?.points || 0).toLocaleString()} pts</span>
+                        </div>
+                        {(gamificationRes?.streak || 0) > 0 && (
+                            <div
+                                className="gamification-item streak"
+                                title={`${gamificationRes?.streak || 0} day streak! Best: ${gamificationRes?.longestStreak || 0}`}
+                            >
+                                <Flame size={16} fill="#e74c3c" color="#e74c3c" />
+                                <span>{gamificationRes?.streak || 0}🔥</span>
+                            </div>
+                        )}
+                        <div
+                            className="gamification-item level"
+                            title={`Level ${gamificationRes?.level || 0}`}
+                        >
+                            <Trophy size={16} fill="#9b59b6" color="#9b59b6" />
+                            <span>Lvl {gamificationRes?.level || 0}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -252,71 +330,146 @@ const ProfilePage = () => {
                 <p>"{user.quote}"</p>
             </motion.div>
 
+            {/* Badges Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card badges-card"
+            >
+                <div className="badges-header">
+                    <h3>
+                        <Award size={20} /> Achievements
+                    </h3>
+                    <span className="badge-count">
+                        {(gamificationRes?.badges || []).length} badges
+                    </span>
+                </div>
+                <div className="badges-grid">
+                    {(gamificationRes?.badges || []).map((badge) => (
+                        <div key={badge.id} className="badge-item" title={badge.description}>
+                            <span className="badge-icon">{badge.icon}</span>
+                            <span className="badge-name">{badge.name}</span>
+                        </div>
+                    ))}
+                    <div className="badge-item locked" title="Unlock more badges by engaging!">
+                        <Lock size={16} />
+                        <span>+{5 - mockGamification.badges.length} more</span>
+                    </div>
+                </div>
+                <div className="level-progress">
+                    <div className="level-info">
+                        <span>Level {mockGamification.level}</span>
+                        <span>
+                            {mockGamification.points}/{mockGamification.nextLevelPoints} pts
+                        </span>
+                    </div>
+                    <div className="progress-bar">
+                        <div
+                            className="progress-fill"
+                            style={{
+                                width: `${((gamificationRes?.points || 0) / (gamificationRes?.nextLevelPoints || 1)) * 100}%`,
+                            }}
+                        ></div>
+                    </div>
+                </div>
+            </motion.div>
+
             {/* Content Tabs */}
             <div className="profile-content-grid">
                 <div className="left-column">
                     <div className="card info-card">
                         <h3>About</h3>
-                        <ul>
-                            <li>
-                                <strong>Age:</strong> {user.age}
-                            </li>
-                            <li>
-                                <strong>Gender:</strong> {user.gender}
-                            </li>
-                            <li>
-                                <strong>School:</strong> {user.school}
-                            </li>
-                        </ul>
-                        <div className="social-links-profile">
-                            {user.socials.instagram && (
-                                <a
-                                    href={`https://instagram.com/${user.socials.instagram}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <Instagram size={20} />
-                                </a>
-                            )}
-                            {user.socials.twitter && (
-                                <a
-                                    href={`https://twitter.com/${user.socials.twitter}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <Twitter size={20} />
-                                </a>
-                            )}
-                            {user.socials.tiktok && (
-                                <a
-                                    href={`https://tiktok.com/@${user.socials.tiktok}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <Video size={20} />
-                                </a>
-                            )}
-                            {user.socials.youtube && (
-                                <a
-                                    href={`https://youtube.com/@${user.socials.youtube}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <Youtube size={20} />
-                                </a>
-                            )}
-                            {user.socials.other && (
-                                <a href={user.socials.other} target="_blank" rel="noreferrer">
-                                    <Share2 size={20} />
-                                </a>
-                            )}
-                        </div>
+                        {isLocked ? (
+                            <div
+                                className="locked-message"
+                                style={{ textAlign: 'center', padding: '1rem' }}
+                            >
+                                <ShieldCheck
+                                    size={32}
+                                    style={{ marginBottom: '0.5rem', opacity: 0.5 }}
+                                />
+                                <p>This profile is locked. Follow to see full details.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <ul>
+                                    <li>
+                                        <strong>Age:</strong> {user.age}
+                                    </li>
+                                    <li>
+                                        <strong>Gender:</strong> {user.gender}
+                                    </li>
+                                    <li>
+                                        <strong>School:</strong> {user.school}
+                                    </li>
+                                </ul>
+                                <div className="social-links-profile">
+                                    {user.socials.instagram && (
+                                        <a
+                                            href={`https://instagram.com/${user.socials.instagram}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <Instagram size={20} />
+                                        </a>
+                                    )}
+                                    {user.socials.twitter && (
+                                        <a
+                                            href={`https://twitter.com/${user.socials.twitter}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <Twitter size={20} />
+                                        </a>
+                                    )}
+                                    {user.socials.tiktok && (
+                                        <a
+                                            href={`https://tiktok.com/@${user.socials.tiktok}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <Video size={20} />
+                                        </a>
+                                    )}
+                                    {user.socials.youtube && (
+                                        <a
+                                            href={`https://youtube.com/@${user.socials.youtube}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <Youtube size={20} />
+                                        </a>
+                                    )}
+                                    {user.socials.other && (
+                                        <a
+                                            href={user.socials.other}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <Share2 size={20} />
+                                        </a>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
                 <div className="main-column">
                     <div className="posts-feed">
-                        {isLoading ? (
+                        {isLocked ? (
+                            <div
+                                className="empty-state card"
+                                style={{ padding: '3rem', textAlign: 'center' }}
+                            >
+                                <ShieldCheck
+                                    size={48}
+                                    style={{ marginBottom: '1rem', opacity: 0.2 }}
+                                />
+                                <h3>Locked Profile</h3>
+                                <p>Follow this user to see their posts and interactions.</p>
+                            </div>
+                        ) : isLoading ? (
                             [1, 2].map((i) => <PostSkeleton key={i} />)
                         ) : userPosts?.length > 0 ? (
                             userPosts.map((post) => <PostCard key={post.id} post={post} />)
@@ -343,6 +496,27 @@ const ProfilePage = () => {
                             </button>
                         </div>
                         <div className="modal-body">
+                            <div
+                                className="form-group"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    marginBottom: '1rem',
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    id="is_locked"
+                                    checked={editForm.is_locked}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, is_locked: e.target.checked })
+                                    }
+                                />
+                                <label htmlFor="is_locked" style={{ margin: 0 }}>
+                                    Locked Profile (Only followers can see your details)
+                                </label>
+                            </div>
                             <div className="form-group">
                                 <label>Full Name</label>
                                 <input
@@ -388,6 +562,8 @@ const ProfilePage = () => {
                                     <option value="2">Year 2</option>
                                     <option value="3">Year 3</option>
                                     <option value="4">Year 4</option>
+                                    <option value="5">Year 5+</option>
+                                    <option value="0">Alumni</option>
                                 </select>
                             </div>
                             <div
@@ -425,6 +601,8 @@ const ProfilePage = () => {
                                     </select>
                                 </div>
                             </div>
+
+                            <h4>Social Links</h4>
                             <div className="form-group">
                                 <label>Instagram (username)</label>
                                 <input
@@ -460,23 +638,6 @@ const ProfilePage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>YouTube (handle)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="@handle"
-                                    value={editForm.social_links.youtube}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                youtube: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
                                 <label>Twitter (username)</label>
                                 <input
                                     className="form-input"
@@ -488,23 +649,6 @@ const ProfilePage = () => {
                                             social_links: {
                                                 ...editForm.social_links,
                                                 twitter: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Other Link (URL)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="https://..."
-                                    value={editForm.social_links.other}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                other: e.target.value,
                                             },
                                         })
                                     }

@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-const Avatar = ({ src, name, size = 'md', className = '', onClick }) => {
+const Avatar = React.memo(({ src, name, size = 'md', className = '', onClick }) => {
     const [imgError, setImgError] = useState(false);
-
-    // Reset error state if src changes
-    useEffect(() => {
-        setImgError(false);
-    }, [src]);
 
     const getInitials = (n) => {
         if (!n) return '?';
@@ -67,10 +62,11 @@ const Avatar = ({ src, name, size = 'md', className = '', onClick }) => {
             className={`avatar-img ${className}`}
             style={style}
             onError={() => setImgError(true)}
+            onLoad={() => setImgError(false)}
             onClick={onClick}
             loading="lazy" // Add native lazy loading
         />
     );
-};
+});
 
 export default Avatar;

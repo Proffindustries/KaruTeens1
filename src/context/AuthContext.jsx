@@ -1,0 +1,106 @@
+import { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import api from '../api/client';
+
+const AuthContext = createContext(null);
+
+export const AuthProvider = ({ children }) => {
+    const [token, setToken] = useState(() => localStorage.getItem('token'));
+    const [user, setUser] = useState(() => {
+        const userJson = localStorage.getItem('user');
+        return userJson ? JSON.parse(userJson) : null;
+    });
+
+    // Derive isAuthenticated from token to avoid state sync issues
+    const isAuthenticatedDerived = !!token;
+
+    // Update localStorage when token changes
+    useEffect(() => {
+        if (token) {
+            localStorage.setItem('token', token);
+        } else {
+            localStorage.removeItem('token');
+        }
+    }, [token]);
+
+    // Update localStorage when user changes
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem('user', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('user');
+        }
+    }, [user]);
+
+    // Check token expiration and logout if expired
+    useEffect(() => {
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                const currentTime = Date.now() / 1000;
+
+                // If token is expired, logout
+                if (decoded.exp < currentTime) {
+                    logout();
+                }
+            } catch (err) {
+                // If token is invalid, logout
+                console.error('Invalid token:', err);
+                logout();
+            }
+        }
+    }, [token]);
+
+    const login = (newToken, newUser) => {
+        const normalizedUser = {
+            ...newUser,
+            id: newUser.id || newUser.user_id,
+            user_id: newUser.user_id || newUser.id,
+        };
+        setToken(newToken);
+        setUser(normalizedUser);
+    };
+
+    const logout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (err) {
+            console.error('Logout failed:', err);
+        } finally {
+            setToken(null);
+            setUser(null);
+        }
+    };
+
+    const updateUser = (updatedUser) => {
+        const normalizedUser = {
+            ...updatedUser,
+            id: updatedUser.id || updatedUser.user_id,
+            user_id: updatedUser.user_id || updatedUser.id,
+        };
+        setUser(normalizedUser);
+    };
+
+    return (
+        <AuthContext.Provider
+            value={{
+                token,
+                user,
+                isAuthenticated: isAuthenticatedDerived,
+                login,
+                logout,
+                updateUser,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuthContext = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuthContext must be used within an AuthProvider');
+    }
+    return context;
+};

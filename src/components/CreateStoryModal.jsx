@@ -1,16 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { X, Image as ImageIcon, Video, Loader2, Send } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Loader2, Send, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCreateStory } from '../hooks/useStories';
 import { useMediaUpload } from '../hooks/useMedia';
 import { useToast } from '../context/ToastContext';
 import '../styles/CreatePostModal.css'; // Reusing modal styles for consistency
 
-const CreateStoryModal = ({ isOpen, onClose }) => {
+const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
     const [caption, setCaption] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isNsfw, setIsNsfw] = useState(false);
 
     const fileInputRef = useRef(null);
     const { mutate: createStory } = useCreateStory();
@@ -47,6 +48,7 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                     media_url: mediaUrl,
                     media_type: mediaType,
                     caption: caption,
+                    is_nsfw: isNsfw,
                 },
                 {
                     onSuccess: () => {
@@ -60,7 +62,6 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
             );
         } catch (error) {
             console.error(error);
-            // Toast handled in hook usually, but doubled check here
         } finally {
             setIsUploading(false);
         }
@@ -71,6 +72,7 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
         setSelectedFile(null);
         setPreview(null);
         setIsUploading(false);
+        setIsNsfw(false);
         onClose();
     };
 
@@ -151,6 +153,7 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                                         src={preview.url}
                                         alt="Preview"
                                         className="w-full h-auto max-h-[400px] object-contain"
+                                        loading="lazy"
                                     />
                                 )}
                                 <button
@@ -165,7 +168,7 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                             </div>
                         )}
 
-                        <div className="mt-4">
+                        <div className="mt-4 flex flex-col gap-3">
                             <input
                                 type="text"
                                 placeholder="Add a caption..."
@@ -173,6 +176,28 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
                                 onChange={(e) => setCaption(e.target.value)}
                                 className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 outline-none"
                             />
+
+                            <div
+                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isNsfw ? 'bg-red-500/20 border-red-500/50' : 'bg-gray-800 border-gray-700'} border`}
+                                onClick={() => setIsNsfw(!isNsfw)}
+                            >
+                                <Shield
+                                    size={18}
+                                    className={isNsfw ? 'text-red-500' : 'text-gray-400'}
+                                />
+                                <span
+                                    className={`text-sm ${isNsfw ? 'text-red-200' : 'text-gray-300'}`}
+                                >
+                                    Mark as Sensitive (NSFW)
+                                </span>
+                                <div
+                                    className={`ml-auto w-10 h-5 rounded-full relative transition-colors ${isNsfw ? 'bg-red-500' : 'bg-gray-600'}`}
+                                >
+                                    <div
+                                        className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isNsfw ? 'left-6' : 'left-1'}`}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -194,6 +219,6 @@ const CreateStoryModal = ({ isOpen, onClose }) => {
             </motion.div>
         </AnimatePresence>
     );
-};
+});
 
 export default CreateStoryModal;

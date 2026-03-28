@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     X,
     MapPin,
@@ -12,62 +12,65 @@ import {
     Loader2,
     Shield,
     Check,
+    Calendar,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CreatePostModal.css';
 import { useCreatePost } from '../hooks/useContent.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useUpload } from '../context/UploadContext.jsx';
 import { useAuth } from '../hooks/useAuth.js';
+import { useToast } from '../context/ToastContext.jsx';
 import Avatar from './Avatar.jsx';
 
-const CreatePostModal = ({ isOpen, onClose }) => {
+const CreatePostModal = React.memo(({ isOpen, onClose }) => {
     const [text, setText] = useState('');
     const [location, setLocation] = useState(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [showLocationOptions, setShowLocationOptions] = useState(false);
+
+    // New fields
+    const [audience, setAudience] = useState(['all']);
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    const [isNsfw, setIsNsfw] = useState(false);
+    const [scheduledDate, setScheduledDate] = useState('');
+    const [showScheduling, setShowScheduling] = useState(false);
+
     const fileInputRef = useRef(null);
     const videoInputRef = useRef(null);
     const audioInputRef = useRef(null);
     const documentInputRef = useRef(null);
 
-    const { mutate: createPost } = useCreatePost();
-    const { uploadImage, uploadFile } = useMediaUpload();
-    const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } =
-        useUpload();
-    const { user, isAuthenticated } = useAuth();
-    const navigate = useNavigate();
-
-    // Disable body scroll when modal is open
-    React.useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
+    // Cleanup object URLs on unmount
+    useEffect(() => {
+        const currentPreviews = previews;
         return () => {
-            document.body.style.overflow = 'unset';
+            currentPreviews.forEach((preview) => {
+                if (preview.url && preview.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(preview.url);
+                }
+            });
         };
-    }, [isOpen]);
+    }, [previews]);
+
+    const { isAuthenticated, user } = useAuth();
+    const navigate = useNavigate();
+    const { showToast } = useToast();
+    const { mutate: createPost } = useCreatePost();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
+    const { uploadImage, uploadFile } = useMediaUpload();
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
-        if (!files.length) return;
-
         setSelectedFiles((prev) => [...prev, ...files]);
 
-        // Create previews
         const newPreviews = files.map((file) => {
-            const type = file.type.startsWith('image/')
-                ? 'image'
-                : file.type.startsWith('video/')
-                  ? 'video'
-                  : file.type.startsWith('audio/')
-                    ? 'audio'
-                    : 'file';
+            let type = 'file';
+            if (file.type.startsWith('image/')) type = 'image';
+            else if (file.type.startsWith('video/')) type = 'video';
+            else if (file.type.startsWith('audio/')) type = 'audio';
 
             return {
                 url: URL.createObjectURL(file),
@@ -81,8 +84,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     const removeFile = (index) => {
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
         setPreviews((prev) => {
-            const newPreviews = prev.filter((_, i) => i !== index);
-            URL.revokeObjectURL(prev[index].url);
+            const newPreviews = [...prev];
+            const removed = newPreviews.splice(index, 1)[0];
+            if (removed && removed.url && removed.url.startsWith('blob:')) {
+                URL.revokeObjectURL(removed.url);
+            }
             return newPreviews;
         });
     };
@@ -93,6 +99,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
         const postContent = text;
         const postLocation = location;
         const files = [...selectedFiles];
+        const postAudience = audience.includes('all') ? null : audience;
+        const postScheduled = scheduledDate ? new Date(scheduledDate).toISOString() : null;
+        const postIsAnonymous = isAnonymous;
+        const postIsNsfw = isNsfw;
+
         const postType =
             files.length > 0
                 ? files[0].type.startsWith('image/')
@@ -109,77 +120,73 @@ const CreatePostModal = ({ isOpen, onClose }) => {
         setLocation(null);
         setSelectedFiles([]);
         setPreviews([]);
+        setAudience(['all']);
+        setIsAnonymous(false);
+        setIsNsfw(false);
+        setScheduledDate('');
         onClose();
 
         // Upload files in background
         if (files.length > 0) {
+            // ... (upload logic)
             const uploadPromises = files.map(async (file) => {
                 const uploadId = addUpload({
                     fileName: file.name,
                     fileSize: file.size,
-                    type: file.type.startsWith('image/')
-                        ? 'image'
-                        : file.type.startsWith('video/')
-                          ? 'video'
-                          : file.type.startsWith('audio/')
-                            ? 'audio'
-                            : 'file',
+                    type: file.type.startsWith('image/') ? 'image' : 'file',
                 });
 
                 try {
-                    const cancelTokenSource = axios.CancelToken.source();
-                    setCancelToken(uploadId, cancelTokenSource);
-
                     let url;
                     if (file.type.startsWith('image/')) {
-                        url = await uploadImage(file, (progress, loaded) =>
-                            updateUploadProgress(uploadId, progress, loaded),
+                        url = await uploadImage(file, (p, l) =>
+                            updateUploadProgress(uploadId, p, l),
                         );
                     } else {
-                        url = await uploadFile(
-                            file,
-                            (progress, loaded) => updateUploadProgress(uploadId, progress, loaded),
-                            cancelTokenSource.token,
+                        url = await uploadFile(file, (p, l) =>
+                            updateUploadProgress(uploadId, p, l),
                         );
                     }
-
                     completeUpload(uploadId, { url });
                     return url;
-                } catch (error) {
-                    if (!axios.isCancel(error)) {
-                        failUpload(uploadId, error);
-                    }
-                    throw error;
+                } catch (err) {
+                    failUpload(uploadId, err);
+                    throw err;
                 }
             });
 
             try {
                 const mediaUrls = await Promise.all(uploadPromises);
-
-                // Create post after all uploads complete
                 createPost({
                     content: postContent,
                     media_urls: mediaUrls.filter(Boolean),
                     post_type: postType,
                     location: postLocation,
+                    audience: postAudience,
+                    scheduled_publish_date: postScheduled,
+                    is_anonymous: postIsAnonymous,
+                    is_nsfw: postIsNsfw,
                 });
-            } catch (error) {
-                console.error('Upload failed:', error);
+            } catch {
+                showToast('Failed to upload media. Please try again.', 'error');
             }
         } else {
-            // No files, create post immediately
             createPost({
                 content: postContent,
                 media_urls: [],
                 post_type: 'text',
                 location: postLocation,
+                audience: postAudience,
+                scheduled_publish_date: postScheduled,
+                is_anonymous: postIsAnonymous,
+                is_nsfw: postIsNsfw,
             });
         }
     };
 
     const handleGetLocation = (isLive = false) => {
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported');
+            showToast('Geolocation is not supported by your browser', 'error');
             return;
         }
 
@@ -195,9 +202,8 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                 });
                 setShowLocationOptions(false);
             },
-            (err) => {
-                console.error(err);
-                alert('Could not get location. Ensure permissions are granted.');
+            () => {
+                showToast('Could not get location. Ensure permissions are granted.', 'error');
             },
         );
     };
@@ -289,14 +295,79 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                                         className="modal-avatar"
                                     />
                                     <div className="user-details">
-                                        <strong>{user.username || 'Anonymous'}</strong>
-                                        <select className="audience-select">
-                                            <option>Public</option>
-                                            <option>Friends</option>
-                                            <option>Only Me</option>
-                                        </select>
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                            }}
+                                        >
+                                            <strong>
+                                                {isAnonymous
+                                                    ? 'Anonymous'
+                                                    : user.username || 'User'}
+                                            </strong>
+                                            <span
+                                                className={`toggle-anonymous ${isAnonymous ? 'active' : ''}`}
+                                                onClick={() => setIsAnonymous(!isAnonymous)}
+                                                title="Post Anonymously"
+                                            >
+                                                {isAnonymous ? '👻' : '👤'}
+                                            </span>
+                                        </div>
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                gap: '0.5rem',
+                                                marginTop: '4px',
+                                            }}
+                                        >
+                                            <select
+                                                className="audience-select"
+                                                value={audience[0]}
+                                                onChange={(e) => setAudience([e.target.value])}
+                                            >
+                                                <option value="all">Public (All)</option>
+                                                <option value="freshers">Freshers (Y1)</option>
+                                                <option value="2nd year">2nd Year</option>
+                                                <option value="3rd year">3rd Year</option>
+                                                <option value="4th year">4th Year</option>
+                                                <option value="alumni">Alumni</option>
+                                                <option value="staff">Staff Only</option>
+                                            </select>
+
+                                            <button
+                                                className={`schedule-btn ${scheduledDate ? 'active' : ''}`}
+                                                onClick={() => setShowScheduling(!showScheduling)}
+                                                title="Schedule Post"
+                                            >
+                                                <Calendar size={14} />{' '}
+                                                {scheduledDate ? 'Scheduled' : 'Now'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {showScheduling && (
+                                    <div className="scheduling-panel">
+                                        <label>Publish on:</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={scheduledDate}
+                                            onChange={(e) => setScheduledDate(e.target.value)}
+                                            min={new Date().toISOString().slice(0, 16)}
+                                        />
+                                        <button
+                                            className="clear-schedule"
+                                            onClick={() => {
+                                                setScheduledDate('');
+                                                setShowScheduling(false);
+                                            }}
+                                        >
+                                            Clear
+                                        </button>
+                                    </div>
+                                )}
 
                                 <textarea
                                     className="post-textarea"
@@ -311,7 +382,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                                         {previews.map((preview, idx) => (
                                             <div key={idx} className="preview-item">
                                                 {preview.type === 'image' && (
-                                                    <img src={preview.url} alt="Preview" />
+                                                    <img
+                                                        src={preview.url}
+                                                        alt="Preview"
+                                                        loading="lazy"
+                                                    />
                                                 )}
                                                 {preview.type === 'video' && (
                                                     <video src={preview.url} muted />
@@ -436,6 +511,17 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                                         >
                                             <FileText size={24} color="#606770" />
                                         </button>
+
+                                        <button
+                                            className={`icon-btn ${isNsfw ? 'active' : ''}`}
+                                            title="NSFW Content"
+                                            onClick={() => setIsNsfw(!isNsfw)}
+                                        >
+                                            <Shield
+                                                size={24}
+                                                color={isNsfw ? '#f5533d' : '#606770'}
+                                            />
+                                        </button>
                                     </div>
                                 </div>
                             </>
@@ -457,6 +543,6 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             </motion.div>
         </AnimatePresence>
     );
-};
+});
 
 export default CreatePostModal;

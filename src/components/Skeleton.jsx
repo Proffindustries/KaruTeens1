@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/Skeleton.css';
 
-const Skeleton = ({ className, width, height, circle }) => {
+const Skeleton = React.memo(({ className, width, height, circle }) => {
     const style = {
         width: width || '100%',
         height: height || '1rem',
@@ -13,9 +13,9 @@ const Skeleton = ({ className, width, height, circle }) => {
             style={style}
         />
     );
-};
+});
 
-export const PostSkeleton = () => (
+export const PostSkeleton = React.memo(() => (
     <div className="post-card skeleton-card">
         <div
             className="post-header"
@@ -34,6 +34,6 @@ export const PostSkeleton = () => (
             <div style={{ marginTop: '1rem', height: '200px' }} className="skeleton" />
         </div>
     </div>
-);
+));
 
 export default Skeleton;

@@ -402,6 +402,29 @@
     background: #ef4444;
 }
 
+.call-control-btn.recording {
+    background: #dc2626;
+    animation: pulse-recording 1s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.call-control-btn.download {
+    background: #10b981;
+}
+
+.call-control-btn.download:hover {
+    background: #059669;
+}
+
 .call-control-btn.end-call {
     background: #ef4444;
     width: 70px;

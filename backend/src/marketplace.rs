@@ -13,6 +13,7 @@ use crate::models::{MarketplaceItem, Profile, User};
 use crate::auth::AuthUser;
 use mongodb::{bson::{doc, oid::ObjectId}, options::FindOptions};
 use futures::stream::StreamExt;
+use std::collections::HashMap;
 
 // --- DTOs ---
 
@@ -65,7 +66,7 @@ pub async fn create_item_handler(
         seller_id: user.user_id,
         title: payload.title,
         description: payload.description,
-        price: payload.price,
+        price: (payload.price * 100.0) as i64,
         currency: payload.currency,
         condition: payload.condition,
         category: payload.category,
@@ -89,6 +90,7 @@ pub async fn get_items_handler(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let items_collection = state.mongo.collection::<MarketplaceItem>("marketplace_items");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
+    let users_collection = state.mongo.collection::<User>("users");
 
     let mut query = doc! { "status": "available" };
     
@@ -100,7 +102,8 @@ pub async fn get_items_handler(
 
     if let Some(search) = filter.search {
         if !search.is_empty() {
-             query.insert("title", doc! { "$regex": search, "$options": "i" });
+            let escaped_search = regex::escape(&search);
+            query.insert("title", doc! { "$regex": &escaped_search, "$options": "i" });
         }
     }
 
@@ -108,47 +111,57 @@ pub async fn get_items_handler(
     let mut cursor = items_collection.find(query, find_options).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let mut item_responses = Vec::new();
+    let mut items = Vec::new();
+    while let Some(Ok(item)) = cursor.next().await {
+        items.push(item);
+    }
 
-    while let Some(result) = cursor.next().await {
-        match result {
-            Ok(item) => {
-                // Fetch seller details
-                let profile = profiles_collection.find_one(doc! { "user_id": item.seller_id }, None).await
-                    .unwrap_or(None);
-                
-                let (seller_name, seller_avatar) = match profile {
-                    Some(p) => (p.username, p.avatar_url),
-                    None => ("Unknown".to_string(), None),
-                };
+    if items.is_empty() {
+        return Ok((StatusCode::OK, Json(json!([]))));
+    }
 
-                // Get seller verification status
-                let users = state.mongo.collection::<User>("users");
-                let user = users.find_one(doc! { "_id": item.seller_id }, None).await.unwrap_or(None);
-                let seller_is_verified = user.map(|u| u.is_verified).unwrap_or(false);
-
-                item_responses.push(ItemResponse {
-                    id: item.id.unwrap().to_hex(),
-                    seller_id: item.seller_id.to_hex(),
-                    seller_name,
-                    seller_avatar,
-                    title: item.title,
-                    description: item.description,
-                    price: item.price,
-                    currency: item.currency,
-                    condition: item.condition,
-                    category: item.category,
-                    images: item.images,
-                    status: item.status,
-                    created_at: item.created_at.to_chrono().to_rfc3339(),
-                    seller_is_verified,
-                });
-            },
-            Err(_) => continue,
+    // Batch fetch profiles and users
+    let seller_ids: Vec<ObjectId> = items.iter().map(|i| i.seller_id).collect();
+    
+    let mut profile_map = HashMap::new();
+    let profile_cursor_res = profiles_collection.find(doc! { "user_id": { "$in": &seller_ids } }, None).await;
+    if let Ok(mut profile_cursor) = profile_cursor_res {
+        while let Some(Ok(p)) = profile_cursor.next().await {
+            profile_map.insert(p.user_id, p);
         }
     }
 
-    Ok((StatusCode::OK, Json(item_responses)))
+    let mut user_map = HashMap::new();
+    let user_cursor_res = users_collection.find(doc! { "_id": { "$in": &seller_ids } }, None).await;
+    if let Ok(mut user_cursor) = user_cursor_res {
+        while let Some(Ok(u)) = user_cursor.next().await {
+            user_map.insert(u.id.unwrap(), u);
+        }
+    }
+
+    let item_responses: Vec<ItemResponse> = items.into_iter().map(|item| {
+        let profile = profile_map.get(&item.seller_id);
+        let user = user_map.get(&item.seller_id);
+
+        ItemResponse {
+            id: item.id.unwrap().to_hex(),
+            seller_id: item.seller_id.to_hex(),
+            seller_name: profile.map(|p| p.username.clone()).unwrap_or_else(|| "Unknown".to_string()),
+            seller_avatar: profile.and_then(|p| p.avatar_url.clone()),
+            title: item.title,
+            description: item.description,
+            price: item.price as f64 / 100.0,
+            currency: item.currency,
+            condition: item.condition,
+            category: item.category,
+            images: item.images,
+            status: item.status,
+            created_at: item.created_at.to_chrono().to_rfc3339(),
+            seller_is_verified: user.map(|u| u.is_verified).unwrap_or(false),
+        }
+    }).collect();
+
+    Ok((StatusCode::OK, Json(json!(item_responses))))
 }
 
 pub async fn get_item_details_handler(
@@ -183,7 +196,7 @@ pub async fn get_item_details_handler(
         seller_avatar,
         title: item.title,
         description: item.description,
-        price: item.price,
+        price: item.price as f64 / 100.0,
         currency: item.currency,
         condition: item.condition,
         category: item.category,

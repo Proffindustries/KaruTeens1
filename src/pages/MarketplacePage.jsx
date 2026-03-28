@@ -5,10 +5,12 @@ import { Link } from 'react-router-dom';
 import '../styles/MarketplacePage.css';
 import CreateItemModal from '../components/CreateItemModal.jsx';
 import { useMarketplaceItems } from '../hooks/useMarketplace.js';
+import useDebounce from '../hooks/useDebounce';
 
 const MarketplacePage = () => {
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 300);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const {
@@ -17,7 +19,7 @@ const MarketplacePage = () => {
         error,
     } = useMarketplaceItems({
         category: filter,
-        search,
+        search: debouncedSearch,
     });
 
     return (
@@ -85,6 +87,7 @@ const MarketplacePage = () => {
                                         }
                                         alt={item.title}
                                         className="item-image"
+                                        loading="lazy"
                                     />
                                     <div className="item-price">
                                         {item.currency} {item.price}

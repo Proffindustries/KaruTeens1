@@ -10,6 +10,7 @@ const PremiumPage = () => {
     const [checkoutId, setCheckoutId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('monthly');
+    const [selectedTier, setSelectedTier] = useState('pro'); // pro or elite
     const { showToast } = useToast();
 
     const handleUpgrade = async (e) => {
@@ -26,7 +27,8 @@ const PremiumPage = () => {
             formattedPhone = '254' + formattedPhone;
 
         setLoading(true);
-        const amount = selectedPlan === 'weekly' ? 10 : selectedPlan === 'monthly' ? 40 : 200;
+        const isElite = selectedTier === 'elite';
+        const amount = selectedPlan === 'monthly' ? (isElite ? 400 : 150) : isElite ? 2000 : 800;
 
         try {
             const { data } = await api.post('/payments/verify', {

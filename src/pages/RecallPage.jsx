@@ -1,39 +1,62 @@
-import React, { useState } from 'react';
-import { FileText, Lock, Eye, Download, AlertOctagon } from 'lucide-react';
-import '../styles/RecallPage.css'; // Creating next
+import React, { useState, useEffect } from 'react';
+import { FileText, Lock, Eye, Download, AlertOctagon, RefreshCw } from 'lucide-react';
+import api from '../api/client';
+import { useToast } from '../context/ToastContext.jsx';
+import '../styles/RecallPage.css';
 
 const RecallPage = () => {
+    const [materials, setMaterials] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [viewingDoc, setViewingDoc] = useState(null);
+    const [fullContent, setFullContent] = useState(null);
+    const { showToast } = useToast();
 
-    const materials = [
-        { id: 1, title: 'Calculus 1 CAT 2 2023', course: 'MAT 101', type: 'CAT', locked: true },
-        {
-            id: 2,
-            title: 'Intro to Programming Final Exam',
-            course: 'COM 110',
-            type: 'Exam',
-            locked: true,
-        },
-        {
-            id: 3,
-            title: 'Physics Mechanics Notes',
-            course: 'PHY 102',
-            type: 'Notes',
-            locked: false,
-        },
-        {
-            id: 4,
-            title: 'Statistics Cheat Sheet',
-            course: 'STA 201',
-            type: 'Summary',
-            locked: true,
-        },
-    ];
+    useEffect(() => {
+        fetchMaterials();
+    }, [showToast]);
+
+    const fetchMaterials = async () => {
+        setLoading(true);
+        try {
+            const { data } = await api.get('/revision-materials');
+            setMaterials(data);
+        } catch (error) {
+            console.error('Failed to fetch revision materials:', error);
+            showToast('Failed to load revision materials. Please try again later.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleUnlock = (id) => {
         // Logic to trigger payment modal would go here
-        alert('Payment Gateway: Please pay Ksh 5 to unlock this document.');
+        showToast('Payment Gateway: Please pay Ksh 5 to unlock this document.', 'info');
     };
+
+    const handleView = async (material) => {
+        setViewingDoc(material);
+        setFullContent(null);
+        try {
+            const { data } = await api.get(`/revision-materials/${material.id}`);
+            if (data.is_locked && !data.has_purchased) {
+                // Keep showing restricted view
+            } else {
+                setFullContent(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch material details:', error);
+            showToast('Failed to load material details. Please try again later.', 'error');
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="container recall-page loading">
+                <RefreshCw className="spin" size={48} />
+                <p>Loading revision materials...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="container recall-page">
@@ -45,26 +68,26 @@ const RecallPage = () => {
             <div className="materials-grid">
                 {materials.map((item) => (
                     <div key={item.id} className="card material-card">
-                        <div className={`material-icon ${item.type.toLowerCase()}`}>
+                        <div className={`material-icon ${item.category.toLowerCase()}`}>
                             <FileText size={32} />
-                            <span className="doc-type">{item.type}</span>
+                            <span className="doc-type">{item.category}</span>
                         </div>
                         <div className="material-info">
                             <h3>{item.title}</h3>
-                            <span className="course-badge">{item.course}</span>
+                            <span className="course-badge">{item.course_code}</span>
                         </div>
                         <div className="material-action">
-                            {item.locked ? (
+                            {item.is_locked ? (
                                 <button
                                     className="btn btn-primary btn-sm btn-full"
                                     onClick={() => handleUnlock(item.id)}
                                 >
-                                    <Lock size={14} /> Unlock (Ksh 5)
+                                    <Lock size={14} /> Unlock (Ksh {item.price})
                                 </button>
                             ) : (
                                 <button
                                     className="btn btn-outline btn-sm btn-full"
-                                    onClick={() => setViewingDoc(item)}
+                                    onClick={() => handleView(item)}
                                 >
                                     <Eye size={14} /> View
                                 </button>
@@ -80,30 +103,57 @@ const RecallPage = () => {
                     <div className="doc-viewer-content no-screenshot">
                         <div className="doc-header">
                             <h3>{viewingDoc.title}</h3>
-                            <button className="close-btn" onClick={() => setViewingDoc(null)}>
+                            <button
+                                className="close-btn"
+                                onClick={() => {
+                                    setViewingDoc(null);
+                                    setFullContent(null);
+                                }}
+                            >
                                 ×
                             </button>
                         </div>
                         <div className="doc-body">
-                            {/* Mock PDF Content */}
-                            <div className="pdf-page">
-                                <h1>
-                                    {viewingDoc.course} - {viewingDoc.type}
-                                </h1>
-                                <p>
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-                                    eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                                </p>
-                                <div className="watermark">KARUTEENS PREVIEW</div>
-                                <p>
-                                    Ut enim ad minim veniam, quis nostrud exercitation ullamco
-                                    laboris nisi ut aliquip ex ea commodo consequat.
-                                </p>
-                                <br />
-                                <h2>Section A</h2>
-                                <p>1. Define the term 'Algorithm'. (2m)</p>
-                                <p>2. Differentiate between RAM and ROM. (4m)</p>
-                            </div>
+                            {fullContent ? (
+                                <div className="pdf-page">
+                                    <h1>
+                                        {fullContent.course_code} - {fullContent.category}
+                                    </h1>
+                                    <p>Document content is now unlocked.</p>
+                                    <div className="doc-iframe-container">
+                                        {/* In a real app, this would be a PDF viewer */}
+                                        <div className="material-content-preview">
+                                            <p>Viewing: {fullContent.title}</p>
+                                            <a
+                                                href={fullContent.file_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-primary"
+                                            >
+                                                <Download size={16} /> Download PDF
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="pdf-page">
+                                    <h1>
+                                        {viewingDoc.course_code} - {viewingDoc.category}
+                                    </h1>
+                                    <p>This is a preview of the document.</p>
+                                    <div className="watermark">KARUTEENS PREVIEW</div>
+                                    <p>
+                                        Purchase this document to view the full content and download
+                                        it.
+                                    </p>
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={() => handleUnlock(viewingDoc.id)}
+                                    >
+                                        Unlock Full Access (Ksh {viewingDoc.price})
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div className="doc-footer">
                             <div className="security-warning">

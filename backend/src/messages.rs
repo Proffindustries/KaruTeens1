@@ -9,9 +9,10 @@ use mongodb::{
     bson::{doc, oid::ObjectId, DateTime},
     options::FindOptions,
 };
-use futures::stream::TryStreamExt;
+use futures::stream::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::collections::HashMap;
 use crate::{
     db::AppState,
     models::{Chat, Message, Profile, MessageReaction},
@@ -351,12 +352,45 @@ pub async fn get_chats_handler(
     ).await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
+    let mut chats = Vec::new();
+    while let Some(Ok(chat)) = cursor.next().await {
+        chats.push(chat);
+    }
+
+    if chats.is_empty() {
+        return Ok((StatusCode::OK, Json(json!([]))));
+    }
+
+    // 1. Collect all unique participant IDs across all chats
+    let mut all_participant_ids = std::collections::HashSet::new();
+    for chat in &chats {
+        for pid in &chat.participants {
+            all_participant_ids.insert(*pid);
+        }
+    }
+
+    // 2. Batch fetch all profiles
+    let mut profile_map = HashMap::new();
+    let participant_ids_vec: Vec<ObjectId> = all_participant_ids.into_iter().collect();
+    let mut profile_cursor = profiles_collection.find(
+        doc! { "user_id": { "$in": &participant_ids_vec } },
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    while let Some(Ok(profile)) = profile_cursor.next().await {
+        profile_map.insert(profile.user_id, profile);
+    }
+
+    // 3. Get user's profile for muted chats
+    let user_profile = profile_map.get(&user.user_id);
+    let muted_chat_ids = user_profile.and_then(|p| p.muted_chats.as_ref()).cloned().unwrap_or_default();
+
+    // 4. Batch fetch unread counts (optimization: only for chats with recent unread messages)
+    // For now, we'll still do a count per chat but we could optimize this with an aggregation if needed.
+    // However, the main N+1 issue was the profiles.
+
     let mut response_chats = Vec::new();
-
-    let user_profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await.unwrap_or(None);
-    let muted_chat_ids = user_profile.and_then(|p| p.muted_chats).unwrap_or_default();
-
-    while let Some(chat) = cursor.try_next().await.unwrap_or(None) {
+    for chat in chats {
         let chat_id = chat.id.unwrap();
         let is_muted = muted_chat_ids.contains(&chat_id);
         
@@ -366,16 +400,13 @@ pub async fn get_chats_handler(
         ).await.unwrap_or(0);
 
         if chat.is_group {
-            let mut group_p = Vec::new();
-            for pid in &chat.participants {
-                if let Ok(Some(p)) = profiles_collection.find_one(doc! { "user_id": pid }, None).await {
-                    group_p.push(ChatParticipant {
-                        user_id: p.user_id.to_hex(),
-                        username: p.username,
-                        avatar_url: p.avatar_url,
-                    });
-                }
-            }
+            let group_p = chat.participants.iter().filter_map(|pid| {
+                profile_map.get(pid).map(|p| ChatParticipant {
+                    user_id: p.user_id.to_hex(),
+                    username: p.username.clone(),
+                    avatar_url: p.avatar_url.clone(),
+                })
+            }).collect::<Vec<_>>();
 
             response_chats.push(ChatResponse {
                 id: chat_id.to_hex(),
@@ -393,13 +424,9 @@ pub async fn get_chats_handler(
             });
         } else {
             let other_id = chat.participants.iter().find(|&&id| id != user.user_id).unwrap_or(&user.user_id);
-            let profile = profiles_collection.find_one(doc! { "user_id": other_id }, None).await.unwrap_or(None);
-
-            if let Some(p) = profile {
+            if let Some(p) = profile_map.get(other_id) {
                 let presence_key = format!("user:presence:{}", p.user_id.to_hex());
-                let mut conn = state.redis.get_async_connection().await
-                    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Redis error"}))))?;
-                
+                let mut conn = state.redis.clone();
                 let is_online: bool = conn.exists(&presence_key).await.unwrap_or(false);
 
                 response_chats.push(ChatResponse {
@@ -409,15 +436,15 @@ pub async fn get_chats_handler(
                     avatar_url: p.avatar_url.clone(),
                     participant: Some(ProfileSummary {
                         user_id: p.user_id.to_hex(),
-                        username: p.username,
-                        avatar_url: p.avatar_url,
-                        public_key: p.public_key,
+                        username: p.username.clone(),
+                        avatar_url: p.avatar_url.clone(),
+                        public_key: p.public_key.clone(),
                         is_online,
                         last_seen: p.last_seen_at.map(|dt| dt.to_chrono().to_rfc3339()),
-                        last_location: p.last_location.map(|l| LocationResponse {
+                        last_location: p.last_location.as_ref().map(|l| LocationResponse {
                             latitude: l.latitude,
                             longitude: l.longitude,
-                            label: l.label,
+                            label: l.label.clone(),
                             is_live: l.is_live,
                             expires_at: l.expires_at.map(|dt| dt.to_chrono().to_rfc3339()),
                         }),
@@ -434,7 +461,7 @@ pub async fn get_chats_handler(
         }
     }
 
-    Ok((StatusCode::OK, Json(response_chats)))
+    Ok((StatusCode::OK, Json(json!(response_chats))))
 }
 
 // Get Messages for a Chat
@@ -446,6 +473,7 @@ pub async fn get_messages_handler(
     let oid = ObjectId::parse_str(&chat_id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
     let chats_collection = state.mongo.collection::<Chat>("chats");
     let messages_collection = state.mongo.collection::<Message>("messages");
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     // Verify participation
     let _chat = chats_collection.find_one(doc! { "_id": oid, "participants": user.user_id }, None).await
@@ -456,27 +484,72 @@ pub async fn get_messages_handler(
     let mut cursor = messages_collection.find(doc! { "chat_id": oid }, find_options).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let mut messages = Vec::new();
-    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+    let mut raw_messages = Vec::new();
+    while let Some(Ok(msg)) = cursor.next().await {
+        raw_messages.push(msg);
+    }
 
-    while let Some(msg) = cursor.try_next().await.unwrap_or(None) {
-        // Skip expired messages
+    if raw_messages.is_empty() {
+        return Ok((StatusCode::OK, Json(json!([]))));
+    }
+
+    // 1. Collect all unique sender IDs and parent message IDs
+    let mut sender_ids = std::collections::HashSet::new();
+    let mut parent_ids = std::collections::HashSet::new();
+    for msg in &raw_messages {
+        sender_ids.insert(msg.sender_id);
+        if let Some(pid) = msg.reply_to_id {
+            parent_ids.insert(pid);
+        }
+    }
+
+    // 2. Batch fetch parent messages to find THEIR senders too
+    let mut parent_message_map = HashMap::new();
+    if !parent_ids.is_empty() {
+        let parent_ids_vec: Vec<ObjectId> = parent_ids.into_iter().collect();
+        let mut parent_cursor = messages_collection.find(doc! { "_id": { "$in": parent_ids_vec } }, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+        while let Some(Ok(pm)) = parent_cursor.next().await {
+            sender_ids.insert(pm.sender_id); 
+            parent_message_map.insert(pm.id.unwrap(), pm);
+        }
+    }
+
+    // 3. Batch fetch ALL needed profiles
+    let mut profile_map = HashMap::new();
+    let sender_ids_vec: Vec<ObjectId> = sender_ids.into_iter().collect();
+    let mut profile_cursor = profiles_collection.find(doc! { "user_id": { "$in": sender_ids_vec } }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    while let Some(Ok(profile)) = profile_cursor.next().await {
+        profile_map.insert(profile.user_id, profile);
+    }
+
+    // 4. Transform to response
+    let mut messages = Vec::new();
+    for msg in raw_messages {
         if let Some(expires_at) = msg.expires_at {
             if expires_at.to_chrono() < chrono::Utc::now() {
                 continue;
             }
         }
-        let sender_profile = profiles_collection.find_one(doc! { "user_id": msg.sender_id }, None).await.unwrap_or(None);
-        let sender_username = sender_profile.map(|p| p.username).unwrap_or_else(|| "Unknown".to_string());
+
+        let sender_username = profile_map.get(&msg.sender_id)
+            .map(|p| p.username.clone())
+            .unwrap_or_else(|| "Unknown".to_string());
 
         let mut reply_to = None;
         if let Some(parent_id) = msg.reply_to_id {
-            if let Ok(Some(parent_msg)) = messages_collection.find_one(doc! { "_id": parent_id }, None).await {
-                let parent_sender = profiles_collection.find_one(doc! { "user_id": parent_msg.sender_id }, None).await.unwrap_or(None);
+            if let Some(pm) = parent_message_map.get(&parent_id) {
+                let parent_username = profile_map.get(&pm.sender_id)
+                    .map(|p| p.username.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                
                 reply_to = Some(ParentMessageSummary {
                     id: parent_id.to_hex(),
-                    content: parent_msg.content,
-                    username: parent_sender.map(|p| p.username).unwrap_or_else(|| "Unknown".to_string()),
+                    content: pm.content.clone(),
+                    username: parent_username,
                 });
             }
         }
@@ -503,7 +576,7 @@ pub async fn get_messages_handler(
         let content = if msg.is_deleted {
             "This message was deleted".to_string()
         } else {
-            msg.content
+            msg.content.clone()
         };
 
         let mut res = MessageResponse {
@@ -511,17 +584,17 @@ pub async fn get_messages_handler(
             sender_id: msg.sender_id.to_hex(),
             sender_username,
             content,
-            attachment_url: if msg.is_deleted { None } else { msg.attachment_url },
-            attachment_type: if msg.is_deleted { None } else { msg.attachment_type },
+            attachment_url: if msg.is_deleted { None } else { msg.attachment_url.clone() },
+            attachment_type: if msg.is_deleted { None } else { msg.attachment_type.clone() },
             created_at: msg.created_at.to_chrono().to_rfc3339(),
             is_me: msg.sender_id == user.user_id,
             reply_to,
             reactions: reaction_summaries,
             is_deleted: msg.is_deleted,
             read_at: msg.read_at.map(|dt| dt.to_chrono().to_rfc3339()),
-            encrypted_content: msg.encrypted_content,
-            encryption_iv: msg.encryption_iv,
-            poll: msg.poll.map(|p| {
+            encrypted_content: msg.encrypted_content.clone(),
+            encryption_iv: msg.encryption_iv.clone(),
+            poll: msg.poll.clone().map(|p| {
                 let mut total_votes = 0;
                 let options = p.options.into_iter().map(|opt| {
                     let count = opt.voter_ids.len();
@@ -540,14 +613,14 @@ pub async fn get_messages_handler(
                     total_votes,
                 }
             }),
-            location: msg.location.map(|l| LocationResponse {
+            location: msg.location.clone().map(|l| LocationResponse {
                 latitude: l.latitude,
                 longitude: l.longitude,
                 label: l.label,
                 is_live: l.is_live,
                 expires_at: l.expires_at.map(|dt| dt.to_chrono().to_rfc3339()),
             }),
-            contact: msg.contact.map(|c| ContactResponse {
+            contact: msg.contact.clone().map(|c| ContactResponse {
                 username: c.username,
                 full_name: c.full_name,
                 avatar_url: c.avatar_url,
@@ -557,7 +630,6 @@ pub async fn get_messages_handler(
             expires_at: msg.expires_at.map(|dt| dt.to_chrono().to_rfc3339()),
         };
 
-        // Redact attachment if view once and viewed
         if res.is_view_once && res.viewed_at.is_some() {
             res.attachment_url = None;
             res.content = "Media viewed".to_string();
@@ -566,7 +638,7 @@ pub async fn get_messages_handler(
         messages.push(res);
     }
 
-    Ok((StatusCode::OK, Json(messages)))
+    Ok((StatusCode::OK, Json(json!(messages))))
 }
 
 // Send Message
@@ -580,6 +652,7 @@ pub async fn send_message_handler(
     let chats_collection = state.mongo.collection::<Chat>("chats");
     let messages_collection = state.mongo.collection::<Message>("messages");
     let users_collection = state.mongo.collection::<crate::models::User>("users");
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     // Check verification
     let db_user = users_collection.find_one(doc! { "_id": user.user_id }, None).await.unwrap_or(None);
@@ -587,17 +660,30 @@ pub async fn send_message_handler(
         return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Account verification required to send messages. Please verify your account for Ksh 20."}))));
     }
 
-    // Verify participation
+    // Verify participation and get chat info in one query
     let chat = chats_collection.find_one(doc! { "_id": oid, "participants": user.user_id }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Chat not found or access denied"}))))?;
 
-    // Block Check for DMs
+    // Block Check for DMs with cached profile lookup
     if !chat.is_group {
         let other_id = chat.participants.iter().find(|&&id| id != user.user_id).unwrap_or(&user.user_id);
-        let profiles_collection = state.mongo.collection::<Profile>("profiles");
-        if let Ok(Some(other_profile)) = profiles_collection.find_one(doc! { "user_id": other_id }, None).await {
-            if let Some(blocked) = other_profile.blocked_users {
+        
+        // Try to get profile from cache first
+        let mut other_profile = None;
+        if let Some(cached_profile) = state.cache.get::<Profile>(&format!("profile:{}", other_id.to_hex())).await {
+            other_profile = Some(cached_profile);
+        } else {
+            // Fetch from DB if not in cache
+            if let Ok(Some(profile)) = profiles_collection.find_one(doc! { "user_id": other_id }, None).await {
+                // Cache the profile for 5 minutes
+                let _ = state.cache.set(&format!("profile:{}", other_id.to_hex()), &profile, 300).await;
+                other_profile = Some(profile);
+            }
+        }
+
+        if let Some(profile) = other_profile {
+            if let Some(blocked) = profile.blocked_users {
                 if blocked.contains(&user.user_id) {
                     return Err((StatusCode::FORBIDDEN, Json(json!({"error": "You are blocked by this user"}))));
                 }
@@ -663,8 +749,8 @@ pub async fn send_message_handler(
     let result = messages_collection.insert_one(new_message, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    // Update Chat last_message
-    chats_collection.update_one(
+    // Update Chat last_message with atomic operation
+    let _ = chats_collection.update_one(
         doc! { "_id": oid },
         doc! { 
             "$set": { 
@@ -673,42 +759,57 @@ pub async fn send_message_handler(
             }  
         },
         None
-    ).await
-    .ok();
+    ).await;
 
-    // 4. Trigger Notifications & WS Broadcast (Async)
-    if let Ok(Some(full_chat)) = chats_collection.find_one(doc! { "_id": oid }, None).await {
-        let msg_id = result.inserted_id.as_object_id().unwrap();
-        
-        let profiles_collection = state.mongo.collection::<Profile>("profiles");
-        let sender_username = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await
-            .unwrap_or(None)
-            .map(|p| p.username)
-            .unwrap_or_else(|| "Unknown".to_string());
+    // Trigger Notifications & WS Broadcast (Async - fire and forget)
+    let state_clone = state.clone();
+    let _chat_id_str = chat_id.clone();
+    let sender_id = user.user_id;
+    let content_clone = payload.content.clone();
+    let attachment_url_clone = payload.attachment_url.clone();
+    let attachment_type_clone = payload.attachment_type.clone();
+    let encrypted_content_clone = payload.encrypted_content.clone();
+    let encryption_iv_clone = payload.encryption_iv.clone();
+    let is_view_once = payload.is_view_once.unwrap_or(false);
+    let disappearing_duration = chat.disappearing_duration;
+    let is_group = chat.is_group;
+    let chat_name = chat.name.clone().unwrap_or_else(|| "group".to_string());
+    let msg_id = result.inserted_id.as_object_id().unwrap();
+
+    tokio::spawn(async move {
+        // Get sender username (with caching)
+        let sender_username = if let Some(cached_profile) = state_clone.cache.get::<Profile>(&format!("profile:{}", sender_id.to_hex())).await {
+            cached_profile.username
+        } else if let Ok(Some(profile)) = state_clone.mongo.collection::<Profile>("profiles")
+            .find_one(doc! { "user_id": sender_id }, None).await {
+            // Cache for 5 minutes
+            let _ = state_clone.cache.set(&format!("profile:{}", sender_id.to_hex()), &profile, 300).await;
+            profile.username
+        } else {
+            "Unknown".to_string()
+        };
 
         // Prepare response DTO for broadcast
         let res = MessageResponse {
             id: msg_id.to_hex(),
-            // chat_id: oid.to_hex(), // Removed as it is not in MessageResponse definition
-            sender_id: user.user_id.to_hex(),
+            sender_id: sender_id.to_hex(),
             sender_username,
-            content: payload.content.clone(),
-            attachment_url: payload.attachment_url.clone(),
-            attachment_type: payload.attachment_type.clone(),
-            reply_to: None, // Simplified for now, or fetch
+            content: content_clone,
+            attachment_url: attachment_url_clone,
+            attachment_type: attachment_type_clone,
+            reply_to: None,
             reactions: Vec::new(),
             is_deleted: false,
-            // deleted_at: None, // Removed
             read_at: None,
-            is_me: false, // Recipients won't see it as "me" unless handled on frontend
-            encrypted_content: payload.encrypted_content.clone(),
-            encryption_iv: payload.encryption_iv.clone(),
-            poll: None, // Simplified, same as above
+            is_me: false,
+            encrypted_content: encrypted_content_clone,
+            encryption_iv: encryption_iv_clone,
+            poll: None,
             location: None,
             contact: None,
-            is_view_once: payload.is_view_once.unwrap_or(false),
+            is_view_once,
             viewed_at: None,
-            expires_at: chat.disappearing_duration.map(|d| {
+            expires_at: disappearing_duration.map(|d| {
                 let expires = chrono::Utc::now() + chrono::Duration::seconds(d);
                 mongodb::bson::DateTime::from_chrono(expires).to_chrono().to_rfc3339()
             }),
@@ -720,31 +821,38 @@ pub async fn send_message_handler(
             data: json!(res),
         };
 
-        for pid in full_chat.participants {
-            if pid != user.user_id {
-                let notification_text = if full_chat.is_group {
-                    format!("sent a message to {}", full_chat.name.clone().unwrap_or_else(|| "group".to_string()))
-                } else {
-                    "sent you a message".to_string()
-                };
+        // Get chat participants
+        if let Ok(Some(full_chat)) = state_clone.mongo.collection::<Chat>("chats")
+            .find_one(doc! { "_id": oid }, None).await {
+            
+            for pid in full_chat.participants {
+                if pid != sender_id {
+                    // Create notification (fire and forget)
+                    let notification_text = if is_group {
+                        format!("sent a message to {}", chat_name)
+                    } else {
+                        "sent you a message".to_string()
+                    };
 
-                let _ = create_notification(
-                    &state,
-                    pid,
-                    user.user_id,
-                    "message",
-                    Some(oid),
-                    &notification_text,
-                    false
-                ).await;
+                    let _ = create_notification(
+                        &state_clone,
+                        pid,
+                        sender_id,
+                        "message",
+                        Some(oid),
+                        &notification_text,
+                        false
+                    ).await;
 
-                send_to_user(&state, &pid, &ws_payload).await;
+                    // Send WebSocket message
+                    let _ = send_to_user(&state_clone, &pid, &ws_payload).await;
+                }
             }
         }
-    }
+    });
 
     Ok((StatusCode::CREATED, Json(json!({ 
-        "id": result.inserted_id.as_object_id().unwrap().to_hex(),
+        "id": msg_id.to_hex(),
         "created_at": mongodb::bson::DateTime::now().to_chrono().to_rfc3339()
     }))))
 }

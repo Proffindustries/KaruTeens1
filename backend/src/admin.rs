@@ -142,15 +142,13 @@ pub async fn get_platform_stats_handler(
     ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
     
     let mut total_revenue = 0.0;
-    if let Some(result) = revenue_cursor.next().await {
-        if let Ok(doc) = result {
-            if let Ok(amount) = doc.get_f64("total") {
-                total_revenue = amount;
-            } else if let Ok(amount_i) = doc.get_i32("total") { // sometimes comes as int if round
-                total_revenue = amount_i as f64;
-            } else if let Ok(amount_d) = doc.get_f64("total") { // double check
-                total_revenue = amount_d;
-            }
+    if let Some(Ok(doc)) = revenue_cursor.next().await {
+        if let Ok(amount) = doc.get_f64("total") {
+            total_revenue = amount;
+        } else if let Ok(amount_i) = doc.get_i32("total") { // sometimes comes as int if round
+            total_revenue = amount_i as f64;
+        } else if let Ok(amount_d) = doc.get_f64("total") { // double check
+            total_revenue = amount_d;
         }
     }
 

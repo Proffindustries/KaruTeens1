@@ -34,6 +34,7 @@ const EventDetailPage = lazy(() => import('./pages/EventDetailPage.jsx'));
 const HookupPage = lazy(() => import('./pages/HookupPage.jsx'));
 const StudyRoomsPage = lazy(() => import('./pages/StudyRoomsPage.jsx'));
 const RecallPage = lazy(() => import('./pages/RecallPage.jsx'));
+const TemplatesPage = lazy(() => import("./pages/TemplatesPage.jsx"));
 const AiPage = lazy(() => import('./pages/AiPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
@@ -98,6 +99,7 @@ function App() {
                                 <Route path="study-rooms" element={<StudyRoomsPage />} />
                                 <Route path="study-rooms/:roomId" element={<StudyRoomsPage />} />
                                 <Route path="recall" element={<RecallPage />} />
+                                <Route path="templates" element={<TemplatesPage />} />
                                 <Route path="notifications" element={<NotificationsPage />} />
                                 <Route path="settings" element={<SettingsPage />} />
                                 <Route path="donate" element={<DonatePage />} />

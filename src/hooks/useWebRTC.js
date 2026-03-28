@@ -8,7 +8,7 @@ const ICE_SERVERS = {
     ],
 };
 
-export const useWebRTC = (ws, currentUserId) => {
+export const useWebRTC = (signaling, currentUserId) => {
     const [callState, setCallState] = useState('idle'); // idle, calling, ringing, active
     const [callType, setCallType] = useState(null); // 'voice' or 'video'
     const [remoteUser, setRemoteUser] = useState(null);
@@ -20,6 +20,7 @@ export const useWebRTC = (ws, currentUserId) => {
 
     const peerConnection = useRef(null);
     const callTimerRef = useRef(null);
+    const endCallRef = useRef(null);
     const { showToast } = useToast();
 
     // Start call duration timer
@@ -38,13 +39,40 @@ export const useWebRTC = (ws, currentUserId) => {
         setCallDuration(0);
     }, []);
 
+    // End call
+    const endCall = useCallback(() => {
+        // Stop all tracks
+        if (localStream) {
+            localStream.getTracks().forEach((track) => track.stop());
+        }
+        if (remoteStream) {
+            remoteStream.getTracks().forEach((track) => track.stop());
+        }
+
+        // Close peer connection
+        if (peerConnection.current) {
+            peerConnection.current.close();
+            peerConnection.current = null;
+        }
+
+        // Reset state
+        setLocalStream(null);
+        setRemoteStream(null);
+        setCallState('idle');
+        setCallType(null);
+        setRemoteUser(null);
+        setIsMuted(false);
+        setIsVideoOff(false);
+        stopCallTimer();
+    }, [localStream, remoteStream, stopCallTimer]);
+
     // Initialize peer connection
     const createPeerConnection = useCallback(() => {
         const pc = new RTCPeerConnection(ICE_SERVERS);
 
         pc.onicecandidate = (event) => {
-            if (event.candidate && ws && remoteUser) {
-                ws.send(
+            if (event.candidate && signaling && remoteUser) {
+                signaling.send(
                     JSON.stringify({
                         type: 'ice-candidate',
                         data: {
@@ -70,7 +98,7 @@ export const useWebRTC = (ws, currentUserId) => {
         };
 
         return pc;
-    }, [ws, remoteUser, startCallTimer]);
+    }, [signaling, remoteUser, startCallTimer, endCall]);
 
     // Start a call
     const startCall = useCallback(
@@ -98,8 +126,8 @@ export const useWebRTC = (ws, currentUserId) => {
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
 
-                if (ws) {
-                    ws.send(
+                if (signaling) {
+                    signaling.send(
                         JSON.stringify({
                             type: 'call-offer',
                             data: {
@@ -113,11 +141,25 @@ export const useWebRTC = (ws, currentUserId) => {
                 }
             } catch (error) {
                 console.error('Error starting call:', error);
-                showToast('Failed to access camera/microphone', 'error');
+                // Provide more specific error messages based on error type
+                let errorMessage = 'Failed to access camera/microphone';
+                if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    errorMessage =
+                        'No camera or microphone found. Please check your device settings.';
+                } else if (
+                    error.name === 'NotAllowedError' ||
+                    error.name === 'PermissionDeniedError'
+                ) {
+                    errorMessage =
+                        'Camera/microphone access denied. Please grant permission in your browser settings.';
+                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                    errorMessage = 'Camera/microphone is already in use by another application.';
+                }
+                showToast(errorMessage, 'error');
                 endCall();
             }
         },
-        [ws, currentUserId, createPeerConnection, showToast],
+        [signaling, currentUserId, createPeerConnection, showToast, endCall],
     );
 
     // Answer incoming call
@@ -147,8 +189,8 @@ export const useWebRTC = (ws, currentUserId) => {
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
 
-                if (ws) {
-                    ws.send(
+                if (signaling) {
+                    signaling.send(
                         JSON.stringify({
                             type: 'call-answer',
                             data: {
@@ -160,25 +202,43 @@ export const useWebRTC = (ws, currentUserId) => {
                 }
             } catch (error) {
                 console.error('Error answering call:', error);
-                showToast('Failed to answer call', 'error');
+                // Provide more specific error messages based on error type
+                let errorMessage = 'Failed to answer call';
+                if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    errorMessage =
+                        'No camera or microphone found. Please check your device settings.';
+                } else if (
+                    error.name === 'NotAllowedError' ||
+                    error.name === 'PermissionDeniedError'
+                ) {
+                    errorMessage =
+                        'Camera/microphone access denied. Please grant permission in your browser settings.';
+                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                    errorMessage = 'Camera/microphone is already in use by another application.';
+                }
+                showToast(errorMessage, 'error');
                 endCall();
             }
         },
-        [ws, createPeerConnection, showToast],
+        [signaling, createPeerConnection, showToast, endCall],
     );
 
     // Handle incoming answer
-    const handleAnswer = useCallback(async (answer) => {
-        try {
-            if (peerConnection.current) {
-                await peerConnection.current.setRemoteDescription(
-                    new RTCSessionDescription(answer),
-                );
+    const handleAnswer = useCallback(
+        async (answer) => {
+            try {
+                if (peerConnection.current) {
+                    await peerConnection.current.setRemoteDescription(
+                        new RTCSessionDescription(answer),
+                    );
+                }
+            } catch (error) {
+                console.error('Error handling answer:', error);
+                showToast('Connection error', 'error');
             }
-        } catch (error) {
-            console.error('Error handling answer:', error);
-        }
-    }, []);
+        },
+        [showToast],
+    );
 
     // Handle ICE candidate
     const handleIceCandidate = useCallback(async (candidate) => {
@@ -210,33 +270,6 @@ export const useWebRTC = (ws, currentUserId) => {
             setIsVideoOff(!isVideoOff);
         }
     }, [localStream, callType, isVideoOff]);
-
-    // End call
-    const endCall = useCallback(() => {
-        // Stop all tracks
-        if (localStream) {
-            localStream.getTracks().forEach((track) => track.stop());
-        }
-        if (remoteStream) {
-            remoteStream.getTracks().forEach((track) => track.stop());
-        }
-
-        // Close peer connection
-        if (peerConnection.current) {
-            peerConnection.current.close();
-            peerConnection.current = null;
-        }
-
-        // Reset state
-        setLocalStream(null);
-        setRemoteStream(null);
-        setCallState('idle');
-        setCallType(null);
-        setRemoteUser(null);
-        setIsMuted(false);
-        setIsVideoOff(false);
-        stopCallTimer();
-    }, [localStream, remoteStream, stopCallTimer]);
 
     // Reject incoming call
     const rejectCall = useCallback(() => {

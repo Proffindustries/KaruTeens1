@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 export const useEvents = (filters = {}) => {
     return useQuery({
@@ -12,6 +13,7 @@ export const useEvents = (filters = {}) => {
             const { data } = await api.get(`/events?${params}`);
             return data;
         },
+        staleTime: STALE_TIMES.EVENTS,
         refetchInterval: 30000, // Refresh every 30s
     });
 };
@@ -24,6 +26,7 @@ export const useEvent = (eventId) => {
             return data;
         },
         enabled: !!eventId,
+        staleTime: STALE_TIMES.EVENTS,
     });
 };
 

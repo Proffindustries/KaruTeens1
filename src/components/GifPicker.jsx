@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import '../styles/GifPicker.css';
 
-const GifPicker = ({ onSelect, onClose }) => {
+const GifPicker = React.memo(({ onSelect, onClose }) => {
     const [search, setSearch] = useState('');
     const [gifs, setGifs] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -80,6 +80,6 @@ const GifPicker = ({ onSelect, onClose }) => {
             </div>
         </div>
     );
-};
+});
 
 export default GifPicker;

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 export const useNotifications = () => {
     return useQuery({
@@ -9,6 +10,7 @@ export const useNotifications = () => {
             const { data } = await api.get('/notifications');
             return data;
         },
+        staleTime: STALE_TIMES.NOTIFICATIONS,
         refetchInterval: 10000, // Poll every 10 seconds for real-time feel
     });
 };

@@ -52,6 +52,7 @@ import { useToast } from '../context/ToastContext';
 
 const CommentManagementTab = () => {
     const [comments, setComments] = useState([]);
+    const [userStats, setUserStats] = useState([]);
     const [filters, setFilters] = useState({
         status: 'all',
         content_type: 'all',
@@ -78,256 +79,60 @@ const CommentManagementTab = () => {
 
     const { showToast } = useToast();
 
-    // Mock data for comments
-    const mockComments = [
-        {
-            id: 'comment_001',
-            content_id: 'post_001',
-            content_type: 'post',
-            user_id: 'user_001',
-            username: 'Sarah Johnson',
-            user_avatar: 'https://images.unsplash.com/photo-1494790108782-c74331d56c01',
-            parent_id: null,
-            content: 'This is a great article! Very informative and well-written.',
-            status: 'approved',
-            spam_score: 0.1,
-            sentiment_score: 0.8,
-            reported_count: 0,
-            likes: 15,
-            replies_count: 3,
-            edited_at: null,
-            deleted_at: null,
-            deleted_by: null,
-            deleted_reason: null,
-            moderation_notes: null,
-            ip_address: '192.168.1.100',
-            user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            is_edited: false,
-            created_at: '2024-01-15T10:00:00Z',
-            updated_at: '2024-01-15T10:00:00Z',
-            reports: [],
-            moderation_history: [
-                {
-                    action: 'approve',
-                    reason: 'Content is appropriate and valuable',
-                    notes: 'Approved by admin',
-                    created_at: '2024-01-15T10:05:00Z',
-                },
-            ],
-        },
-        {
-            id: 'comment_002',
-            content_id: 'post_002',
-            content_type: 'post',
-            user_id: 'user_002',
-            username: 'SpamUser123',
-            user_avatar: null,
-            parent_id: null,
-            content: 'Buy cheap viagra online! Best prices guaranteed! Visit our website now!',
-            status: 'spam',
-            spam_score: 0.95,
-            sentiment_score: -0.3,
-            reported_count: 8,
-            likes: 0,
-            replies_count: 0,
-            edited_at: null,
-            deleted_at: null,
-            deleted_by: null,
-            deleted_reason: null,
-            moderation_notes: 'Detected as spam by AI',
-            ip_address: '192.168.1.101',
-            user_agent: 'Mozilla/5.0 (compatible; SpamBot/1.0)',
-            is_edited: false,
-            created_at: '2024-01-16T14:30:00Z',
-            updated_at: '2024-01-16T14:35:00Z',
-            reports: [
-                {
-                    reason: 'spam',
-                    description: 'Promotional content',
-                    reported_by_username: 'user_003',
-                    created_at: '2024-01-16T14:32:00Z',
-                },
-            ],
-            moderation_history: [
-                {
-                    action: 'reject',
-                    reason: 'Spam detected',
-                    notes: 'Automatically flagged by AI moderation',
-                    created_at: '2024-01-16T14:35:00Z',
-                },
-            ],
-        },
-        {
-            id: 'comment_003',
-            content_id: 'post_003',
-            content_type: 'post',
-            user_id: 'user_003',
-            username: 'ConcernedUser',
-            user_avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',
-            parent_id: 'comment_001',
-            content: "I disagree with some points in this article. Here's why...",
-            status: 'pending',
-            spam_score: 0.2,
-            sentiment_score: -0.1,
-            reported_count: 2,
-            likes: 3,
-            replies_count: 1,
-            edited_at: null,
-            deleted_at: null,
-            deleted_by: null,
-            deleted_reason: null,
-            moderation_notes: null,
-            ip_address: '192.168.1.102',
-            user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            is_edited: false,
-            created_at: '2024-01-17T09:15:00Z',
-            updated_at: '2024-01-17T09:15:00Z',
-            reports: [
-                {
-                    reason: 'offensive',
-                    description: 'Disagrees too strongly',
-                    reported_by_username: 'user_004',
-                    created_at: '2024-01-17T09:20:00Z',
-                },
-            ],
-            moderation_history: [],
-        },
-        {
-            id: 'comment_004',
-            content_id: 'post_004',
-            content_type: 'post',
-            user_id: 'user_004',
-            username: 'HelpfulHelper',
-            user_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
-            parent_id: null,
-            content: 'Thanks for sharing this! Could you please elaborate on the third point?',
-            status: 'approved',
-            spam_score: 0.05,
-            sentiment_score: 0.9,
-            reported_count: 0,
-            likes: 8,
-            replies_count: 2,
-            edited_at: '2024-01-18T11:00:00Z',
-            deleted_at: null,
-            deleted_by: null,
-            deleted_reason: null,
-            moderation_notes: 'Edited for clarity',
-            ip_address: '192.168.1.103',
-            user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-            is_edited: true,
-            created_at: '2024-01-18T10:30:00Z',
-            updated_at: '2024-01-18T11:00:00Z',
-            reports: [],
-            moderation_history: [
-                {
-                    action: 'approve',
-                    reason: 'Content is helpful and appropriate',
-                    notes: 'Approved by admin',
-                    created_at: '2024-01-18T10:35:00Z',
-                },
-            ],
-        },
-        {
-            id: 'comment_005',
-            content_id: 'post_005',
-            content_type: 'post',
-            user_id: 'user_005',
-            username: 'TrollAccount',
-            user_avatar: null,
-            parent_id: null,
-            content: "This is the worst article I've ever read. The author knows nothing!",
-            status: 'rejected',
-            spam_score: 0.4,
-            sentiment_score: -0.9,
-            reported_count: 5,
-            likes: 0,
-            replies_count: 0,
-            edited_at: null,
-            deleted_at: null,
-            deleted_by: null,
-            deleted_reason: null,
-            moderation_notes: 'Toxic content, violates community guidelines',
-            ip_address: '192.168.1.104',
-            user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            is_edited: false,
-            created_at: '2024-01-19T16:45:00Z',
-            updated_at: '2024-01-19T16:50:00Z',
-            reports: [
-                {
-                    reason: 'harassment',
-                    description: 'Personal attack on author',
-                    reported_by_username: 'user_001',
-                    created_at: '2024-01-19T16:48:00Z',
-                },
-            ],
-            moderation_history: [
-                {
-                    action: 'reject',
-                    reason: 'Toxic content',
-                    notes: 'Violates community guidelines',
-                    created_at: '2024-01-19T16:50:00Z',
-                },
-            ],
-        },
-    ];
+    // Comments data will be fetched from API
 
-    // Mock user stats
-    const mockUserStats = [
-        {
-            user_id: 'user_001',
-            username: 'Sarah Johnson',
-            total_comments: 15,
-            approved_comments: 14,
-            pending_comments: 0,
-            rejected_comments: 1,
-            spam_comments: 0,
-            deleted_comments: 0,
-            total_likes_received: 45,
-            total_replies_received: 12,
-            avg_spam_score: 0.12,
-            avg_sentiment_score: 0.75,
-            last_comment_at: '2024-01-20T10:00:00Z',
-        },
-        {
-            user_id: 'user_002',
-            username: 'SpamUser123',
-            total_comments: 8,
-            approved_comments: 0,
-            pending_comments: 0,
-            rejected_comments: 8,
-            spam_comments: 8,
-            deleted_comments: 0,
-            total_likes_received: 0,
-            total_replies_received: 0,
-            avg_spam_score: 0.85,
-            avg_sentiment_score: -0.2,
-            last_comment_at: '2024-01-16T14:30:00Z',
-        },
-        {
-            user_id: 'user_003',
-            username: 'ConcernedUser',
-            total_comments: 5,
-            approved_comments: 3,
-            pending_comments: 1,
-            rejected_comments: 1,
-            spam_comments: 0,
-            deleted_comments: 0,
-            total_likes_received: 8,
-            total_replies_received: 3,
-            avg_spam_score: 0.15,
-            avg_sentiment_score: 0.3,
-            last_comment_at: '2024-01-17T09:15:00Z',
-        },
-    ];
+    // User stats data will be fetched from API
 
+    // Fetch comments from API
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setComments(mockComments);
-            setIsLoading(false);
-        }, 1000);
+        let isMounted = true;
+
+        const loadComments = async () => {
+            setIsLoading(true);
+            try {
+                const { data } = await api.get('/comments');
+                if (isMounted) {
+                    setComments(data);
+                }
+            } catch (error) {
+                console.error('Failed to load comments:', error);
+                // Keep empty state, UI will handle loading/error states
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadComments();
+
+        return () => {
+            isMounted = false;
+        };
     }, [filters]);
+
+    // Fetch user stats from API
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadUserStats = async () => {
+            try {
+                const { data } = await api.get('/stats/users');
+                if (isMounted) {
+                    setUserStats(data);
+                }
+            } catch (error) {
+                console.error('Failed to load user stats:', error);
+                // Keep empty state
+            }
+        };
+
+        loadUserStats();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -1126,7 +931,7 @@ const CommentManagementTab = () => {
                         </div>
                         <div className="modal-body">
                             <div className="stats-grid">
-                                {mockUserStats.map((stats) => (
+                                {userStats.map((stats) => (
                                     <div key={stats.user_id} className="stat-card">
                                         <div className="stat-header">
                                             <div className="user-info">

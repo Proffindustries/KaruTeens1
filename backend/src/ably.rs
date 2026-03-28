@@ -35,18 +35,23 @@ async fn get_ably_token_request(
     user: AuthUser,
 ) -> impl IntoResponse {
     let ably_api_key = std::env::var("ABLY_API_KEY").unwrap_or_default();
+    let ably_api_key = ably_api_key.trim();
     if ably_api_key.is_empty() {
-        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "ABLY_API_KEY not set"}))).into_response();
+        return (axum::http::StatusCode::NOT_FOUND, Json(json!({"error": "ABLY_API_KEY not set"}))).into_response();
     }
     
     let parts: Vec<&str> = ably_api_key.split(':').collect();
     if parts.len() != 2 {
-        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Invalid ABLY_API_KEY format"}))).into_response();
+        return (axum::http::StatusCode::NOT_FOUND, Json(json!({"error": "Invalid ABLY_API_KEY format"}))).into_response();
     }
     
-    let key_name = parts[0];
+    let key_name = parts[0].trim();
     let key_secret = parts[1].trim();
     
+    if key_secret.is_empty() {
+        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "ABLY_API_KEY secret is empty"}))).into_response();
+    }
+
     let client_id = user.user_id.to_hex();
     let timestamp = Utc::now().timestamp_millis();
     let nonce = uuid::Uuid::new_v4().to_string().replace("-", "").to_lowercase();
@@ -65,7 +70,12 @@ async fn get_ably_token_request(
     );
     
     type HmacSha256 = Hmac<Sha256>;
-    let mut mac_hasher = HmacSha256::new_from_slice(key_secret.as_bytes()).unwrap();
+    let mut mac_hasher = match HmacSha256::new_from_slice(key_secret.as_bytes()) {
+        Ok(m) => m,
+        Err(_) => {
+            return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Invalid ABLY_API_KEY secret"}))).into_response();
+        }
+    };
     mac_hasher.update(sign_data.as_bytes());
     let mac_base64 = base64::engine::general_purpose::STANDARD.encode(mac_hasher.finalize().into_bytes());
 

@@ -40,6 +40,7 @@ pub enum AuthError {
     InvalidUserIdInToken,
     MissingToken,
     AlphanumericUsername,
+    PasswordTooShort,
     FreeVerificationNotAvailable,
     Bson(bson::ser::Error),
     BsonOid(bson::oid::Error),
@@ -85,7 +86,7 @@ impl IntoResponse for AuthError {
     fn into_response(self) -> axum::response::Response {
         let (status, error_message) = match self {
             AuthError::Mongo(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)),
-            AuthError::Redis(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Cache error: {}", e)),
+            AuthError::Redis(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Cache error. Please try again.".to_string()),
             AuthError::PasswordHash(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Hashing error: {}", e)),
             AuthError::Jwt(e) => (StatusCode::UNAUTHORIZED, format!("Token error: {}", e)),
             AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".to_string()),
@@ -98,6 +99,7 @@ impl IntoResponse for AuthError {
             AuthError::InvalidUserIdInToken => (StatusCode::UNAUTHORIZED, "Invalid user ID in token".to_string()),
             AuthError::MissingToken => (StatusCode::UNAUTHORIZED, "Missing token".to_string()),
             AuthError::AlphanumericUsername => (StatusCode::BAD_REQUEST, "Username must only contain alphanumeric characters".to_string()),
+            AuthError::PasswordTooShort => (StatusCode::BAD_REQUEST, "Password must be at least 8 characters long".to_string()),
             AuthError::FreeVerificationNotAvailable => (StatusCode::FORBIDDEN, "Free verification is not available at this time. Please use M-Pesa.".to_string()),
             AuthError::Bson(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON serialization error: {}", e)),
             AuthError::BsonOid(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON OID error: {}", e)),
@@ -142,6 +144,7 @@ pub struct UserResponse {
     pub is_verified: bool,
     pub is_premium: bool,
     pub premium_expires_at: Option<String>,
+    pub onboarded: bool,
 }
 
 #[derive(Deserialize)]
@@ -202,29 +205,38 @@ where
         let user_id = ObjectId::parse_str(&token_data.claims.sub)
             .map_err(|_| AuthError::InvalidUserIdInToken)?;
 
+        // --- Check if token is blacklisted ---
+        let blacklist_key = format!("blacklist:{}", user_id.to_hex());
+        let mut redis_conn = app_state.redis.clone();
+        let is_blacklisted: Option<String> = redis_conn.get(&blacklist_key).await?;
+        if is_blacklisted.is_some() {
+            return Err(AuthError::InvalidToken);
+        }
+
         // --- Presence Tracking (Redis) ---
-        let mut conn = app_state.redis.get_async_connection().await?;
-        
         let presence_key = format!("user:presence:{}", user_id.to_hex());
-        conn.set_ex::<_, _, ()>(&presence_key, "online", 300).await?;
+        let mut redis_conn = app_state.redis.clone();
+        redis_conn.set_ex::<_, _, ()>(&presence_key, "online", app_state.redis_presence_ttl).await?;
 
         // Throttled MongoDB update for last_seen_at
         let mongo_update_key = format!("user:last_seen_mongo_update:{}", user_id.to_hex());
-        let needs_mongo_update: bool = conn.get::<_, Option<String>>(&mongo_update_key).await?.is_none();
+        let mut redis_conn = app_state.redis.clone();
+        let needs_mongo_update: bool = redis_conn.get::<_, Option<String>>(&mongo_update_key).await?.is_none();
         
-        if needs_mongo_update {
-            let mongo = app_state.mongo.clone();
-            let user_id_clone = user_id;
-            tokio::spawn(async move {
-                let profiles = mongo.collection::<Profile>("profiles");
-                let _ = profiles.update_one(
-                    doc! { "user_id": user_id_clone },
-                    doc! { "$set": { "last_seen_at": mongodb::bson::DateTime::now() } },
-                    None
-                ).await;
-            });
-            conn.set_ex::<_, _, ()>(&mongo_update_key, "1", 60).await?;
-        }
+         if needs_mongo_update {
+             let mongo = app_state.mongo.clone();
+             let user_id_clone = user_id;
+             tokio::spawn(async move {
+                 let profiles = mongo.collection::<Profile>("profiles");
+                 let _ = profiles.update_one(
+                     doc! { "user_id": user_id_clone },
+                     doc! { "$set": { "last_seen_at": mongodb::bson::DateTime::now() } },
+                     None
+                 ).await;
+             });
+             let mut redis_conn = app_state.redis.clone();
+             redis_conn.set_ex::<_, _, ()>(&mongo_update_key, "1", app_state.redis_mongo_update_ttl).await?;
+         }
 
         Ok(AuthUser {
             user_id,
@@ -246,7 +258,12 @@ pub async fn register_handler(
         return Err(AuthError::AlphanumericUsername);
     }
 
-    // 2. Check if user exists
+    // 2. Validate Password Length (minimum 8 characters)
+    if payload.password.len() < 8 {
+        return Err(AuthError::PasswordTooShort);
+    }
+
+    // 3. Check if user exists
     let existing_user = users_collection
         .find_one(doc! { "email": &payload.email }, None)
         .await?;
@@ -291,26 +308,38 @@ pub async fn register_handler(
 
     let user_id = insert_result.inserted_id.as_object_id().ok_or(AuthError::InvalidUserIdInToken)?;
 
-    // 5. Create Profile
-    let new_profile = Profile {
-        id: None,
-        user_id,
-        username: payload.username.clone(),
-        full_name: payload.full_name,
-        bio: payload.bio,
-        avatar_url: payload.avatar_url,
-        school: payload.school,
-        year_of_study: payload.year_of_study,
-        age: payload.age,
-        gender: payload.gender,
-        social_links: None,
-        last_seen_at: None,
-        last_location: None,
-        public_key: None,
-        blocked_users: None,
-        muted_chats: None,
-        created_at: Some(mongodb::bson::DateTime::now()),
-    };
+      // 5. Create Profile
+      let new_profile = Profile {
+          id: None,
+          user_id,
+          username: payload.username.clone(),
+          full_name: payload.full_name,
+          bio: payload.bio,
+          avatar_url: payload.avatar_url,
+          school: payload.school,
+          year_of_study: payload.year_of_study,
+          age: payload.age,
+          gender: payload.gender,
+          social_links: None,
+          last_seen_at: None,
+          last_location: None,
+          public_key: None,
+          blocked_users: None,
+          muted_chats: None,
+          interests: None,
+          notification_settings: None,
+          onboarded: false,
+          follower_count: 0,
+          following_count: 0,
+          points: 0,
+          streak: 0,
+          longest_streak: 0,
+          profile_views: 0,
+          level: 0,
+          next_level_points: 0,
+          badges: None,
+          created_at: Some(mongodb::bson::DateTime::now()),
+      };
 
     profiles_collection
         .insert_one(new_profile, None)
@@ -371,7 +400,19 @@ pub async fn login_handler(
 
     let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(state.jwt_secret.as_bytes()))?;
 
-    let profile = profiles_collection.find_one(doc! { "user_id": user_id }, None).await?;
+    // Try to get profile from cache first
+    let mut profile = None;
+    let profile_key = format!("profile:{}", user_id.to_hex());
+    if let Some(cached_profile) = state.cache.get::<Profile>(&profile_key).await {
+        profile = Some(cached_profile);
+    } else {
+        // Fetch from DB if not in cache
+        if let Ok(Some(p)) = profiles_collection.find_one(doc! { "user_id": user_id }, None).await {
+            profile = Some(p);
+            // Cache the profile for 5 minutes
+            let _ = state.cache.set(&profile_key, &profile.as_ref().unwrap(), 300).await;
+        }
+    }
 
     let auth_response = AuthResponse {
         token,
@@ -379,10 +420,11 @@ pub async fn login_handler(
             id: user_id.to_hex(),
             email: user.email,
             role: current_role,
-            username: profile.map(|p| p.username),
+            username: profile.as_ref().map(|p| p.username.clone()),
             is_verified: user.is_verified,
             is_premium: current_is_premium,
             premium_expires_at: user.premium_expires_at.map(|dt| dt.to_chrono().to_rfc3339()),
+            onboarded: profile.as_ref().map(|p| p.onboarded).unwrap_or(false),
         }
     };
     
@@ -403,19 +445,19 @@ pub async fn forgot_password_handler(
         return Ok(Json(json!({"message": "If this email is registered, you will receive a reset code."})));
     }
 
-    // 2. Generate 6-digit OTP
+    // 2. Generate 6-digit OTP using cryptographically secure RNG
     let otp_str = {
-        let mut rng = rand::thread_rng();
-        rng.gen_range(100000..999999).to_string()
+        let mut rng = rand::rngs::OsRng;
+        let otp: u32 = rng.gen_range(100000..999999);
+        otp.to_string()
     };
 
     // 3. Store in Redis with 15min expiry
-    let mut conn = state.redis.get_async_connection().await?;
-    
     let redis_key = format!("reset_otp:{}", payload.email);
+    let mut conn = state.redis.clone();
     conn.set_ex::<_, _, ()>(&redis_key, &otp_str, 900).await?;
 
-    tracing::info!("🔑 Reset code for {}: {}", payload.email, otp_str);
+    tracing::info!("🔑 Reset code sent to {}", payload.email);
 
     // 4. Send Email via Brevo
     if state.brevo_api_key.is_empty() {
@@ -460,11 +502,10 @@ pub async fn reset_password_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<ResetPasswordRequest>,
 ) -> Result<impl IntoResponse, AuthError> {
-    // 1. Verify OTP in Redis
-    let mut conn = state.redis.get_async_connection().await?;
-    
-    let redis_key = format!("reset_otp:{}", payload.email);
-    let stored_otp: Option<String> = conn.get(&redis_key).await?;
+     // 1. Verify OTP in Redis
+     let redis_key = format!("reset_otp:{}", payload.email);
+     let mut redis_conn = state.redis.clone();
+     let stored_otp: Option<String> = redis_conn.get(&redis_key).await?;
 
     match stored_otp {
         Some(otp) if otp == payload.code => {
@@ -483,8 +524,9 @@ pub async fn reset_password_handler(
                 None
             ).await?;
 
-            // 4. Clear OTP
-            conn.del::<_, ()>(&redis_key).await?;
+             // 4. Clear OTP
+             let mut conn = state.redis.clone();
+             conn.del::<_, ()>(&redis_key).await?;
 
             Ok(Json(json!({"message": "Password reset successfully. You can now login with your new password."})))
         },
@@ -525,6 +567,17 @@ pub async fn change_password_handler(
     Ok(Json(json!({"message": "Password updated successfully"})))
 }
 
+pub async fn logout_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, AuthError> {
+    let mut conn = state.redis.clone();
+    let token_key = format!("blacklist:{}", user.user_id.to_hex());
+    let ttl = 86400;
+    conn.set_ex::<_, _, ()>(&token_key, "1", ttl).await?;
+    Ok(Json(json!({"message": "Logged out successfully"})))
+}
+
 pub async fn verify_free_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
@@ -561,6 +614,7 @@ pub fn auth_routes() -> Router<Arc<AppState>> {
         .route("/reset-password", post(reset_password_handler))
         .route("/change-password", post(change_password_handler))
         .route("/verify-free", post(verify_free_handler))
+        .route("/logout", post(logout_handler))
 }
 
 pub fn decode_token(token: &str, secret: &str) -> Result<jsonwebtoken::TokenData<Claims>, jsonwebtoken::errors::Error> {

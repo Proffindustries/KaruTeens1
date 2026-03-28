@@ -1,5 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { Phone, Video, Mic, MicOff, VideoOff, PhoneOff, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Phone,
+    Video,
+    Mic,
+    MicOff,
+    VideoOff,
+    PhoneOff,
+    X,
+    Circle,
+    Square,
+    Download,
+} from 'lucide-react';
 import '../styles/CallUI.css';
 import Avatar from './Avatar.jsx';
 
@@ -50,6 +61,9 @@ export const ActiveCallScreen = ({
 }) => {
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordedChunks, setRecordedChunks] = useState([]);
 
     useEffect(() => {
         if (localVideoRef.current && localStream) {
@@ -62,6 +76,54 @@ export const ActiveCallScreen = ({
             remoteVideoRef.current.srcObject = remoteStream;
         }
     }, [remoteStream]);
+
+    const startRecording = () => {
+        if (!localStream) return;
+
+        const combinedStream = new MediaStream([
+            ...localStream.getVideoTracks(),
+            ...localStream.getAudioTracks(),
+        ]);
+
+        const mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: 'video/webm;codecs=vp9',
+        });
+
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                chunks.push(e.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            setRecordedChunks(chunks);
+        };
+
+        mediaRecorder.start(1000);
+        mediaRecorderRef.current = mediaRecorder;
+        setIsRecording(true);
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const downloadRecording = () => {
+        if (recordedChunks.length === 0) return;
+
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `call-${remoteUser.username}-${new Date().toISOString().slice(0, 10)}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setRecordedChunks([]);
+    };
 
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -167,6 +229,24 @@ export const ActiveCallScreen = ({
                     </button>
                 )}
 
+                <button
+                    className={`call-control-btn ${isRecording ? 'recording' : ''}`}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    title={isRecording ? 'Stop Recording' : 'Start Recording'}
+                >
+                    {isRecording ? <Square size={24} /> : <Circle size={24} />}
+                </button>
+
+                {recordedChunks.length > 0 && (
+                    <button
+                        className="call-control-btn download"
+                        onClick={downloadRecording}
+                        title="Download Recording"
+                    >
+                        <Download size={24} />
+                    </button>
+                )}
+
                 <button className="call-control-btn end-call" onClick={onEndCall} title="End call">
                     <PhoneOff size={24} />
                 </button>
@@ -176,7 +256,7 @@ export const ActiveCallScreen = ({
 };
 
 // Calling Screen (Outgoing)
-export const CallingScreen = ({ remoteUser, callType, onCancel }) => {
+export const CallingScreen = ({ remoteUser, onCancel }) => {
     return (
         <div className="call-modal-overlay">
             <div className="calling-modal">

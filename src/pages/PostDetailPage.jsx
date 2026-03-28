@@ -33,7 +33,16 @@ const PostDetailPage = () => {
     return (
         <div className="container post-detail-page">
             <div className="post-detail-header">
-                <button onClick={() => navigate(-1)} className="back-link-btn">
+                <button
+                    onClick={() => {
+                        if (window.history.length > 2) {
+                            navigate(-1);
+                        } else {
+                            navigate('/feed');
+                        }
+                    }}
+                    className="back-link"
+                >
                     <ArrowLeft size={24} /> Back
                 </button>
                 <h1>Post</h1>

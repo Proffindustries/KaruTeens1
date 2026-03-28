@@ -3,14 +3,31 @@ import { Play, Pause } from 'lucide-react';
 import { useInView } from 'react-intersection-observer'; // Import useInView
 import '../styles/CustomVideoPlayer.css';
 
-const CustomVideoPlayer = ({ src, poster = '/placeholder-video.jpg' }) => {
+const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }) => {
     // Add poster prop with a default placeholder
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [playbackRate, setPlaybackRate] = useState(1);
+    const [showCaptions, setShowCaptions] = useState(false);
     const videoRef = useRef(null);
     const containerRef = useRef(null);
+
+    // ... useEffects ...
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = playbackRate;
+        }
+    }, [playbackRate]);
+
+    const changeSpeed = () => {
+        const rates = [0.5, 1, 1.5, 2];
+        const nextIdx = (rates.indexOf(playbackRate) + 1) % rates.length;
+        setPlaybackRate(rates[nextIdx]);
+    };
+
+    const toggleCaptions = () => setShowCaptions(!showCaptions);
 
     const { ref, inView } = useInView({
         // Use useInView hook
@@ -86,7 +103,8 @@ const CustomVideoPlayer = ({ src, poster = '/placeholder-video.jpg' }) => {
         };
     }, [inView]); // Re-run when inView changes
 
-    const togglePlayPause = () => {
+    const togglePlayPause = (e) => {
+        if (e) e.stopPropagation(); // Prevent bubbling to parent navigation handlers
         const video = videoRef.current;
         if (!video) return;
 
@@ -122,7 +140,7 @@ const CustomVideoPlayer = ({ src, poster = '/placeholder-video.jpg' }) => {
                     ref={videoRef}
                     src={src}
                     poster={poster} // Add poster attribute
-                    preload="none" // Prevent automatic preloading
+                    preload="metadata" // Load metadata but not full video until needed
                     className="video-element"
                     onClick={togglePlayPause}
                 />
@@ -155,13 +173,32 @@ const CustomVideoPlayer = ({ src, poster = '/placeholder-video.jpg' }) => {
                     <div className="progress-bar" onClick={handleProgressClick}>
                         <div className="progress-filled" style={{ width: `${progress}%` }} />
                     </div>
-                    <div className="time-display">
-                        {formatTime(currentTime)} / {formatTime(duration)}
+                    <div className="controls-row">
+                        <div className="time-display">
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                        </div>
+                        <div className="right-controls">
+                            <button className="control-btn" onClick={changeSpeed}>
+                                {playbackRate}x
+                            </button>
+                            <button
+                                className={`control-btn ${showCaptions ? 'active' : ''}`}
+                                onClick={toggleCaptions}
+                                title="Auto-captions"
+                            >
+                                CC
+                            </button>
+                        </div>
                     </div>
+                </div>
+            )}
+            {showCaptions && isPlaying && (
+                <div className="captions-overlay">
+                    <p>[Auto-generated captions...]</p>
                 </div>
             )}
         </div>
     );
-};
+});
 
 export default CustomVideoPlayer;

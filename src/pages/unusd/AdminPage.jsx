@@ -10,15 +10,15 @@ import {
     CheckCircle,
     Loader,
 } from 'lucide-react';
-import '../styles/AdminPage.css';
+import './AdminPage.css';
 import {
     useAdminStats,
     useAdminUsers,
     useBanUser,
     useVerifyUser,
     useUpdateUserRole,
-} from '../hooks/useAdmin';
-import { useToast } from '../context/ToastContext';
+} from '../../hooks/useAdmin';
+import { useToast } from '../../context/ToastContext';
 
 const AdminPage = () => {
     const [activeTab, setActiveTab] = useState('overview');

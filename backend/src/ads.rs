@@ -540,29 +540,31 @@ pub async fn list_ad_campaigns_handler(
     let limit = params.limit.unwrap_or(20);
     let skip = (page - 1) * limit;
 
-    let _sort_doc = match sort_order.as_str() {
+    let sort_doc = match sort_order.as_str() {
         "desc" => doc! { sort_by: -1 },
         _ => doc! { sort_by: 1 },
     };
 
-    let mut cursor = campaigns.find(query, None).await
+    let total_count = campaigns.count_documents(query.clone(), None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let mut campaigns_list = Vec::new();
-    let mut total_count = 0;
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(sort_doc)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
+        .build();
+
+    let mut cursor = campaigns.find(query, find_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut paginated_campaigns = Vec::new();
     
     while let Some(campaign) = cursor.next().await {
         if let Ok(c) = campaign {
             let campaign_info = build_ad_campaign_response(&c, &state).await?;
-            campaigns_list.push(campaign_info);
-            total_count += 1;
+            paginated_campaigns.push(campaign_info);
         }
     }
-
-    // Apply pagination
-    let start = skip as usize;
-    let end = (start + limit as usize).min(campaigns_list.len());
-    let paginated_campaigns = campaigns_list.into_iter().skip(start).take(end - start).collect::<Vec<_>>();
 
     Ok((StatusCode::OK, Json(json!({
         "campaigns": paginated_campaigns,
@@ -571,7 +573,7 @@ pub async fn list_ad_campaigns_handler(
             "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
             "total_items": total_count,
             "items_per_page": limit,
-            "has_next": end < total_count,
+            "has_next": (skip + limit) < total_count as i64,
             "has_prev": page > 1
         }
     }))))
@@ -605,6 +607,10 @@ pub async fn create_ad_campaign_handler(
 
     let campaigns = state.mongo.collection::<AdCampaign>("ad_campaigns");
     
+    // Convert dollars to cents
+    let daily_budget_cents = (payload.budget.daily_budget * 100.0) as i64;
+    let lifetime_budget_cents = payload.budget.lifetime_budget.map(|b| (b * 100.0) as i64);
+
     let new_campaign = AdCampaign {
         id: None,
         name: payload.name,
@@ -616,23 +622,21 @@ pub async fn create_ad_campaign_handler(
             .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid end date format"}))))
             .unwrap().into()),
         budget: AdBudget {
-            daily_budget: payload.budget.daily_budget,
-            lifetime_budget: payload.budget.lifetime_budget,
+            daily_budget: daily_budget_cents,
+            lifetime_budget: lifetime_budget_cents,
             budget_type: payload.budget.budget_type,
             budget_delivery: payload.budget.budget_delivery,
             currency: payload.budget.currency,
-            spent_today: 0.0,
-            spent_lifetime: 0.0,
-            remaining_daily: payload.budget.daily_budget,
-            remaining_lifetime: payload.budget.lifetime_budget,
+            spent_today: 0,
+            spent_lifetime: 0,
+            remaining_daily: daily_budget_cents,
+            remaining_lifetime: lifetime_budget_cents,
             budget_utilization: 0.0,
         },
         optimization_goal: payload.optimization_goal,
         bidding_strategy: payload.bidding_strategy,
-        daily_budget: payload.daily_budget,
-        lifetime_budget: payload.lifetime_budget,
         target_roas: payload.target_roas,
-        target_cpa: payload.target_cpa,
+        target_cpa: payload.target_cpa.map(|c| (c * 100.0) as i64),
         campaign_type: payload.campaign_type,
         objective: payload.objective,
         tracking_pixel_id: payload.tracking_pixel_id,
@@ -654,7 +658,7 @@ pub async fn create_ad_campaign_handler(
         updated_by: None,
         groups_count: 0,
         creatives_count: 0,
-        total_spend: 0.0,
+        total_spend: 0,
         total_impressions: 0,
         total_clicks: 0,
         total_conversions: 0,
@@ -718,15 +722,16 @@ pub async fn update_ad_campaign_handler(
     }
 
     if let Some(budget) = payload.budget {
+        let daily_budget_cents = (budget.daily_budget * 100.0) as i64;
+        let lifetime_budget_cents = budget.lifetime_budget.map(|b| (b * 100.0) as i64);
+        
         update_doc.insert("budget", doc! {
-            "daily_budget": budget.daily_budget,
-            "lifetime_budget": budget.lifetime_budget,
+            "daily_budget": daily_budget_cents,
+            "lifetime_budget": lifetime_budget_cents,
             "budget_type": budget.budget_type,
             "budget_delivery": budget.budget_delivery,
             "currency": budget.currency
         });
-        update_doc.insert("daily_budget", budget.daily_budget);
-        update_doc.insert("lifetime_budget", budget.lifetime_budget);
     }
 
     if let Some(optimization_goal) = payload.optimization_goal {
@@ -742,7 +747,7 @@ pub async fn update_ad_campaign_handler(
     }
 
     if let Some(target_cpa) = payload.target_cpa {
-        update_doc.insert("target_cpa", target_cpa);
+        update_doc.insert("target_cpa", (target_cpa * 100.0) as i64);
     }
 
     if let Some(campaign_type) = payload.campaign_type {
@@ -983,23 +988,23 @@ async fn build_ad_campaign_response(
         start_date: campaign.start_date.to_chrono().to_rfc3339(),
         end_date: campaign.end_date.map(|dt| dt.to_chrono().to_rfc3339()),
         budget: AdBudgetResponse {
-            daily_budget: campaign.budget.daily_budget,
-            lifetime_budget: campaign.budget.lifetime_budget,
+            daily_budget: campaign.budget.daily_budget as f64 / 100.0,
+            lifetime_budget: campaign.budget.lifetime_budget.map(|b| b as f64 / 100.0),
             budget_type: campaign.budget.budget_type.clone(),
             budget_delivery: campaign.budget.budget_delivery.clone(),
             currency: campaign.budget.currency.clone(),
-            spent_today: campaign.budget.spent_today,
-            spent_lifetime: campaign.budget.spent_lifetime,
-            remaining_daily: campaign.budget.remaining_daily,
-            remaining_lifetime: campaign.budget.remaining_lifetime,
+            spent_today: campaign.budget.spent_today as f64 / 100.0,
+            spent_lifetime: campaign.budget.spent_lifetime as f64 / 100.0,
+            remaining_daily: campaign.budget.remaining_daily as f64 / 100.0,
+            remaining_lifetime: campaign.budget.remaining_lifetime.map(|b| b as f64 / 100.0),
             budget_utilization: campaign.budget.budget_utilization,
         },
         optimization_goal: campaign.optimization_goal.clone(),
         bidding_strategy: campaign.bidding_strategy.clone(),
-        daily_budget: campaign.daily_budget,
-        lifetime_budget: campaign.lifetime_budget,
+        daily_budget: campaign.budget.daily_budget as f64 / 100.0,
+        lifetime_budget: campaign.budget.lifetime_budget.map(|b| b as f64 / 100.0),
         target_roas: campaign.target_roas,
-        target_cpa: campaign.target_cpa,
+        target_cpa: campaign.target_cpa.map(|c| c as f64 / 100.0),
         campaign_type: campaign.campaign_type.clone(),
         objective: campaign.objective.clone(),
         tracking_pixel_id: campaign.tracking_pixel_id.clone(),
@@ -1021,7 +1026,7 @@ async fn build_ad_campaign_response(
         updated_by: campaign.updated_by.map(|uid| uid.to_hex()),
         groups_count: groups_count as i32,
         creatives_count: creatives_count as i32,
-        total_spend: campaign.total_spend,
+        total_spend: campaign.total_spend as f64 / 100.0,
         total_impressions: campaign.total_impressions,
         total_clicks: campaign.total_clicks,
         total_conversions: campaign.total_conversions,
@@ -1076,10 +1081,10 @@ async fn build_ad_group_response(
         },
         bid_strategy: AdBidResponse {
             bid_type: group.bid_strategy.bid_type.clone(),
-            bid_amount: group.bid_strategy.bid_amount,
+            bid_amount: group.bid_strategy.bid_amount as f64 / 100.0,
             bid_strategy: group.bid_strategy.bid_strategy.clone(),
-            bid_ceiling: group.bid_strategy.bid_ceiling,
-            bid_floor: group.bid_strategy.bid_floor,
+            bid_ceiling: group.bid_strategy.bid_ceiling.map(|c| c as f64 / 100.0),
+            bid_floor: group.bid_strategy.bid_floor.map(|f| f as f64 / 100.0),
         },
         ad_rotation: group.ad_rotation.clone(),
         ad_serving_optimization: group.ad_serving_optimization.clone(),
@@ -1088,12 +1093,12 @@ async fn build_ad_group_response(
         created_at: group.created_at.to_chrono().to_rfc3339(),
         updated_at: group.updated_at.to_chrono().to_rfc3339(),
         creatives_count: creatives_count as i32,
-        total_spend: group.total_spend,
+        total_spend: group.total_spend as f64 / 100.0,
         total_impressions: group.total_impressions,
         total_clicks: group.total_clicks,
         ctr: group.ctr,
-        cpm: group.cpm,
-        cpc: group.cpc,
+        cpm: group.cpm as f64 / 100.0,
+        cpc: group.cpc as f64 / 100.0,
     })
 }
 
@@ -1197,8 +1202,8 @@ async fn build_ad_creative_response(
         clicks: creative.clicks,
         conversions: creative.conversions,
         ctr: creative.ctr,
-        cpm: creative.cpm,
-        cpc: creative.cpc,
+        cpm: creative.cpm as f64 / 100.0,
+        cpc: creative.cpc as f64 / 100.0,
         quality_score: creative.quality_score,
         relevance_score: creative.relevance_score,
         landing_page_score: creative.landing_page_score,

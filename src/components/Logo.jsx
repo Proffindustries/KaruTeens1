@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Logo = ({ className = '', width = '180px', height = '60px' }) => {
+const Logo = React.memo(({ className = '', width = '180px', height = '60px' }) => {
     return (
         <svg
             width={width}
@@ -97,6 +97,6 @@ const Logo = ({ className = '', width = '180px', height = '60px' }) => {
             </text>
         </svg>
     );
-};
+});
 
 export default Logo;

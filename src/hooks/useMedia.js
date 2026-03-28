@@ -3,6 +3,8 @@ import axios from 'axios';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
 
+import imageCompression from 'browser-image-compression';
+
 export const useMediaUpload = () => {
     const [isUploading, setIsUploading] = useState(false);
     const { showToast } = useToast();
@@ -10,6 +12,21 @@ export const useMediaUpload = () => {
     const uploadImage = async (file, onProgress = null) => {
         setIsUploading(true);
         try {
+            // Compress the image before uploading
+            const options = {
+                maxSizeMB: 1, // Compress to max 1MB
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+                onProgress: (progress) => {
+                    // Report compression progress as the first 20% of the total upload progress
+                    if (onProgress) {
+                        onProgress(Math.round(progress * 0.2), 0);
+                    }
+                },
+            };
+
+            const compressedFile = await imageCompression(file, options);
+
             // 1. Get signature from backend
             const timestamp = Math.round(new Date().getTime() / 1000).toString();
             const params = {
@@ -23,7 +40,7 @@ export const useMediaUpload = () => {
 
             // 2. Upload to Cloudinary
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', compressedFile);
             formData.append('api_key', import.meta.env.VITE_CLOUDINARY_API_KEY);
             formData.append('timestamp', timestamp);
             formData.append('signature', signature);
@@ -39,7 +56,8 @@ export const useMediaUpload = () => {
                             const percentCompleted = Math.round(
                                 (progressEvent.loaded * 100) / progressEvent.total,
                             );
-                            onProgress(percentCompleted, progressEvent.loaded);
+                            const scaledProgress = 20 + Math.round(percentCompleted * 0.8);
+                            onProgress(scaledProgress, progressEvent.loaded);
                         }
                     },
                 },

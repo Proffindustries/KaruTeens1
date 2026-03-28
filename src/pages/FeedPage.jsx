@@ -1,28 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Plus,
-    Image as ImageIcon,
-    Video,
-    FileText,
-    TrendingUp,
-    Loader2,
-    Sparkles,
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Star } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import { PostSkeleton } from '../components/Skeleton.jsx';
+import VirtualizedFeed from '../components/VirtualizedFeed.jsx';
 import '../styles/FeedPage.css';
 import Avatar from '../components/Avatar.jsx';
 import { useInfiniteFeed, useTrendingTopics } from '../hooks/useContent.js';
 import { useAuth, useLogout } from '../hooks/useAuth.js';
+import { useProfile } from '../hooks/useUser.js';
 import { Link } from 'react-router-dom';
 
 const FeedPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [feedType, setFeedType] = useState('infinite'); // 'infinite', 'for-you', or 'trending'
     const { ref, inView } = useInView();
     const logout = useLogout();
     const { user } = useAuth();
+    const { data: profileData, isLoading: isProfileLoading } = useProfile(user?.username || '');
 
     // Infinite Feed Hook
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } =
@@ -38,8 +34,11 @@ const FeedPage = () => {
         }
     }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    // Flatten all pages of posts
-    const allPosts = data?.pages.flatMap((page) => page) || [];
+    // Flatten all pages of posts - memoized to prevent unnecessary recalculations
+    const allPosts = useMemo(() => {
+        if (!data?.pages) return [];
+        return data.pages.flatMap((page) => page || []) || [];
+    }, [data]);
 
     return (
         <div className="container feed-layout">
@@ -59,11 +58,11 @@ const FeedPage = () => {
                         <p>{user?.email}</p>
                         <div className="mini-stats">
                             <div>
-                                <strong>0</strong>
+                                <strong>{user?.follower_count || 0}</strong>
                                 <span>Followers</span>
                             </div>
                             <div>
-                                <strong>0</strong>
+                                <strong>{user?.following_count || 0}</strong>
                                 <span>Following</span>
                             </div>
                         </div>
@@ -85,6 +84,28 @@ const FeedPage = () => {
 
             {/* Main Feed Area */}
             <main className="feed-main">
+                {/* Feed Type Toggle */}
+                <div className="feed-toggle card shadow-sm">
+                    <button
+                        className={`toggle-btn ${feedType === 'infinite' ? 'active' : ''}`}
+                        onClick={() => setFeedType('infinite')}
+                    >
+                        🏠 Home
+                    </button>
+                    <button
+                        className={`toggle-btn ${feedType === 'for-you' ? 'active' : ''}`}
+                        onClick={() => setFeedType('for-you')}
+                    >
+                        ✨ For You
+                    </button>
+                    <button
+                        className={`toggle-btn ${feedType === 'trending' ? 'active' : ''}`}
+                        onClick={() => setFeedType('trending')}
+                    >
+                        🔥 Trending
+                    </button>
+                </div>
+
                 {/* Create Post Widget */}
                 <div className="card create-post-widget shadow-sm">
                     <div className="create-post-top">
@@ -93,18 +114,87 @@ const FeedPage = () => {
                             name={user.username || 'User'}
                             className="widget-avatar shadow-sm"
                         />
-                        <div className="fake-input" onClick={() => setIsModalOpen(true)}>
-                            What's happening on campus, {user.username.split(' ')[0]}?
+                        <div className="create-post-input">
+                            <textarea
+                                id="post-input"
+                                placeholder="What's happening on campus, {user.username?.split(' ')[0] || 'User'}?"
+                                rows={1}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        // Handle post submission
+                                        const textarea = e.target;
+                                        const content = textarea.value.trim();
+                                        if (content) {
+                                            // TODO: Implement actual post creation
+                                            console.log('Creating post:', content);
+                                            textarea.value = '';
+                                            textarea.rows = 1;
+                                        }
+                                    } else if (e.key === 'Enter' && e.shiftKey) {
+                                        // Allow shift+enter for new line
+                                        textarea.rows = parseInt(textarea.rows) + 1;
+                                    }
+                                }}
+                                onInput={(e) => {
+                                    // Auto-resize textarea based on content
+                                    const textarea = e.target;
+                                    textarea.style.height = 'auto';
+                                    textarea.style.height = textarea.scrollHeight + 'px';
+                                }}
+                            />
                         </div>
                     </div>
                     <div className="create-post-actions">
-                        <button className="cp-action" onClick={() => setIsModalOpen(true)}>
+                        <button
+                            className="cp-action"
+                            onClick={() => {
+                                const textarea = document.getElementById('post-input');
+                                if (textarea) {
+                                    const content = textarea.value.trim();
+                                    if (content) {
+                                        // TODO: Implement actual post creation
+                                        console.log('Creating post:', content);
+                                        textarea.value = '';
+                                        textarea.style.height = 'auto';
+                                    }
+                                }
+                            }}
+                        >
                             <ImageIcon size={18} color="#00b894" /> Photo
                         </button>
-                        <button className="cp-action" onClick={() => setIsModalOpen(true)}>
+                        <button
+                            className="cp-action"
+                            onClick={() => {
+                                const textarea = document.getElementById('post-input');
+                                if (textarea) {
+                                    const content = textarea.value.trim();
+                                    if (content) {
+                                        // TODO: Implement actual post creation
+                                        console.log('Creating post:', content);
+                                        textarea.value = '';
+                                        textarea.style.height = 'auto';
+                                    }
+                                }
+                            }}
+                        >
                             <Video size={18} color="#6c5ce7" /> Video
                         </button>
-                        <button className="cp-action" onClick={() => setIsModalOpen(true)}>
+                        <button
+                            className="cp-action"
+                            onClick={() => {
+                                const textarea = document.getElementById('post-input');
+                                if (textarea) {
+                                    const content = textarea.value.trim();
+                                    if (content) {
+                                        // TODO: Implement actual post creation
+                                        console.log('Creating post:', content);
+                                        textarea.value = '';
+                                        textarea.style.height = 'auto';
+                                    }
+                                }
+                            }}
+                        >
                             <Plus size={18} color="#0984e3" /> More
                         </button>
                         <button
@@ -114,7 +204,18 @@ const FeedPage = () => {
                                 borderRadius: '20px',
                                 padding: '0.5rem 1.25rem',
                             }}
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => {
+                                const textarea = document.getElementById('post-input');
+                                if (textarea) {
+                                    const content = textarea.value.trim();
+                                    if (content) {
+                                        // TODO: Implement actual post creation
+                                        console.log('Creating post:', content);
+                                        textarea.value = '';
+                                        textarea.style.height = 'auto';
+                                    }
+                                }
+                            }}
                         >
                             Post
                         </button>
@@ -124,48 +225,61 @@ const FeedPage = () => {
                 {/* Posts Feed */}
                 <div className="posts-container">
                     {isLoading ? (
-                        [1, 2, 3].map((i) => <PostSkeleton key={i} />)
+                        <div
+                            style={{
+                                height: 600,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                        >
+                            {[1, 2, 3].map((i) => (
+                                <PostSkeleton key={`skeleton-${i}`} />
+                            ))}
+                        </div>
                     ) : error ? (
                         <div
                             className="error-message card shadow-sm"
                             style={{ padding: '2rem', textAlign: 'center' }}
                         >
-                            <p>Failed to load the feed. Please try again later.</p>
+                            <p>
+                                Failed to load the feed. Please check your connection and try again.
+                            </p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="btn btn-primary btn-sm mt-2"
+                            >
+                                Refresh Page
+                            </button>
+                        </div>
+                    ) : allPosts.length === 0 ? (
+                        <div
+                            className="empty-feed card shadow-sm"
+                            style={{ padding: '4rem 2rem', textAlign: 'center' }}
+                        >
+                            <Star
+                                size={48}
+                                color="rgba(var(--primary), 0.3)"
+                                style={{ marginBottom: '1rem' }}
+                            />
+                            <h3>No posts yet!</h3>
+                            <p style={{ color: 'rgb(var(--text-muted))' }}>
+                                Be the first student to share something on Karu Teens.
+                            </p>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="btn btn-outline btn-sm mt-2"
+                            >
+                                Create First Post
+                            </button>
                         </div>
                     ) : (
-                        <>
-                            {allPosts.length === 0 && (
-                                <div
-                                    className="empty-feed card shadow-sm"
-                                    style={{ padding: '4rem 2rem', textAlign: 'center' }}
-                                >
-                                    <Sparkles
-                                        size={48}
-                                        color="rgba(var(--primary), 0.3)"
-                                        style={{ marginBottom: '1rem' }}
-                                    />
-                                    <h3>No posts yet!</h3>
-                                    <p style={{ color: 'rgb(var(--text-muted))' }}>
-                                        Be the first student to share something on Karu Teens.
-                                    </p>
-                                </div>
-                            )}
-                            {allPosts.map((post) => (
-                                <PostCard key={post.id || post._id} post={post} />
-                            ))}
-
-                            {/* Infinite Scroll Load Trigger */}
-                            <div ref={ref} className="infinite-scroll-sentinel">
-                                {isFetchingNextPage && (
-                                    <div className="loader-container">
-                                        <Loader2
-                                            className="animate-spin"
-                                            color="rgb(var(--primary))"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </>
+                        <VirtualizedFeed
+                            posts={allPosts}
+                            isLoading={isFetchingNextPage}
+                            error={error}
+                            height={600}
+                        />
                     )}
                 </div>
             </main>
@@ -218,8 +332,36 @@ const FeedPage = () => {
                         <TrendingUp size={20} color="var(--primary)" /> Trending Now
                     </h3>
                     {isTrendingLoading ? (
-                        <div className="loader-container">
-                            <Loader2 className="animate-spin" size={20} />
+                        <div className="trending-loading">
+                            <div
+                                className="trending-skeleton"
+                                style={{
+                                    height: '24px',
+                                    marginBottom: '8px',
+                                    background: 'rgba(var(--border), 0.3)',
+                                    borderRadius: '4px',
+                                    width: '80%',
+                                }}
+                            />
+                            <div
+                                className="trending-skeleton"
+                                style={{
+                                    height: '24px',
+                                    marginBottom: '8px',
+                                    background: 'rgba(var(--border), 0.3)',
+                                    borderRadius: '4px',
+                                    width: '60%',
+                                }}
+                            />
+                            <div
+                                className="trending-skeleton"
+                                style={{
+                                    height: '24px',
+                                    background: 'rgba(var(--border), 0.3)',
+                                    borderRadius: '4px',
+                                    width: '70%',
+                                }}
+                            />
                         </div>
                     ) : (
                         <div className="trending-list">

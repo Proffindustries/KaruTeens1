@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Heart,
     MessageCircle,
@@ -15,11 +15,22 @@ import {
     Eye,
     Trash2,
     Shield,
+    Image,
+    X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/PostCard.css';
-import { useLikePost, useUnlikePost, useAddComment, useComments } from '../hooks/useContent.js';
+import {
+    useLikePost,
+    useUnlikePost,
+    useAddComment,
+    useComments,
+    useDeletePost,
+    useReportPost,
+    useSavePost,
+} from '../hooks/useContent';
+import { shouldBlur } from '../utils/contentFilters.js';
 import { useToast } from '../context/ToastContext.jsx';
 import CustomVideoPlayer from './CustomVideoPlayer.jsx';
 import CustomAudioPlayer from './CustomAudioPlayer.jsx';
@@ -28,29 +39,36 @@ import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
 
 // Helper function for Cloudinary optimization
-const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_600') => {
-    // Regex to match common Cloudinary URLs
+const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800') => {
+    // Regex to match common Cloudinary URLs, handling the version string correctly
+    // It captures:
+    // 1. Base URL up to 'upload/'
+    // 2. The rest of the URL (version and public_id)
     const cloudinaryRegex =
-        /(https?:\/\/(?:res\.cloudinary\.com\/(?:[^\/]+)\/image\/upload\/)(?:v\d+\/)?)([^\/]+\/.+)/;
+        /(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)?(.+)/;
     const match = url.match(cloudinaryRegex);
 
-    if (match && match[1] && match[2]) {
-        // Construct the optimized URL
+    if (match) {
+        const baseUrl = match[1];
+        const version = match[2] || '';
+        const publicId = match[3];
         // Insert transformations after 'upload/' and before the version/public_id
-        return `${match[1]}${transformations}/${match[2]}`;
+        return `${baseUrl}${transformations}/${version}${publicId}`;
     }
     return url; // Return original URL if not a Cloudinary URL
 };
 
-const PostCard = ({ post }) => {
+const PostCard = React.memo(({ post }) => {
     const navigate = useNavigate();
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
-    const [saved, setSaved] = useState(false);
+    const [commentMedia, setCommentMedia] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
     const [isHidden, setIsHidden] = useState(false);
+    const [isNsfwRevealed, setIsNsfwRevealed] = useState(false);
     const { showToast } = useToast();
     const currentUser = JSON.parse(localStorage.getItem('user'));
+    const fileInputRef = useRef(null);
 
     // Support both id (Postgres/Normalized) and _id (MongoDB)
     const postId = post.id || post._id;
@@ -74,6 +92,9 @@ const PostCard = ({ post }) => {
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
     const { mutate: addComment, isPending: isSubmittingComment } = useAddComment();
+    const { mutate: deletePost } = useDeletePost();
+    const { mutate: reportPost } = useReportPost();
+    const { mutate: savePost } = useSavePost();
     const { data: comments, isLoading: isLoadingComments } = useComments(
         showComments ? postId : null,
     );
@@ -146,7 +167,19 @@ const PostCard = ({ post }) => {
     };
 
     const handleReportPost = () => {
-        showToast('Report submitted. Our team will review this post.', 'info');
+        const reason = prompt(
+            'Why are you reporting this post? (spam, harassment, inappropriate, abuse, violence, misinformation, other)',
+        );
+        if (reason) {
+            reportPost({ postId, reason, description: null });
+        }
+        setShowMenu(false);
+    };
+
+    const handleDeletePost = () => {
+        if (window.confirm('Are you sure you want to delete this post?')) {
+            deletePost(postId);
+        }
         setShowMenu(false);
     };
 
@@ -182,14 +215,6 @@ const PostCard = ({ post }) => {
         }
     };
 
-    const handleDeletePost = () => {
-        if (window.confirm('Are you sure you want to delete this post?')) {
-            showToast('Post deleted successfully', 'success');
-            setIsHidden(true); // Locally hide it
-        }
-        setShowMenu(false);
-    };
-
     const handleBlockUser = () => {
         showToast(`User @${post.user} has been blocked`, 'info');
         setIsHidden(true);
@@ -198,14 +223,19 @@ const PostCard = ({ post }) => {
 
     const handleCommentSubmit = (e) => {
         e.preventDefault();
-        if (!commentText.trim()) return;
+        if (!commentText.trim() && !commentMedia) return;
 
         // Optimistic Count Update
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
         addComment(
-            { postId: postId, content: commentText, parent_comment_id: null },
+            {
+                postId: postId,
+                content: commentText,
+                parent_comment_id: null,
+                mediaFile: commentMedia,
+            },
             {
                 onError: () => {
                     setCommentsCount(previousCount);
@@ -214,9 +244,24 @@ const PostCard = ({ post }) => {
             },
         );
         setCommentText('');
+        setCommentMedia(null);
     };
 
-    const handleReply = (parentCommentId, replyContent) => {
+    const handleMediaSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setCommentMedia(file);
+        }
+    };
+
+    const handleRemoveMedia = () => {
+        setCommentMedia(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleReply = (parentCommentId, replyContent, replyMedia = null) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
@@ -225,6 +270,7 @@ const PostCard = ({ post }) => {
                 postId: postId,
                 content: replyContent,
                 parent_comment_id: parentCommentId,
+                mediaFile: replyMedia,
             },
             {
                 onError: () => {
@@ -273,7 +319,7 @@ const PostCard = ({ post }) => {
         if (!content) return null;
 
         // Regex to find hashtags
-        const parts = content.split(/(\#[a-zA-Z0-9_]+\b)/g);
+        const parts = content.split(/(#[a-zA-Z0-9_]+\b)/g);
 
         return parts.map((part, i) => {
             if (part.startsWith('#')) {
@@ -284,7 +330,7 @@ const PostCard = ({ post }) => {
                         onClick={(e) => {
                             e.stopPropagation();
                             // Future: Navigate to search with this tag
-                            alert(`Filtering by ${part}`);
+                            showToast('Hashtag filtering coming soon!', 'info');
                         }}
                     >
                         {part}
@@ -329,16 +375,24 @@ const PostCard = ({ post }) => {
             {/* Post Header */}
             <div className="post-header">
                 <div className="post-user-info">
-                    <Avatar src={post.user_avatar} name={post.user} className="post-avatar" />
+                    <Avatar
+                        src={post.is_anonymous ? null : post.user_avatar}
+                        name={post.is_anonymous ? 'Anonymous' : post.user}
+                        className="post-avatar"
+                    />
                     <div className="post-meta">
                         <span className="post-username">
-                            <Link
-                                to={`/profile/${post.user}`}
-                                className="username-link"
-                                style={{ color: 'inherit', textDecoration: 'none' }}
-                            >
-                                {post.user}
-                            </Link>
+                            {post.is_anonymous ? (
+                                <span style={{ fontWeight: 600 }}>Anonymous 👻</span>
+                            ) : (
+                                <Link
+                                    to={`/profile/${post.user}`}
+                                    className="username-link"
+                                    style={{ color: 'inherit', textDecoration: 'none' }}
+                                >
+                                    {post.user}
+                                </Link>
+                            )}
                             {post.group_name && (
                                 <>
                                     <span
@@ -366,6 +420,26 @@ const PostCard = ({ post }) => {
                         <span className="post-time">
                             {new Date(post.created_at).toLocaleString()}
                         </span>
+                        {post.algorithmic_score > 0 && (
+                            <span
+                                className="post-algo-score"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    marginLeft: '12px',
+                                    fontSize: '0.8rem',
+                                    color: '#ff4757',
+                                    background: 'rgba(255, 71, 87, 0.1)',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    fontWeight: 'bold',
+                                }}
+                                title="Algorithmic Engagement Score"
+                            >
+                                🔥 {post.algorithmic_score} Score
+                            </span>
+                        )}
                     </div>
                 </div>
                 <div className="post-options-wrapper" ref={menuRef}>
@@ -378,7 +452,7 @@ const PostCard = ({ post }) => {
                                 <Link2 size={18} />
                                 Copy Link
                             </button>
-                            {!isOwner && (
+                            {!isOwner && !post.is_anonymous && (
                                 <>
                                     <button className="menu-item" onClick={handleHidePost}>
                                         <EyeOff size={18} />
@@ -425,113 +499,157 @@ const PostCard = ({ post }) => {
             </div>
 
             {/* Post Content */}
-            <div className="post-content">
-                {post.content && <p className="post-text">{renderContent(post.content)}</p>}
+            <div
+                className={`post-content-wrapper ${shouldBlur(post) && !isNsfwRevealed ? 'nsfw-blurred' : ''}`}
+            >
+                <div className="post-content">
+                    {post.content && <p className="post-text">{renderContent(post.content)}</p>}
 
-                {post.location && (
-                    <div className="post-location-preview">
-                        <MapPreview location={post.location} />
-                    </div>
-                )}
+                    {post.location && (
+                        <div className="post-location-preview">
+                            <MapPreview location={post.location} />
+                        </div>
+                    )}
 
-                {/* Media Attachments */}
-                {post.media_urls && post.media_urls.length > 0 && (
-                    <div
-                        className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}
-                    >
-                        {post.media_urls.slice(0, 4).map((url, idx) => {
-                            const isVideo =
-                                url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv)$/i) ||
-                                post.post_type === 'video';
-                            const isAudio =
-                                url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) ||
-                                post.post_type === 'audio';
-                            const isPDF = url.match(/\.pdf$/i);
-                            const isImage =
-                                url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
-                                (!isVideo && !isAudio && !isPDF);
-                            const isLastVisible = idx === 3 && post.media_urls.length > 4;
-                            const remainingCount = post.media_urls.length - 3;
+                    {/* Media Attachments */}
+                    {post.media_urls && post.media_urls.length > 0 && (
+                        <div
+                            className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}
+                        >
+                            {post.media_urls.slice(0, 4).map((url, idx) => {
+                                const isVideo =
+                                    url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv)$/i) ||
+                                    url.includes('video/upload') ||
+                                    post.post_type === 'video';
+                                const isAudio =
+                                    url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) ||
+                                    post.post_type === 'audio';
+                                const isPDF = url.match(/\.pdf$/i);
+                                const isImage =
+                                    url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i) ||
+                                    post.post_type === 'image' ||
+                                    (!isVideo &&
+                                        !isAudio &&
+                                        !isPDF &&
+                                        url.includes('cloudinary.com'));
+                                const isLastVisible = idx === 3 && post.media_urls.length > 4;
+                                const remainingCount = post.media_urls.length - 3;
 
-                            // Handle navigation to post details
-                            const handleMediaClick = () => {
-                                navigate(`/post/${postId}`);
-                            };
+                                // Handle navigation to post details (outside video play zone)
+                                const handleMediaClick = (e) => {
+                                    if (shouldBlur(post) && !isNsfwRevealed) return;
+                                    // Only navigate if clicking outside the video play zone
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = e.clientX - rect.left;
+                                    const y = e.clientY - rect.top;
+                                    const centerZone = {
+                                        left: rect.width * 0.25,
+                                        right: rect.width * 0.75,
+                                        top: rect.height * 0.25,
+                                        bottom: rect.height * 0.75,
+                                    };
+                                    // If click is in center quadrant, play video instead
+                                    if (
+                                        x >= centerZone.left &&
+                                        x <= centerZone.right &&
+                                        y >= centerZone.top &&
+                                        y <= centerZone.bottom &&
+                                        isVideo
+                                    ) {
+                                        return; // Let video player handle it
+                                    }
+                                    navigate(`/post/${postId}`);
+                                };
 
-                            return (
-                                <div
-                                    key={idx}
-                                    className="media-item"
-                                    onClick={handleMediaClick}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    {isVideo ? (
-                                        <CustomVideoPlayer src={url} />
-                                    ) : isAudio ? (
-                                        <CustomAudioPlayer
-                                            src={url}
-                                            filename={`Audio ${idx + 1}`}
-                                        />
-                                    ) : isPDF ? (
-                                        <div
-                                            className="file-wrapper-mini"
-                                            style={{
-                                                padding: '20px',
-                                                background: '#1a1a1a',
-                                                height: '100%',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px',
-                                            }}
-                                        >
-                                            <FileText size={32} color="var(--primary-color)" />
-                                            {post.media_urls.length === 1 && (
+                                return (
+                                    <div
+                                        key={idx}
+                                        className="media-item"
+                                        onClick={handleMediaClick}
+                                        style={{ cursor: 'pointer', position: 'relative' }}
+                                    >
+                                        {isVideo ? (
+                                            <div style={{ position: 'relative' }}>
+                                                <CustomVideoPlayer src={url} />
+                                            </div>
+                                        ) : isAudio ? (
+                                            <CustomAudioPlayer
+                                                src={url}
+                                                filename={`Audio ${idx + 1}`}
+                                            />
+                                        ) : isPDF ? (
+                                            <div
+                                                className="file-wrapper-mini"
+                                                style={{
+                                                    padding: '20px',
+                                                    background: '#1a1a1a',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                }}
+                                            >
+                                                <FileText size={32} color="var(--primary-color)" />
+                                                {post.media_urls.length === 1 && (
+                                                    <span
+                                                        style={{ color: 'white', fontSize: '10px' }}
+                                                    >
+                                                        Open Document
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : isImage ? (
+                                            <img
+                                                src={getOptimizedCloudinaryUrl(url)}
+                                                alt={`Post content ${idx + 1}`}
+                                                className="post-image"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            // Fallback for unknown file types
+                                            <div
+                                                className="file-wrapper-mini"
+                                                style={{
+                                                    padding: '20px',
+                                                    background: '#1a1a1a',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                }}
+                                            >
+                                                <FileText size={32} color="var(--primary-color)" />
                                                 <span style={{ color: 'white', fontSize: '10px' }}>
-                                                    Open Document
+                                                    File
                                                 </span>
-                                            )}
-                                        </div>
-                                    ) : isImage ? (
-                                        <img
-                                            src={getOptimizedCloudinaryUrl(url)}
-                                            alt={`Post content ${idx + 1}`}
-                                            className="post-image"
-                                            loading="lazy"
-                                        />
-                                    ) : (
-                                        // Fallback for unknown file types
-                                        <div
-                                            className="file-wrapper-mini"
-                                            style={{
-                                                padding: '20px',
-                                                background: '#1a1a1a',
-                                                height: '100%',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px',
-                                            }}
-                                        >
-                                            <FileText size={32} color="var(--primary-color)" />
-                                            <span style={{ color: 'white', fontSize: '10px' }}>
-                                                File
-                                            </span>
-                                        </div>
-                                    )}
+                                            </div>
+                                        )}
 
-                                    {/* Overlay ya '+ N More' kama picha ni mob */}
-                                    {isLastVisible && (
-                                        <div className="media-overlay">
-                                            <span className="overlay-count">+{remainingCount}</span>
-                                            <span className="overlay-text">See More</span>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                        {/* Overlay ya '+ N More' kama picha ni mob */}
+                                        {isLastVisible && (
+                                            <div className="media-overlay">
+                                                <span className="overlay-count">
+                                                    +{remainingCount}
+                                                </span>
+                                                <span className="overlay-text">See More</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {shouldBlur(post) && !isNsfwRevealed && (
+                    <div className="nsfw-overlay" onClick={() => setIsNsfwRevealed(true)}>
+                        <Shield size={32} />
+                        <p>Sensitive Content</p>
+                        <button className="reveal-btn">Tap to View</button>
                     </div>
                 )}
             </div>
@@ -568,11 +686,11 @@ const PostCard = ({ post }) => {
                 </button>
 
                 <button
-                    className={`action-btn ${saved ? 'active-save' : ''}`}
-                    onClick={() => setSaved(!saved)}
+                    className={`action-btn ${post.is_saved ? 'active-save' : ''}`}
+                    onClick={() => savePost(postId)}
                 >
-                    <Bookmark size={20} fill={saved ? 'currentColor' : 'none'} />
-                    <span>Save</span>
+                    <Bookmark size={20} fill={post.is_saved ? 'currentColor' : 'none'} />
+                    <span>{post.is_saved ? 'Saved' : 'Save'}</span>
                 </button>
             </div>
 
@@ -625,15 +743,84 @@ const PostCard = ({ post }) => {
                                 name={currentUser?.username}
                                 size="sm"
                             />
-                            <form onSubmit={handleCommentSubmit} style={{ flex: 1 }}>
+                            <form
+                                onSubmit={handleCommentSubmit}
+                                style={{ flex: 1, position: 'relative' }}
+                            >
                                 <input
                                     placeholder="Write a comment..."
                                     value={commentText}
                                     onChange={(e) => setCommentText(e.target.value)}
                                 />
-                                <button type="submit" disabled={isSubmittingComment}>
-                                    {isSubmittingComment ? '...' : 'Post'}
-                                </button>
+                                <div
+                                    className="comment-form-actions"
+                                    style={{
+                                        position: 'absolute',
+                                        right: '8px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        display: 'flex',
+                                        gap: '4px',
+                                    }}
+                                >
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleMediaSelect}
+                                        accept="image/*,video/*"
+                                        hidden
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="btn-media"
+                                        title="Add media"
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                        }}
+                                    >
+                                        <Image size={16} />
+                                    </button>
+                                    {commentMedia && (
+                                        <div
+                                            className="media-preview"
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                            }}
+                                        >
+                                            <span style={{ fontSize: '0.8rem' }}>
+                                                {commentMedia.name}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveMedia}
+                                                className="btn-remove-media"
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '2px',
+                                                }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        disabled={
+                                            isSubmittingComment ||
+                                            (!commentText.trim() && !commentMedia)
+                                        }
+                                    >
+                                        {isSubmittingComment ? '...' : 'Post'}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     )}
@@ -660,6 +847,6 @@ const PostCard = ({ post }) => {
             )}
         </motion.div>
     );
-};
+});
 
 export default PostCard;

@@ -3,7 +3,7 @@ import { Play, Pause, Music } from 'lucide-react'; // Add Music icon for placeho
 import { useInView } from 'react-intersection-observer'; // Import useInView
 import '../styles/CustomAudioPlayer.css';
 
-const CustomAudioPlayer = ({ src, filename }) => {
+const CustomAudioPlayer = React.memo(({ src, filename }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
@@ -212,6 +212,6 @@ const CustomAudioPlayer = ({ src, filename }) => {
             )}
         </div>
     );
-};
+});
 
 export default CustomAudioPlayer;

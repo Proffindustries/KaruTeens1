@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Heart, MessageCircle, UserPlus, Star, Trash2, Bell, MessageSquare } from 'lucide-react';
 import {
     useNotifications,
@@ -13,6 +13,59 @@ const NotificationsPage = () => {
     const { mutate: markRead } = useMarkNotificationRead();
     const { mutate: deleteNotif } = useDeleteNotification();
     const { mutate: markAllRead } = useMarkAllRead();
+    const [containerHeight, setContainerHeight] = useState(window.innerHeight - 200);
+
+    useEffect(() => {
+        const handleResize = () => setContainerHeight(window.innerHeight - 200);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Virtualized Row component for notifications
+    const NotificationRow = useCallback(({ index, style, data }) => {
+        const { notifications, markRead, deleteNotif, getIcon, formatTime } = data;
+        const notif = notifications[index];
+
+        if (!notif) return null;
+
+        return (
+            <div
+                style={style}
+                key={notif.id}
+                className={`notification-item ${!notif.is_read ? 'unread' : ''}`}
+                onClick={() => !notif.is_read && markRead(notif.id)}
+            >
+                <div className="notif-avatar">
+                    {notif.actor_avatar_url ? (
+                        <img src={notif.actor_avatar_url} alt="" loading="lazy" />
+                    ) : (
+                        <div className="avatar-placeholder">{notif.actor_username[0]}</div>
+                    )}
+                    <div className="type-badge">{getIcon(notif.notification_type)}</div>
+                </div>
+                <div className="notif-content">
+                    <p>
+                        <strong>{notif.actor_username} </strong>
+                        {notif.content}
+                    </p>
+                    <span className="notif-time">{formatTime(notif.created_at)}</span>
+                </div>
+                <div className="notif-actions">
+                    <button
+                        className="delete-notif-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotif(notif.id);
+                        }}
+                        title="Delete notification"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                    {!notif.is_read && <div className="unread-dot"></div>}
+                </div>
+            </div>
+        );
+    }, []);
 
     const getIcon = (type) => {
         switch (type) {
@@ -76,44 +129,50 @@ const NotificationsPage = () => {
                         <p>No notifications yet.</p>
                     </div>
                 ) : (
-                    notifications.map((notif) => (
-                        <div
-                            key={notif.id}
-                            className={`notification-item ${!notif.is_read ? 'unread' : ''}`}
-                            onClick={() => !notif.is_read && markRead(notif.id)}
-                        >
-                            <div className="notif-avatar">
-                                {notif.actor_avatar_url ? (
-                                    <img src={notif.actor_avatar_url} alt="" />
-                                ) : (
-                                    <div className="avatar-placeholder">
-                                        {notif.actor_username[0]}
+                    <div className="notifications-items">
+                        {(notifications || []).map((notif, idx) => (
+                            <div
+                                key={notif.id || idx}
+                                className={`notification-item ${!notif.is_read ? 'unread' : ''}`}
+                                onClick={() => !notif.is_read && markRead(notif.id)}
+                            >
+                                <div className="notif-avatar">
+                                    {notif.actor_avatar_url ? (
+                                        <img src={notif.actor_avatar_url} alt="" loading="lazy" />
+                                    ) : (
+                                        <div className="avatar-placeholder">
+                                            {notif.actor_username?.[0] || '?'}
+                                        </div>
+                                    )}
+                                    <div className="type-badge">
+                                        {getIcon(notif.notification_type)}
                                     </div>
-                                )}
-                                <div className="type-badge">{getIcon(notif.notification_type)}</div>
+                                </div>
+                                <div className="notif-content">
+                                    <p>
+                                        <strong>{notif.actor_username} </strong>
+                                        {notif.content}
+                                    </p>
+                                    <span className="notif-time">
+                                        {formatTime(notif.created_at)}
+                                    </span>
+                                </div>
+                                <div className="notif-actions">
+                                    <button
+                                        className="delete-notif-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteNotif(notif.id);
+                                        }}
+                                        title="Delete notification"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                    {!notif.is_read && <div className="unread-dot"></div>}
+                                </div>
                             </div>
-                            <div className="notif-content">
-                                <p>
-                                    <strong>{notif.actor_username} </strong>
-                                    {notif.content}
-                                </p>
-                                <span className="notif-time">{formatTime(notif.created_at)}</span>
-                            </div>
-                            <div className="notif-actions">
-                                <button
-                                    className="delete-notif-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteNotif(notif.id);
-                                    }}
-                                    title="Delete notification"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                                {!notif.is_read && <div className="unread-dot"></div>}
-                            </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
         </div>

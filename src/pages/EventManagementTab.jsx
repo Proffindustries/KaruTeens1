@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Calendar,
     Plus,
@@ -64,254 +64,35 @@ const EventManagementTab = () => {
 
     const { showToast } = useToast();
 
-    // Mock data for events
-    const mockEvents = [
-        {
-            id: 'event_001',
-            title: 'KaruTeens Annual Tech Conference 2024',
-            description:
-                'Join us for the biggest tech event of the year featuring industry leaders and innovators.',
-            location: 'Nairobi Convention Centre',
-            location_type: 'physical',
-            venue_name: 'Nairobi Convention Centre',
-            venue_address: 'Moi Avenue, Nairobi',
-            virtual_meeting_url: null,
-            start_datetime: '2024-03-15T09:00:00Z',
-            end_datetime: '2024-03-15T17:00:00Z',
-            registration_start: '2024-01-15T00:00:00Z',
-            registration_end: '2024-03-10T23:59:59Z',
-            max_attendees: 500,
-            current_attendees: 320,
-            category: 'Technology',
-            tags: ['tech', 'conference', 'networking'],
-            organizer_id: 'admin_001',
-            organizer_name: 'Tech Team',
-            organizer_contact: 'tech@karuteens.com',
-            event_type: 'public',
-            status: 'published',
-            is_recurring: false,
-            recurrence_pattern: null,
-            recurrence_end_date: null,
-            image_url: null,
-            banner_url: null,
-            featured: true,
-            ticket_price: 50.0,
-            currency: 'KES',
-            rsvp_required: true,
-            waitlist_enabled: true,
-            waitlist_count: 15,
-            created_at: '2024-01-10T10:00:00Z',
-            updated_at: '2024-01-15T14:30:00Z',
-            rsvp_stats: {
-                interested: 45,
-                going: 280,
-                maybe: 35,
-                not_going: 10,
-            },
-            attendance_stats: {
-                checked_in: 260,
-                total_attendees: 320,
-                attendance_rate: 81.25,
-            },
-        },
-        {
-            id: 'event_002',
-            title: 'Weekly Coding Workshop',
-            description: 'Weekly coding sessions for beginners and intermediate developers.',
-            location: 'Online via Zoom',
-            location_type: 'virtual',
-            venue_name: null,
-            venue_address: null,
-            virtual_meeting_url: 'https://zoom.us/j/123456789',
-            start_datetime: '2024-02-05T18:00:00Z',
-            end_datetime: '2024-02-05T20:00:00Z',
-            registration_start: '2024-01-20T00:00:00Z',
-            registration_end: '2024-02-04T23:59:59Z',
-            max_attendees: 100,
-            current_attendees: 85,
-            category: 'Education',
-            tags: ['coding', 'workshop', 'learning'],
-            organizer_id: 'admin_002',
-            organizer_name: 'Education Team',
-            organizer_contact: 'edu@karuteens.com',
-            event_type: 'public',
-            status: 'published',
-            is_recurring: true,
-            recurrence_pattern: 'weekly',
-            recurrence_end_date: '2024-06-30T23:59:59Z',
-            image_url: null,
-            banner_url: null,
-            featured: false,
-            ticket_price: 0.0,
-            currency: 'KES',
-            rsvp_required: true,
-            waitlist_enabled: false,
-            waitlist_count: 0,
-            created_at: '2024-01-15T08:00:00Z',
-            updated_at: '2024-01-20T11:15:00Z',
-            rsvp_stats: {
-                interested: 20,
-                going: 75,
-                maybe: 10,
-                not_going: 5,
-            },
-            attendance_stats: {
-                checked_in: 70,
-                total_attendees: 85,
-                attendance_rate: 82.35,
-            },
-        },
-        {
-            id: 'event_003',
-            title: 'Startup Pitch Night',
-            description: 'Local startups pitch their ideas to investors and get feedback.',
-            location: 'Koru Innovation Hub',
-            location_type: 'physical',
-            venue_name: 'Koru Innovation Hub',
-            venue_address: 'Kenyatta Avenue, Nairobi',
-            virtual_meeting_url: null,
-            start_datetime: '2024-02-20T17:00:00Z',
-            end_datetime: '2024-02-20T21:00:00Z',
-            registration_start: '2024-01-25T00:00:00Z',
-            registration_end: '2024-02-18T23:59:59Z',
-            max_attendees: 150,
-            current_attendees: 120,
-            category: 'Business',
-            tags: ['startup', 'pitch', 'investors', 'networking'],
-            organizer_id: 'admin_003',
-            organizer_name: 'Business Team',
-            organizer_contact: 'biz@karuteens.com',
-            event_type: 'public',
-            status: 'published',
-            is_recurring: false,
-            recurrence_pattern: null,
-            recurrence_end_date: null,
-            image_url: null,
-            banner_url: null,
-            featured: true,
-            ticket_price: 20.0,
-            currency: 'KES',
-            rsvp_required: true,
-            waitlist_enabled: true,
-            waitlist_count: 8,
-            created_at: '2024-01-20T12:00:00Z',
-            updated_at: '2024-01-25T16:45:00Z',
-            rsvp_stats: {
-                interested: 30,
-                going: 95,
-                maybe: 25,
-                not_going: 10,
-            },
-            attendance_stats: {
-                checked_in: 88,
-                total_attendees: 120,
-                attendance_rate: 73.33,
-            },
-        },
-        {
-            id: 'event_004',
-            title: 'Private Team Building Retreat',
-            description: 'Exclusive team building event for KaruTeens staff.',
-            location: 'Naivasha Resort',
-            location_type: 'physical',
-            venue_name: 'Naivasha Resort',
-            venue_address: 'Lake Naivasha, Kenya',
-            virtual_meeting_url: null,
-            start_datetime: '2024-03-01T08:00:00Z',
-            end_datetime: '2024-03-03T17:00:00Z',
-            registration_start: null,
-            registration_end: null,
-            max_attendees: 50,
-            current_attendees: 45,
-            category: 'Corporate',
-            tags: ['team', 'building', 'retreat'],
-            organizer_id: 'admin_001',
-            organizer_name: 'HR Department',
-            organizer_contact: 'hr@karuteens.com',
-            event_type: 'private',
-            status: 'published',
-            is_recurring: false,
-            recurrence_pattern: null,
-            recurrence_end_date: null,
-            image_url: null,
-            banner_url: null,
-            featured: false,
-            ticket_price: 0.0,
-            currency: 'KES',
-            rsvp_required: false,
-            waitlist_enabled: false,
-            waitlist_count: 0,
-            created_at: '2024-01-05T09:00:00Z',
-            updated_at: '2024-01-10T10:30:00Z',
-            rsvp_stats: {
-                interested: 0,
-                going: 45,
-                maybe: 0,
-                not_going: 0,
-            },
-            attendance_stats: {
-                checked_in: 42,
-                total_attendees: 45,
-                attendance_rate: 93.33,
-            },
-        },
-        {
-            id: 'event_005',
-            title: 'Cancelled: AI Workshop Series',
-            description: 'This event has been cancelled due to unforeseen circumstances.',
-            location: 'Online via Teams',
-            location_type: 'virtual',
-            venue_name: null,
-            venue_address: null,
-            virtual_meeting_url: 'https://teams.microsoft.com/l/meetup-join/...',
-            start_datetime: '2024-02-10T14:00:00Z',
-            end_datetime: '2024-02-10T16:00:00Z',
-            registration_start: '2024-01-10T00:00:00Z',
-            registration_end: '2024-02-08T23:59:59Z',
-            max_attendees: 200,
-            current_attendees: 150,
-            category: 'Technology',
-            tags: ['AI', 'workshop', 'cancelled'],
-            organizer_id: 'admin_002',
-            organizer_name: 'Tech Team',
-            organizer_contact: 'tech@karuteens.com',
-            event_type: 'public',
-            status: 'cancelled',
-            is_recurring: false,
-            recurrence_pattern: null,
-            recurrence_end_date: null,
-            image_url: null,
-            banner_url: null,
-            featured: false,
-            ticket_price: 25.0,
-            currency: 'KES',
-            rsvp_required: true,
-            waitlist_enabled: true,
-            waitlist_count: 12,
-            created_at: '2024-01-01T08:00:00Z',
-            updated_at: '2024-02-05T11:00:00Z',
-            rsvp_stats: {
-                interested: 25,
-                going: 120,
-                maybe: 15,
-                not_going: 10,
-            },
-            attendance_stats: {
-                checked_in: 0,
-                total_attendees: 150,
-                attendance_rate: 0.0,
-            },
-        },
-    ];
-
+    // Fetch events from API
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setEvents(mockEvents);
-            setIsLoading(false);
-        }, 1000);
-    }, [filters]);
+        let isMounted = true;
+
+        const loadEvents = async () => {
+            setIsLoading(true);
+            try {
+                const { data } = await api.get('/events');
+                if (isMounted) {
+                    setEvents(data);
+                }
+            } catch (error) {
+                console.error('Failed to load events:', error);
+                if (isMounted) {
+                    showToast('Failed to load events. Please try again later.', 'error');
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadEvents();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));

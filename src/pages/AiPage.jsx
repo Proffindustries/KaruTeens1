@@ -104,7 +104,7 @@ const AiPage = () => {
 
     useEffect(() => {
         fetchModels();
-    }, []);
+    }, [fetchModels]);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

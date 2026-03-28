@@ -61,7 +61,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                 current_user_id = Some(uid);
                                 
                                 // Register connection
-                                state.ws_connections.entry(uid).or_insert_with(Vec::new).push(tx.clone());
+                                state.ws_connections.entry(uid).or_default().push(tx.clone());
                                 
                                 let _ = tx.send(Message::Text(serde_json::to_string(&json!({
                                     "type": "auth_success",
@@ -70,6 +70,12 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                             }
                         }
                     }
+                } else if current_user_id.is_none() {
+                    // Reject all non-auth messages from unauthenticated users
+                    let _ = tx.send(Message::Text(serde_json::to_string(&json!({
+                        "type": "error",
+                        "error": "Not authenticated"
+                    })).unwrap()));
                 } else {
                     // Start signaling logic for authenticated users
                     let msg_type = payload["type"].as_str().unwrap_or("");

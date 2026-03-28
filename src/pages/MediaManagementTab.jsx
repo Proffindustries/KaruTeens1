@@ -90,176 +90,6 @@ const MediaManagementTab = () => {
     const fileInputRef = useRef(null);
     const { showToast } = useToast();
 
-    // Mock data for media files
-    const mockMediaFiles = [
-        {
-            id: 'media_001',
-            filename: 'product_demo.mp4',
-            original_filename: 'product_demo_original.mp4',
-            file_size: 157286400, // 150MB
-            optimized_size: 120000000, // 114MB
-            size_reduction: 23.7,
-            file_type: 'video',
-            mime_type: 'video/mp4',
-            dimensions: '1920x1080',
-            duration: 180,
-            upload_date: '2024-06-15T10:00:00Z',
-            storage_location: 'primary',
-            optimization_status: 'optimized',
-            optimization_date: '2024-06-15T10:05:00Z',
-            cdn_status: 'synced',
-            cdn_url: 'https://cdn.example.com/videos/product_demo.mp4',
-            backup_status: 'completed',
-            backup_location: 'backup_storage_01',
-            metadata: {
-                camera: 'Canon EOS R5',
-                lens: '24-70mm f/2.8',
-                location: 'Studio A',
-                director: 'John Doe',
-                producer: 'Jane Smith',
-            },
-            tags: ['product', 'demo', 'marketing'],
-            categories: ['marketing', 'product'],
-            views: 1250,
-            downloads: 45,
-            shares: 23,
-            created_at: '2024-06-15T10:00:00Z',
-            updated_at: '2024-06-15T10:05:00Z',
-        },
-        {
-            id: 'media_002',
-            filename: 'tutorial_beginner.jpg',
-            original_filename: 'tutorial_beginner_original.jpg',
-            file_size: 8388608, // 8MB
-            optimized_size: 5242880, // 5MB
-            size_reduction: 37.5,
-            file_type: 'image',
-            mime_type: 'image/jpeg',
-            dimensions: '4000x3000',
-            duration: null,
-            upload_date: '2024-06-16T14:30:00Z',
-            storage_location: 'primary',
-            optimization_status: 'optimized',
-            optimization_date: '2024-06-16T14:35:00Z',
-            cdn_status: 'synced',
-            cdn_url: 'https://cdn.example.com/images/tutorial_beginner.jpg',
-            backup_status: 'completed',
-            backup_location: 'backup_storage_02',
-            metadata: {
-                camera: 'Nikon D850',
-                lens: '50mm f/1.8',
-                location: 'Outdoor',
-                photographer: 'Sarah Johnson',
-            },
-            tags: ['tutorial', 'beginner', 'photography'],
-            categories: ['education', 'tutorial'],
-            views: 890,
-            downloads: 23,
-            shares: 8,
-            created_at: '2024-06-16T14:30:00Z',
-            updated_at: '2024-06-16T14:35:00Z',
-        },
-        {
-            id: 'media_003',
-            filename: 'background_music.mp3',
-            original_filename: 'background_music_original.mp3',
-            file_size: 20971520, // 20MB
-            optimized_size: 15728640, // 15MB
-            size_reduction: 25.0,
-            file_type: 'audio',
-            mime_type: 'audio/mpeg',
-            dimensions: null,
-            duration: 300,
-            upload_date: '2024-06-17T09:15:00Z',
-            storage_location: 'primary',
-            optimization_status: 'pending',
-            optimization_date: null,
-            cdn_status: 'pending',
-            cdn_url: null,
-            backup_status: 'pending',
-            backup_location: null,
-            metadata: {
-                artist: 'Unknown Artist',
-                album: 'Background Music',
-                genre: 'Ambient',
-                bitrate: '320kbps',
-            },
-            tags: ['music', 'background', 'ambient'],
-            categories: ['audio', 'music'],
-            views: 0,
-            downloads: 0,
-            shares: 0,
-            created_at: '2024-06-17T09:15:00Z',
-            updated_at: '2024-06-17T09:15:00Z',
-        },
-        {
-            id: 'media_004',
-            filename: 'document_report.pdf',
-            original_filename: 'document_report_original.pdf',
-            file_size: 52428800, // 50MB
-            optimized_size: 31457280, // 30MB
-            size_reduction: 40.0,
-            file_type: 'document',
-            mime_type: 'application/pdf',
-            dimensions: null,
-            duration: null,
-            upload_date: '2024-06-18T11:45:00Z',
-            storage_location: 'archive',
-            optimization_status: 'optimized',
-            optimization_date: '2024-06-18T11:50:00Z',
-            cdn_status: 'synced',
-            cdn_url: 'https://cdn.example.com/documents/document_report.pdf',
-            backup_status: 'completed',
-            backup_location: 'backup_storage_03',
-            metadata: {
-                author: 'Report Author',
-                title: 'Monthly Report',
-                pages: 150,
-                created_date: '2024-06-01',
-            },
-            tags: ['report', 'document', 'monthly'],
-            categories: ['documents', 'reports'],
-            views: 150,
-            downloads: 75,
-            shares: 12,
-            created_at: '2024-06-18T11:45:00Z',
-            updated_at: '2024-06-18T11:50:00Z',
-        },
-        {
-            id: 'media_005',
-            filename: 'presentation.pptx',
-            original_filename: 'presentation_original.pptx',
-            file_size: 104857600, // 100MB
-            optimized_size: 73400320, // 70MB
-            size_reduction: 30.0,
-            file_type: 'document',
-            mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            dimensions: null,
-            duration: null,
-            upload_date: '2024-06-19T16:20:00Z',
-            storage_location: 'primary',
-            optimization_status: 'in_progress',
-            optimization_date: '2024-06-19T16:25:00Z',
-            cdn_status: 'pending',
-            cdn_url: null,
-            backup_status: 'pending',
-            backup_location: null,
-            metadata: {
-                author: 'Presentation Author',
-                title: 'Business Presentation',
-                slides: 50,
-                created_date: '2024-06-15',
-            },
-            tags: ['presentation', 'business', 'slides'],
-            categories: ['documents', 'presentations'],
-            views: 0,
-            downloads: 0,
-            shares: 0,
-            created_at: '2024-06-19T16:20:00Z',
-            updated_at: '2024-06-19T16:25:00Z',
-        },
-    ];
-
     // Mock data for optimization jobs
     const mockOptimizationJobs = [
         {
@@ -464,14 +294,28 @@ const MediaManagementTab = () => {
 
     useEffect(() => {
         setIsLoading(true);
-        // Simulate API calls
-        setTimeout(() => {
-            setMediaFiles(mockMediaFiles);
-            setOptimizationJobs(mockOptimizationJobs);
-            setStorageStats(mockStorageStats);
-            setCDNStatus(mockCDNStatus);
-            setIsLoading(false);
-        }, 1000);
+        // Fetch real data from API
+        Promise.all([
+            api.get('/media-files'),
+            api.get('/optimization-jobs'),
+            api.get('/storage-stats'),
+            api.get('/cdn-status'),
+        ])
+            .then(([mediaRes, jobsRes, statsRes, cdnRes]) => {
+                setMediaFiles(mediaRes.data);
+                setOptimizationJobs(jobsRes.data);
+                setStorageStats(statsRes.data);
+                setCDNStatus(cdnRes.data);
+            })
+            .catch((error) => {
+                console.error('Failed to load media management data:', error);
+                // Set appropriate empty states
+                setMediaFiles([]);
+                setOptimizationJobs([]);
+                setStorageStats({});
+                setCDNStatus({});
+            })
+            .finally(() => setIsLoading(false));
     }, [filters]);
 
     const handleFilterChange = (key, value) => {

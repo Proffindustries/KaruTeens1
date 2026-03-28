@@ -256,7 +256,7 @@ pub async fn initiate_verification_payment(
         id: None,
         user_id: user.user_id,
         phone_number: payload.phone,
-        amount: payload.amount,
+        amount: (payload.amount * 100.0) as i64,
         mpesa_receipt_number: None,
         checkout_request_id: checkout_request_id.clone(),
         status: "pending".to_string(),

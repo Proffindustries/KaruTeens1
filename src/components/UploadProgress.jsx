@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, AlertCircle, Loader2, Minimize2, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUpload } from '../context/UploadContext';
 import '../styles/UploadProgress.css';
 
-const UploadProgress = () => {
+const UploadProgress = React.memo(() => {
     const { uploads, cancelUpload, activeUploadsCount } = useUpload();
     const [isMinimized, setIsMinimized] = useState(false);
+    const [now, setNow] = useState(0);
+
+    // Set initial time and update every second for ETA calculations
+    useEffect(() => {
+        const now = Date.now();
+        setNow(now);
+        const interval = setInterval(() => {
+            setNow(Date.now());
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     if (uploads.length === 0) return null;
 
@@ -78,10 +89,10 @@ const UploadProgress = () => {
                         className="upload-list"
                     >
                         {uploads.map((upload) => {
-                            const elapsed = (Date.now() - upload.startTime) / 1000;
-                            const speed = upload.uploadedBytes / elapsed;
+                            const elapsed = (now - upload.startTime) / 1000;
+                            const speed = elapsed > 0 ? upload.uploadedBytes / elapsed : 0;
                             const remaining = upload.fileSize - upload.uploadedBytes;
-                            const eta = remaining / speed;
+                            const eta = speed > 0 ? remaining / speed : 0;
 
                             return (
                                 <motion.div
@@ -135,7 +146,7 @@ const UploadProgress = () => {
                                             <div
                                                 className="upload-progress-fill"
                                                 style={{
-                                                    width: `${upload.progress}%`,
+                                                    width: `${(upload.uploadedBytes / upload.fileSize) * 100}%`,
                                                     backgroundColor: getStatusColor(upload.status),
                                                 }}
                                             />
@@ -149,6 +160,6 @@ const UploadProgress = () => {
             </AnimatePresence>
         </div>
     );
-};
+});
 
 export default UploadProgress;

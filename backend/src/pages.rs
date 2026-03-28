@@ -110,8 +110,6 @@ pub struct TrafficDay {
     pub views: i32,
 }
 
-// --- Middleware: Check Admin ---
-
 async fn check_admin(
     user_id: ObjectId,
     state: &Arc<AppState>,
@@ -152,10 +150,11 @@ pub async fn list_pages_handler(
     }
     
     if let Some(search) = &params.search {
+        let escaped_search = regex::escape(search);
         query.insert("$or", vec![
-            doc! { "title": { "$regex": search, "$options": "i" } },
-            doc! { "content": { "$regex": search, "$options": "i" } },
-            doc! { "excerpt": { "$regex": search, "$options": "i" } },
+            doc! { "title": { "$regex": &escaped_search, "$options": "i" } },
+            doc! { "content": { "$regex": &escaped_search, "$options": "i" } },
+            doc! { "excerpt": { "$regex": &escaped_search, "$options": "i" } },
         ]);
     }
 
@@ -165,29 +164,76 @@ pub async fn list_pages_handler(
     let limit = params.limit.unwrap_or(20);
     let skip = (page - 1) * limit;
 
-    let _sort_doc = match sort_order.as_str() {
+    let sort_doc = match sort_order.as_str() {
         "asc" => doc! { sort_by: 1 },
         _ => doc! { sort_by: -1 },
     };
 
-    let mut cursor = pages.find(query, None).await
+    let total_count = pages.count_documents(query.clone(), None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(sort_doc)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
+        .build();
+
+    let mut cursor = pages.find(query, find_options).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     let mut pages_list = Vec::new();
-    let mut total_count = 0;
+    let mut author_ids = std::collections::HashSet::new();
     
-    while let Some(page) = cursor.next().await {
-        if let Ok(p) = page {
-            let page_info = build_page_response(&p, &state).await?;
-            pages_list.push(page_info);
-            total_count += 1;
+    while let Some(page_res) = cursor.next().await {
+        if let Ok(p) = page_res {
+            author_ids.insert(p.author_id);
+            pages_list.push(p);
         }
     }
 
-    // Apply pagination
-    let start = skip as usize;
-    let end = (start + limit as usize).min(pages_list.len());
-    let paginated_pages = pages_list.into_iter().skip(start).take(end - start).collect::<Vec<_>>();
+    // Bulk fetch profiles
+    let profiles_coll = state.mongo.collection::<Profile>("profiles");
+    let authors_cursor = profiles_coll.find(doc! { "user_id": { "$in": author_ids.into_iter().collect::<Vec<ObjectId>>() } }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut author_map = std::collections::HashMap::new();
+    let mut authors_stream = authors_cursor;
+    while let Some(result) = authors_stream.next().await {
+        if let Ok(profile) = result {
+            author_map.insert(profile.user_id, profile.username);
+        }
+    }
+
+    let mut paginated_pages = Vec::new();
+    for p in pages_list {
+        let author_name = author_map.get(&p.author_id).cloned().unwrap_or_else(|| "Unknown".to_string());
+        let page_info = PageResponse {
+            id: p.id.unwrap().to_hex(),
+            title: p.title.clone(),
+            slug: p.slug.clone(),
+            excerpt: p.excerpt.clone(),
+            featured_image: p.featured_image.clone(),
+            meta_title: p.meta_title.clone(),
+            meta_description: p.meta_description.clone(),
+            meta_keywords: p.meta_keywords.clone(),
+            status: p.status.clone(),
+            visibility: p.visibility.clone(),
+            author_id: p.author_id.to_hex(),
+            author_name,
+            category: p.category.clone(),
+            tags: p.tags.clone(),
+            template: p.template.clone(),
+            redirect_url: p.redirect_url.clone(),
+            seo_score: p.seo_score,
+            view_count: p.view_count,
+            likes_count: p.likes_count,
+            comments_count: p.comments_count,
+            published_at: p.published_at.map(|dt| dt.to_chrono().to_rfc3339()),
+            created_at: p.created_at.to_chrono().to_rfc3339(),
+            updated_at: p.updated_at.to_chrono().to_rfc3339(),
+        };
+        paginated_pages.push(page_info);
+    }
 
     Ok((StatusCode::OK, Json(json!({
         "pages": paginated_pages,
@@ -196,7 +242,7 @@ pub async fn list_pages_handler(
             "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
             "total_items": total_count,
             "items_per_page": limit,
-            "has_next": end < total_count,
+            "has_next": (skip + limit) < total_count as i64,
             "has_prev": page > 1
         }
     }))))
@@ -453,16 +499,37 @@ pub async fn get_page_analytics_handler(
     let traffic_by_hour = get_traffic_by_hour(&state, oid).await?;
     let traffic_by_day = get_traffic_by_day(&state, oid).await?;
 
-    // Calculate average time on page 
-    // TODO: This requires a 'duration' field in PageView which we don't have yet. 
-    // Returning 0.0 instead of fake data.
-    let avg_time_on_page = 0.0; 
+    // Calculate average time on page and bounce rate
+    let mut cursor = page_views.find(doc! { "page_id": oid }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut total_duration: u64 = 0;
+    let mut views_with_duration: u64 = 0;
+    let mut bounced_views: u64 = 0;
+    
+    while let Some(result) = cursor.next().await {
+        if let Ok(view) = result {
+            if let Some(dur) = view.duration_seconds {
+                total_duration += dur;
+                views_with_duration += 1;
+                if dur < 10 {
+                    bounced_views += 1;
+                }
+            }
+        }
+    }
 
-    // Calculate bounce rate
-    // Definition: % of visitors who view only one page. 
-    // For a single page analytics, this is hard to calculate without session tracking.
-    // We will return 0.0 for now to be accurate about our lack of data.
-    let bounce_rate = 0.0;
+    let avg_time_on_page = if views_with_duration > 0 {
+        total_duration as f64 / views_with_duration as f64 
+    } else {
+        0.0
+    };
+    
+    let bounce_rate = if total_views > 0 {
+        (bounced_views as f64 / total_views as f64) * 100.0
+    } else {
+        0.0
+    };
 
     let analytics = PageAnalyticsResponse {
         page_id: page.id.unwrap().to_hex(),
@@ -526,17 +593,32 @@ async fn get_traffic_by_hour(
 ) -> Result<Vec<TrafficHour>, (StatusCode, Json<serde_json::Value>)> {
     let page_views = state.mongo.collection::<PageView>("page_views");
     
+    let pipeline = vec![
+        doc! { "$match": { "page_id": page_id } },
+        doc! { "$group": {
+            "_id": { "$hour": "$created_at" },
+            "count": { "$sum": 1 }
+        }},
+        doc! { "$sort": { "_id": 1 } }
+    ];
+
+    let mut cursor = page_views.aggregate(pipeline, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut traffic_map = std::collections::HashMap::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(doc) = result {
+            if let (Some(hour), Some(count)) = (doc.get("_id").and_then(|v| v.as_i32()), doc.get("count").and_then(|v| v.as_i32())) {
+                traffic_map.insert(hour, count);
+            }
+        }
+    }
+
     let mut traffic = Vec::new();
     for hour in 0..24 {
-        let count = page_views.count_documents(doc! {
-            "page_id": page_id,
-            "$expr": { "$eq": [{ "$hour": "$created_at" }, hour] }
-        }, None).await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-        
         traffic.push(TrafficHour {
             hour,
-            views: count as i32,
+            views: *traffic_map.get(&hour).unwrap_or(&0),
         });
     }
 
@@ -549,25 +631,40 @@ async fn get_traffic_by_day(
 ) -> Result<Vec<TrafficDay>, (StatusCode, Json<serde_json::Value>)> {
     let page_views = state.mongo.collection::<PageView>("page_views");
     
-    // Get last 30 days of traffic
+    let thirty_days_ago = chrono::Utc::now() - chrono::Duration::days(30);
+    
+    let pipeline = vec![
+        doc! { "$match": { 
+            "page_id": page_id,
+            "created_at": { "$gte": mongodb::bson::DateTime::from_chrono(thirty_days_ago) }
+        }},
+        doc! { "$group": {
+            "_id": { "$dateToString": { "format": "%Y-%m-%d", "date": "$created_at" } },
+            "count": { "$sum": 1 }
+        }},
+        doc! { "$sort": { "_id": 1 } }
+    ];
+
+    let mut cursor = page_views.aggregate(pipeline, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut traffic_map = std::collections::HashMap::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(doc) = result {
+            if let (Some(date_str), Some(count)) = (doc.get("_id").and_then(|v| v.as_str()), doc.get("count").and_then(|v| v.as_i32())) {
+                traffic_map.insert(date_str.to_string(), count);
+            }
+        }
+    }
+
     let mut traffic = Vec::new();
     for i in 0..30 {
         let date = chrono::Utc::now() - chrono::Duration::days(i);
-        let start_of_day = date.date_naive().and_hms_opt(0, 0, 0).unwrap();
-        let end_of_day = date.date_naive().and_hms_opt(23, 59, 59).unwrap();
-        
-        let count = page_views.count_documents(doc! {
-            "page_id": page_id,
-            "created_at": {
-                "$gte": mongodb::bson::DateTime::from_chrono(start_of_day.and_utc()),
-                "$lte": mongodb::bson::DateTime::from_chrono(end_of_day.and_utc())
-            }
-        }, None).await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        let date_str = date.format("%Y-%m-%d").to_string();
         
         traffic.push(TrafficDay {
-            date: start_of_day.format("%Y-%m-%d").to_string(),
-            views: count as i32,
+            date: date_str.clone(),
+            views: *traffic_map.get(&date_str).unwrap_or(&0),
         });
     }
 

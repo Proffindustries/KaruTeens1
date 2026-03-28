@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
 import { useEffect } from 'react';
+import { useAuthContext } from '../context/AuthContext.jsx';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 // Fetch all chats
 export const useChats = () => {
@@ -11,6 +13,7 @@ export const useChats = () => {
             const { data } = await api.get('/messages');
             return data;
         },
+        staleTime: STALE_TIMES.CHAT_LIST, // 30 seconds for chat list
     });
 };
 
@@ -24,6 +27,7 @@ export const useChatMessages = (chatId) => {
             return data;
         },
         enabled: !!chatId,
+        staleTime: STALE_TIMES.CHAT_MESSAGES, // 30 seconds for messages
     });
 };
 
@@ -70,6 +74,7 @@ export const useCreateGroup = () => {
 export const useSendMessage = (chatId) => {
     const queryClient = useQueryClient();
     const { showToast } = useToast();
+    const { user } = useAuthContext();
 
     return useMutation({
         mutationFn: async (messageData) => {
@@ -94,7 +99,7 @@ export const useSendMessage = (chatId) => {
                 is_deleted: false,
                 reactions: [],
                 reply_to: newMessage.reply_to_id
-                    ? { id: newMessage.reply_to_id, username: '...' }
+                    ? { id: newMessage.reply_to_id, username: user?.username || 'Unknown' }
                     : null,
                 read_at: null,
                 viewed_at: null,

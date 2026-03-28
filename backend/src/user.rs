@@ -26,6 +26,9 @@ pub struct UpdateProfileRequest {
     pub gender: Option<String>,
     pub social_links: Option<SocialLinks>,
     pub public_key: Option<String>,
+    pub onboarded: Option<bool>,
+    pub interests: Option<Vec<String>>,
+    pub notification_settings: Option<crate::models::NotificationSettings>,
 }
 
 // --- Handlers ---
@@ -46,6 +49,35 @@ pub async fn get_profile_handler(
     }
 }
 
+pub async fn get_user_gamification_handler(
+    State(state): State<Arc<AppState>>,
+    Path(username): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let collection = state.mongo.collection::<Profile>("profiles");
+
+    let profile = collection
+        .find_one(doc! { "username": username }, None)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    match profile {
+        Some(p) => {
+            // Return only the gamification fields
+            let gamification = serde_json::json!({
+                "points": p.points,
+                "streak": p.streak,
+                "longestStreak": p.longest_streak,
+                "profileViews": p.profile_views,
+                "badges": p.badges,
+                "level": p.level,
+                "nextLevelPoints": p.next_level_points
+            });
+            Ok((StatusCode::OK, Json(gamification)))
+        }
+        None => Err((StatusCode::NOT_FOUND, Json(json!({"error": "User not found"}))))
+    }
+}
+
 pub async fn update_profile_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
@@ -62,6 +94,17 @@ pub async fn update_profile_handler(
     if let Some(age) = payload.age { update_doc.insert("age", age); }
     if let Some(g) = payload.gender { update_doc.insert("gender", g); }
     if let Some(pk) = payload.public_key { update_doc.insert("public_key", pk); }
+    if let Some(ob) = payload.onboarded { update_doc.insert("onboarded", ob); }
+    if let Some(it) = payload.interests {
+        if let Ok(it_bson) = mongodb::bson::to_bson(&it) {
+            update_doc.insert("interests", it_bson);
+        }
+    }
+    if let Some(ns) = payload.notification_settings {
+        if let Ok(ns_bson) = mongodb::bson::to_bson(&ns) {
+            update_doc.insert("notification_settings", ns_bson);
+        }
+    }
     if let Some(sl) = payload.social_links {
         if let Ok(sl_bson) = mongodb::bson::to_bson(&sl) {
             update_doc.insert("social_links", sl_bson);
@@ -151,6 +194,7 @@ pub async fn unblock_user_handler(
 pub fn user_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/:username", get(get_profile_handler))
+        .route("/:username/gamification", get(get_user_gamification_handler))
         .route("/update", put(update_profile_handler))
         .route("/chat/:id/mute", post(mute_chat_handler).delete(unmute_chat_handler))
         .route("/block/:id", post(block_user_handler).delete(unblock_user_handler))

@@ -260,6 +260,72 @@ const ActiveRoom = ({ roomId }) => {
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [userToRemove, setUserToRemove] = useState(null);
 
+    // Pomodoro Timer States
+    const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
+    const [isPomodoroActive, setIsPomodoroActive] = useState(false);
+    const [pomodoroMode, setPomodoroMode] = useState('work'); // work, shortBreak, longBreak
+
+    // Lofi Music States
+    const [isLofiPlaying, setIsLofiPlaying] = useState(false);
+    const [lofiVolume, setLofiVolume] = useState(0.5);
+    const lofiAudioRef = useRef(
+        new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+    ); // Placeholder Lofi URL
+
+    // ... existing useEffects ...
+
+    // Pomodoro Timer Effect
+    useEffect(() => {
+        let interval;
+        if (isPomodoroActive && pomodoroTime > 0) {
+            interval = setInterval(() => {
+                setPomodoroTime((prev) => prev - 1);
+            }, 1000);
+        } else if (pomodoroTime === 0) {
+            setIsPomodoroActive(false);
+            showToast(`${pomodoroMode === 'work' ? 'Work' : 'Break'} session finished!`, 'success');
+            // Play notification sound?
+        }
+        return () => clearInterval(interval);
+    }, [isPomodoroActive, pomodoroTime, pomodoroMode, showToast]);
+
+    const togglePomodoro = () => {
+        setIsPomodoroActive(!isPomodoroActive);
+    };
+
+    const resetPomodoro = () => {
+        setIsPomodoroActive(false);
+        if (pomodoroMode === 'work') setPomodoroTime(25 * 60);
+        else if (pomodoroMode === 'shortBreak') setPomodoroTime(5 * 60);
+        else setPomodoroTime(15 * 60);
+    };
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    // Lofi Music Effect
+    useEffect(() => {
+        const audio = lofiAudioRef.current;
+        audio.loop = true;
+        audio.volume = lofiVolume;
+
+        if (isLofiPlaying) {
+            audio.play().catch(() => {
+                setIsLofiPlaying(false);
+                showToast('Auto-play blocked. Please click play again.', 'info');
+            });
+        } else {
+            audio.pause();
+        }
+    }, [isLofiPlaying, lofiVolume, showToast]);
+
+    const toggleLofi = () => {
+        setIsLofiPlaying(!isLofiPlaying);
+    };
+
     // Whiteboard enhancement states
     const [whiteboardHistory, setWhiteboardHistory] = useState([]);
     const [currentStep, setCurrentStep] = useState(-1);
@@ -694,17 +760,14 @@ const ActiveRoom = ({ roomId }) => {
 
     const handleWebRTCOffer = async (message) => {
         // Handle incoming WebRTC offer
-        console.log('Received WebRTC offer', message.data);
     };
 
     const handleWebRTCAnswer = async (message) => {
         // Handle incoming WebRTC answer
-        console.log('Received WebRTC answer', message.data);
     };
 
     const handleICECandidate = async (message) => {
         // Handle incoming ICE candidate
-        console.log('Received ICE candidate', message.data);
     };
 
     const handleLeaveRoom = () => {
@@ -832,6 +895,69 @@ const ActiveRoom = ({ roomId }) => {
             </div>
 
             <div className="study-layout">
+                {/* Study Tools Bar */}
+                <div className="study-tools-bar card mb-4 flex items-center justify-between p-3">
+                    <div className="pomodoro-timer flex items-center gap-4">
+                        <span className="text-xl font-mono font-bold">
+                            {formatTime(pomodoroTime)}
+                        </span>
+                        <div className="pomodoro-modes flex gap-2">
+                            <button
+                                className={`px-2 py-1 text-xs rounded ${pomodoroMode === 'work' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
+                                onClick={() => {
+                                    setPomodoroMode('work');
+                                    setPomodoroTime(25 * 60);
+                                    setIsPomodoroActive(false);
+                                }}
+                            >
+                                Work
+                            </button>
+                            <button
+                                className={`px-2 py-1 text-xs rounded ${pomodoroMode === 'shortBreak' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
+                                onClick={() => {
+                                    setPomodoroMode('shortBreak');
+                                    setPomodoroTime(5 * 60);
+                                    setIsPomodoroActive(false);
+                                }}
+                            >
+                                Break
+                            </button>
+                        </div>
+                        <div className="flex gap-2">
+                            <button className="btn btn-sm btn-outline" onClick={togglePomodoro}>
+                                {isPomodoroActive ? 'Pause' : 'Start'}
+                            </button>
+                            <button
+                                className="btn btn-sm btn-icon"
+                                onClick={resetPomodoro}
+                                title="Reset"
+                            >
+                                <LogOut size={16} className="rotate-90" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="lofi-controller flex items-center gap-4 border-l border-gray-200 pl-4 ml-4">
+                        <span className="text-sm font-medium">🎧 Lofi Beats</span>
+                        <button
+                            className={`tool-btn ${isLofiPlaying ? 'active' : ''}`}
+                            onClick={toggleLofi}
+                            title={isLofiPlaying ? 'Pause Music' : 'Play Lofi'}
+                        >
+                            {isLofiPlaying ? <VideoOff size={18} /> : <Video size={18} />}
+                        </button>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={lofiVolume}
+                            onChange={(e) => setLofiVolume(parseFloat(e.target.value))}
+                            className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                    </div>
+                </div>
+
                 {/* Participants Sidebar */}
                 {showParticipants && (
                     <div className="participants-sidebar card">

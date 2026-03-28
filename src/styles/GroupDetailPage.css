@@ -157,6 +157,60 @@
     color: var(--text-muted);
 }
 
+.post-content.nsfw-blurred {
+    filter: blur(25px);
+    position: relative;
+    user-select: none;
+    pointer-events: none;
+    min-height: 151px;
+}
+
+.post-content {
+    position: relative;
+}
+
+.post-content.nsfw-blurred p,
+.post-content.nsfw-blurred .post-media {
+    opacity: 0.3;
+}
+
+.post-content .nsfw-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    color: rgb(var(--primary));
+    background: rgba(var(--background), 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.post-content .nsfw-overlay p {
+    margin: 1rem 0;
+    font-weight: 700;
+    color: rgb(var(--text-main));
+}
+
+.reveal-btn {
+    background: rgb(var(--primary));
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 .post-content p {
     margin: 0 0 1rem 0;
     line-height: 1.6;

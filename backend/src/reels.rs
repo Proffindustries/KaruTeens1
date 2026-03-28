@@ -384,29 +384,31 @@ pub async fn list_reels_handler(
     let limit = params.limit.unwrap_or(20);
     let skip = (page - 1) * limit;
 
-    let _sort_doc = match sort_order.as_str() {
+    let sort_doc = match sort_order.as_str() {
         "desc" => doc! { sort_by: -1 },
         _ => doc! { sort_by: 1 },
     };
 
-    let mut cursor = reels.find(query, None).await
+    let total_count = reels.count_documents(query.clone(), None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let mut reels_list = Vec::new();
-    let mut total_count = 0;
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(sort_doc)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
+        .build();
+
+    let mut cursor = reels.find(query, find_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut paginated_reels = Vec::new();
     
     while let Some(reel) = cursor.next().await {
         if let Ok(r) = reel {
             let reel_info = build_reel_response(&r, &state).await?;
-            reels_list.push(reel_info);
-            total_count += 1;
+            paginated_reels.push(reel_info);
         }
     }
-
-    // Apply pagination
-    let start = skip as usize;
-    let end = (start + limit as usize).min(reels_list.len());
-    let paginated_reels = reels_list.into_iter().skip(start).take(end - start).collect::<Vec<_>>();
 
     Ok((StatusCode::OK, Json(json!({
         "reels": paginated_reels,
@@ -415,7 +417,7 @@ pub async fn list_reels_handler(
             "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
             "total_items": total_count,
             "items_per_page": limit,
-            "has_next": end < total_count,
+            "has_next": (skip + limit) < total_count as i64,
             "has_prev": page > 1
         }
     }))))
@@ -499,13 +501,19 @@ pub async fn moderate_reel_handler(
         None
     ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
+    // Fetch admin's profile to get their name
+    let profiles = state.mongo.collection::<Profile>("profiles");
+    let admin_profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Admin profile not found"}))))?;
+
     // Create moderation record
     let moderation = state.mongo.collection::<ReelModeration>("reel_moderation");
     let moderation_record = ReelModeration {
         id: None,
         reel_id: oid,
         moderator_id: user.user_id,
-        moderator_name: reel.username,
+        moderator_name: admin_profile.username,
         action: payload.action,
         reason: payload.reason,
         notes: payload.notes,

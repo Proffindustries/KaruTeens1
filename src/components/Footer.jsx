@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Mail } from 'lucide-react';
 
 import Logo from './Logo';
+import '../styles/Footer.css';
 
-const Footer = () => {
+const Footer = React.memo(() => {
     return (
         <footer className="footer">
             <div className="container footer-content">
@@ -71,6 +72,6 @@ const Footer = () => {
             </div>
         </footer>
     );
-};
+});
 
 export default Footer;

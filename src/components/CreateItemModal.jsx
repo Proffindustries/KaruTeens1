@@ -6,7 +6,7 @@ import '../styles/CreateItemModal.css';
 import { useCreateItem } from '../hooks/useMarketplace.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
 
-const CreateItemModal = ({ isOpen, onClose }) => {
+const CreateItemModal = React.memo(({ isOpen, onClose }) => {
     const [formData, setFormData] = useState({
         title: '',
         price: '',
@@ -272,6 +272,7 @@ const CreateItemModal = ({ isOpen, onClose }) => {
                                                     src={prev.url}
                                                     alt="preview"
                                                     className="preview-image"
+                                                    loading="lazy"
                                                 />
                                                 <button
                                                     type="button"
@@ -303,6 +304,6 @@ const CreateItemModal = ({ isOpen, onClose }) => {
             </div>
         </AnimatePresence>
     );
-};
+});
 
 export default CreateItemModal;

@@ -49,7 +49,7 @@ pub async fn get_notifications_handler(
             responses.push(NotificationResponse {
                 id: notif.id.unwrap().to_hex(),
                 actor_username: actor.as_ref().map(|p| p.username.clone()).unwrap_or_else(|| "Someone".to_string()),
-                actor_avatar_url: actor.map(|p| p.avatar_url).flatten(),
+                actor_avatar_url: actor.and_then(|p| p.avatar_url),
                 notification_type: notif.notification_type,
                 target_id: notif.target_id.map(|oid| oid.to_hex()),
                 content: notif.content,
@@ -153,7 +153,7 @@ pub async fn create_notification(
             data: json!(NotificationResponse {
                 id: notif_id.to_hex(),
                 actor_username: actor.as_ref().map(|p| p.username.clone()).unwrap_or_else(|| "Someone".to_string()),
-                actor_avatar_url: actor.map(|p| p.avatar_url).flatten(),
+                actor_avatar_url: actor.and_then(|p| p.avatar_url),
                 notification_type: notification_type.to_string(),
                 target_id: target_id.map(|id| id.to_hex()),
                 content: content.to_string(),

@@ -8,13 +8,13 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
+use futures::stream::StreamExt;
 use crate::db::AppState;
 use crate::models::{Post, Profile, Location};
 use crate::auth::AuthUser;
 use mongodb::{bson::doc, options::FindOptions};
 use chrono::Utc;
 use bson::oid::ObjectId;
-use futures::stream::StreamExt;
 use crate::notifications::create_notification;
 
 // --- DTOs ---
@@ -40,12 +40,18 @@ pub struct CreatePostRequest {
     pub post_type: String, 
     #[serde(default)]
     pub location: Option<LocationRequest>,
+    #[serde(default)]
+    pub is_nsfw: Option<bool>,
+    #[serde(default)]
+    pub is_anonymous: bool,
+    pub poll: Option<crate::models::Poll>,
 }
 
 #[derive(Deserialize)]
 pub struct FeedQuery {
     pub last_id: Option<String>,
     pub limit: Option<u64>,
+    pub feed_type: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -70,6 +76,12 @@ pub struct PostResponse {
     pub group_id: Option<String>,
     pub group_name: Option<String>,
     pub group_avatar: Option<String>,
+    pub is_nsfw: Option<bool>,
+    pub content_rating: Option<String>,
+    pub is_saved: bool,
+    pub poll: Option<crate::models::Poll>,
+    pub is_anonymous: bool,
+    pub algorithmic_score: f64,
 }
 
 // --- Handlers ---
@@ -79,13 +91,17 @@ pub async fn create_post_handler(
     Json(payload): Json<CreatePostRequest>,
 ) ->  Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let collection = state.mongo.collection::<Post>("posts");
-    let users_collection = state.mongo.collection::<crate::models::User>("users");
+    let _users_collection = state.mongo.collection::<crate::models::User>("users");
     
-    // Check verification
+    /*
     let db_user = users_collection.find_one(doc! { "_id": user.user_id }, None).await.unwrap_or(None);
     if db_user.map_or(true, |u| !u.is_verified) {
         return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Account verification required to post. Please verify your account for Ksh 20."}))));
     }
+    */
+    let profiles_collection = state.mongo.collection::<crate::models::Profile>("profiles");
+    let profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await.unwrap_or(None);
+    let author_name = profile.map(|p| p.username).unwrap_or_else(|| "Anonymous".to_string());
 
     let user_id = user.user_id; 
 
@@ -108,7 +124,7 @@ pub async fn create_post_handler(
         category: "general".to_string(),
         tags: None,
         author_id: user_id,
-        author_name: "".to_string(),
+        author_name,
         media_urls: if payload.media_urls.is_empty() { None } else { Some(payload.media_urls) },
         location,
         scheduled_publish_date: None,
@@ -136,6 +152,9 @@ pub async fn create_post_handler(
         source_author: None,
         plagiarism_score: None,
         content_rating: None,
+        is_nsfw: payload.is_nsfw,
+        is_anonymous: payload.is_anonymous,
+        poll: payload.poll,
         created_at: mongodb::bson::DateTime::now(),
         updated_at: mongodb::bson::DateTime::now(),
     };
@@ -154,19 +173,25 @@ pub async fn get_feed_handler(
     axum::extract::Query(query): axum::extract::Query<FeedQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let limit = query.limit.unwrap_or(20) as i64;
+    let _page = query.last_id.is_none().then(|| 1).unwrap_or(1);
     
-    let users_groups_ids = if let Some(ref u) = user {
+    // Get user's groups in single query
+    let _users_group_ids: Vec<ObjectId> = if let Some(ref u) = user {
         let groups_collection = state.mongo.collection::<crate::models::Group>("groups");
         let cursor = groups_collection.find(
             doc! { "members": u.user_id },
-            FindOptions::builder().projection(doc! { "_id": 1 }).build()
+            FindOptions::builder()
+                .projection(doc! { "_id": 1 })
+                .build()
         ).await;
         
         match cursor {
             Ok(mut c) => {
                 let mut ids = Vec::new();
-                while let Some(Ok(doc)) = c.next().await {
-                   ids.push(doc.id.unwrap()); 
+                while let Some(Ok(group)) = c.next().await {
+                    if let Some(id) = group.id {
+                        ids.push(id);
+                    }
                 }
                 ids
             },
@@ -176,117 +201,139 @@ pub async fn get_feed_handler(
         Vec::new()
     };
 
-    let mut posts_filter = doc! {};
-    let mut gp_filter = doc! { "group_id": { "$in": &users_groups_ids } };
-
-    if let Some(last_id_str) = query.last_id {
-        if let Ok(last_oid) = ObjectId::parse_str(&last_id_str) {
-             posts_filter.insert("_id", doc! { "$lt": last_oid });
-             gp_filter.insert("_id", doc! { "$lt": last_oid });
+    let mut filter = doc! { "status": "published" };
+    
+    // Add last_id for pagination
+    if let Some(ref last_id_str) = query.last_id {
+        if let Ok(last_oid) = ObjectId::parse_str(last_id_str) {
+            filter.insert("_id", doc! { "$lt": last_oid });
         }
     }
 
-    // 1. Fetch Global Posts
     let posts_collection = state.mongo.collection::<Post>("posts");
-    let posts_cursor_result = posts_collection.find(
-        posts_filter, 
-        FindOptions::builder().sort(doc! { "_id": -1 }).limit(limit).build()
-    ).await;
-
-    // 2. Fetch Group Posts
-    let group_posts_collection = state.mongo.collection::<crate::models::GroupPost>("group_posts");
-    let gp_cursor_result = if !users_groups_ids.is_empty() {
-        group_posts_collection.find(
-            gp_filter,
-            FindOptions::builder().sort(doc! { "_id": -1 }).limit(limit).build()
-        ).await.ok()
-    } else {
-        None
-    };
-
-    // Collect results
-    let mut all_items: Vec<(bson::DateTime, PostResponse)> = Vec::new();
-
-    // Process Posts
     let profile_collection = state.mongo.collection::<Profile>("profiles");
     let likes_collection = state.mongo.collection::<crate::models::Like>("likes");
 
-    if let Ok(mut cursor) = posts_cursor_result {
-        while let Some(Ok(p)) = cursor.next().await {
-             let profile = profile_collection.find_one(doc! { "user_id": p.author_id }, None).await.unwrap_or(None);
-             let username = profile.as_ref().map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string());
-             
-             let is_liked = if let Some(ref u) = user {
-                likes_collection.count_documents(doc! { "post_id": p.id, "user_id": u.user_id }, None).await.unwrap_or(0) > 0
-             } else { false };
+    // OPTIMIZED: Fetch posts
+    let posts_cursor = posts_collection.find(
+        filter,
+        FindOptions::builder()
+            .sort(doc! { "_id": -1 })
+            .limit(limit + 1)
+            .build()
+    ).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-             all_items.push((p.created_at, PostResponse {
-                 id: p.id.unwrap().to_hex(),
-                 content: p.content,
-                 user: username,
-                 user_avatar: profile.and_then(|pr| pr.avatar_url),
-                 likes: p.like_count,
-                 comments: p.comment_count,
-                 created_at: p.created_at.to_chrono().to_rfc3339(),
-                 media_urls: p.media_urls.clone().unwrap_or_default(),
-                 location: p.location,
-                 post_type: p.post_type,
-                 is_liked,
-                 group_id: None,
-                 group_name: None,
-                 group_avatar: None,
-             }));
+    // Collect posts
+    let mut all_posts = Vec::new();
+    let mut cursor = posts_cursor;
+    while let Some(p) = cursor.next().await {
+        if let Ok(post) = p {
+            all_posts.push(post);
         }
     }
 
-    // Process Group Posts
-    if let Some(mut cursor) = gp_cursor_result {
-        let groups_collection = state.mongo.collection::<crate::models::Group>("groups");
+    // Check if has more
+    let _has_more = all_posts.len() > limit as usize;
+    let posts: Vec<Post> = all_posts.into_iter().take(limit as usize).collect();
+
+    if posts.is_empty() {
+        return Ok((StatusCode::OK, Json(FeedResponse { 
+            posts: vec![],
+            next_cursor: None 
+        })));
+    }
+
+    // OPTIMIZED: Batch fetch all author profiles in single query
+    let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
+    
+    let mut all_profiles = Vec::new();
+    if !author_ids.is_empty() {
+        if let Ok(mut profiles_cursor) = profile_collection.find(
+            doc! { "user_id": { "$in": &author_ids } },
+            FindOptions::builder()
+                .projection(doc! {
+                    "user_id": 1,
+                    "username": 1,
+                    "avatar_url": 1
+                })
+                .build()
+        ).await {
+            while let Some(p) = profiles_cursor.next().await {
+                if let Ok(profile) = p {
+                    all_profiles.push(profile);
+                }
+            }
+        }
+    }
+
+    // Build profile lookup map
+    let profile_map: std::collections::HashMap<_, _> = all_profiles
+        .into_iter()
+        .map(|p| (p.user_id, p))
+        .collect();
+
+    // OPTIMIZED: Batch check likes in single query
+    let liked_post_ids: std::collections::HashSet<_> = if let Some(ref u) = user {
+        let post_ids: Vec<ObjectId> = posts.iter().filter_map(|p| p.id).collect();
+        if !post_ids.is_empty() {
+            let mut all_likes = Vec::new();
+            if let Ok(mut likes_cursor) = likes_collection.find(
+                doc! { 
+                    "user_id": u.user_id,
+                    "post_id": { "$in": &post_ids }
+                },
+                None
+            ).await {
+                while let Some(l) = likes_cursor.next().await {
+                    if let Ok(like) = l {
+                        all_likes.push(like.post_id);
+                    }
+                }
+            }
+            all_likes.into_iter().collect()
+        } else {
+            std::collections::HashSet::new()
+        }
+    } else {
+        std::collections::HashSet::new()
+    };
+
+    // Build responses
+    let post_responses: Vec<PostResponse> = posts.into_iter().map(|p| {
+        let profile = profile_map.get(&p.author_id);
+        let pid = p.id.unwrap();
         
-        while let Some(Ok(gp)) = cursor.next().await {
-             let profile = profile_collection.find_one(doc! { "user_id": gp.user_id }, None).await.unwrap_or(None);
-             let username = profile.as_ref().map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string());
-             
-             let group = groups_collection.find_one(doc! { "_id": gp.group_id }, None).await.unwrap_or(None);
-             let (g_name, g_avatar) = match group {
-                 Some(g) => (Some(g.name), g.avatar_url),
-                 None => (Some("Unknown Group".to_string()), None)
-             };
-
-             // Note: Likes for group posts might need a check if they share the 'likes' collection or have their own. 
-             // Using 'likes' collection assuming post_id is unique across collections or we handle it. 
-             // Ideally we should have a 'target_type' in likes but for now we check by ID.
-             let is_liked = if let Some(ref u) = user {
-                likes_collection.count_documents(doc! { "post_id": gp.id, "user_id": u.user_id }, None).await.unwrap_or(0) > 0
-             } else { false };
-
-             all_items.push((gp.created_at, PostResponse {
-                 id: gp.id.unwrap().to_hex(),
-                 content: gp.content,
-                 user: username,
-                 user_avatar: profile.and_then(|pr| pr.avatar_url),
-                 likes: gp.likes_count,
-                 comments: gp.comments_count,
-                 created_at: gp.created_at.to_chrono().to_rfc3339(),
-                 media_urls: gp.media_urls,
-                 location: gp.location,
-                 post_type: gp.post_type,
-                 is_liked,
-                 group_id: Some(gp.group_id.to_hex()),
-                 group_name: g_name,
-                 group_avatar: g_avatar,
-             }));
+        PostResponse {
+            id: pid.to_hex(),
+            content: p.content,
+            user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
+            user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
+            likes: p.like_count,
+            comments: p.comment_count,
+            created_at: p.created_at.to_chrono().to_rfc3339(),
+            media_urls: p.media_urls.unwrap_or_default(),
+            location: p.location,
+            post_type: p.post_type,
+            is_liked: liked_post_ids.contains(&pid),
+            group_id: None,
+            group_name: None,
+            group_avatar: None,
+            is_nsfw: p.is_nsfw,
+            is_anonymous: p.is_anonymous,
+            content_rating: p.content_rating,
+            is_saved: false, // Default to false for now, implement checking later
+            poll: p.poll,
+            algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
         }
-    }
+    }).collect();
 
-    // Sort Descending by Date
-    all_items.sort_by(|a, b| b.0.cmp(&a.0));
+    let next_cursor = post_responses.last().map(|p| p.id.clone());
 
-    // Take Limit
-    let posts: Vec<PostResponse> = all_items.into_iter().take(limit as usize).map(|(_, p)| p).collect();
-    let next_cursor = posts.last().map(|p| p.id.clone());
-
-    Ok((StatusCode::OK, Json(FeedResponse { posts, next_cursor })))
+    Ok((StatusCode::OK, Json(FeedResponse { 
+        posts: post_responses,
+        next_cursor 
+    })))
 }
 
 pub async fn get_post_handler(
@@ -339,7 +386,47 @@ pub async fn get_post_handler(
         group_id: None,
         group_name: None,
         group_avatar: None,
+        is_nsfw: p.is_nsfw,
+        is_anonymous: p.is_anonymous,
+        content_rating: p.content_rating,
+        is_saved: false,
+        poll: p.poll,
+        algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
     })))
+}
+
+pub async fn save_post_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(post_id): Path<String>,
+) ->  Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let post_oid = ObjectId::parse_str(&post_id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+    
+    let saved_posts_collection = state.mongo.collection::<crate::models::SavedPost>("saved_posts");
+
+    // Check if already saved
+    let existing = saved_posts_collection.find_one(doc! { "post_id": post_oid, "user_id": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    if existing.is_some() {
+        // Unsave
+        saved_posts_collection.delete_one(doc! { "post_id": post_oid, "user_id": user.user_id }, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        return Ok((StatusCode::OK, Json(json!({"message": "Unsaved", "is_saved": false}))));
+    }
+
+    // Save
+    let new_saved_post = crate::models::SavedPost {
+        id: None,
+        post_id: post_oid,
+        user_id: user.user_id,
+        created_at: mongodb::bson::DateTime::now(),
+    };
+
+    saved_posts_collection.insert_one(new_saved_post, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "Saved", "is_saved": true}))))
 }
 
 pub async fn like_post_handler(
@@ -596,5 +683,6 @@ pub fn content_routes() -> Router<Arc<AppState>> {
         .route("/trending", get(get_trending_topics_handler))
         .route("/:id", get(get_post_handler))
         .route("/:id/like", post(like_post_handler).delete(unlike_post_handler))
+        .route("/:id/save", post(save_post_handler))
         .route("/:id/comment", post(add_comment_handler).get(get_comments_handler))
 }

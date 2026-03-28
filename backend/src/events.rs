@@ -196,10 +196,11 @@ pub async fn list_events_handler(
     }
     
     if let Some(search) = &params.search {
+        let escaped_search = regex::escape(search);
         query.insert("$or", vec![
-            doc! { "title": { "$regex": search, "$options": "i" } },
-            doc! { "description": { "$regex": search, "$options": "i" } },
-            doc! { "location": { "$regex": search, "$options": "i" } },
+            doc! { "title": { "$regex": &escaped_search, "$options": "i" } },
+            doc! { "description": { "$regex": &escaped_search, "$options": "i" } },
+            doc! { "location": { "$regex": &escaped_search, "$options": "i" } },
         ]);
     }
 
@@ -221,29 +222,31 @@ pub async fn list_events_handler(
     let limit = params.limit.unwrap_or(20);
     let skip = (page - 1) * limit;
 
-    let _sort_doc = match sort_order.as_str() {
+    let sort_doc = match sort_order.as_str() {
         "desc" => doc! { sort_by: -1 },
         _ => doc! { sort_by: 1 },
     };
 
-    let mut cursor = events.find(query, None).await
+    let total_count = events.count_documents(query.clone(), None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let mut events_list = Vec::new();
-    let mut total_count = 0;
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(sort_doc)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
+        .build();
+
+    let mut cursor = events.find(query, find_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut paginated_events = Vec::new();
     
     while let Some(event) = cursor.next().await {
         if let Ok(e) = event {
             let event_info = build_event_response(&e, &state).await?;
-            events_list.push(event_info);
-            total_count += 1;
+            paginated_events.push(event_info);
         }
     }
-
-    // Apply pagination
-    let start = skip as usize;
-    let end = (start + limit as usize).min(events_list.len());
-    let paginated_events = events_list.into_iter().skip(start).take(end - start).collect::<Vec<_>>();
 
     Ok((StatusCode::OK, Json(json!({
         "events": paginated_events,
@@ -252,7 +255,7 @@ pub async fn list_events_handler(
             "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
             "total_items": total_count,
             "items_per_page": limit,
-            "has_next": end < total_count,
+            "has_next": (skip + limit) < total_count as i64,
             "has_prev": page > 1
         }
     }))))
@@ -623,7 +626,7 @@ pub async fn get_event_analytics_handler(
         image_url: event.image_url,
         banner_url: event.banner_url,
         featured: event.featured,
-        ticket_price: event.ticket_price,
+        ticket_price: event.ticket_price.map(|p| p as f64 / 100.0),
         currency: event.currency,
         rsvp_required: event.rsvp_required,
         waitlist_enabled: event.waitlist_enabled,
@@ -699,7 +702,7 @@ async fn build_event_response(
         image_url: event.image_url.clone(),
         banner_url: event.banner_url.clone(),
         featured: event.featured,
-        ticket_price: event.ticket_price,
+        ticket_price: event.ticket_price.map(|p| p as f64 / 100.0),
         currency: event.currency.clone(),
         rsvp_required: event.rsvp_required,
         waitlist_enabled: event.waitlist_enabled,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ExternalLink, MapPin, Loader2 } from 'lucide-react';
 import '../styles/MapPreview.css';
 
-const MapPreview = ({ location, size = 'md' }) => {
+const MapPreview = React.memo(({ location, size = 'md' }) => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [imgError, setImgError] = useState(false);
 
@@ -43,6 +43,7 @@ const MapPreview = ({ location, size = 'md' }) => {
                         alt="Map Location"
                         className="static-map-img"
                         onError={() => setImgError(true)}
+                        loading="lazy"
                     />
                 )}
 
@@ -81,6 +82,6 @@ const MapPreview = ({ location, size = 'md' }) => {
             )}
         </div>
     );
-};
+});
 
 export default MapPreview;

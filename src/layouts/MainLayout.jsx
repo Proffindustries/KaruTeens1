@@ -8,6 +8,7 @@ const MainLayout = ({ children }) => {
         <div className="app-container">
             <Navbar />
             <main className="main-content">{children || <Outlet />}</main>
+            <Footer />
         </div>
     );
 };

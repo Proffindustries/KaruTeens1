@@ -147,6 +147,56 @@
     padding: 0 1.5rem 1rem;
 }
 
+.post-content-wrapper {
+    position: relative;
+}
+
+.post-content-wrapper.nsfw-blurred .post-content {
+    filter: blur(30px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.nsfw-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    z-index: 20;
+    cursor: pointer;
+    text-align: center;
+    padding: 2rem;
+}
+
+.nsfw-overlay p {
+    font-weight: 700;
+    margin: 1rem 0;
+    font-size: 1.1rem;
+}
+
+.reveal-btn {
+    background: white;
+    color: black;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.reveal-btn:hover {
+    transform: scale(1.05);
+}
+
 .post-text {
     margin-bottom: 1rem;
     font-size: 1rem;

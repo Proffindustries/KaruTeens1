@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import { STALE_TIMES } from '../utils/queryConfig';
 
 export const useMarketplaceItems = (filters = {}) => {
     const queryParams = new URLSearchParams();
@@ -14,6 +15,7 @@ export const useMarketplaceItems = (filters = {}) => {
             const { data } = await api.get(`/marketplace?${queryParams.toString()}`);
             return data;
         },
+        staleTime: STALE_TIMES.MARKETPLACE, // 5 minutes
     });
 };
 
@@ -25,6 +27,7 @@ export const useMarketplaceItem = (itemId) => {
             return data;
         },
         enabled: !!itemId,
+        staleTime: STALE_TIMES.MARKETPLACE, // 5 minutes
     });
 };
 

@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import useDebounce from '../hooks/useDebounce';
+import ChatRow from '../components/ChatRow.jsx';
+import ForwardModal from '../components/ForwardModal.jsx';
+import GroupModal from '../components/GroupModal.jsx';
+import PollModal from '../components/PollModal.jsx';
+import ContactModal from '../components/ContactModal.jsx';
+import FilePreviewModal from '../components/FilePreviewModal.jsx';
+import GroupInfoModal from '../components/GroupInfoModal.jsx';
 import {
     Search,
     Send,
@@ -27,6 +35,8 @@ import {
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import '../styles/MessagesPage.css';
+import { shouldBlur } from '../utils/contentFilters.js';
+import api from '../api/client';
 import {
     useChats,
     useChatMessages,
@@ -51,12 +61,13 @@ import {
 import GifPicker from '../components/GifPicker.jsx';
 import { IncomingCallModal, ActiveCallScreen, CallingScreen } from '../components/CallUI.jsx';
 import { useWebRTC } from '../hooks/useWebRTC.js';
-import { useWebsocketContext } from '../context/WebsocketContext.jsx';
+
 import { useAbly } from '../context/AblyContext.jsx';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useEncryption } from '../hooks/useEncryption.js';
+import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
 
@@ -143,7 +154,7 @@ const VoiceNotePlayer = ({ url }) => {
     const audioRef = useRef(null);
 
     // Stable heights for the waveform to prevent jitter
-    const waveHeights = useRef([...Array(15)].map(() => 5 + Math.random() * 15)).current;
+    const [waveHeights] = useState(() => [...Array(15)].map(() => 5 + Math.random() * 15));
 
     const togglePlay = () => {
         if (isPlaying) {
@@ -306,13 +317,19 @@ const MessagesPage = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const [replyingTo, setReplyingTo] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [showLocationMenu, setShowLocationMenu] = useState(false);
+    const [containerHeight, setContainerHeight] = useState(window.innerHeight - 250);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { showToast } = useToast();
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+            setContainerHeight(window.innerHeight - 250);
+        };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -323,6 +340,20 @@ const MessagesPage = () => {
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const timerRef = useRef(null);
+
+    // Cleanup timer and media recorder on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                mediaRecorderRef.current.stop();
+                mediaRecorderRef.current = null;
+            }
+        };
+    }, []);
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -352,35 +383,41 @@ const MessagesPage = () => {
 
     // WebRTC Integration
     const currentUser = JSON.parse(localStorage.getItem('user'));
-    const handleWebRTCMessage = useCallback((type, data) => {
-        switch (type) {
-            case 'call-offer':
-                // Incoming call
-                const caller = { user_id: data.from, username: data.callerUsername || 'Unknown' };
-                setWebRTCState((prev) => ({
-                    ...prev,
-                    remoteUser: caller,
-                    callType: data.callType,
-                }));
-                setWebRTCState((prev) => ({ ...prev, callState: 'ringing' }));
-                setIncomingCallData({ offer: data.offer, caller, callType: data.callType });
-                break;
-            case 'call-answer':
-                webRTCRef.current?.handleAnswer(data.answer);
-                break;
-            case 'ice-candidate':
-                webRTCRef.current?.handleIceCandidate(data.candidate);
-                break;
-        }
-    }, []);
+    const handleWebRTCMessage = useCallback(
+        (type, data) => {
+            // Ignore messages not intended for this user (multi-tab safety)
+            if (data.to && data.to !== currentUser?.user_id) {
+                return;
+            }
+
+            switch (type) {
+                case 'call-offer': {
+                    const caller = {
+                        user_id: data.from,
+                        username: data.callerUsername || 'Unknown',
+                    };
+                    setWebRTCState((prev) => ({
+                        ...prev,
+                        remoteUser: caller,
+                        callType: data.callType,
+                    }));
+                    setWebRTCState((prev) => ({ ...prev, callState: 'ringing' }));
+                    setIncomingCallData({ offer: data.offer, caller, callType: data.callType });
+                    break;
+                }
+                case 'call-answer':
+                    webRTCRef.current?.handleAnswer(data.answer);
+                    break;
+                case 'ice-candidate':
+                    webRTCRef.current?.handleIceCandidate(data.candidate);
+                    break;
+            }
+        },
+        [currentUser?.user_id],
+    );
 
     const queryClient = useQueryClient();
     const { ably, presenceData } = useAbly();
-    const { ws, subscribe } = useWebsocketContext();
-
-    useEffect(() => {
-        return subscribe(handleWebRTCMessage);
-    }, [subscribe, handleWebRTCMessage]);
 
     // Subscribe to real-time messages via Ably
     useEffect(() => {
@@ -408,7 +445,46 @@ const MessagesPage = () => {
         remoteUser: null,
     });
     const [incomingCallData, setIncomingCallData] = useState(null);
-    const webRTC = useWebRTC(ws, currentUser?.id);
+
+    // Signaling object for useWebRTC
+    const signaling = useMemo(() => {
+        if (!ably || !selectedChatId) return null;
+        const channel = ably.channels.get(`chat:${selectedChatId}:webrtc`);
+        return {
+            send: (message) => {
+                try {
+                    const parsed = JSON.parse(message);
+                    const eventType = parsed.type; // 'call-offer', 'call-answer', 'ice-candidate'
+                    channel.publish(eventType, parsed.data);
+                } catch (err) {
+                    console.error('Failed to parse signaling message', err);
+                }
+            },
+        };
+    }, [ably, selectedChatId]);
+
+    // Subscribe to WebRTC signaling events via Ably
+    useEffect(() => {
+        if (!ably || !selectedChatId) return;
+
+        const channel = ably.channels.get(`chat:${selectedChatId}:webrtc`);
+
+        const handleOffer = (msg) => handleWebRTCMessage('call-offer', msg.data);
+        const handleAnswer = (msg) => handleWebRTCMessage('call-answer', msg.data);
+        const handleIce = (msg) => handleWebRTCMessage('ice-candidate', msg.data);
+
+        channel.subscribe('call-offer', handleOffer);
+        channel.subscribe('call-answer', handleAnswer);
+        channel.subscribe('ice-candidate', handleIce);
+
+        return () => {
+            channel.unsubscribe('call-offer', handleOffer);
+            channel.unsubscribe('call-answer', handleAnswer);
+            channel.unsubscribe('ice-candidate', handleIce);
+        };
+    }, [ably, selectedChatId, handleWebRTCMessage]);
+
+    const webRTC = useWebRTC(signaling, currentUser?.id);
     webRTCRef.current = webRTC;
 
     const [activeEmojiPicker, setActiveEmojiPicker] = useState(null);
@@ -439,6 +515,7 @@ const MessagesPage = () => {
     const [viewedMediaUrl, setViewedMediaUrl] = useState(null);
     const { uploadFile, uploadImage } = useMediaUpload();
     const [showInputMenu, setShowInputMenu] = useState(false);
+    const [revealedNsfwMessages, setRevealedNsfwMessages] = useState(new Set());
 
     // Handle "Contact Seller" or direct navigation
     useEffect(() => {
@@ -519,6 +596,7 @@ const MessagesPage = () => {
             setReplyingTo(null);
         } catch (error) {
             console.error('Upload failed', error);
+            showToast('Failed to send message', 'error');
         } finally {
             setIsUploading(false);
             setUploadProgress(0);
@@ -562,6 +640,7 @@ const MessagesPage = () => {
             setIsViewOnceUpload(false);
         } catch (error) {
             console.error('Upload failed', error);
+            showToast('Failed to send message', 'error');
         } finally {
             setIsUploading(false);
             setUploadProgress(0);
@@ -663,7 +742,7 @@ const MessagesPage = () => {
 
     const handleShareLocation = (isLive = false) => {
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser');
+            showToast('Geolocation is not supported by your browser', 'error');
             return;
         }
 
@@ -685,7 +764,7 @@ const MessagesPage = () => {
             },
             (error) => {
                 console.error('Error getting location', error);
-                alert('Could not get your location. Please check your permissions.');
+                showToast('Could not get your location. Please check permissions.', 'error');
             },
         );
     };
@@ -771,6 +850,7 @@ const MessagesPage = () => {
             }, 1000);
         } catch (err) {
             console.error('Mic access failed', err);
+            showToast('Microphone access denied', 'error');
             if (stream) {
                 stream.getTracks().forEach((track) => track.stop());
             }
@@ -859,10 +939,21 @@ const MessagesPage = () => {
         const isAudio = type === 'audio' || url.match(/\.(mp3|wav|ogg|oog|m4a|webm)$/i);
         const isPDF = url.toLowerCase().endsWith('.pdf') || type === 'pdf';
 
+        const isNsfw = shouldBlur(msg) && !revealedNsfwMessages.has(id);
+
         if (isImage) {
             return (
-                <div className="msg-media-container">
+                <div className={`msg-media-container ${isNsfw ? 'nsfw-blurred' : ''}`}>
                     <img src={url} alt="attachment" />
+                    {isNsfw && (
+                        <div
+                            className="nsfw-overlay"
+                            onClick={() => setRevealedNsfwMessages((prev) => new Set(prev).add(id))}
+                        >
+                            <Shield size={20} />
+                            <span>Sensitive</span>
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -871,8 +962,17 @@ const MessagesPage = () => {
         if (isAudio) return <VoiceNotePlayer url={url} />;
         if (isVideo)
             return (
-                <div className="msg-media-container">
-                    <video src={url} controls />
+                <div className={`msg-media-container ${isNsfw ? 'nsfw-blurred' : ''}`}>
+                    <video src={url} controls={!isNsfw} />
+                    {isNsfw && (
+                        <div
+                            className="nsfw-overlay"
+                            onClick={() => setRevealedNsfwMessages((prev) => new Set(prev).add(id))}
+                        >
+                            <Lock size={20} />
+                            <span>Sensitive</span>
+                        </div>
+                    )}
                 </div>
             );
 
@@ -964,66 +1064,24 @@ const MessagesPage = () => {
                                 <small>Search a username to start a chat</small>
                             </div>
                         ) : (
-                            chats?.map((chat) => {
-                                const isOnline = presenceData[chat.participant?.id || ''];
-                                return (
-                                    <div
-                                        key={chat.id}
-                                        className={`chat-item ${selectedChatId === chat.id ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setSelectedChatId(chat.id);
+                            <div
+                                className="chats-list"
+                                style={{ display: 'flex', flexDirection: 'column' }}
+                            >
+                                {(chats || []).map((chat) => (
+                                    <ChatRow
+                                        key={chat.id || chat._id}
+                                        data={{
+                                            chats: chats || [],
+                                            presenceData,
+                                            selectedChatId,
+                                            setSelectedChatId,
                                         }}
-                                    >
-                                        <div className="chat-avatar-container">
-                                            <Avatar
-                                                src={chat.avatar_url}
-                                                name={chat.name || 'Group'}
-                                                className="chat-avatar"
-                                            />
-                                            {chat.type === 'private' && isOnline && (
-                                                <div className="online-indicator"></div>
-                                            )}
-                                            {chat.is_group && (
-                                                <div className="group-badge">
-                                                    <Users size={8} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="chat-info">
-                                            <div className="chat-info-header">
-                                                <h4>{chat.name}</h4>
-                                                <span className="last-time">
-                                                    {new Date(
-                                                        chat.last_message_time,
-                                                    ).toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                </span>
-                                            </div>
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                }}
-                                            >
-                                                <p className="last-message">
-                                                    {chat.is_group && chat.last_message_sender
-                                                        ? `${chat.last_message_sender}: `
-                                                        : ''}
-                                                    {chat.last_message || 'No messages yet'}
-                                                </p>
-                                                {chat.unread_count > 0 && (
-                                                    <div className="unread-badge">
-                                                        {chat.unread_count}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })
+                                        index={chats?.indexOf(chat) || 0}
+                                        style={{}}
+                                    />
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -1051,8 +1109,7 @@ const MessagesPage = () => {
                                         <Avatar
                                             src={selectedChat?.avatar_url}
                                             name={selectedChat?.name}
-                                            className="w-full h-full header-avatar"
-                                            size="100%"
+                                            size={42}
                                         />
                                         {!selectedChat?.is_group &&
                                             selectedChat?.participant?.is_online && (
@@ -1622,208 +1679,50 @@ const MessagesPage = () => {
                 </div>
             </div>
 
-            {showForwardModal && (
-                <div className="modal-overlay">
-                    <div className="forward-modal">
-                        <div className="modal-header">
-                            <h3>Forward Message</h3>
-                            <button className="icon-btn" onClick={() => setShowForwardModal(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p className="forward-preview">
-                                Forwarding:{' '}
-                                <i>
-                                    {messageToForward?.content?.substring(0, 50)}
-                                    {messageToForward?.content?.length > 50 ? '...' : ''}
-                                </i>
-                            </p>
-                            <div className="forward-list">
-                                {chats?.map((chat) => (
-                                    <div
-                                        key={chat.id}
-                                        className="forward-item"
-                                        onClick={() => handleForwardSelect(chat.id)}
-                                    >
-                                        <Avatar src={chat.avatar_url} name={chat.name} size="sm" />
-                                        <span>{chat.name}</span>
-                                        <button className="select-forward-btn">Send</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ForwardModal
+                showForwardModal={showForwardModal}
+                setShowForwardModal={setShowForwardModal}
+                messageToForward={messageToForward}
+                chats={chats}
+                handleForwardSelect={handleForwardSelect}
+            />
 
-            {showGroupModal && (
-                <div className="modal-overlay">
-                    <div className="group-modal">
-                        <div className="modal-header">
-                            <h3>Create New Group</h3>
-                            <button className="icon-btn" onClick={() => setShowGroupModal(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label>Group Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter group name..."
-                                    value={groupName}
-                                    onChange={(e) => setGroupName(e.target.value)}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Participants (usernames, comma separated)</label>
-                                <textarea
-                                    placeholder="e.g. john, jane, alex"
-                                    value={groupParticipants}
-                                    onChange={(e) => setGroupParticipants(e.target.value)}
-                                />
-                            </div>
-                            <button className="create-btn" onClick={handleCreateGroup}>
-                                <Plus size={18} /> Create Group
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <GroupModal
+                showGroupModal={showGroupModal}
+                setShowGroupModal={setShowGroupModal}
+                groupName={groupName}
+                setGroupName={setGroupName}
+                groupParticipants={groupParticipants}
+                setGroupParticipants={setGroupParticipants}
+                handleCreateGroup={handleCreateGroup}
+            />
 
-            {showPollModal && (
-                <div className="modal-overlay">
-                    <div className="poll-modal">
-                        <div className="modal-header">
-                            <h3>Create Poll</h3>
-                            <button className="icon-btn" onClick={() => setShowPollModal(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label>Question</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter your question..."
-                                    value={pollQuestion}
-                                    onChange={(e) => setPollQuestion(e.target.value)}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Options</label>
-                                {pollOptions.map((opt, idx) => (
-                                    <input
-                                        key={idx}
-                                        type="text"
-                                        placeholder={`Option ${idx + 1}`}
-                                        value={opt}
-                                        style={{ marginBottom: '0.5rem' }}
-                                        onChange={(e) => {
-                                            const newOpts = [...pollOptions];
-                                            newOpts[idx] = e.target.value;
-                                            setPollOptions(newOpts);
-                                        }}
-                                    />
-                                ))}
-                                {pollOptions.length < 5 && (
-                                    <button
-                                        className="text-btn"
-                                        onClick={() => setPollOptions([...pollOptions, ''])}
-                                    >
-                                        + Add Option
-                                    </button>
-                                )}
-                            </div>
-                            <div className="form-group-checkbox">
-                                <input
-                                    type="checkbox"
-                                    id="isMultiple"
-                                    checked={pollIsMultiple}
-                                    onChange={(e) => setPollIsMultiple(e.target.checked)}
-                                />
-                                <label htmlFor="isMultiple">Allow multiple choices</label>
-                            </div>
-                            <button className="create-btn" onClick={handleCreatePoll}>
-                                Create Poll
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <PollModal
+                showPollModal={showPollModal}
+                setShowPollModal={setShowPollModal}
+                pollQuestion={pollQuestion}
+                setPollQuestion={setPollQuestion}
+                pollOptions={pollOptions}
+                setPollOptions={setPollOptions}
+                pollIsMultiple={pollIsMultiple}
+                setPollIsMultiple={setPollIsMultiple}
+                handleCreatePoll={handleCreatePoll}
+            />
 
-            {showContactModal && (
-                <div className="modal-overlay">
-                    <div className="contact-modal">
-                        <div className="modal-header">
-                            <h3>Share Contact</h3>
-                            <button className="icon-btn" onClick={() => setShowContactModal(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p className="modal-instruction">
-                                Select a person to share their contact information.
-                            </p>
-                            <div className="contact-list">
-                                {chats
-                                    ?.filter((c) => !c.is_group)
-                                    .map((chat) => (
-                                        <div
-                                            key={chat.id}
-                                            className="contact-item"
-                                            onClick={() => handleShareContact(chat.participant)}
-                                        >
-                                            <Avatar
-                                                src={chat.avatar_url}
-                                                name={chat.name}
-                                                size="sm"
-                                            />
-                                            <span>{chat.name}</span>
-                                            <button className="select-contact-btn">Share</button>
-                                        </div>
-                                    ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ContactModal
+                showContactModal={showContactModal}
+                setShowContactModal={setShowContactModal}
+                chats={chats}
+                handleShareContact={handleShareContact}
+            />
 
-            {selectedUploadFile && (
-                <div className="modal-overlay">
-                    <div className="media-preview-modal">
-                        <div className="modal-header">
-                            <h3>Send Media</h3>
-                            <button
-                                className="icon-btn"
-                                onClick={() => setSelectedUploadFile(null)}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="file-preview-info">
-                                <FileIcon size={40} />
-                                <p>{selectedUploadFile.name}</p>
-                                <span>{(selectedUploadFile.size / 1024).toFixed(1)} KB</span>
-                            </div>
-                            <div className="form-group-checkbox view-once-toggle">
-                                <input
-                                    type="checkbox"
-                                    id="viewOnceUpload"
-                                    checked={isViewOnceUpload}
-                                    onChange={(e) => setIsViewOnceUpload(e.target.checked)}
-                                />
-                                <label htmlFor="viewOnceUpload">View Once</label>
-                            </div>
-                            <button className="create-btn" onClick={confirmUpload}>
-                                Send File
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <FilePreviewModal
+                selectedUploadFile={selectedUploadFile}
+                setSelectedUploadFile={setSelectedUploadFile}
+                isViewOnceUpload={isViewOnceUpload}
+                setIsViewOnceUpload={setIsViewOnceUpload}
+                confirmUpload={confirmUpload}
+            />
 
             {viewedMediaUrl && (
                 <div className="full-screen-overlay" onClick={() => setViewedMediaUrl(null)}>
@@ -1848,192 +1747,24 @@ const MessagesPage = () => {
                     </div>
                 </div>
             )}
-            {showGroupInfoModal && selectedChat && (
-                <div className="modal-overlay">
-                    <div className="group-info-modal">
-                        <div className="modal-header">
-                            <h3>Group Info</h3>
-                            <button
-                                className="icon-btn"
-                                onClick={() => {
-                                    setShowGroupInfoModal(false);
-                                    setIsEditingGroup(false);
-                                }}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="group-info-header">
-                                {isEditingGroup ? (
-                                    <div className="edit-group-form">
-                                        <input
-                                            type="text"
-                                            placeholder="Group Name"
-                                            value={editGroupName}
-                                            onChange={(e) => setEditGroupName(e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Avatar URL"
-                                            value={editGroupAvatar}
-                                            onChange={(e) => setEditGroupAvatar(e.target.value)}
-                                        />
-                                        <div className="edit-actions">
-                                            <button
-                                                className="save-btn"
-                                                onClick={() => {
-                                                    updateGroup({
-                                                        name: editGroupName,
-                                                        avatar_url: editGroupAvatar,
-                                                    });
-                                                    setIsEditingGroup(false);
-                                                }}
-                                            >
-                                                Save
-                                            </button>
-                                            <button
-                                                className="cancel-btn"
-                                                onClick={() => setIsEditingGroup(false)}
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <Avatar
-                                            src={selectedChat.avatar_url}
-                                            name={selectedChat.name}
-                                            className="large-avatar"
-                                            size="3xl"
-                                        />
-                                        <div className="group-title-row">
-                                            <h2>{selectedChat.name}</h2>
-                                            {selectedChat.admins?.includes(
-                                                JSON.parse(localStorage.getItem('user'))?.id,
-                                            ) && (
-                                                <button
-                                                    className="edit-icon-btn"
-                                                    onClick={() => {
-                                                        setEditGroupName(selectedChat.name);
-                                                        setEditGroupAvatar(
-                                                            selectedChat.avatar_url || '',
-                                                        );
-                                                        setIsEditingGroup(true);
-                                                    }}
-                                                >
-                                                    Edit
-                                                </button>
-                                            )}
-                                        </div>
-                                        <span>
-                                            {selectedChat.group_participants?.length || 0}{' '}
-                                            participants
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="participants-section">
-                                <h4>Participants</h4>
-                                <div className="participants-list">
-                                    {selectedChat.group_participants?.map((participant) => {
-                                        const currentUser = JSON.parse(
-                                            localStorage.getItem('user'),
-                                        );
-                                        const isCurrentUserAdmin = selectedChat.admins?.includes(
-                                            currentUser?.id,
-                                        );
-                                        const isParticipantAdmin = selectedChat.admins?.includes(
-                                            participant.user_id,
-                                        );
-
-                                        return (
-                                            <div
-                                                key={participant.user_id || participant.username}
-                                                className="participant-item"
-                                            >
-                                                <div className="p-info">
-                                                    <Avatar
-                                                        src={participant.avatar_url}
-                                                        name={participant.username}
-                                                        size="sm"
-                                                    />
-                                                    <div className="p-name-col">
-                                                        <span>{participant.username}</span>
-                                                        {isParticipantAdmin && (
-                                                            <span className="admin-tag">Admin</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="p-actions">
-                                                    {isCurrentUserAdmin &&
-                                                        participant.username !==
-                                                            currentUser?.username && (
-                                                            <>
-                                                                <button
-                                                                    className="toggle-admin-btn"
-                                                                    onClick={() =>
-                                                                        toggleAdmin(
-                                                                            participant.username,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {isParticipantAdmin
-                                                                        ? 'Demote'
-                                                                        : 'Promote'}
-                                                                </button>
-                                                                <button
-                                                                    className="remove-p-btn"
-                                                                    onClick={() =>
-                                                                        handleRemoveParticipant(
-                                                                            participant.username,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {selectedChat.admins?.includes(
-                                JSON.parse(localStorage.getItem('user'))?.id,
-                            ) && (
-                                <div className="add-participants-section">
-                                    <h4>Add Participants</h4>
-                                    <div className="add-p-input">
-                                        <input
-                                            type="text"
-                                            placeholder="Enter usernames, comma separated"
-                                            value={newParticipants}
-                                            onChange={(e) => setNewParticipants(e.target.value)}
-                                        />
-                                        <button
-                                            className="create-btn"
-                                            onClick={handleAddParticipants}
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="group-actions-section">
-                                <button className="leave-group-btn" onClick={handleLeaveGroup}>
-                                    Leave Group
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <GroupInfoModal
+                showGroupInfoModal={showGroupInfoModal}
+                selectedChat={selectedChat}
+                setShowGroupInfoModal={setShowGroupInfoModal}
+                isEditingGroup={isEditingGroup}
+                setIsEditingGroup={setIsEditingGroup}
+                editGroupName={editGroupName}
+                setEditGroupName={setEditGroupName}
+                editGroupAvatar={editGroupAvatar}
+                setEditGroupAvatar={setEditGroupAvatar}
+                updateGroup={updateGroup}
+                toggleAdmin={toggleAdmin}
+                handleRemoveParticipant={handleRemoveParticipant}
+                newParticipants={newParticipants}
+                setNewParticipants={setNewParticipants}
+                handleAddParticipants={handleAddParticipants}
+                handleLeaveGroup={handleLeaveGroup}
+            />
 
             {/* Call UI */}
             {webRTC.callState === 'ringing' && incomingCallData && (

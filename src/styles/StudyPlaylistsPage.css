@@ -1,0 +1,379 @@
+.playlists-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.playlists-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.playlists-header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.playlists-header p {
+    color: #65676b;
+}
+
+.playlists-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.subject-filter {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    min-width: 200px;
+}
+
+.playlists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.playlist-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+}
+
+.playlist-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.playlist-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.playlist-card-header h3 {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.playlist-subject {
+    color: #1877f2;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0 0 0.5rem;
+}
+
+.playlist-desc {
+    color: #65676b;
+    font-size: 0.9rem;
+    margin: 0 0 1rem;
+}
+
+.playlist-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #65676b;
+}
+
+.playlist-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem;
+    color: #65676b;
+}
+
+.empty-state svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin: 0 0 0.5rem;
+}
+
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: #65676b;
+}
+
+/* Modal styles */
+.playlist-detail-modal {
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.playlist-detail-info {
+    margin-bottom: 1.5rem;
+}
+
+.subject-tag {
+    display: inline-block;
+    background: #e7f3ff;
+    color: #1877f2;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.playlist-items {
+    margin-bottom: 1.5rem;
+}
+
+.items-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.items-header h4 {
+    margin: 0;
+}
+
+.items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f0f2f5;
+    margin-bottom: 0.5rem;
+}
+
+.item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-radius: 8px;
+    color: #1877f2;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-info a {
+    color: #1c1e21;
+    text-decoration: none;
+    font-weight: 500;
+    display: block;
+}
+
+.item-info a:hover {
+    text-decoration: underline;
+}
+
+.duration {
+    font-size: 0.8rem;
+    color: #65676b;
+}
+
+.play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #1877f2;
+    color: white;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.play-btn:hover {
+    background: #166fe5;
+}
+
+.empty-items {
+    text-align: center;
+    color: #65676b;
+    padding: 1rem;
+    background: #f0f2f5;
+    border-radius: 8px;
+}
+
+.collaborators-section h4 {
+    margin: 0 0 0.75rem;
+}
+
+.add-collaborator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f0f2f5;
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+.add-collaborator input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.5rem;
+    outline: none;
+}
+
+.add-collaborator svg {
+    color: #65676b;
+    cursor: pointer;
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #1c1e21;
+}
+
+.form-group input[type='text'],
+.form-group input[type='url'],
+.form-group input[type='number'],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-group.checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.form-group.checkbox input {
+    width: auto;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: #1877f2;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #166fe5;
+}
+
+.btn-primary:disabled {
+    background: #bcc0c4;
+    cursor: not-allowed;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    background: #e7f3ff;
+    color: #1877f2;
+}
+
+.btn-full {
+    width: 100%;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.modal-header button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: #65676b;
+}
+
+.modal-header button:hover {
+    color: #1c1e21;
+}
+
+.modal-content form {
+    padding: 1.5rem;
+}

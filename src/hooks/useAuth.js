@@ -2,15 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuthContext } from '../context/AuthContext.jsx';
+import { STALE_TIMES } from '../utils/queryConfig';
 
-// --- Auth Hook ---
 export const useAuth = () => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    return { token, user, isAuthenticated: !!token };
+    return useAuthContext();
 };
-
-// --- Auth Mutations ---
 
 export const useRegister = () => {
     const navigate = useNavigate();
@@ -24,7 +21,7 @@ export const useRegister = () => {
         },
         onSuccess: () => {
             showToast('Account created successfully! Please login.', 'success');
-            navigate('/login', { state: location.state }); // Pass the redirect state to login
+            navigate('/login', { state: location.state });
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Registration failed', 'error');
@@ -36,6 +33,7 @@ export const useLogin = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+    const { login } = useAuthContext();
 
     return useMutation({
         mutationFn: async (credentials) => {
@@ -43,13 +41,15 @@ export const useLogin = () => {
             return data;
         },
         onSuccess: (data) => {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            if (data.two_factor_required) {
+                showToast('2FA code sent to your email', 'info');
+                return;
+            }
+            login(data.token, data.user);
             showToast(`Welcome back, ${data.user.username}!`, 'success');
 
             const from = location.state?.from?.pathname || '/feed';
             navigate(from, { replace: true });
-            window.location.reload(); // Force reload to trigger WS connect with new token
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Login failed', 'error');
@@ -57,16 +57,68 @@ export const useLogin = () => {
     });
 };
 
+export const useVerify2FA = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { showToast } = useToast();
+    const { login } = useAuthContext();
+
+    return useMutation({
+        mutationFn: async (verifyData) => {
+            const { data } = await api.post('/auth/verify-2fa', verifyData);
+            return data;
+        },
+        onSuccess: (data) => {
+            login(data.token, data.user);
+            showToast(`Login verified! Welcome back, ${data.user.username}!`, 'success');
+
+            const from = location.state?.from?.pathname || '/feed';
+            navigate(from, { replace: true });
+        },
+        onError: (err) => {
+            showToast(err.response?.data?.error || 'Verification failed', 'error');
+        },
+    });
+};
+
+export const useToggle2FA = () => {
+    const { showToast } = useToast();
+    const { updateUser } = useAuthContext();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            const { data } = await api.post('/users/2fa/toggle');
+            return data;
+        },
+        onSuccess: (data) => {
+            showToast(data.message, 'success');
+            queryClient.invalidateQueries(['profile']);
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            currentUser.is_2fa_enabled = data.is_2fa_enabled;
+            updateUser(currentUser);
+        },
+        onError: (err) => {
+            showToast(err.response?.data?.error || 'Failed to toggle 2FA', 'error');
+        },
+    });
+};
+
 export const useLogout = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { logout } = useAuthContext();
 
-    return () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        queryClient.clear();
-        navigate('/login');
-        window.location.reload(); // Force reload to clear WS
+    return async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (err) {
+            console.error('Logout failed:', err);
+        } finally {
+            logout();
+            queryClient.clear();
+            navigate('/login');
+        }
     };
 };
 
@@ -115,10 +167,7 @@ export const useUpdateProfile = () => {
         },
         onSuccess: (data) => {
             showToast(data.message || 'Profile updated successfully!', 'success');
-            queryClient.invalidateQueries(['profile']);
-            // Optionally update local storage user if certain fields changed
-            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-            // Normally you'd want the updated user back from the server
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to update profile', 'error');

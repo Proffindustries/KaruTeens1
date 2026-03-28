@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import * as Ably from 'ably';
 import { useAuth } from '../hooks/useAuth';
 import api from '../api/client';
@@ -22,7 +22,6 @@ export const AblyProvider = ({ children }) => {
     useEffect(() => {
         if (!token || !userId) {
             if (ablyRef.current) {
-                console.log('🚪 Closing existing Ably connection');
                 ablyRef.current.close();
                 ablyRef.current = null;
                 setAbly(null);
@@ -33,17 +32,14 @@ export const AblyProvider = ({ children }) => {
         if (ablyRef.current || isConnectingRef.current) return;
 
         isConnectingRef.current = true;
-        console.log('📡 Initializing Ably for student:', userId);
 
         const client = new Ably.Realtime({
             authCallback: async (tokenParams, callback) => {
                 try {
-                    console.log('🔑 Fetching Ably Auth Token...');
                     const { data } = await api.get('/ably/auth');
                     callback(null, data);
                 } catch (err) {
-                    console.error('❌ Ably Auth Request failed:', err);
-                    // Add a small delay for retry to avoid flooding on server errors
+                    console.error('Ably Auth Request failed:', err);
                     setTimeout(() => callback(err, null), 5000);
                 }
             },
@@ -51,14 +47,13 @@ export const AblyProvider = ({ children }) => {
         });
 
         client.connection.on('connected', () => {
-            console.log('✅ Ably Connected');
             isConnectingRef.current = false;
             ablyRef.current = client;
             setAbly(client);
         });
 
         client.connection.on('failed', (err) => {
-            console.error('❌ Ably Connection Failed:', err);
+            console.error('Ably Connection Failed:', err);
             isConnectingRef.current = false;
         });
 
@@ -75,9 +70,17 @@ export const AblyProvider = ({ children }) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
         });
 
+        // Activity feed channel - real-time updates
+        const activityChannel = client.channels.get(`user:${userId}:activity`);
+        activityChannel.subscribe(['new_activity', 'activity_updated'], (msg) => {
+            queryClient.invalidateQueries({ queryKey: ['activity'] });
+            if (msg.data?.content) {
+                showToast(msg.data.content, 'info');
+            }
+        });
+
         return () => {
             if (ablyRef.current) {
-                console.log('🚪 Cleaning up Ably instance');
                 ablyRef.current.close();
                 ablyRef.current = null;
                 setAbly(null);
@@ -128,7 +131,7 @@ export const AblyProvider = ({ children }) => {
         return () => {
             globalChannel.presence.leave();
         };
-    }, [ably, userId, username, user?.avatar_url]);
+    }, [ably, user, queryClient, showToast]);
 
     return <AblyContext.Provider value={{ ably, presenceData }}>{children}</AblyContext.Provider>;
 };

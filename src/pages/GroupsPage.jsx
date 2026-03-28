@@ -7,6 +7,18 @@ import { useGroups, useCreateGroup, useJoinGroup } from '../hooks/useGroups';
 import Avatar from '../components/Avatar.jsx';
 import { useToast } from '../context/ToastContext';
 import ListPage from '../components/ListPage.jsx';
+import useDebounce from '../hooks/useDebounce';
+
+const getGroupColor = (groupId) => {
+    if (!groupId) return `hsl(${Math.random() * 360}, 70%, 80%)`;
+    let hash = 0;
+    const id = String(groupId);
+    for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 70%, 80%)`;
+};
 
 const GroupCard = ({ group, handleJoinGroup, navigate }) => (
     <motion.div
@@ -22,9 +34,7 @@ const GroupCard = ({ group, handleJoinGroup, navigate }) => (
             className="group-cover"
             style={{
                 backgroundImage: group.cover_url ? `url(${group.cover_url})` : 'none',
-                backgroundColor: group.cover_url
-                    ? 'transparent'
-                    : `hsl(${Math.random() * 360}, 70%, 80%)`,
+                backgroundColor: group.cover_url ? 'transparent' : getGroupColor(group.id),
             }}
         />
         <div className="group-content">
@@ -61,10 +71,11 @@ const GroupCard = ({ group, handleJoinGroup, navigate }) => (
 const GroupsPage = () => {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { data: groups, isLoading } = useGroups({
         category: categoryFilter,
-        search: searchQuery,
+        search: debouncedSearchQuery,
     });
     const { mutate: joinGroup } = useJoinGroup();
     const { showToast } = useToast();

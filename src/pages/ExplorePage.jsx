@@ -22,9 +22,14 @@ import {
 import '../styles/ExplorePage.css';
 import Avatar from '../components/Avatar.jsx';
 import { useAuth } from '../hooks/useAuth.js';
+import { useTrendingTopics } from '../hooks/useContent.js';
+import { Hash, TrendingUp } from 'lucide-react';
 
 const ExplorePage = () => {
     const { user, isAuthenticated } = useAuth();
+    const { data: trending } = useTrendingTopics();
+
+    // ... categories definition ...
     const categories = [
         {
             title: 'Social & Community',
@@ -44,11 +49,18 @@ const ExplorePage = () => {
                     desc: 'Chat with friends',
                 },
                 {
-                    name: 'Communities',
+                    name: 'Groups',
                     path: '/groups',
                     icon: <Users size={24} />,
-                    color: '#ffa502',
-                    desc: 'Join student clubs',
+                    color: '#ff9f43',
+                    desc: 'Student communities',
+                },
+                {
+                    name: 'Pages',
+                    path: '/pages',
+                    icon: <BookOpen size={24} />,
+                    color: '#00d2d3',
+                    desc: 'Official campus pages',
                 },
                 {
                     name: 'Events',
@@ -56,6 +68,13 @@ const ExplorePage = () => {
                     icon: <Calendar size={24} />,
                     color: '#ff4757',
                     desc: 'Campus activities',
+                },
+                {
+                    name: 'Reels',
+                    path: '/reels',
+                    icon: <Video size={24} />,
+                    color: '#ff4757',
+                    desc: 'Short student videos',
                 },
                 {
                     name: 'Stories',
@@ -212,6 +231,30 @@ const ExplorePage = () => {
                     </Link>
                 )}
             </div>
+
+            {trending && trending.length > 0 && (
+                <div className="trending-hashtags-strip card mb-12">
+                    <div className="flex items-center gap-2 mb-4 text-primary font-bold">
+                        <TrendingUp size={20} />
+                        <span>Trending on Campus</span>
+                    </div>
+                    <div className="hashtags-cloud">
+                        {trending.map((tag, i) => (
+                            <Link
+                                key={i}
+                                to={`/search?q=${tag._id.replace('#', '')}`}
+                                className="trending-tag"
+                            >
+                                <span className="hashtag-icon">
+                                    <Hash size={14} />
+                                </span>
+                                <span className="hashtag-name">{tag._id.replace('#', '')}</span>
+                                <span className="hashtag-count">{tag.count}</span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="explore-grid">
                 {categories.map((cat, idx) => (

@@ -49,23 +49,28 @@ const ContentModerationTab = () => {
 
     const { showToast } = useToast();
 
-    // Vuta data ya kweli kutoka backend
-    const fetchModerationQueue = async () => {
-        setIsLoading(true);
-        try {
-            const { data } = await api.get('/admin/moderation');
-            setModerationQueue(data);
-        } catch (error) {
-            console.error('Failed to fetch moderation queue:', error);
-            showToast('Failed to load reports', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
+        let isMounted = true;
+
+        const fetchModerationQueue = async () => {
+            if (isMounted) setIsLoading(true);
+            try {
+                const { data } = await api.get('/admin/moderation');
+                if (isMounted) setModerationQueue(data);
+            } catch (error) {
+                console.error('Failed to fetch moderation queue:', error);
+                if (isMounted) showToast('Failed to load reports', 'error');
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+
         fetchModerationQueue();
-    }, [filters]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [filters, showToast]);
 
     const handleModerationAction = async (itemId, action) => {
         try {
