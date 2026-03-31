@@ -13,6 +13,13 @@ const api = axios.create({
 
 api.interceptors.request.use(
     (config) => {
+        // Strip redundant /api if it's already there (it might be '/api/...')
+        if (config.url) {
+            config.url = config.url.replace(/^\/api\//, '/').replace(/^\/api$/, '/');
+            // Ensure no double slashes at the start after replacement
+            if (config.url.startsWith('//')) config.url = config.url.substring(1);
+        }
+
         const token = localStorage.getItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
@@ -28,9 +35,9 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            // Fire an event so AuthContext can clear state + React Router navigates cleanly
+            // instead of doing a hard page reload that nukes all React state.
+            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
         }
         return Promise.reject(error);
     },

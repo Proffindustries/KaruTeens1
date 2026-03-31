@@ -172,7 +172,7 @@ export const useAddComment = () => {
             content: string;
             parentCommentId?: string;
         }) => {
-            const { data } = await api.post(`/posts/${postId}/comment`, {
+            const { data } = await api.post(`/posts/${postId}/comments`, {
                 content,
                 parent_comment_id: parentCommentId,
             });

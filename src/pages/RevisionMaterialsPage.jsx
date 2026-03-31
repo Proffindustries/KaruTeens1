@@ -17,7 +17,7 @@ const RevisionMaterialsPage = () => {
     const fetchMaterials = async () => {
         try {
             setLoading(true);
-            const { data } = await api.get('/api/revision-materials');
+            const { data } = await api.get('/revision-materials');
             setMaterials(data);
         } catch (err) {
             console.log('Using local revision materials data');

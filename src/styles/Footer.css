@@ -1,85 +1,68 @@
-.footer {
+.footer-compact {
     background-color: rgb(var(--background));
     border-top: 1px solid rgba(var(--border), 0.5);
-    padding: 2rem 0 1rem;
+    padding: 0.5rem 0;
     margin-top: auto;
-}
-
-.footer-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 3rem;
-    margin-bottom: 3rem;
-}
-
-.footer-section h3 {
-    font-size: 1.5rem;
-    color: rgb(var(--primary));
-    margin-bottom: 1rem;
-}
-
-.footer-section h4 {
-    font-size: 1.1rem;
-    color: rgb(var(--text-main));
-    margin-bottom: 1.25rem;
-    font-weight: 600;
-}
-
-.footer-section p {
+    font-size: 0.75rem;
     color: rgb(var(--text-muted));
-    font-size: 0.95rem;
-    line-height: 1.7;
 }
 
-.footer-section ul {
-    list-style: none;
-    padding: 0;
+.footer-compact-content {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
 }
 
-.footer-section ul li {
-    margin-bottom: 0;
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.footer-section ul li a {
+.footer-brand span {
+    font-weight: 500;
+}
+
+.footer-nav {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.footer-nav a {
     text-decoration: none;
-    color: rgb(var(--text-muted));
-    transition: color var(--transition-fast);
+    color: inherit;
+    transition: color 0.2s;
 }
 
-.footer-section ul li a:hover {
+.footer-nav a:hover {
     color: rgb(var(--primary));
 }
 
-.social-icons {
+.footer-social-lite {
     display: flex;
     gap: 1rem;
 }
 
-.social-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(var(--primary), 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.footer-social-lite a {
+    color: inherit;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.footer-social-lite a:hover {
     color: rgb(var(--primary));
-    transition: all var(--transition-fast);
+    transform: translateY(-2px);
 }
 
-.social-icon:hover {
-    background: rgb(var(--primary));
-    color: white;
-    transform: translateY(-3px);
-}
-
-.footer-bottom {
-    text-align: center;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(var(--border), 0.5);
-    color: rgb(var(--text-muted));
-    font-size: 0.9rem;
+@media (max-width: 600px) {
+    .footer-compact-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .footer-nav {
+        gap: 1rem;
+        justify-content: center;
+    }
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/CreateItemModal.css';
 import { useCreateItem } from '../hooks/useMarketplace.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 const CreateItemModal = React.memo(({ isOpen, onClose }) => {
     const [formData, setFormData] = useState({
@@ -21,6 +22,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
 
     const { mutate: createItem, isPending } = useCreateItem();
     const { uploadImage, isUploading } = useMediaUpload();
+    const { showToast } = useToast();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     // Reset when closed
@@ -82,6 +84,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
                 mediaUrls = await Promise.all(uploadPromises);
             } catch (error) {
                 console.error('Upload failed', error);
+                showToast('Failed to upload images. Please try again.', 'error');
                 return; // Stop on error
             }
         }

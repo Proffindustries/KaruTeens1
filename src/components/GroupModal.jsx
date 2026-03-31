@@ -9,6 +9,7 @@ const GroupModal = ({
     groupParticipants,
     setGroupParticipants,
     handleCreateGroup,
+    isCreatingGroup,
 }) => {
     if (!showGroupModal) return null;
 
@@ -39,8 +40,8 @@ const GroupModal = ({
                             onChange={(e) => setGroupParticipants(e.target.value)}
                         />
                     </div>
-                    <button className="create-btn" onClick={handleCreateGroup}>
-                        <Plus size={18} /> Create Group
+                    <button className="create-btn" onClick={handleCreateGroup} disabled={isCreatingGroup}>
+                        <Plus size={18} /> {isCreatingGroup ? 'Creating...' : 'Create Group'}
                     </button>
                 </div>
             </div>

@@ -131,7 +131,7 @@ async fn main() {
         tower_http::cors::AllowOrigin::list(urls)
     };
 
-     let app = Router::new()
+    let app = Router::new()
          .route("/", get(health_check))
          .route("/api/config", get(admin::get_public_settings_handler))
          .route("/ws", get(ws_handler))

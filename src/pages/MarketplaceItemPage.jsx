@@ -12,7 +12,7 @@ const MarketplaceItemPage = () => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
 
     const { data: item, isLoading, error } = useMarketplaceItem(itemId);
-    const { mutate: markSold } = useMarkSold();
+    const { mutate: markSold, isPending: isMarkingSold } = useMarkSold();
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     if (isLoading) return <div className="container item-detail-page">Loading item details...</div>;
@@ -226,7 +226,7 @@ const MarketplaceItemPage = () => {
                                 <button
                                     className="btn btn-primary btn-full"
                                     onClick={handleMarkSold}
-                                    disabled={item.status === 'sold'}
+                                    disabled={item.status === 'sold' || isMarkingSold}
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -234,7 +234,7 @@ const MarketplaceItemPage = () => {
                                         gap: '0.5rem',
                                     }}
                                 >
-                                    {item.status === 'sold' ? 'Sold' : 'Mark as Sold'}
+                                    {isMarkingSold ? 'Processing...' : (item.status === 'sold' ? 'Sold' : 'Mark as Sold')}
                                 </button>
                             ) : (
                                 <button

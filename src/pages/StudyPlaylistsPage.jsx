@@ -50,7 +50,7 @@ const StudyPlaylistsPage = () => {
         try {
             setLoading(true);
             const params = subjectFilter ? { subject: subjectFilter } : {};
-            const { data } = await api.get('/api/playlists', { params });
+            const { data } = await api.get('/playlists', { params });
             setPlaylists(data);
         } catch (err) {
             showToast('Failed to load playlists', 'error');
@@ -61,7 +61,7 @@ const StudyPlaylistsPage = () => {
 
     const fetchPlaylistDetails = async (playlistId) => {
         try {
-            const { data } = await api.get(`/api/playlists/${playlistId}`);
+            const { data } = await api.get(`/playlists/${playlistId}`);
             setSelectedPlaylist(data);
         } catch (err) {
             showToast('Failed to load playlist details', 'error');
@@ -72,7 +72,7 @@ const StudyPlaylistsPage = () => {
         e.preventDefault();
         const formData = new FormData(e.target);
         try {
-            await api.post('/api/playlists', {
+            await api.post('/playlists', {
                 name: formData.get('name'),
                 description: formData.get('description'),
                 is_public: formData.get('is_public') === 'on',
@@ -90,7 +90,7 @@ const StudyPlaylistsPage = () => {
         e.preventDefault();
         const formData = new FormData(e.target);
         try {
-            await api.post(`/api/playlists/${selectedPlaylist.id}/items`, {
+            await api.post(`/playlists/${selectedPlaylist.id}/items`, {
                 item_type: formData.get('item_type'),
                 title: formData.get('title'),
                 url: formData.get('url'),
@@ -108,7 +108,7 @@ const StudyPlaylistsPage = () => {
 
     const handleAddCollaborator = async (username) => {
         try {
-            await api.post(`/api/playlists/${selectedPlaylist.id}/collaborators/${username}`);
+            await api.post(`/playlists/${selectedPlaylist.id}/collaborators/${username}`);
             showToast('Collaborator added!', 'success');
             fetchPlaylistDetails(selectedPlaylist.id);
         } catch (err) {

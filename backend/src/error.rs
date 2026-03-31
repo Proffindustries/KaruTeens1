@@ -33,7 +33,8 @@ impl IntoResponse for AppError {
 
 impl From<mongodb::error::Error> for AppError {
     fn from(err: mongodb::error::Error) -> Self {
-        AppError::InternalServerError(err.to_string())
+        tracing::error!("Database error: {}", err);
+        AppError::InternalServerError("A database error occurred.".to_string())
     }
 }
 

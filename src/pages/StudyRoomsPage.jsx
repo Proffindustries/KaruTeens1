@@ -146,11 +146,13 @@ const RoomLobby = () => {
                                 <button
                                     className="btn btn-outline btn-full"
                                     onClick={() => handleJoinRoom(room.id)}
-                                    disabled={room.participant_count >= room.max_participants}
+                                    disabled={room.participant_count >= room.max_participants || joinRoom.isPending}
                                 >
-                                    {room.participant_count >= room.max_participants
-                                        ? 'Full'
-                                        : 'Join Room'}
+                                    {joinRoom.isPending
+                                        ? 'Joining...'
+                                        : room.participant_count >= room.max_participants
+                                          ? 'Full'
+                                          : 'Join Room'}
                                 </button>
                             </div>
                         ))
@@ -205,8 +207,12 @@ const RoomLobby = () => {
                                     onChange={(e) => setRoomSubject(e.target.value)}
                                 />
                             </div>
-                            <button className="btn btn-primary btn-full" onClick={handleCreateRoom}>
-                                Create Room
+                            <button 
+                                className="btn btn-primary btn-full" 
+                                onClick={handleCreateRoom}
+                                disabled={!roomName.trim() || createRoom.isPending}
+                            >
+                                {createRoom.isPending ? 'Creating...' : 'Create Room'}
                             </button>
                         </div>
                     </div>
@@ -888,8 +894,12 @@ const ActiveRoom = ({ roomId }) => {
                     >
                         <Users size={20} />
                     </button>
-                    <button className="btn btn-danger" onClick={handleLeaveRoom}>
-                        <LogOut size={18} /> Leave
+                    <button 
+                        className="btn btn-danger" 
+                        onClick={handleLeaveRoom}
+                        disabled={leaveRoom.isPending}
+                    >
+                        {leaveRoom.isPending ? <Loader size={16} className="spin-anim" /> : <LogOut size={18} />} Leave
                     </button>
                 </div>
             </div>
@@ -1374,8 +1384,12 @@ const ActiveRoom = ({ roomId }) => {
                                     >
                                         Cancel
                                     </button>
-                                    <button className="btn btn-danger" onClick={confirmRemoveUser}>
-                                        Remove User
+                                    <button 
+                                        className="btn btn-danger" 
+                                        onClick={confirmRemoveUser}
+                                        disabled={removeUser.isPending}
+                                    >
+                                        {removeUser.isPending ? 'Removing...' : 'Remove User'}
                                     </button>
                                 </div>
                             </div>

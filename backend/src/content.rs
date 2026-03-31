@@ -684,5 +684,5 @@ pub fn content_routes() -> Router<Arc<AppState>> {
         .route("/:id", get(get_post_handler))
         .route("/:id/like", post(like_post_handler).delete(unlike_post_handler))
         .route("/:id/save", post(save_post_handler))
-        .route("/:id/comment", post(add_comment_handler).get(get_comments_handler))
+        .route("/:id/comments", post(add_comment_handler).get(get_comments_handler))
 }

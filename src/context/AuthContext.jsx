@@ -51,6 +51,15 @@ export const AuthProvider = ({ children }) => {
         }
     }, [token]);
 
+    // Listen for 401 events fired by the API interceptor
+    useEffect(() => {
+        const handleUnauthorized = () => {
+            logout();
+        };
+        window.addEventListener('auth:unauthorized', handleUnauthorized);
+        return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    }, []);
+
     const login = (newToken, newUser) => {
         const normalizedUser = {
             ...newUser,

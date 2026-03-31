@@ -29,7 +29,7 @@ const ExplorePage = () => {
     const { user, isAuthenticated } = useAuth();
     const { data: trending } = useTrendingTopics();
 
-    // ... categories definition ...
+    // All pages grouped by category
     const categories = [
         {
             title: 'Social & Community',
@@ -83,6 +83,20 @@ const ExplorePage = () => {
                     color: '#e056fd',
                     desc: 'Student updates',
                 },
+                {
+                    name: 'Confessions',
+                    path: '/confessions',
+                    icon: <Shield size={24} />,
+                    color: '#6c5ce7',
+                    desc: 'Anonymous campus confessions',
+                },
+                {
+                    name: 'Live Streams',
+                    path: '/live',
+                    icon: <Video size={24} />,
+                    color: '#ff3f34',
+                    desc: 'Watch & go live',
+                },
             ],
         },
         {
@@ -94,6 +108,13 @@ const ExplorePage = () => {
                     icon: <Video size={24} />,
                     color: '#5352ed',
                     desc: 'Virtual collaboration',
+                },
+                {
+                    name: 'Study Playlists',
+                    path: '/study-playlists',
+                    icon: <BookOpen size={24} />,
+                    color: '#20bf6b',
+                    desc: 'Curated music for focus',
                 },
                 {
                     name: 'Recall',
@@ -108,6 +129,20 @@ const ExplorePage = () => {
                     icon: <LayoutGrid size={24} />,
                     color: '#1e90ff',
                     desc: 'Curated study resources',
+                },
+                {
+                    name: 'Templates',
+                    path: '/templates',
+                    icon: <LayoutGrid size={24} />,
+                    color: '#a29bfe',
+                    desc: 'Document templates',
+                },
+                {
+                    name: 'Timetable',
+                    path: '/timetable',
+                    icon: <Calendar size={24} />,
+                    color: '#fdcb6e',
+                    desc: 'Your class schedule',
                 },
                 {
                     name: 'AI Assistant',
@@ -136,6 +171,13 @@ const ExplorePage = () => {
                     desc: 'Meet your campus match',
                 },
                 {
+                    name: 'Leaderboards',
+                    path: '/leaderboards',
+                    icon: <Crown size={24} />,
+                    color: '#f1c40f',
+                    desc: 'Top students this week',
+                },
+                {
                     name: 'Premium',
                     path: '/premium',
                     icon: <Crown size={24} />,
@@ -156,7 +198,7 @@ const ExplorePage = () => {
             links: [
                 {
                     name: 'My Profile',
-                    path: '/profile',
+                    path: user ? `/profile/${user.username}` : '/profile',
                     icon: <User size={24} />,
                     color: '#1e90ff',
                     desc: 'Manage your presence',
@@ -174,6 +216,20 @@ const ExplorePage = () => {
                     icon: <Bell size={24} />,
                     color: '#fa8231',
                     desc: 'Stay updated',
+                },
+                {
+                    name: 'Activity Feed',
+                    path: '/activity',
+                    icon: <Activity size={24} />,
+                    color: '#e84393',
+                    desc: 'Your recent interactions',
+                },
+                {
+                    name: 'Search',
+                    path: '/search',
+                    icon: <Info size={24} />,
+                    color: '#3dc1d3',
+                    desc: 'Find people & content',
                 },
             ],
         },
@@ -284,8 +340,8 @@ const ExplorePage = () => {
                     <h2>Admin Area</h2>
                     <div className="links-grid">
                         <Link to="/admin" className="explore-card admin-card">
-                            <div className="explore-icon">
-                                <DollarSign size={24} />
+                            <div className="explore-icon" style={{ background: '#e74c3c15', color: '#e74c3c' }}>
+                                <Shield size={24} />
                             </div>
                             <div className="explore-info">
                                 <h3>Admin Dashboard</h3>

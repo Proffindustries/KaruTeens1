@@ -15,19 +15,9 @@ const ProtectedRoute = React.memo(() => {
     const hasOnboarded = user?.onboarded;
     const isOnboardingPath = location.pathname === '/onboarding';
 
-    // If onboarding status is unknown, let them through to avoid redirect loops
-    if (hasOnboarded === undefined) {
-        return <Outlet />;
-    }
-
-    // Unonboarded user trying to access any page other than /onboarding → send to onboarding
-    if (hasOnboarded === false && !isOnboardingPath) {
-        return <Navigate to="/onboarding" replace />;
-    }
-
-    // Already-onboarded user trying to hit /onboarding again → send to feed
-    if (hasOnboarded === true && isOnboardingPath) {
-        return <Navigate to="/feed" replace />;
+    // If onboarding status doesn't match current path, redirect appropriately
+    if (hasOnboarded !== isOnboardingPath) {
+        return <Navigate to={hasOnboarded ? '/feed' : '/onboarding'} replace />;
     }
 
     return <Outlet />;

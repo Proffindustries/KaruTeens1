@@ -10,6 +10,7 @@ import GroupInfoModal from '../components/GroupInfoModal.jsx';
 import {
     Search,
     Send,
+    Loader2,
     Paperclip,
     Phone,
     Video,
@@ -315,6 +316,7 @@ const MessagesPage = () => {
     const [messageInput, setMessageInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -366,7 +368,7 @@ const MessagesPage = () => {
     const { mutate: markRead } = useMarkRead(selectedChatId);
     const { mutate: deleteMessage } = useDeleteMessage(selectedChatId);
     const { mutate: createChat } = useCreateChat();
-    const { mutate: createGroup } = useCreateGroup();
+    const { mutate: createGroup, isPending: isCreatingGroup } = useCreateGroup();
     const { mutate: forwardMessage } = useForwardMessage();
     const { mutate: votePoll } = useVotePoll(selectedChatId);
     const { mutate: markViewed } = useMarkViewed(selectedChatId);
@@ -649,7 +651,8 @@ const MessagesPage = () => {
     };
 
     const handleSend = async () => {
-        if (!messageInput.trim()) return;
+        if (!messageInput.trim() || isSending) return;
+        setIsSending(true);
 
         if (
             messageInput.toLowerCase().includes('congratulations') ||
@@ -663,25 +666,31 @@ const MessagesPage = () => {
         const selectedChat = chats?.find((c) => c.id === selectedChatId);
         const recipientPublicKey = selectedChat?.participant?.public_key;
 
+        const cleanup = () => {
+            setMessageInput('');
+            setReplyingTo(null);
+            setIsSending(false);
+        };
+
         if (isEncryptionReady && recipientPublicKey) {
             const encrypted = await encryptForRecipient(messageInput, recipientPublicKey);
             if (encrypted) {
-                sendMessage({
-                    content: '[Encrypted Message]',
-                    encrypted_content: encrypted.content,
-                    encryption_iv: encrypted.iv,
-                    reply_to_id: replyingTo?.id,
-                });
+                sendMessage(
+                    {
+                        content: '[Encrypted Message]',
+                        encrypted_content: encrypted.content,
+                        encryption_iv: encrypted.iv,
+                        reply_to_id: replyingTo?.id,
+                    },
+                    { onSettled: cleanup },
+                );
             } else {
                 // Fallback to plain if encryption fails for some reason
-                sendMessage({ content: messageInput, reply_to_id: replyingTo?.id });
+                sendMessage({ content: messageInput, reply_to_id: replyingTo?.id }, { onSettled: cleanup });
             }
         } else {
-            sendMessage({ content: messageInput, reply_to_id: replyingTo?.id });
+            sendMessage({ content: messageInput, reply_to_id: replyingTo?.id }, { onSettled: cleanup });
         }
-
-        setMessageInput('');
-        setReplyingTo(null);
     };
 
     const handleForwardSelect = (targetChatId) => {
@@ -1641,9 +1650,9 @@ const MessagesPage = () => {
                                             <button
                                                 className="send-btn"
                                                 onClick={handleSend}
-                                                disabled={isUploading || !messageInput.trim()}
+                                                disabled={isUploading || isSending || !messageInput.trim()}
                                             >
-                                                <Send size={20} />
+                                                {isSending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
                                             </button>
                                         </>
                                     )}
@@ -1695,6 +1704,7 @@ const MessagesPage = () => {
                 groupParticipants={groupParticipants}
                 setGroupParticipants={setGroupParticipants}
                 handleCreateGroup={handleCreateGroup}
+                isCreatingGroup={isCreatingGroup}
             />
 
             <PollModal

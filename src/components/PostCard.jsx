@@ -59,6 +59,7 @@ const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800')
 };
 
 const PostCard = React.memo(({ post }) => {
+    console.log('PostCard rendering for post:', post.id || post._id);
     const navigate = useNavigate();
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
@@ -91,7 +92,7 @@ const PostCard = React.memo(({ post }) => {
 
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
-    const { mutate: addComment, isPending: isSubmittingComment } = useAddComment();
+    const { mutateAsync: addCommentAsync, isPending: isSubmittingComment } = useAddComment();
     const { mutate: deletePost } = useDeletePost();
     const { mutate: reportPost } = useReportPost();
     const { mutate: savePost } = useSavePost();
@@ -221,7 +222,7 @@ const PostCard = React.memo(({ post }) => {
         setShowMenu(false);
     };
 
-    const handleCommentSubmit = (e) => {
+    const handleCommentSubmit = async (e) => {
         e.preventDefault();
         if (!commentText.trim() && !commentMedia) return;
 
@@ -229,22 +230,19 @@ const PostCard = React.memo(({ post }) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
-        addComment(
-            {
+        try {
+            await addCommentAsync({
                 postId: postId,
                 content: commentText,
                 parent_comment_id: null,
                 mediaFile: commentMedia,
-            },
-            {
-                onError: () => {
-                    setCommentsCount(previousCount);
-                    showToast('Failed to post comment', 'error');
-                },
-            },
-        );
-        setCommentText('');
-        setCommentMedia(null);
+            });
+            setCommentText('');
+            setCommentMedia(null);
+        } catch (error) {
+            setCommentsCount(previousCount);
+            showToast('Failed to post comment', 'error');
+        }
     };
 
     const handleMediaSelect = (e) => {
@@ -261,24 +259,22 @@ const PostCard = React.memo(({ post }) => {
         }
     };
 
-    const handleReply = (parentCommentId, replyContent, replyMedia = null) => {
+    const handleReply = async (parentCommentId, replyContent, replyMedia = null) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
-        addComment(
-            {
+        try {
+            await addCommentAsync({
                 postId: postId,
                 content: replyContent,
                 parent_comment_id: parentCommentId,
                 mediaFile: replyMedia,
-            },
-            {
-                onError: () => {
-                    setCommentsCount(previousCount);
-                    showToast('Failed to post reply', 'error');
-                },
-            },
-        );
+            });
+        } catch (error) {
+            setCommentsCount(previousCount);
+            showToast('Failed to post reply', 'error');
+            throw error; // Re-throw so Comment.jsx knows it failed
+        }
     };
 
     // Organize comments into nested structure

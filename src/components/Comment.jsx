@@ -7,6 +7,7 @@ import '../styles/Comment.css';
 const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const [showReplies, setShowReplies] = useState(false);
     const [isReplying, setIsReplying] = useState(false);
+    const [isSubmittingReply, setIsSubmittingReply] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [replyMedia, setReplyMedia] = useState(null);
     const fileInputRef = useRef(null);
@@ -16,15 +17,22 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     }, []);
 
     const handleReplySubmit = useCallback(
-        (e) => {
+        async (e) => {
             e.preventDefault();
             if (!replyText.trim() && !replyMedia) return;
 
-            onReply(comment._id, replyText, replyMedia);
-            setReplyText('');
-            setReplyMedia(null);
-            setIsReplying(false);
-            setShowReplies(true);
+            setIsSubmittingReply(true);
+            try {
+                await onReply(comment._id, replyText, replyMedia);
+                setReplyText('');
+                setReplyMedia(null);
+                setIsReplying(false);
+                setShowReplies(true);
+            } catch (error) {
+                // error feedback is shown via toast in PostCard
+            } finally {
+                setIsSubmittingReply(false);
+            }
         },
         [comment._id, onReply, replyText, replyMedia],
     );
@@ -160,15 +168,16 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                     type="button"
                                     onClick={handleCancelReply}
                                     className="btn-cancel"
+                                    disabled={isSubmittingReply}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     className="btn-reply"
-                                    disabled={!replyText.trim() && !replyMedia}
+                                    disabled={(!replyText.trim() && !replyMedia) || isSubmittingReply}
                                 >
-                                    Reply
+                                    {isSubmittingReply ? '...' : 'Reply'}
                                 </button>
                             </div>
                         </form>

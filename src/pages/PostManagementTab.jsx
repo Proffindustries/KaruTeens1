@@ -71,17 +71,19 @@ const PostManagementTab = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const { showToast } = useToast();
+    const [isProcessing, setIsProcessing] = useState(null); // Track post ID being processed
 
     useEffect(() => {
         setIsLoading(true);
         // Fetch real data from API
-        api.get('/posts')
+        api.get('/posts', { params: { ...filters } })
             .then((res) => {
-                setPosts(res.data);
+                setPosts(res.data.posts || res.data || []);
             })
             .catch((error) => {
                 console.error('Failed to load posts:', error);
                 setPosts([]); // Empty state on error
+                showToast('Failed to load posts', 'error');
             })
             .finally(() => setIsLoading(false));
     }, [filters]);
@@ -90,94 +92,123 @@ const PostManagementTab = () => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedPosts.length === 0) {
             showToast('Please select posts first', 'warning');
             return;
         }
 
-        if (bulkAction === 'approve') {
-            setPosts((prev) =>
-                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'approved' } : p)),
-            );
-            setSelectedPosts([]);
-            setBulkAction('');
-            showToast('Posts approved', 'success');
-        } else if (bulkAction === 'reject') {
-            setPosts((prev) =>
-                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'rejected' } : p)),
-            );
-            setSelectedPosts([]);
-            setBulkAction('');
-            showToast('Posts rejected', 'info');
-        } else if (bulkAction === 'publish') {
-            setPosts((prev) =>
-                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'published' } : p)),
-            );
-            setSelectedPosts([]);
-            setBulkAction('');
-            showToast('Posts published', 'success');
-        } else if (bulkAction === 'make_featured') {
-            setPosts((prev) =>
-                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, is_featured: true } : p)),
-            );
-            setSelectedPosts([]);
-            setBulkAction('');
-            showToast('Posts marked as featured', 'success');
-        } else if (bulkAction === 'make_premium') {
-            setPosts((prev) =>
-                prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, is_premium: true } : p)),
-            );
-            setSelectedPosts([]);
-            setBulkAction('');
-            showToast('Posts marked as premium', 'success');
-        } else if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedPosts.length} posts? This action cannot be undone.`)) {
-                setPosts((prev) => prev.filter((p) => !selectedPosts.includes(p.id)));
-                setSelectedPosts([]);
-                setBulkAction('');
-                showToast('Posts deleted', 'success');
+        setIsLoading(true);
+        try {
+            if (bulkAction === 'approve') {
+                await Promise.all(selectedPosts.map(id => api.post(`/posts/${id}/approve`, { status: 'approved' })));
+                setPosts((prev) =>
+                    prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'approved' } : p)),
+                );
+                showToast('Posts approved', 'success');
+            } else if (bulkAction === 'reject') {
+                await Promise.all(selectedPosts.map(id => api.post(`/posts/${id}/approve`, { status: 'rejected', rejection_reason: 'Bulk rejection' })));
+                setPosts((prev) =>
+                    prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'rejected' } : p)),
+                );
+                showToast('Posts rejected', 'info');
+            } else if (bulkAction === 'publish') {
+                await Promise.all(selectedPosts.map(id => api.post(`/posts/${id}/publish`)));
+                setPosts((prev) =>
+                    prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'published' } : p)),
+                );
+                showToast('Posts published', 'success');
+            } else if (bulkAction === 'delete') {
+                if (confirm(`Delete ${selectedPosts.length} posts? This action cannot be undone.`)) {
+                    await Promise.all(selectedPosts.map(id => api.delete(`/posts/${id}`)));
+                    setPosts((prev) => prev.filter((p) => !selectedPosts.includes(p.id)));
+                    showToast('Posts deleted', 'success');
+                } else {
+                    setIsLoading(false);
+                    return;
+                }
             }
+            setSelectedPosts([]);
+            setBulkAction('');
+        } catch (error) {
+            showToast('Bulk action partially failed or failed.', 'error');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleApprovePost = (postId) => {
-        setPosts((prev) =>
-            prev.map((p) =>
-                p.id === postId
-                    ? { ...p, status: 'approved', approved_at: new Date().toISOString() }
-                    : p,
-            ),
-        );
-        showToast('Post approved', 'success');
+    const handleApprovePost = async (postId) => {
+        setIsProcessing(postId);
+        try {
+            await api.post(`/posts/${postId}/approve`, { status: 'approved' });
+            setPosts((prev) =>
+                prev.map((p) =>
+                    p.id === postId
+                        ? { ...p, status: 'approved', approved_at: new Date().toISOString() }
+                        : p,
+                ),
+            );
+            showToast('Post approved', 'success');
+        } catch (error) {
+            showToast(error.response?.data?.error || 'Failed to approve post', 'error');
+        } finally {
+            setIsProcessing(null);
+        }
     };
 
-    const handleRejectPost = (postId) => {
-        setPosts((prev) =>
-            prev.map((p) =>
-                p.id === postId
-                    ? { ...p, status: 'rejected', rejected_at: new Date().toISOString() }
-                    : p,
-            ),
-        );
-        showToast('Post rejected', 'info');
+    const handleRejectPost = async (postId) => {
+        const reason = prompt('Please enter rejection reason:');
+        if (reason === null) return;
+        
+        setIsProcessing(postId);
+        try {
+            await api.post(`/posts/${postId}/approve`, { status: 'rejected', rejection_reason: reason });
+            setPosts((prev) =>
+                prev.map((p) =>
+                    p.id === postId
+                        ? { ...p, status: 'rejected', rejected_at: new Date().toISOString(), rejection_reason: reason }
+                        : p,
+                ),
+            );
+            showToast('Post rejected', 'info');
+        } catch (error) {
+            showToast(error.response?.data?.error || 'Failed to reject post', 'error');
+        } finally {
+            setIsProcessing(null);
+        }
     };
 
-    const handlePublishPost = (postId) => {
-        setPosts((prev) =>
-            prev.map((p) =>
-                p.id === postId
-                    ? { ...p, status: 'published', published_at: new Date().toISOString() }
-                    : p,
-            ),
-        );
-        showToast('Post published', 'success');
+    const handlePublishPost = async (postId) => {
+        setIsProcessing(postId);
+        try {
+            await api.post(`/posts/${postId}/publish`);
+            setPosts((prev) =>
+                prev.map((p) =>
+                    p.id === postId
+                        ? { ...p, status: 'published', published_at: new Date().toISOString() }
+                        : p,
+                ),
+            );
+            showToast('Post published', 'success');
+        } catch (error) {
+            showToast(error.response?.data?.error || 'Failed to publish post', 'error');
+        } finally {
+            setIsProcessing(null);
+        }
     };
 
-    const handleDeletePost = (postId) => {
+    const handleDeletePost = async (postId) => {
         if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-            setPosts((prev) => prev.filter((p) => p.id !== postId));
-            showToast('Post deleted', 'success');
+            setIsProcessing(postId);
+            try {
+                await api.delete(`/posts/${postId}`);
+                setPosts((prev) => prev.filter((p) => p.id !== postId));
+                showToast('Post deleted', 'success');
+            } catch (error) {
+                showToast(error.response?.data?.error || 'Failed to delete post', 'error');
+            } finally {
+                setIsProcessing(null);
+            }
         }
     };
 
@@ -737,6 +768,7 @@ const PostManagementTab = () => {
                                                                 onClick={() =>
                                                                     handleApprovePost(post.id)
                                                                 }
+                                                                disabled={isProcessing === post.id}
                                                                 title="Approve Post"
                                                             >
                                                                 <FileCheck size={16} />
@@ -746,6 +778,7 @@ const PostManagementTab = () => {
                                                                 onClick={() =>
                                                                     handleRejectPost(post.id)
                                                                 }
+                                                                disabled={isProcessing === post.id}
                                                                 title="Reject Post"
                                                             >
                                                                 <XCircle size={16} />
@@ -758,6 +791,7 @@ const PostManagementTab = () => {
                                                             onClick={() =>
                                                                 handlePublishPost(post.id)
                                                             }
+                                                            disabled={isProcessing === post.id}
                                                             title="Publish Post"
                                                         >
                                                             <FileText size={16} />
@@ -766,6 +800,7 @@ const PostManagementTab = () => {
                                                     <button
                                                         className="action-btn delete"
                                                         onClick={() => handleDeletePost(post.id)}
+                                                        disabled={isProcessing === post.id}
                                                         title="Delete Post"
                                                     >
                                                         <Trash2 size={16} />

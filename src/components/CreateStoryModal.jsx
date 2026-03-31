@@ -62,6 +62,7 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
             );
         } catch (error) {
             console.error(error);
+            showToast('Failed to upload media. Please try again.', 'error');
         } finally {
             setIsUploading(false);
         }

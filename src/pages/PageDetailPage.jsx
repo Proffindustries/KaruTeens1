@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../api/client';
-import MainLayout from '../layouts/MainLayout';
 import Skeleton from '../components/Skeleton';
 import { Calendar, User, Tag, ChevronLeft } from 'lucide-react';
 
@@ -51,100 +50,94 @@ const PageDetailPage = () => {
 
     if (isLoading) {
         return (
-            <MainLayout>
-                <div className="container max-w-4xl py-8">
-                    <Skeleton height="400px" className="mb-6 rounded-xl" />
-                    <Skeleton height="40px" width="70%" className="mb-4" />
-                    <Skeleton height="20px" width="40%" className="mb-8" />
-                    <Skeleton count={10} className="mb-2" />
-                </div>
-            </MainLayout>
+            <div className="container max-w-4xl py-8">
+                <Skeleton height="400px" className="mb-6 rounded-xl" />
+                <Skeleton height="40px" width="70%" className="mb-4" />
+                <Skeleton height="20px" width="40%" className="mb-8" />
+                <Skeleton count={10} className="mb-2" />
+            </div>
         );
     }
 
     if (error || !page) {
         return (
-            <MainLayout>
-                <div className="container py-20 text-center">
-                    <h2 className="text-2xl font-bold mb-4">Page Not Found</h2>
-                    <p className="mb-8">
-                        The page you are looking for doesn't exist or has been moved.
-                    </p>
-                    <Link to="/" className="btn btn-primary">
-                        Go Home
-                    </Link>
-                </div>
-            </MainLayout>
+            <div className="container py-20 text-center">
+                <h2 className="text-2xl font-bold mb-4">Page Not Found</h2>
+                <p className="mb-8">
+                    The page you are looking for doesn't exist or has been moved.
+                </p>
+                <Link to="/" className="btn btn-primary">
+                    Go Home
+                </Link>
+            </div>
         );
     }
 
     return (
-        <MainLayout>
-            <article className="container max-w-4xl py-8">
-                <Link
-                    to="/"
-                    className="inline-flex items-center text-gray-500 hover:text-primary mb-6 transition-colors"
-                >
-                    <ChevronLeft size={20} />
-                    <span>Back to Home</span>
-                </Link>
+        <article className="container max-w-4xl py-8">
+            <Link
+                to="/"
+                className="inline-flex items-center text-gray-500 hover:text-primary mb-6 transition-colors"
+            >
+                <ChevronLeft size={20} />
+                <span>Back to Home</span>
+            </Link>
 
-                {page.featured_image && (
-                    <img
-                        src={page.featured_image}
-                        alt={page.title}
-                        className="w-full h-[400px] object-cover rounded-2xl mb-8 shadow-lg"
-                    />
-                )}
+            {page.featured_image && (
+                <img
+                    src={page.featured_image}
+                    alt={page.title}
+                    className="w-full h-[400px] object-cover rounded-2xl mb-8 shadow-lg"
+                />
+            )}
 
-                <header className="mb-8">
-                    <h1 className="text-4xl font-bold mb-4 text-gray-900">{page.title}</h1>
+            <header className="mb-8">
+                <h1 className="text-4xl font-bold mb-4 text-gray-900">{page.title}</h1>
 
-                    <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                        <User size={16} />
+                        <span>{page.author_name || 'Admin'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Calendar size={16} />
+                        <span>
+                            {new Date(
+                                page.published_at || page.created_at,
+                            ).toLocaleDateString()}
+                        </span>
+                    </div>
+                    {page.category && (
                         <div className="flex items-center gap-2">
-                            <User size={16} />
-                            <span>{page.author_name || 'Admin'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Calendar size={16} />
-                            <span>
-                                {new Date(
-                                    page.published_at || page.created_at,
-                                ).toLocaleDateString()}
+                            <Tag size={16} />
+                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
+                                {page.category}
                             </span>
                         </div>
-                        {page.category && (
-                            <div className="flex items-center gap-2">
-                                <Tag size={16} />
-                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
-                                    {page.category}
-                                </span>
-                            </div>
-                        )}
+                    )}
+                </div>
+            </header>
+
+            <div
+                className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: page.content }}
+            />
+
+            {page.tags && page.tags.length > 0 && (
+                <footer className="mt-12 pt-8 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2">
+                        {page.tags.map((tag, idx) => (
+                            <span
+                                key={idx}
+                                className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-sm"
+                            >
+                                #{tag}
+                            </span>
+                        ))}
                     </div>
-                </header>
-
-                <div
-                    className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: page.content }}
-                />
-
-                {page.tags && page.tags.length > 0 && (
-                    <footer className="mt-12 pt-8 border-t border-gray-100">
-                        <div className="flex flex-wrap gap-2">
-                            {page.tags.map((tag, idx) => (
-                                <span
-                                    key={idx}
-                                    className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-sm"
-                                >
-                                    #{tag}
-                                </span>
-                            ))}
-                        </div>
-                    </footer>
-                )}
-            </article>
-        </MainLayout>
+                </footer>
+            )}
+        </article>
     );
 };
 

@@ -6,20 +6,30 @@ export const useActivityFeed = () => {
     return useQuery({
         queryKey: ['activity'],
         queryFn: async () => {
-            const { data } = await api.get('/activity');
-            return data;
+            const { data } = await api.get('/notifications');
+            return data.map(n => ({
+                id: n.id,
+                actor: {
+                    username: n.actor_username,
+                    avatar_url: n.actor_avatar_url
+                },
+                type: n.notification_type,
+                target: { id: n.target_id },
+                content: n.content,
+                read: n.is_read,
+                created_at: n.created_at
+            }));
         },
-        staleTime: 30 * 1000, // 30 seconds
-        refetchInterval: 30000, // Poll every 30 seconds
+        staleTime: 30 * 1000,
+        refetchInterval: 30000,
     });
 };
 
-// Mark activity as read
 export const useMarkActivityRead = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (activityId) => {
-            await api.post(`/activity/${activityId}/read`);
+            await api.post(`/notifications/${activityId}/read`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['activity'] });
@@ -27,12 +37,11 @@ export const useMarkActivityRead = () => {
     });
 };
 
-// Mark all activities as read
 export const useMarkAllActivityRead = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async () => {
-            await api.post('/activity/read-all');
+            await api.post('/notifications/read-all');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['activity'] });
@@ -40,12 +49,11 @@ export const useMarkAllActivityRead = () => {
     });
 };
 
-// Delete activity
 export const useDeleteActivity = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (activityId) => {
-            await api.delete(`/activity/${activityId}`);
+            await api.delete(`/notifications/${activityId}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['activity'] });

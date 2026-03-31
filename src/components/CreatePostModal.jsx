@@ -37,6 +37,7 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
     const [isNsfw, setIsNsfw] = useState(false);
     const [scheduledDate, setScheduledDate] = useState('');
     const [showScheduling, setShowScheduling] = useState(false);
+    const [isPosting, setIsPosting] = useState(false);
 
     const fileInputRef = useRef(null);
     const videoInputRef = useRef(null);
@@ -95,6 +96,7 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
 
     const handlePost = async () => {
         if (!text.trim() && selectedFiles.length === 0) return;
+        setIsPosting(true);
 
         const postContent = text;
         const postLocation = location;
@@ -115,20 +117,20 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                         : 'file'
                 : 'text';
 
-        // Reset form immediately
-        setText('');
-        setLocation(null);
-        setSelectedFiles([]);
-        setPreviews([]);
-        setAudience(['all']);
-        setIsAnonymous(false);
-        setIsNsfw(false);
-        setScheduledDate('');
-        onClose();
+        const resetForm = () => {
+            setText('');
+            setLocation(null);
+            setSelectedFiles([]);
+            setPreviews([]);
+            setAudience(['all']);
+            setIsAnonymous(false);
+            setIsNsfw(false);
+            setScheduledDate('');
+            onClose();
+        };
 
         // Upload files in background
         if (files.length > 0) {
-            // ... (upload logic)
             const uploadPromises = files.map(async (file) => {
                 const uploadId = addUpload({
                     fileName: file.name,
@@ -166,9 +168,15 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                     scheduled_publish_date: postScheduled,
                     is_anonymous: postIsAnonymous,
                     is_nsfw: postIsNsfw,
+                    status: postScheduled ? 'scheduled' : 'published',
+                }, {
+                    onSuccess: resetForm,
+                    onError: (err) => showToast(err.message || 'Failed to create post', 'error'),
+                    onSettled: () => setIsPosting(false)
                 });
             } catch {
                 showToast('Failed to upload media. Please try again.', 'error');
+                setIsPosting(false);
             }
         } else {
             createPost({
@@ -180,6 +188,11 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                 scheduled_publish_date: postScheduled,
                 is_anonymous: postIsAnonymous,
                 is_nsfw: postIsNsfw,
+                status: postScheduled ? 'scheduled' : 'published',
+            }, {
+                onSuccess: resetForm,
+                onError: (err) => showToast(err.message || 'Failed to create post', 'error'),
+                onSettled: () => setIsPosting(false)
             });
         }
     };
@@ -308,8 +321,8 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                                                     : user.username || 'User'}
                                             </strong>
                                             <span
-                                                className={`toggle-anonymous ${isAnonymous ? 'active' : ''}`}
-                                                onClick={() => setIsAnonymous(!isAnonymous)}
+                                                className={`toggle-anonymous ${isAnonymous ? 'active' : ''} ${isPosting ? 'disabled' : ''}`}
+                                                onClick={() => !isPosting && setIsAnonymous(!isAnonymous)}
                                                 title="Post Anonymously"
                                             >
                                                 {isAnonymous ? '👻' : '👤'}
@@ -326,6 +339,7 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                                                 className="audience-select"
                                                 value={audience[0]}
                                                 onChange={(e) => setAudience([e.target.value])}
+                                                disabled={isPosting}
                                             >
                                                 <option value="all">Public (All)</option>
                                                 <option value="freshers">Freshers (Y1)</option>
@@ -338,7 +352,8 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
 
                                             <button
                                                 className={`schedule-btn ${scheduledDate ? 'active' : ''}`}
-                                                onClick={() => setShowScheduling(!showScheduling)}
+                                                onClick={() => !isPosting && setShowScheduling(!showScheduling)}
+                                                disabled={isPosting}
                                                 title="Schedule Post"
                                             >
                                                 <Calendar size={14} />{' '}
@@ -374,6 +389,7 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                                     placeholder="What's on your mind? Use #hashtags or @mentions..."
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
+                                    disabled={isPosting}
                                     autoFocus
                                 ></textarea>
 
@@ -405,7 +421,8 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                                                 )}
                                                 <button
                                                     className="remove-preview"
-                                                    onClick={() => removeFile(idx)}
+                                                    onClick={() => !isPosting && removeFile(idx)}
+                                                    disabled={isPosting}
                                                 >
                                                     <X size={16} />
                                                 </button>
@@ -515,7 +532,8 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                                         <button
                                             className={`icon-btn ${isNsfw ? 'active' : ''}`}
                                             title="NSFW Content"
-                                            onClick={() => setIsNsfw(!isNsfw)}
+                                            onClick={() => !isPosting && setIsNsfw(!isNsfw)}
+                                            disabled={isPosting}
                                         >
                                             <Shield
                                                 size={24}
@@ -532,10 +550,10 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                         {user?.is_verified && (
                             <button
                                 className="btn btn-primary btn-full"
-                                disabled={!text && selectedFiles.length === 0}
+                                disabled={(!text && selectedFiles.length === 0) || isPosting}
                                 onClick={handlePost}
                             >
-                                Post
+                                {isPosting ? 'Posting...' : 'Post'}
                             </button>
                         )}
                     </div>

@@ -4,28 +4,33 @@ import { useInView } from 'react-intersection-observer';
 import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import { PostSkeleton } from '../components/Skeleton.jsx';
-import VirtualizedFeed from '../components/VirtualizedFeed.jsx';
 import '../styles/FeedPage.css';
 import Avatar from '../components/Avatar.jsx';
-import { useInfiniteFeed, useTrendingTopics } from '../hooks/useContent.js';
+import { useInfiniteFeed, useForYouFeed, useTrendingPosts, useTrendingTopics } from '../hooks/useContent';
 import { useAuth, useLogout } from '../hooks/useAuth.js';
-import { useProfile } from '../hooks/useUser.js';
 import { Link } from 'react-router-dom';
 
 const FeedPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [feedType, setFeedType] = useState('infinite'); // 'infinite', 'for-you', or 'trending'
-    const { ref, inView } = useInView();
+    const { ref, inView } = useInView({ threshold: 0 });
     const logout = useLogout();
     const { user } = useAuth();
-    const { data: profileData, isLoading: isProfileLoading } = useProfile(user?.username || '');
 
-    // Infinite Feed Hook
-    const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } =
-        useInfiniteFeed();
-
-    // Trending Hook
+    // Trending topics for sidebar
     const { data: trending, isLoading: isTrendingLoading } = useTrendingTopics();
+
+    // Use the correct feed hook based on active tab
+    const homeFeed = useInfiniteFeed();
+    const forYouFeed = useForYouFeed();
+    const trendingFeed = useTrendingPosts();
+
+    const activeFeed =
+        feedType === 'for-you' ? forYouFeed :
+        feedType === 'trending' ? trendingFeed :
+        homeFeed;
+
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeFeed;
 
     // Trigger next page load when sentinel enters view
     useEffect(() => {
@@ -37,7 +42,7 @@ const FeedPage = () => {
     // Flatten all pages of posts - memoized to prevent unnecessary recalculations
     const allPosts = useMemo(() => {
         if (!data?.pages) return [];
-        return data.pages.flatMap((page) => page || []) || [];
+        return data.pages.flatMap((page) => page || []);
     }, [data]);
 
     return (
@@ -114,86 +119,41 @@ const FeedPage = () => {
                             name={user.username || 'User'}
                             className="widget-avatar shadow-sm"
                         />
-                        <div className="create-post-input">
-                            <textarea
-                                id="post-input"
-                                placeholder="What's happening on campus, {user.username?.split(' ')[0] || 'User'}?"
-                                rows={1}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        // Handle post submission
-                                        const textarea = e.target;
-                                        const content = textarea.value.trim();
-                                        if (content) {
-                                            // TODO: Implement actual post creation
-                                            console.log('Creating post:', content);
-                                            textarea.value = '';
-                                            textarea.rows = 1;
-                                        }
-                                    } else if (e.key === 'Enter' && e.shiftKey) {
-                                        // Allow shift+enter for new line
-                                        textarea.rows = parseInt(textarea.rows) + 1;
-                                    }
+                        <div
+                            className="create-post-input"
+                            onClick={() => setIsModalOpen(true)}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <div
+                                style={{
+                                    padding: '0.65rem 1rem',
+                                    borderRadius: '20px',
+                                    background: 'rgba(var(--border), 0.15)',
+                                    color: 'rgb(var(--text-muted))',
+                                    fontSize: '0.95rem',
+                                    userSelect: 'none',
                                 }}
-                                onInput={(e) => {
-                                    // Auto-resize textarea based on content
-                                    const textarea = e.target;
-                                    textarea.style.height = 'auto';
-                                    textarea.style.height = textarea.scrollHeight + 'px';
-                                }}
-                            />
+                            >
+                                What's happening on campus, {user.username?.split(' ')[0] || 'Student'}?
+                            </div>
                         </div>
                     </div>
                     <div className="create-post-actions">
                         <button
                             className="cp-action"
-                            onClick={() => {
-                                const textarea = document.getElementById('post-input');
-                                if (textarea) {
-                                    const content = textarea.value.trim();
-                                    if (content) {
-                                        // TODO: Implement actual post creation
-                                        console.log('Creating post:', content);
-                                        textarea.value = '';
-                                        textarea.style.height = 'auto';
-                                    }
-                                }
-                            }}
+                            onClick={() => setIsModalOpen(true)}
                         >
                             <ImageIcon size={18} color="#00b894" /> Photo
                         </button>
                         <button
                             className="cp-action"
-                            onClick={() => {
-                                const textarea = document.getElementById('post-input');
-                                if (textarea) {
-                                    const content = textarea.value.trim();
-                                    if (content) {
-                                        // TODO: Implement actual post creation
-                                        console.log('Creating post:', content);
-                                        textarea.value = '';
-                                        textarea.style.height = 'auto';
-                                    }
-                                }
-                            }}
+                            onClick={() => setIsModalOpen(true)}
                         >
                             <Video size={18} color="#6c5ce7" /> Video
                         </button>
                         <button
                             className="cp-action"
-                            onClick={() => {
-                                const textarea = document.getElementById('post-input');
-                                if (textarea) {
-                                    const content = textarea.value.trim();
-                                    if (content) {
-                                        // TODO: Implement actual post creation
-                                        console.log('Creating post:', content);
-                                        textarea.value = '';
-                                        textarea.style.height = 'auto';
-                                    }
-                                }
-                            }}
+                            onClick={() => setIsModalOpen(true)}
                         >
                             <Plus size={18} color="#0984e3" /> More
                         </button>
@@ -204,18 +164,7 @@ const FeedPage = () => {
                                 borderRadius: '20px',
                                 padding: '0.5rem 1.25rem',
                             }}
-                            onClick={() => {
-                                const textarea = document.getElementById('post-input');
-                                if (textarea) {
-                                    const content = textarea.value.trim();
-                                    if (content) {
-                                        // TODO: Implement actual post creation
-                                        console.log('Creating post:', content);
-                                        textarea.value = '';
-                                        textarea.style.height = 'auto';
-                                    }
-                                }
-                            }}
+                            onClick={() => setIsModalOpen(true)}
                         >
                             Post
                         </button>
@@ -225,18 +174,7 @@ const FeedPage = () => {
                 {/* Posts Feed */}
                 <div className="posts-container">
                     {isLoading ? (
-                        <div
-                            style={{
-                                height: 600,
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
-                        >
-                            {[1, 2, 3].map((i) => (
-                                <PostSkeleton key={`skeleton-${i}`} />
-                            ))}
-                        </div>
+                        [1, 2, 3].map((i) => <PostSkeleton key={`skeleton-${i}`} />)
                     ) : error ? (
                         <div
                             className="error-message card shadow-sm"
@@ -274,12 +212,23 @@ const FeedPage = () => {
                             </button>
                         </div>
                     ) : (
-                        <VirtualizedFeed
-                            posts={allPosts}
-                            isLoading={isFetchingNextPage}
-                            error={error}
-                            height={600}
-                        />
+                        <>
+                            {allPosts.map((post) => (
+                                <PostCard key={post.id || post._id} post={post} />
+                            ))}
+                            {/* Infinite scroll sentinel */}
+                            <div ref={ref} style={{ height: 1 }} />
+                            {isFetchingNextPage && (
+                                <div style={{ textAlign: 'center', padding: '1rem' }}>
+                                    <PostSkeleton />
+                                </div>
+                            )}
+                            {!hasNextPage && allPosts.length > 0 && (
+                                <p style={{ textAlign: 'center', padding: '2rem', color: 'rgb(var(--text-muted))', fontSize: '0.85rem' }}>
+                                    You've seen all posts 🎉
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             </main>
@@ -385,27 +334,9 @@ const FeedPage = () => {
 
                 <div className="card suggestions-card shadow-sm" style={{ marginTop: '1.5rem' }}>
                     <h3>Who to follow</h3>
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="suggestion-item">
-                            <div className="sug-info">
-                                <Avatar
-                                    name={`User ${i}`}
-                                    size="md"
-                                    className="sug-avatar shadow-sm"
-                                />
-                                <div className="sug-text">
-                                    <strong>Campus Leader {i}</strong>
-                                    <span>Main Campus</span>
-                                </div>
-                            </div>
-                            <button
-                                className="btn btn-outline btn-xs"
-                                style={{ borderRadius: '15px' }}
-                            >
-                                Follow
-                            </button>
-                        </div>
-                    ))}
+                    <p style={{ fontSize: '0.85rem', color: 'rgb(var(--text-muted))', padding: '1rem 0' }}>
+                        Follow other students to see their posts in your feed!
+                    </p>
                 </div>
 
                 <div

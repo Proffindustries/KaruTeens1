@@ -46,11 +46,11 @@ const HomePage = () => {
                         </div>
                         <div className="hero-stats">
                             <div className="stat-item">
-                                <strong>5k+</strong> <span>Students</span>
+                                <strong>Active</strong> <span>Community</span>
                             </div>
                             <div className="separator"></div>
                             <div className="stat-item">
-                                <strong>50+</strong> <span>Communities</span>
+                                <strong>Verified</strong> <span>Students</span>
                             </div>
                             <div className="separator"></div>
                             <div className="stat-item">

@@ -27,34 +27,8 @@ const LiveStreamPage = () => {
     const [viewers, setViewers] = useState(0);
     const [streamKey, setStreamKey] = useState('');
     const [showSettings, setShowSettings] = useState(false);
-    const [activeStreams, setActiveStreams] = useState([
-        {
-            id: 1,
-            title: 'CS101: Data Structures Tutorial',
-            streamer: 'prof_chen',
-            viewers: 234,
-            thumbnail: null,
-        },
-        {
-            id: 2,
-            title: 'Exam Prep: Organic Chemistry',
-            streamer: 'study_buddy',
-            viewers: 156,
-            thumbnail: null,
-        },
-        {
-            id: 3,
-            title: 'Late Night Study Session',
-            streamer: 'night_owl',
-            viewers: 89,
-            thumbnail: null,
-        },
-    ]);
-    const [chatMessages, setChatMessages] = useState([
-        { user: 'alice', message: 'Great explanation! 🎉' },
-        { user: 'bob', message: 'Can you go over the linked list part again?' },
-        { user: 'carol', message: 'This is so helpful thank you!' },
-    ]);
+    const [activeStreams, setActiveStreams] = useState([]);
+    const [chatMessages, setChatMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
 
     const videoRef = useRef(null);
@@ -93,10 +67,6 @@ const LiveStreamPage = () => {
     };
 
     const goLive = () => {
-        if (!streamKey) {
-            showToast('Please enter a stream key in settings', 'error');
-            return;
-        }
         setIsLive(true);
         setViewers(1);
         showToast('You are now live! 🎉', 'success');

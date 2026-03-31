@@ -44,6 +44,7 @@ pub enum AuthError {
     FreeVerificationNotAvailable,
     Bson(bson::ser::Error),
     BsonOid(bson::oid::Error),
+    BrevoError,
 }
 
 impl From<mongodb::error::Error> for AuthError {
@@ -103,6 +104,7 @@ impl IntoResponse for AuthError {
             AuthError::FreeVerificationNotAvailable => (StatusCode::FORBIDDEN, "Free verification is not available at this time. Please use M-Pesa.".to_string()),
             AuthError::Bson(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON serialization error: {}", e)),
             AuthError::BsonOid(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON OID error: {}", e)),
+            AuthError::BrevoError => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to send reset email. Please try again later.".to_string()),
         };
         (status, Json(json!({ "error": error_message }))).into_response()
     }
@@ -484,7 +486,7 @@ pub async fn forgot_password_handler(
                 if !resp.status().is_success() {
                     let err_body = resp.text().await.unwrap_or_default();
                     tracing::error!("❌ Brevo Error ({}): {}", payload.email, err_body);
-                    // Still return success to front-end for security, but we know it failed
+                    return Err(AuthError::BrevoError);
                 } else {
                     tracing::info!("✅ Reset email sent to {}", payload.email);
                 }

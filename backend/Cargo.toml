@@ -21,7 +21,7 @@ jsonwebtoken = "9.3"
 rand = "0.8"
 regex = "1.10"
 reqwest = { version = "0.11", features = ["json"] }
-tower-http = { version = "0.5.2", features = ["cors", "trace"] }
+tower-http = { version = "0.5.2", features = ["cors", "trace", "normalize-path"] }
 futures = "0.3"
 sha2 = "0.10.9"
 hex = "0.4.3"
@@ -32,4 +32,7 @@ sha1 = "0.10.6"
 dashmap = "6.1.0"
 tokio-stream = "0.1.17"
 base64 = "0.22"
+tower = { version = "0.5.3", features = ["full"] }
+tower-layer = "0.3.3"
+tower-service = "0.3.3"
 

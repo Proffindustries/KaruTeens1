@@ -30,8 +30,8 @@ import { useProfile, useUpdateProfile, useFollow, useUnfollow } from '../hooks/u
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
-
-const { data: gamificationRes, isLoading: isLoadingGamification } = useGamification(targetUsername);
+import { useGamification } from '../hooks/useGamification.js';
+import { useInfiniteUserContent } from '../hooks/useInfiniteQueries.ts';
 
 const ProfilePage = () => {
     const { username: urlUsername } = useParams();
@@ -44,6 +44,12 @@ const ProfilePage = () => {
     const { mutate: unfollow, isPending: isUnfollowingAction } = useUnfollow();
     const { uploadImage, isUploading: isUploadingMedia } = useMediaUpload();
     const { showToast } = useToast();
+    const { data: gamificationData } = useGamification(targetUsername);
+    const gamificationRes = gamificationData;
+
+    // Fetch user's posts
+    const { data: postsData } = useInfiniteUserContent(targetUsername, 'posts');
+    const userPosts = postsData?.pages?.flatMap((page) => page) || [];
 
     const profile = profileRes?.profile;
     const stats = {
@@ -180,7 +186,6 @@ const ProfilePage = () => {
     };
 
     const isLocked = profile.is_locked && !isOwnProfile && !stats.isFollowing;
-    const userPosts = []; // Post fetching to be integrated
 
     return (
         <div className="container profile-page">
@@ -289,7 +294,7 @@ const ProfilePage = () => {
                         </div>
                         {isOwnProfile && (
                             <div>
-                                <strong>{mockGamification.profileViews}</strong> <span>Views</span>
+                                <strong>{gamificationRes?.profile_views || 0}</strong> <span>Views</span>
                             </div>
                         )}
                     </div>
@@ -353,21 +358,21 @@ const ProfilePage = () => {
                     ))}
                     <div className="badge-item locked" title="Unlock more badges by engaging!">
                         <Lock size={16} />
-                        <span>+{5 - mockGamification.badges.length} more</span>
+                        <span>+{Math.max(5 - (gamificationRes?.badges?.length || 0), 0)} more</span>
                     </div>
                 </div>
                 <div className="level-progress">
                     <div className="level-info">
-                        <span>Level {mockGamification.level}</span>
+                        <span>Level {gamificationRes?.level || 0}</span>
                         <span>
-                            {mockGamification.points}/{mockGamification.nextLevelPoints} pts
+                            {gamificationRes?.points || 0}/{gamificationRes?.next_level_points || 1000} pts
                         </span>
                     </div>
                     <div className="progress-bar">
                         <div
                             className="progress-fill"
                             style={{
-                                width: `${((gamificationRes?.points || 0) / (gamificationRes?.nextLevelPoints || 1)) * 100}%`,
+                                width: `${Math.min(((gamificationRes?.points || 0) / (gamificationRes?.next_level_points || 1000)) * 100, 100)}%`,
                             }}
                         ></div>
                     </div>
