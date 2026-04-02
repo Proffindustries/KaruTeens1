@@ -26,7 +26,10 @@ pub struct AppState {
 }
 
 pub async fn init_mongo() -> Database {
-    let client_uri = env::var("MONGO_URI").expect("MONGO_URI must be set");
+    let client_uri = env::var("MONGO_URI").unwrap_or_else(|_| {
+        eprintln!("❌ MONGO_URI is missing. Please check your environment variables.");
+        std::process::exit(1);
+    });
     let mut options = ClientOptions::parse(&client_uri).await.expect("Failed to parse Mongo URI");
     
     // Increased pool sizes for better concurrency
@@ -61,7 +64,10 @@ pub async fn init_mongo() -> Database {
 }
 
 pub async fn init_redis() -> ConnectionManager {
-    let client_uri = env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let client_uri = env::var("REDIS_URL").unwrap_or_else(|_| {
+        eprintln!("❌ REDIS_URL is missing. Please check your environment variables.");
+        std::process::exit(1);
+    });
     let client = RedisClient::open(client_uri).expect("Failed to create Redis Client");
     
     // Configure connection manager for better performance

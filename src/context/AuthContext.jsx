@@ -71,13 +71,24 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
+        // Prevent concurrent logout calls
+        if (logout.inProgress) return;
+        logout.inProgress = true;
+        
         try {
-            await api.post('/auth/logout');
+            // Only attempt logout if we have a token
+            if (token) {
+                await api.post('/auth/logout');
+            }
         } catch (err) {
             console.error('Logout failed:', err);
         } finally {
             setToken(null);
             setUser(null);
+            // Explicitly clear to avoid edge cases
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            logout.inProgress = false;
         }
     };
 

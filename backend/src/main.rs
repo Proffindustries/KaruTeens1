@@ -80,11 +80,27 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    tracing::info!("Verifying environment variables...");
+    let required_vars = ["MONGO_URI", "REDIS_URL", "JWT_SECRET"];
+    let mut missing_vars = Vec::new();
+    
+    for var in required_vars {
+        if std::env::var(var).is_err() {
+            missing_vars.push(var);
+        }
+    }
+    
+    if !missing_vars.is_empty() {
+        tracing::error!("FATAL: Missing required environment variables: {:?}", missing_vars);
+        tracing::error!("Please set these variables in your deployment dashboard (e.g., Render Dashboard)");
+        std::process::exit(1);
+    }
+
     tracing::info!("Initializing Database Connection...");
     // Initialize DBs
     let mongo_db = db::init_mongo().await;
     let redis_client = db::init_redis().await;
-    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let jwt_secret = std::env::var("JWT_SECRET").unwrap(); // Already verified above
     let brevo_api_key = std::env::var("BREVO_API_KEY").unwrap_or_default();
     
     let state = std::sync::Arc::new(db::AppState { 

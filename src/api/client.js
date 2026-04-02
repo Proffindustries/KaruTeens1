@@ -35,9 +35,16 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Fire an event so AuthContext can clear state + React Router navigates cleanly
-            // instead of doing a hard page reload that nukes all React state.
-            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+            // Don't fire the event if we're already trying to logout or if it's the Ably auth endpoint
+            // (Ably auth might fail if user is not logged in, but shouldn't trigger a logout loop)
+            const isLogoutCall = error.config.url.endsWith('/auth/logout') || error.config.url.endsWith('/logout');
+            const isAblyAuthCall = error.config.url.endsWith('/ably/auth');
+            
+            if (!isLogoutCall && !isAblyAuthCall) {
+                // Fire an event so AuthContext can clear state + React Router navigates cleanly
+                // instead of doing a hard page reload that nukes all React state.
+                window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+            }
         }
         return Promise.reject(error);
     },
