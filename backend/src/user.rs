@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use crate::db::AppState;
-use crate::models::{Profile, SocialLinks, Post, Comment};
+use crate::models::{Profile, SocialLinks, Post, Comment, Follow};
+use crate::content::PostResponse;
 use mongodb::{bson::doc, options::FindOptions};
 use crate::auth::AuthUser;
 use bson::oid::ObjectId;
@@ -244,64 +245,8 @@ pub async fn get_user_posts_handler(
         }))));
     }
     
-    // Build responses (similar to get_feed_handler)
-    let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
-    
-    let mut all_profiles = Vec::new();
-    if !author_ids.is_empty() {
-        if let Ok(mut profiles_cursor) = profile_collection.find(
-            doc! { "user_id": { "$in": &author_ids } },
-            FindOptions::builder()
-                .projection(doc! {
-                    "user_id": 1,
-                    "username": 1,
-                    "avatar_url": 1
-                })
-                .build()
-        ).await {
-            while let Some(p) = profiles_cursor.next().await {
-                if let Ok(profile) = p {
-                    all_profiles.push(profile);
-                }
-            }
-        }
-    }
-    
-    let profile_map: std::collections::HashMap<_, _> = all_profiles
-        .into_iter()
-        .map(|p| (p.user_id, p))
-        .collect();
-    
-    // For simplicity, we're not checking likes here since it's a public endpoint
-    // In a real implementation, you might want to check if the requesting user has liked these posts
-    
-    let post_responses: Vec<PostResponse> = posts.into_iter().map(|p| {
-        let profile = profile_map.get(&p.author_id);
-        let pid = p.id.unwrap();
-        
-        PostResponse {
-            id: pid.to_hex(),
-            content: p.content,
-            user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
-            user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
-            likes: p.like_count,
-            comments: p.comment_count,
-            created_at: p.created_at.to_chrono().to_rfc3339(),
-            media_urls: p.media_urls.unwrap_or_default(),
-            location: p.location,
-            post_type: p.post_type,
-            is_liked: false, // Simplified for public endpoint
-            group_id: None,
-            group_name: None,
-            group_avatar: None,
-            is_nsfw: p.is_nsfw,
-            is_anonymous: p.is_anonymous,
-            content_rating: p.content_rating,
-            is_saved: false,
-            poll: p.poll,
-            algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
-        }
-    }).collect();
+    // Build responses using helper
+    let post_responses = crate::content::posts_to_responses(&state, None, posts).await;
     
     Ok((StatusCode::OK, Json(json!({
         "posts": post_responses,

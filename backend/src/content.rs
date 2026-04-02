@@ -2,7 +2,7 @@ use axum::{
     extract::{State, Path},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post},
+    routing::{get, post, put, delete},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ use bson::oid::ObjectId;
 use crate::notifications::create_notification;
 
 // --- DTOs ---
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct LocationRequest {
     pub latitude: f64,
     pub longitude: f64,
@@ -82,6 +82,118 @@ pub struct PostResponse {
     pub poll: Option<crate::models::Poll>,
     pub is_anonymous: bool,
     pub algorithmic_score: f64,
+}
+
+// --- Helper Functions ---
+pub async fn posts_to_responses(
+    state: &Arc<AppState>,
+    user: Option<&AuthUser>,
+    posts: Vec<Post>,
+) -> Vec<PostResponse> {
+    if posts.is_empty() {
+        return vec![];
+    }
+
+    let profile_collection = state.mongo.collection::<Profile>("profiles");
+    let likes_collection = state.mongo.collection::<crate::models::Like>("likes");
+    let saved_posts_collection = state.mongo.collection::<crate::models::SavedPost>("saved_posts");
+
+    // Batch fetch all author profiles in single query
+    let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
+    
+    let mut all_profiles = Vec::new();
+    if !author_ids.is_empty() {
+        if let Ok(mut profiles_cursor) = profile_collection.find(
+            doc! { "user_id": { "$in": &author_ids } },
+            FindOptions::builder()
+                .projection(doc! {
+                    "user_id": 1,
+                    "username": 1,
+                    "avatar_url": 1
+                })
+                .build()
+        ).await {
+            while let Some(p) = profiles_cursor.next().await {
+                if let Ok(profile) = p {
+                    all_profiles.push(profile);
+                }
+            }
+        }
+    }
+
+    // Build profile lookup map
+    let profile_map: std::collections::HashMap<_, _> = all_profiles
+        .into_iter()
+        .map(|p| (p.user_id, p))
+        .collect();
+
+    // Check likes and saved status in batch if user is authenticated
+    let mut liked_post_ids = std::collections::HashSet::new();
+    let mut saved_post_ids = std::collections::HashSet::new();
+
+    if let Some(auth_user) = user {
+        let post_ids: Vec<ObjectId> = posts.iter().filter_map(|p| p.id).collect();
+        if !post_ids.is_empty() {
+            // Check likes
+            if let Ok(mut likes_cursor) = likes_collection.find(
+                doc! { 
+                    "user_id": auth_user.user_id,
+                    "post_id": { "$in": &post_ids }
+                },
+                None
+            ).await {
+                while let Some(l) = likes_cursor.next().await {
+                    if let Ok(like) = l {
+                        liked_post_ids.insert(like.post_id);
+                    }
+                }
+            }
+
+            // Check saved status
+            if let Ok(mut saved_cursor) = saved_posts_collection.find(
+                doc! { 
+                    "user_id": auth_user.user_id,
+                    "post_id": { "$in": &post_ids }
+                },
+                None
+            ).await {
+                while let Some(s) = saved_cursor.next().await {
+                    if let Ok(saved) = s {
+                        saved_post_ids.insert(saved.post_id);
+                    }
+                }
+            }
+        }
+    }
+
+    // Build responses
+    posts.into_iter().map(|p| {
+        let profile = profile_map.get(&p.author_id);
+        let pid = p.id.expect("Post should have an ID");
+        
+        PostResponse {
+            id: pid.to_hex(),
+            content: p.content,
+            user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
+            user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
+            likes: p.like_count,
+            comments: p.comment_count,
+            created_at: p.created_at.to_chrono().to_rfc3339(),
+            media_urls: p.media_urls.unwrap_or_default(),
+            location: p.location,
+            post_type: p.post_type,
+            is_liked: liked_post_ids.contains(&pid),
+            group_id: None,
+            group_name: None,
+            group_avatar: None,
+            is_nsfw: p.is_nsfw,
+            is_anonymous: p.is_anonymous,
+            content_rating: p.content_rating,
+            is_saved: saved_post_ids.contains(&pid),
+            poll: p.poll,
+            algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
+        }
+    }).collect()
 }
 
 // --- Handlers ---
@@ -244,91 +356,14 @@ pub async fn get_feed_handler(
         })));
     }
 
-    // OPTIMIZED: Batch fetch all author profiles in single query
-    let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
-    
-    let mut all_profiles = Vec::new();
-    if !author_ids.is_empty() {
-        if let Ok(mut profiles_cursor) = profile_collection.find(
-            doc! { "user_id": { "$in": &author_ids } },
-            FindOptions::builder()
-                .projection(doc! {
-                    "user_id": 1,
-                    "username": 1,
-                    "avatar_url": 1
-                })
-                .build()
-        ).await {
-            while let Some(p) = profiles_cursor.next().await {
-                if let Ok(profile) = p {
-                    all_profiles.push(profile);
-                }
-            }
-        }
-    }
+    // Build responses using helper
+    let post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
 
-    // Build profile lookup map
-    let profile_map: std::collections::HashMap<_, _> = all_profiles
-        .into_iter()
-        .map(|p| (p.user_id, p))
-        .collect();
-
-    // OPTIMIZED: Batch check likes in single query
-    let liked_post_ids: std::collections::HashSet<_> = if let Some(ref u) = user {
-        let post_ids: Vec<ObjectId> = posts.iter().filter_map(|p| p.id).collect();
-        if !post_ids.is_empty() {
-            let mut all_likes = Vec::new();
-            if let Ok(mut likes_cursor) = likes_collection.find(
-                doc! { 
-                    "user_id": u.user_id,
-                    "post_id": { "$in": &post_ids }
-                },
-                None
-            ).await {
-                while let Some(l) = likes_cursor.next().await {
-                    if let Ok(like) = l {
-                        all_likes.push(like.post_id);
-                    }
-                }
-            }
-            all_likes.into_iter().collect()
-        } else {
-            std::collections::HashSet::new()
-        }
+    let next_cursor = if _has_more {
+        post_responses.last().map(|p| p.id.clone())
     } else {
-        std::collections::HashSet::new()
+        None
     };
-
-    // Build responses
-    let post_responses: Vec<PostResponse> = posts.into_iter().map(|p| {
-        let profile = profile_map.get(&p.author_id);
-        let pid = p.id.unwrap();
-        
-        PostResponse {
-            id: pid.to_hex(),
-            content: p.content,
-            user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
-            user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
-            likes: p.like_count,
-            comments: p.comment_count,
-            created_at: p.created_at.to_chrono().to_rfc3339(),
-            media_urls: p.media_urls.unwrap_or_default(),
-            location: p.location,
-            post_type: p.post_type,
-            is_liked: liked_post_ids.contains(&pid),
-            group_id: None,
-            group_name: None,
-            group_avatar: None,
-            is_nsfw: p.is_nsfw,
-            is_anonymous: p.is_anonymous,
-            content_rating: p.content_rating,
-            is_saved: false, // Default to false for now, implement checking later
-            poll: p.poll,
-            algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
-        }
-    }).collect();
-
-    let next_cursor = post_responses.last().map(|p| p.id.clone());
 
     Ok((StatusCode::OK, Json(FeedResponse { 
         posts: post_responses,
@@ -666,8 +701,10 @@ pub async fn get_trending_topics_handler(
     let mut trending = Vec::new();
     while let Some(result) = cursor.next().await {
         if let Ok(doc) = result {
+            let tag = doc.get_str("_id").unwrap_or_default();
             trending.push(json!({
-                "tag": doc.get_str("_id").unwrap_or_default(),
+                "_id": tag,
+                "tag": tag,
                 "count": doc.get_i32("count").unwrap_or(0)
             }));
         }
@@ -720,84 +757,8 @@ pub async fn get_saved_posts_handler(
         }
     }
 
-    // Build responses (similar to get_feed_handler)
-    let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
-    
-    let mut all_profiles = Vec::new();
-    if !author_ids.is_empty() {
-        if let Ok(mut profiles_cursor) = profile_collection.find(
-            doc! { "user_id": { "$in": &author_ids } },
-            FindOptions::builder()
-                .projection(doc! {
-                    "user_id": 1,
-                    "username": 1,
-                    "avatar_url": 1
-                })
-                .build()
-        ).await {
-            while let Some(p) = profiles_cursor.next().await {
-                if let Ok(profile) = p {
-                    all_profiles.push(profile);
-                }
-            }
-        }
-    }
-
-    let profile_map: std::collections::HashMap<_, _> = all_profiles
-        .into_iter()
-        .map(|p| (p.user_id, p))
-        .collect();
-
-    let liked_post_ids: std::collections::HashSet<_> = {
-        let post_ids: Vec<ObjectId> = posts.iter().filter_map(|p| p.id).collect();
-        if !post_ids.is_empty() {
-            let mut all_likes = Vec::new();
-            if let Ok(mut likes_cursor) = likes_collection.find(
-                doc! { 
-                    "user_id": user.user_id,
-                    "post_id": { "$in": &post_ids }
-                },
-                None
-            ).await {
-                while let Some(l) = likes_cursor.next().await {
-                    if let Ok(like) = l {
-                        all_likes.push(like.post_id);
-                    }
-                }
-            }
-            all_likes.into_iter().collect()
-        } else {
-            std::collections::HashSet::new()
-        }
-    };
-
-    let post_responses: Vec<PostResponse> = posts.into_iter().map(|p| {
-        let profile = profile_map.get(&p.author_id);
-        let pid = p.id.unwrap();
-        
-        PostResponse {
-            id: pid.to_hex(),
-            content: p.content,
-            user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
-            user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
-            likes: p.like_count,
-            comments: p.comment_count,
-            created_at: p.created_at.to_chrono().to_rfc3339(),
-            media_urls: p.media_urls.unwrap_or_default(),
-            location: p.location,
-            post_type: p.post_type,
-            is_liked: liked_post_ids.contains(&pid),
-            group_id: None,
-            group_name: None,
-            group_avatar: None,
-            is_nsfw: p.is_nsfw,
-            is_anonymous: p.is_anonymous,
-            content_rating: p.content_rating,
-            is_saved: true, // Since these are saved posts
-            poll: p.poll,
-            algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
-        }
-    }).collect();
+    // Build responses using helper
+    let post_responses = posts_to_responses(&state, Some(&user), posts).await;
 
     Ok((StatusCode::OK, Json(json!({
         "posts": post_responses,
@@ -809,7 +770,7 @@ pub async fn get_for_you_feed_handler(
     State(state): State<Arc<AppState>>,
     user: Option<AuthUser>,
     axum::extract::Query(query): axum::extract::Query<FeedQuery>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<axum::response::Response, (StatusCode, Json<serde_json::Value>)> {
     // For now, we'll implement a simplified version that falls back to trending
     // In a full implementation, this would prioritize followed users' posts
     
@@ -865,106 +826,29 @@ pub async fn get_for_you_feed_handler(
                 }
             }
             
-            let _has_more = all_posts.len() > limit as usize;
-            let posts: Vec<Post> = all_posts.into_iter().take(limit as usize).collect();
+            let posts: Vec<Post> = all_posts.iter().take(limit as usize).cloned().collect();
             
             if !posts.is_empty() {
-                // Build responses (similar to get_feed_handler)
-                let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
-                
-                let mut all_profiles = Vec::new();
-                if !author_ids.is_empty() {
-                    if let Ok(mut profiles_cursor) = state.mongo.collection::<Profile>("profiles").find(
-                        doc! { "user_id": { "$in": &author_ids } },
-                        FindOptions::builder()
-                            .projection(doc! {
-                                "user_id": 1,
-                                "username": 1,
-                                "avatar_url": 1
-                            })
-                            .build()
-                    ).await {
-                        while let Some(p) = profiles_cursor.next().await {
-                            if let Ok(profile) = p {
-                                all_profiles.push(profile);
-                            }
-                        }
-                    }
-                }
-                
-                let profile_map: std::collections::HashMap<_, _> = all_profiles
-                    .into_iter()
-                    .map(|p| (p.user_id, p))
-                    .collect();
-                
-                let liked_post_ids: std::collections::HashSet<_> = {
-                    let post_ids: Vec<ObjectId> = posts.iter().filter_map(|p| p.id).collect();
-                    if !post_ids.is_empty() {
-                        let mut all_likes = Vec::new();
-                        if let Ok(mut likes_cursor) = state.mongo.collection::<crate::models::Like>("likes").find(
-                            doc! { 
-                                "user_id": auth_user.user_id,
-                                "post_id": { "$in": &post_ids }
-                            },
-                            None
-                        ).await {
-                            while let Some(l) = likes_cursor.next().await {
-                                if let Ok(like) = l {
-                                    all_likes.push(like.post_id);
-                                }
-                            }
-                        }
-                        all_likes.into_iter().collect()
-                    } else {
-                        std::collections::HashSet::new()
-                    }
-                };
-                
-                let post_responses: Vec<PostResponse> = posts.into_iter().map(|p| {
-                    let profile = profile_map.get(&p.author_id);
-                    let pid = p.id.unwrap();
-                    
-                    PostResponse {
-                        id: pid.to_hex(),
-                        content: p.content,
-                        user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
-                        user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
-                        likes: p.like_count,
-                        comments: p.comment_count,
-                        created_at: p.created_at.to_chrono().to_rfc3339(),
-                        media_urls: p.media_urls.unwrap_or_default(),
-                        location: p.location,
-                        post_type: p.post_type,
-                        is_liked: liked_post_ids.contains(&pid),
-                        group_id: None,
-                        group_name: None,
-                        group_avatar: None,
-                        is_nsfw: p.is_nsfw,
-                        is_anonymous: p.is_anonymous,
-                        content_rating: p.content_rating,
-                        is_saved: false,
-                        poll: p.poll,
-                        algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
-                    }
-                }).collect();
+                // Build responses using helper
+                let post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
                 
                 return Ok((StatusCode::OK, Json(json!({
                     "posts": post_responses,
-                    "next_cursor": post_responses.last().map(|p| p.id.clone())
-                })));
+                    "next_cursor": if all_posts.len() > limit as usize { post_responses.last().map(|p| p.id.clone()) } else { None }
+                }))).into_response());
             }
         }
     }
     
     // Fall back to trending posts if no followed posts or user not authenticated
-    get_trending_posts_handler(State(state), user, axum::extract::Query(query)).await
+    Ok(get_trending_posts_handler(State(state), user, axum::extract::Query(query)).await?.into_response())
 }
 
 pub async fn get_trending_posts_handler(
     State(state): State<Arc<AppState>>,
     user: Option<AuthUser>,
     axum::extract::Query(query): axum::extract::Query<FeedQuery>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<axum::response::Response, (StatusCode, Json<serde_json::Value>)> {
     let limit = query.limit.unwrap_or(20) as i64;
     
     // Calculate timestamp for 72 hours ago
@@ -986,13 +870,11 @@ pub async fn get_trending_posts_handler(
     let profile_collection = state.mongo.collection::<Profile>("profiles");
     let likes_collection = state.mongo.collection::<crate::models::Like>("likes");
     
-    // Sort by engagement (likes + comments) descending
+    // Sort by likes descending for now, as direct computation in find() sort is not supported
     let posts_cursor = posts_collection.find(
         filter,
         FindOptions::builder()
-            .sort(doc! { 
-                "$add": ["$like_count", "$comment_count"] 
-            })
+            .sort(doc! { "like_count": -1 })
             .limit(limit + 1)
             .build()
     ).await
@@ -1015,98 +897,24 @@ pub async fn get_trending_posts_handler(
         return Ok((StatusCode::OK, Json(json!({
             "posts": Vec::<PostResponse>::new(),
             "next_cursor": Option::<String>::None
-        }))));
+        }))).into_response());
     }
     
-    // Build responses (similar to get_feed_handler)
-    let author_ids: Vec<ObjectId> = posts.iter().map(|p| p.author_id).collect();
+    // Build responses using helper
+    let post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
     
-    let mut all_profiles = Vec::new();
-    if !author_ids.is_empty() {
-        if let Ok(mut profiles_cursor) = profile_collection.find(
-            doc! { "user_id": { "$in": &author_ids } },
-            FindOptions::builder()
-                .projection(doc! {
-                    "user_id": 1,
-                    "username": 1,
-                    "avatar_url": 1
-                })
-                .build()
-        ).await {
-            while let Some(p) = profiles_cursor.next().await {
-                if let Ok(profile) = p {
-                    all_profiles.push(profile);
-                }
-            }
-        }
-    }
-    
-    let profile_map: std::collections::HashMap<_, _> = all_profiles
-        .into_iter()
-        .map(|p| (p.user_id, p))
-        .collect();
-    
-    let liked_post_ids: std::collections::HashSet<_> = if let Some(ref u) = user {
-        let post_ids: Vec<ObjectId> = posts.iter().filter_map(|p| p.id).collect();
-        if !post_ids.is_empty() {
-            let mut all_likes = Vec::new();
-            if let Ok(mut likes_cursor) = likes_collection.find(
-                doc! { 
-                    "user_id": u.user_id,
-                    "post_id": { "$in": &post_ids }
-                },
-                None
-            ).await {
-                while let Some(l) = likes_cursor.next().await {
-                    if let Ok(like) = l {
-                        all_likes.push(like.post_id);
-                    }
-                }
-            }
-            all_likes.into_iter().collect()
-        } else {
-            std::collections::HashSet::new()
-        }
+    let next_cursor = if _has_more {
+        post_responses.last().map(|p| p.id.clone())
     } else {
-        std::collections::HashSet::new()
+        None
     };
-    
-    // Build responses
-    let post_responses: Vec<PostResponse> = posts.into_iter().map(|p| {
-        let profile = profile_map.get(&p.author_id);
-        let pid = p.id.unwrap();
-        
-        PostResponse {
-            id: pid.to_hex(),
-            content: p.content,
-            user: profile.map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string()),
-            user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
-            likes: p.like_count,
-            comments: p.comment_count,
-            created_at: p.created_at.to_chrono().to_rfc3339(),
-            media_urls: p.media_urls.unwrap_or_default(),
-            location: p.location,
-            post_type: p.post_type,
-            is_liked: liked_post_ids.contains(&pid),
-            group_id: None,
-            group_name: None,
-            group_avatar: None,
-            is_nsfw: p.is_nsfw,
-            is_anonymous: p.is_anonymous,
-            content_rating: p.content_rating,
-            is_saved: false,
-            poll: p.poll,
-            algorithmic_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
-        }
-    }).collect();
-    
-    let next_cursor = post_responses.last().map(|p| p.id.clone());
     
     Ok((StatusCode::OK, Json(json!({
         "posts": post_responses,
-        "next_cursor"
-    }))))
+        "next_cursor": next_cursor
+    }))).into_response())
 }
+
 
 pub async fn get_user_drafts_handler(
     State(state): State<Arc<AppState>>,
@@ -1205,7 +1013,7 @@ pub async fn get_user_drafts_handler(
     }))))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct DraftRequest {
     #[serde(default)]
     pub content: String,
@@ -1320,25 +1128,31 @@ pub async fn update_draft_handler(
     let profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await.unwrap_or(None);
     let author_name = profile.map(|p| p.username).unwrap_or_else(|| "Anonymous".to_string());
     
-    let location = payload.location.map(|l| crate::models::Location {
-        latitude: l.latitude,
-        longitude: l.longitude,
-        label: l.label,
-        is_live: l.is_live,
-        expires_at: l.duration_minutes.map(|m| bson::DateTime::from_millis(chrono::Utc::now().timestamp_millis() + (m as i64 * 60000))),
-    });
-    
-    let update_doc = doc! {
+    let mut update_doc = doc! {
         "content": payload.content,
-        "media_urls": if payload.media_urls.is_empty() { None } else { Some(payload.media_urls) },
         "post_type": payload.post_type,
-        "location": location,
-        "is_nsfw": payload.is_nsfw,
-        "is_anonymous": payload.is_anonymous,
-        "poll": payload.poll,
-        "updated_at": mongodb::bson::DateTime::now(),
-        "author_name": author_name
+        "category": "general",
+        "author_name": author_name,
+        "updated_at": mongodb::bson::DateTime::now()
     };
+    
+    if let Some(loc) = payload.location {
+        if let Ok(loc_bson) = mongodb::bson::to_bson(&loc) {
+            update_doc.insert("location", loc_bson);
+        }
+    }
+    
+    if let Some(poll) = payload.poll {
+        if let Ok(poll_bson) = mongodb::bson::to_bson(&poll) {
+            update_doc.insert("poll", poll_bson);
+        }
+    }
+    
+    if !payload.media_urls.is_empty() {
+        update_doc.insert("media_urls", payload.media_urls);
+    } else {
+        update_doc.insert("media_urls", mongodb::bson::Bson::Null);
+    }
     
     posts_collection.update_one(
         doc! { "_id": draft_oid },
@@ -1364,7 +1178,7 @@ pub async fn delete_draft_handler(
         "_id": draft_oid,
         "author_id": user.user_id,
         "status": "draft"
-    }).await
+    }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
     
     if result.deleted_count == 0 {
@@ -1384,7 +1198,7 @@ pub async fn publish_draft_handler(
     let posts_collection = state.mongo.collection::<Post>("posts");
     
     // Verify the draft belongs to the user
-    let mut draft = posts_collection.find_one(doc! { 
+    let draft = posts_collection.find_one(doc! { 
         "_id": draft_oid,
         "author_id": user.user_id,
         "status": "draft"
@@ -1429,38 +1243,12 @@ pub async fn preview_draft_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Draft not found or access denied"}))))?;
     
-    let profile = profile_collection.find_one(doc! { "user_id": draft.author_id }, None).await.unwrap_or(None);
-    let username = profile.as_ref().map(|pr| pr.username.clone()).unwrap_or_else(|| "Anonymous".to_string());
+    // Build response using helper
+    let responses = posts_to_responses(&state, Some(&user), vec![draft]).await;
+    let post_response = responses.into_iter().next()
+        .ok_or((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to map draft to response"}))))?;
     
-    let mut is_liked = false;
-    if let Some(_) = user {
-        if let Ok(Some(_)) = likes_collection.find_one(doc! { "post_id": draft_oid, "user_id": user.user_id }, None).await {
-            is_liked = true;
-        }
-    }
-    
-    Ok((StatusCode::OK, Json(PostResponse {
-        id: draft.id.unwrap().to_hex(),
-        content: draft.content,
-        user: username,
-        user_avatar: profile.and_then(|pr| pr.avatar_url),
-        likes: draft.like_count,
-        comments: draft.comment_count,
-        created_at: draft.created_at.to_chrono().to_rfc3339(),
-        media_urls: draft.media_urls.clone().unwrap_or_default(),
-        location: draft.location,
-        post_type: draft.post_type,
-        is_liked,
-        group_id: None,
-        group_name: None,
-        group_avatar: None,
-        is_nsfw: draft.is_nsfw,
-        is_anonymous: draft.is_anonymous,
-        content_rating: draft.content_rating,
-        is_saved: false,
-        poll: draft.poll,
-        algorithmic_score: (draft.like_count as f64 * 2.0) + (draft.comment_count as f64 * 3.0),
-    })))
+    Ok((StatusCode::OK, Json(post_response)))
 }
 
 pub async fn delete_post_handler(
@@ -1476,7 +1264,7 @@ pub async fn delete_post_handler(
     let result = posts_collection.delete_one(doc! { 
         "_id": post_oid,
         "author_id": user.user_id
-    }).await
+    }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
     
     if result.deleted_count == 0 {
@@ -1553,4 +1341,5 @@ pub fn content_routes() -> Router<Arc<AppState>> {
         .route("/drafts/:id/preview", get(preview_draft_handler))
         .route("/:id", delete(delete_post_handler))
         .route("/:id/report", post(report_post_handler))
+        .route("/trending", get(get_trending_topics_handler))
 }
