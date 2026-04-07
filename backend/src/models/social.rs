@@ -47,6 +47,8 @@ pub struct Story {
     pub story_type: String,
     pub story_data: Option<serde_json::Value>,
     pub updated_at: bson::DateTime,
+    #[serde(default)]
+    pub is_nsfw: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -559,6 +561,7 @@ pub struct Group {
     pub is_private: bool,
     pub max_members: Option<i32>,
     pub created_at: bson::DateTime,
+    pub updated_at: bson::DateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -574,4 +577,5 @@ pub struct GroupPost {
     pub likes_count: i32,
     pub comments_count: i32,
     pub created_at: bson::DateTime,
+    pub updated_at: bson::DateTime,
 }

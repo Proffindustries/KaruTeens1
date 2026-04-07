@@ -35,13 +35,23 @@ export const AblyProvider = ({ children }) => {
 
         const client = new Ably.Realtime({
             authCallback: async (tokenParams, callback) => {
-                try {
-                    const { data } = await api.get('/ably/auth');
-                    callback(null, data);
-                } catch (err) {
-                    console.error('Ably Auth Request failed:', err);
-                    setTimeout(() => callback(err, null), 5000);
+                let lastErr = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        const { data } = await api.get('/ably/auth');
+                        callback(null, data);
+                        return;
+                    } catch (err) {
+                        lastErr = err;
+                        console.warn(`Ably Auth attempt ${attempt + 1} failed:`, err?.response?.status);
+                        if (attempt < 2) {
+                            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                        }
+                    }
                 }
+                console.error('Ably Auth Request failed after retries:', lastErr);
+                // Don't call callback with error — let Ably retry on its own schedule
+                setTimeout(() => callback(lastErr, null), 10000);
             },
             closeOnUnload: true,
         });

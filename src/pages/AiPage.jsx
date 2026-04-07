@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Send,
     Bot,
@@ -102,6 +102,16 @@ const AiPage = () => {
     const { showToast } = useToast();
     const chatEndRef = useRef(null);
 
+    const fetchModels = useCallback(async () => {
+        try {
+            const { data } = await api.get('/ai/models');
+            setModels(data);
+            setSelectedModel(data[0]);
+        } catch (err) {
+            showToast('Failed to load AI models', 'error');
+        }
+    }, [showToast]);
+
     useEffect(() => {
         fetchModels();
     }, [fetchModels]);
@@ -110,15 +120,6 @@ const AiPage = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const fetchModels = async () => {
-        try {
-            const { data } = await api.get('/ai/models');
-            setModels(data);
-            setSelectedModel(data[0]);
-        } catch (err) {
-            showToast('Failed to load AI models', 'error');
-        }
-    };
 
     const handleCopy = (text, index) => {
         navigator.clipboard.writeText(text);

@@ -11,6 +11,9 @@ use serde_json::json;
 use std::sync::Arc;
 use crate::db::AppState;
 use crate::models::{User, Profile};
+use crate::dto::{AuthResponse, UserResponse, RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest};
+use crate::error::{AppResult, AppError};
+use tracing::{info, warn, error};
 use redis::AsyncCommands;
 use argon2::{
     password_hash::{
@@ -25,148 +28,6 @@ use mongodb::bson::doc;
 use bson::oid::ObjectId;
 use rand::Rng;
 
-pub enum AuthError {
-    Mongo(mongodb::error::Error),
-    Redis(redis::RedisError),
-    PasswordHash(argon2::password_hash::Error),
-    Jwt(jsonwebtoken::errors::Error),
-    InvalidToken,
-    UserNotFound,
-    EmailExists,
-    UsernameExists,
-    WrongPassword,
-    TokenCreation,
-    InvalidHash,
-    InvalidUserIdInToken,
-    MissingToken,
-    AlphanumericUsername,
-    PasswordTooShort,
-    FreeVerificationNotAvailable,
-    Bson(bson::ser::Error),
-    BsonOid(bson::oid::Error),
-    BrevoError,
-}
-
-impl From<mongodb::error::Error> for AuthError {
-    fn from(err: mongodb::error::Error) -> Self {
-        AuthError::Mongo(err)
-    }
-}
-
-impl From<redis::RedisError> for AuthError {
-    fn from(err: redis::RedisError) -> Self {
-        AuthError::Redis(err)
-    }
-}
-
-impl From<argon2::password_hash::Error> for AuthError {
-    fn from(err: argon2::password_hash::Error) -> Self {
-        AuthError::PasswordHash(err)
-    }
-}
-
-impl From<jsonwebtoken::errors::Error> for AuthError {
-    fn from(err: jsonwebtoken::errors::Error) -> Self {
-        AuthError::Jwt(err)
-    }
-}
-
-impl From<bson::ser::Error> for AuthError {
-    fn from(err: bson::ser::Error) -> Self {
-        AuthError::Bson(err)
-    }
-}
-
-impl From<bson::oid::Error> for AuthError {
-    fn from(err: bson::oid::Error) -> Self {
-        AuthError::BsonOid(err)
-    }
-}
-
-impl IntoResponse for AuthError {
-    fn into_response(self) -> axum::response::Response {
-        let (status, error_message) = match self {
-            AuthError::Mongo(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)),
-            AuthError::Redis(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Cache error. Please try again.".to_string()),
-            AuthError::PasswordHash(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Hashing error: {}", e)),
-            AuthError::Jwt(e) => (StatusCode::UNAUTHORIZED, format!("Token error: {}", e)),
-            AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".to_string()),
-            AuthError::UserNotFound => (StatusCode::NOT_FOUND, "User not found".to_string()),
-            AuthError::EmailExists => (StatusCode::CONFLICT, "Email already registered".to_string()),
-            AuthError::UsernameExists => (StatusCode::CONFLICT, "Username already taken".to_string()),
-            AuthError::WrongPassword => (StatusCode::UNAUTHORIZED, "Invalid email or password".to_string()),
-            AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation failed".to_string()),
-            AuthError::InvalidHash => (StatusCode::INTERNAL_SERVER_ERROR, "Invalid hash format".to_string()),
-            AuthError::InvalidUserIdInToken => (StatusCode::UNAUTHORIZED, "Invalid user ID in token".to_string()),
-            AuthError::MissingToken => (StatusCode::UNAUTHORIZED, "Missing token".to_string()),
-            AuthError::AlphanumericUsername => (StatusCode::BAD_REQUEST, "Username must only contain alphanumeric characters".to_string()),
-            AuthError::PasswordTooShort => (StatusCode::BAD_REQUEST, "Password must be at least 8 characters long".to_string()),
-            AuthError::FreeVerificationNotAvailable => (StatusCode::FORBIDDEN, "Free verification is not available at this time. Please use M-Pesa.".to_string()),
-            AuthError::Bson(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON serialization error: {}", e)),
-            AuthError::BsonOid(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("BSON OID error: {}", e)),
-            AuthError::BrevoError => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to send reset email. Please try again later.".to_string()),
-        };
-        (status, Json(json!({ "error": error_message }))).into_response()
-    }
-}
-
-// --- DTOs ---
-#[derive(Deserialize)]
-pub struct RegisterRequest {
-    pub email: String,
-    pub password: String,
-    pub username: String,
-    pub full_name: Option<String>,
-    pub bio: Option<String>,
-    pub avatar_url: Option<String>,
-    pub school: Option<String>,
-    pub year_of_study: Option<i32>,
-    pub age: Option<i32>,
-    pub gender: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct LoginRequest {
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Serialize)]
-pub struct AuthResponse {
-    pub token: String,
-    pub user: UserResponse,
-}
-
-#[derive(Serialize)]
-pub struct UserResponse {
-    pub id: String,
-    pub email: String,
-    pub role: String,
-    pub username: Option<String>,
-    pub is_verified: bool,
-    pub is_premium: bool,
-    pub premium_expires_at: Option<String>,
-    pub onboarded: bool,
-}
-
-#[derive(Deserialize)]
-pub struct ForgotPasswordRequest {
-    pub email: String,
-}
-
-#[derive(Deserialize)]
-pub struct ResetPasswordRequest {
-    pub email: String,
-    pub code: String,
-    pub new_password: String,
-}
-
-#[derive(Deserialize)]
-pub struct ChangePasswordRequest {
-    pub current_password: String,
-    pub new_password: String,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String, // User ID (ObjectId hex)
@@ -178,6 +39,7 @@ pub struct AuthUser {
     pub user_id: ObjectId,
     #[allow(dead_code)]
     pub role: String,
+    pub token: String,
 }
 
 #[async_trait]
@@ -186,7 +48,7 @@ where
     Arc<AppState>: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = AuthError;
+    type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let app_state = Arc::from_ref(state);
@@ -196,53 +58,56 @@ where
             .get("Authorization")
             .and_then(|h| h.to_str().ok())
             .and_then(|s| s.strip_prefix("Bearer "))
-            .ok_or(AuthError::MissingToken)?;
+            .ok_or(AppError::Unauthorized("Missing token".to_string()))?;
 
         let token_data = decode::<Claims>(
             auth_header,
             &DecodingKey::from_secret(app_state.jwt_secret.as_bytes()),
             &Validation::default(),
-        )?;
+        ).map_err(|e| AppError::Unauthorized(format!("Invalid token: {}", e)))?;
 
         let user_id = ObjectId::parse_str(&token_data.claims.sub)
-            .map_err(|_| AuthError::InvalidUserIdInToken)?;
+            .map_err(|_| AppError::Unauthorized("Invalid user ID in token".to_string()))?;
 
-        // --- Check if token is blacklisted ---
-        let blacklist_key = format!("blacklist:{}", user_id.to_hex());
+        // --- Check if token is blacklisted (fail gracefully on Redis error) ---
+        let blacklist_key = format!("blacklist:{}", auth_header);
         let mut redis_conn = app_state.redis.clone();
-        let is_blacklisted: Option<String> = redis_conn.get(&blacklist_key).await?;
-        if is_blacklisted.is_some() {
-            return Err(AuthError::InvalidToken);
+        match redis_conn.get::<_, Option<String>>(&blacklist_key).await {
+            Ok(Some(_)) => return Err(AppError::Unauthorized("Token is blacklisted".to_string())),
+            Ok(None) => {},
+            Err(_) => {
+                tracing::warn!("Redis unavailable for blacklist check, allowing request through");
+            }
         }
 
-        // --- Presence Tracking (Redis) ---
-        let presence_key = format!("user:presence:{}", user_id.to_hex());
-        let mut redis_conn = app_state.redis.clone();
-        redis_conn.set_ex::<_, _, ()>(&presence_key, "online", app_state.redis_presence_ttl).await?;
+        // --- Presence Tracking & last_seen (non-fatal) ---
+        let user_id_clone = user_id;
+        let state_clone = app_state.clone();
+        tokio::spawn(async move {
+            let mut redis_conn = state_clone.redis.clone();
+            let presence_key = format!("user:presence:{}", user_id_clone.to_hex());
+            let _ = redis_conn.set_ex::<_, _, ()>(&presence_key, "online", state_clone.redis_presence_ttl).await;
 
-        // Throttled MongoDB update for last_seen_at
-        let mongo_update_key = format!("user:last_seen_mongo_update:{}", user_id.to_hex());
-        let mut redis_conn = app_state.redis.clone();
-        let needs_mongo_update: bool = redis_conn.get::<_, Option<String>>(&mongo_update_key).await?.is_none();
-        
-         if needs_mongo_update {
-             let mongo = app_state.mongo.clone();
-             let user_id_clone = user_id;
-             tokio::spawn(async move {
-                 let profiles = mongo.collection::<Profile>("profiles");
-                 let _ = profiles.update_one(
-                     doc! { "user_id": user_id_clone },
-                     doc! { "$set": { "last_seen_at": mongodb::bson::DateTime::now() } },
-                     None
-                 ).await;
-             });
-             let mut redis_conn = app_state.redis.clone();
-             redis_conn.set_ex::<_, _, ()>(&mongo_update_key, "1", app_state.redis_mongo_update_ttl).await?;
-         }
+            let mongo_update_key = format!("user:last_seen_mongo_update:{}", user_id_clone.to_hex());
+            if let Ok(None) = redis_conn.get::<_, Option<String>>(&mongo_update_key).await {
+                let mongo = state_clone.mongo.clone();
+                tokio::spawn(async move {
+                    let profiles = mongo.collection::<Profile>("profiles");
+                    let _ = profiles.update_one(
+                        doc! { "user_id": user_id_clone },
+                        doc! { "$set": { "last_seen_at": mongodb::bson::DateTime::now() } },
+                        None
+                    ).await;
+                });
+                let mut redis_conn2 = state_clone.redis.clone();
+                let _ = redis_conn2.set_ex::<_, _, ()>(&mongo_update_key, "1", state_clone.redis_mongo_update_ttl).await;
+            }
+        });
 
         Ok(AuthUser {
             user_id,
             role: token_data.claims.role,
+            token: auth_header.to_string(),
         })
     }
 }
@@ -251,18 +116,18 @@ where
 pub async fn register_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
     let users_collection = state.mongo.collection::<User>("users");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     // 1. Validate Username (Alphanumeric only)
     if !payload.username.chars().all(|c| c.is_alphanumeric()) {
-        return Err(AuthError::AlphanumericUsername);
+        return Err(AppError::BadRequest("Username must only contain alphanumeric characters".to_string()));
     }
 
     // 2. Validate Password Length (minimum 8 characters)
     if payload.password.len() < 8 {
-        return Err(AuthError::PasswordTooShort);
+        return Err(AppError::BadRequest("Password must be at least 8 characters long".to_string()));
     }
 
     // 3. Check if user exists
@@ -271,7 +136,7 @@ pub async fn register_handler(
         .await?;
 
     if existing_user.is_some() {
-        return Err(AuthError::EmailExists);
+        return Err(AppError::Conflict("Email already registered".to_string()));
     }
     
     // Check if username exists
@@ -280,13 +145,14 @@ pub async fn register_handler(
         .await?;
         
     if existing_profile.is_some() {
-        return Err(AuthError::UsernameExists);
+        return Err(AppError::Conflict("Username already taken".to_string()));
     }
 
     // 3. Hash Password
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(payload.password.as_bytes(), &salt)?
+    let password_hash = argon2.hash_password(payload.password.as_bytes(), &salt)
+        .map_err(|e| AppError::InternalServerError(format!("Hashing error: {}", e)))?
         .to_string();
 
     // 4. Insert User
@@ -308,7 +174,7 @@ pub async fn register_handler(
         .insert_one(new_user, None)
         .await?;
 
-    let user_id = insert_result.inserted_id.as_object_id().ok_or(AuthError::InvalidUserIdInToken)?;
+    let user_id = insert_result.inserted_id.as_object_id().ok_or(AppError::InternalServerError("Failed to get inserted ID".to_string()))?;
 
       // 5. Create Profile
       let new_profile = Profile {
@@ -322,6 +188,9 @@ pub async fn register_handler(
           year_of_study: payload.year_of_study,
           age: payload.age,
           gender: payload.gender,
+          quote: None,
+          location: None,
+          is_locked: false,
           social_links: None,
           last_seen_at: None,
           last_location: None,
@@ -353,23 +222,26 @@ pub async fn register_handler(
 pub async fn login_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
     tracing::info!("Attempting login for email: {}", payload.email);
     let users_collection = state.mongo.collection::<User>("users");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
+    // 1. Find user
     let user = users_collection
         .find_one(doc! { "email": &payload.email }, None)
         .await?
-        .ok_or(AuthError::WrongPassword)?; // Use WrongPassword for security
+        .ok_or(AppError::Unauthorized("Invalid email or password".to_string()))?;
 
-    let parsed_hash = PasswordHash::new(&user.password_hash)?;
-    
+    // 2. Verify Password
+    let parsed_hash = PasswordHash::new(&user.password_hash)
+        .map_err(|_| AppError::InternalServerError("Invalid hash format".to_string()))?;
+
     if Argon2::default().verify_password(payload.password.as_bytes(), &parsed_hash).is_err() {
-        return Err(AuthError::WrongPassword);
+        return Err(AppError::Unauthorized("Invalid email or password".to_string()));
     }
 
-    let user_id = user.id.ok_or(AuthError::UserNotFound)?;
+    let user_id = user.id.ok_or(AppError::NotFound("User not found".to_string()))?;
 
     // Check Premium Expiry
     let mut current_role = user.role.clone();
@@ -436,7 +308,7 @@ pub async fn login_handler(
 pub async fn forgot_password_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<ForgotPasswordRequest>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
     let users_collection = state.mongo.collection::<User>("users");
     
     // 1. Check if user exists
@@ -486,7 +358,7 @@ pub async fn forgot_password_handler(
                 if !resp.status().is_success() {
                     let err_body = resp.text().await.unwrap_or_default();
                     tracing::error!("❌ Brevo Error ({}): {}", payload.email, err_body);
-                    return Err(AuthError::BrevoError);
+                    return Err(AppError::InternalServerError("Failed to send reset email. Please try again later.".to_string()));
                 } else {
                     tracing::info!("✅ Reset email sent to {}", payload.email);
                 }
@@ -503,7 +375,7 @@ pub async fn forgot_password_handler(
 pub async fn reset_password_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<ResetPasswordRequest>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
      // 1. Verify OTP in Redis
      let redis_key = format!("reset_otp:{}", payload.email);
      let mut redis_conn = state.redis.clone();
@@ -515,7 +387,8 @@ pub async fn reset_password_handler(
             // 2. Hash new password
             let salt = SaltString::generate(&mut OsRng);
             let argon2 = Argon2::default();
-            let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)?
+            let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)
+                .map_err(|e| AppError::InternalServerError(format!("Hashing error: {}", e)))?
                 .to_string();
 
             // 3. Update user in Mongo
@@ -532,7 +405,7 @@ pub async fn reset_password_handler(
 
             Ok(Json(json!({"message": "Password reset successfully. You can now login with your new password."})))
         },
-        _ => Err(AuthError::InvalidToken)
+        _ => Err(AppError::Unauthorized("Invalid or expired reset code".to_string()))
     }
 }
 
@@ -540,23 +413,25 @@ pub async fn change_password_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Json(payload): Json<ChangePasswordRequest>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
     let users_collection = state.mongo.collection::<User>("users");
 
     let user_doc = users_collection.find_one(doc! { "_id": user.user_id }, None).await?
-        .ok_or(AuthError::UserNotFound)?;
+        .ok_or(AppError::NotFound("User not found".to_string()))?;
 
     // Verify current password
-    let parsed_hash = PasswordHash::new(&user_doc.password_hash)?;
+    let parsed_hash = PasswordHash::new(&user_doc.password_hash)
+        .map_err(|_| AppError::InternalServerError("Invalid hash format".to_string()))?;
     
     if Argon2::default().verify_password(payload.current_password.as_bytes(), &parsed_hash).is_err() {
-        return Err(AuthError::WrongPassword);
+        return Err(AppError::Unauthorized("Invalid current password".to_string()));
     }
 
     // Hash new password
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)?
+    let password_hash = argon2.hash_password(payload.new_password.as_bytes(), &salt)
+        .map_err(|e| AppError::InternalServerError(format!("Hashing error: {}", e)))?
         .to_string();
 
     // Update in Mongo
@@ -572,29 +447,29 @@ pub async fn change_password_handler(
 pub async fn logout_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
     let mut conn = state.redis.clone();
-    let token_key = format!("blacklist:{}", user.user_id.to_hex());
+    let token_key = format!("blacklist:{}", user.token);
     let ttl = 86400;
-    conn.set_ex::<_, _, ()>(&token_key, "1", ttl).await?;
+    let _ = conn.set_ex::<_, _, ()>(&token_key, "1", ttl).await;
     Ok(Json(json!({"message": "Logged out successfully"})))
 }
 
 pub async fn verify_free_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
-) -> Result<impl IntoResponse, AuthError> {
+) -> AppResult<impl IntoResponse> {
     // 1. Check if payments are disabled
     let settings_collection = state.mongo.collection::<serde_json::Value>("settings");
     let settings = settings_collection.find_one(doc! {}, None).await?;
 
     let is_payment_enabled = match settings {
-        Some(s) => s.get("is_payment_enabled").and_then(|v| v.as_bool()).unwrap_or(true), // unwrap_or(true) means if setting not found, payment is enabled by default
-        None => true, // if no settings document, payment is enabled
+        Some(s) => s.get("is_payment_enabled").and_then(|v| v.as_bool()).unwrap_or(true), 
+        None => true, 
     };
 
     if is_payment_enabled {
-        return Err(AuthError::FreeVerificationNotAvailable);
+        return Err(AppError::Forbidden("Free verification is not available at this time. Please use M-Pesa.".to_string()));
     }
 
     // 2. Verify the user

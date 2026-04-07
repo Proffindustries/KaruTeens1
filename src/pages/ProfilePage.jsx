@@ -51,10 +51,10 @@ const ProfilePage = () => {
     const { data: postsData } = useInfiniteUserContent(targetUsername, 'posts');
     const userPosts = postsData?.pages?.flatMap((page) => page) || [];
 
-    const profile = profileRes?.profile;
+    const profile = profileRes?.profile || profileRes;
     const stats = {
-        followers: profileRes?.followers_count || 0,
-        following: profileRes?.following_count || 0,
+        followers: profile?.follower_count || profileRes?.followers_count || 0,
+        following: profile?.following_count || profileRes?.following_count || 0,
         isFollowing: profileRes?.is_following || false,
     };
 
@@ -104,6 +104,8 @@ const ProfilePage = () => {
             twitter: '',
             other: '',
         },
+        quote: '',
+        location: '',
     });
 
     // We'll set the form initial values when opening modal
@@ -123,6 +125,8 @@ const ProfilePage = () => {
                 twitter: profile?.social_links?.twitter || '',
                 other: profile?.social_links?.other || '',
             },
+            quote: profile?.quote || '',
+            location: profile?.location || '',
         });
         setIsEditing(true);
     };
@@ -166,7 +170,7 @@ const ProfilePage = () => {
         );
 
     const user = {
-        name: profile.full_name || 'New User',
+        name: profile.full_name || profile.username || 'New User',
         username: `@${profile.username}`,
         bio: profile.bio || 'No bio yet.',
         school: profile.school || 'Unspecified School',
@@ -181,7 +185,7 @@ const ProfilePage = () => {
             : 'Recently',
         followers: stats.followers,
         following: stats.following,
-        quote: 'Knowledge increases by sharing, not by saving.',
+        quote: profile.quote || 'Knowledge increases by sharing, not by saving.',
         socials: profile.social_links || {},
     };
 
@@ -274,9 +278,11 @@ const ProfilePage = () => {
                     <p className="profile-bio">{user.bio}</p>
 
                     <div className="profile-meta-grid">
-                        <span>
-                            <MapPin size={16} /> Kenya
-                        </span>
+                        {profile.location && (
+                            <span>
+                                <MapPin size={16} /> {profile.location}
+                            </span>
+                        )}
                         <span>
                             🎓 {user.school} • {user.year}
                         </span>
@@ -544,6 +550,17 @@ const ProfilePage = () => {
                                 ></textarea>
                             </div>
                             <div className="form-group">
+                                <label>Location</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="City, Country"
+                                    value={editForm.location}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, location: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>School</label>
                                 <input
                                     className="form-input"
@@ -656,6 +673,51 @@ const ProfilePage = () => {
                                                 twitter: e.target.value,
                                             },
                                         })
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>YouTube (link or @handle)</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="@channel or URL"
+                                    value={editForm.social_links.youtube}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                youtube: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Other Website/Link</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="https://..."
+                                    value={editForm.social_links.other}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            social_links: {
+                                                ...editForm.social_links,
+                                                other: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Profile Quote</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="A quote that defines you..."
+                                    value={editForm.quote}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, quote: e.target.value })
                                     }
                                 />
                             </div>

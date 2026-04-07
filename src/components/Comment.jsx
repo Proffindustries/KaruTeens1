@@ -16,6 +16,8 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
         setIsReplying(true);
     }, []);
 
+    const commentId = comment.id;
+
     const handleReplySubmit = useCallback(
         async (e) => {
             e.preventDefault();
@@ -23,7 +25,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
 
             setIsSubmittingReply(true);
             try {
-                await onReply(comment._id, replyText, replyMedia);
+                await onReply(commentId, replyText, replyMedia);
                 setReplyText('');
                 setReplyMedia(null);
                 setIsReplying(false);
@@ -34,7 +36,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                 setIsSubmittingReply(false);
             }
         },
-        [comment._id, onReply, replyText, replyMedia],
+        [commentId, onReply, replyText, replyMedia],
     );
 
     const handleCancelReply = useCallback(() => {
@@ -196,7 +198,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                     >
                         {replies.map((reply) => (
                             <Comment
-                                key={reply._id}
+                                key={reply.id}
                                 comment={reply}
                                 onReply={onReply}
                                 level={level + 1}

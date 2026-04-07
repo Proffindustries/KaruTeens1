@@ -61,10 +61,10 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = (newToken, newUser) => {
+        // Standardize user object from backend to ensure 'id' is always present
         const normalizedUser = {
             ...newUser,
             id: newUser.id || newUser.user_id,
-            user_id: newUser.user_id || newUser.id,
         };
         setToken(newToken);
         setUser(normalizedUser);
@@ -93,10 +93,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     const updateUser = (updatedUser) => {
+        // Standardize user object from backend to ensure 'id' is always present
         const normalizedUser = {
             ...updatedUser,
             id: updatedUser.id || updatedUser.user_id,
-            user_id: updatedUser.user_id || updatedUser.id,
         };
         setUser(normalizedUser);
     };

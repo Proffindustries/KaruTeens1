@@ -11,115 +11,21 @@ use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
 use crate::models::{Event, EventRSVP, EventAttendee, EventComment, EventNotification, EventAnalytics, User};
+use crate::dto::{
+    EventResponse, RSVPStats, AttendanceStats,
+    CreateEventRequest, UpdateEventRequest, CheckInRequest, EventFilter,
+    PaginatedResponse, PaginationInfo, IdResponse, MessageResponse
+};
+use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
+use crate::utils::check_admin;
 use futures::stream::StreamExt;
 
 // --- DTOs ---
 
 #[derive(Deserialize)]
-pub struct UpdateEventRequest {
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub location: Option<String>,
-    pub location_type: Option<String>,
-    pub venue_name: Option<String>,
-    pub venue_address: Option<String>,
-    pub virtual_meeting_url: Option<String>,
-    pub start_datetime: Option<String>,
-    pub end_datetime: Option<String>,
-    pub registration_start: Option<String>,
-    pub registration_end: Option<String>,
-    pub max_attendees: Option<i32>,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub event_type: Option<String>,
-    pub status: Option<String>,
-    pub is_recurring: Option<bool>,
-    pub recurrence_pattern: Option<String>,
-    pub recurrence_end_date: Option<String>,
-    pub image_url: Option<String>,
-    pub banner_url: Option<String>,
-    pub featured: Option<bool>,
-    pub ticket_price: Option<f64>,
-    pub currency: Option<String>,
-    pub rsvp_required: Option<bool>,
-    pub waitlist_enabled: Option<bool>,
-}
-
-#[derive(Deserialize)]
-pub struct CheckInRequest {
-    pub user_id: String,
-    pub attended: bool,
-}
-
-#[derive(Deserialize)]
-pub struct EventFilter {
-    pub status: Option<String>,
-    pub category: Option<String>,
-    pub location_type: Option<String>,
-    pub event_type: Option<String>,
-    pub date_from: Option<String>,
-    pub date_to: Option<String>,
-    pub search: Option<String>,
-    pub sort_by: Option<String>,
-    pub sort_order: Option<String>,
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
-#[derive(Serialize)]
-pub struct EventResponse {
-    pub id: String,
-    pub title: String,
-    pub description: String,
-    pub location: String,
-    pub location_type: String,
-    pub venue_name: Option<String>,
-    pub venue_address: Option<String>,
-    pub virtual_meeting_url: Option<String>,
-    pub start_datetime: String,
-    pub end_datetime: String,
-    pub registration_start: Option<String>,
-    pub registration_end: Option<String>,
-    pub max_attendees: Option<i32>,
-    pub current_attendees: i32,
-    pub category: String,
-    pub tags: Option<Vec<String>>,
-    pub organizer_id: String,
-    pub organizer_name: String,
-    pub organizer_contact: Option<String>,
-    pub event_type: String,
+pub struct RSVPRequest {
     pub status: String,
-    pub is_recurring: bool,
-    pub recurrence_pattern: Option<String>,
-    pub recurrence_end_date: Option<String>,
-    pub image_url: Option<String>,
-    pub banner_url: Option<String>,
-    pub featured: bool,
-    pub ticket_price: Option<f64>,
-    pub currency: Option<String>,
-    pub rsvp_required: bool,
-    pub waitlist_enabled: bool,
-    pub waitlist_count: i32,
-    pub created_at: String,
-    pub updated_at: String,
-    pub rsvp_stats: RSVPStats,
-    pub attendance_stats: AttendanceStats,
-}
-
-#[derive(Serialize)]
-pub struct RSVPStats {
-    pub interested: i32,
-    pub going: i32,
-    pub maybe: i32,
-    pub not_going: i32,
-}
-
-#[derive(Serialize)]
-pub struct AttendanceStats {
-    pub checked_in: i32,
-    pub total_attendees: i32,
-    pub attendance_rate: f64,
 }
 
 #[derive(Serialize)]
@@ -150,41 +56,121 @@ pub struct CalendarSummary {
     pub total_attendees: i32,
 }
 
-// --- Middleware: Check Admin ---
-
-async fn check_admin(
-    user_id: ObjectId,
-    state: &Arc<AppState>,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let users = state.mongo.collection::<User>("users");
-    let user_doc = users.find_one(doc! { "_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    match user_doc {
-        Some(u) if u.role == "admin" || u.role == "superadmin" => Ok(()),
-        _ => Err((StatusCode::FORBIDDEN, Json(json!({"error": "Admin access required"})))),
-    }
-}
-
 // --- Handlers ---
+
+pub async fn create_event_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<CreateEventRequest>,
+) -> AppResult<impl IntoResponse> {
+    let events = state.mongo.collection::<Event>("events");
+    let profiles = state.mongo.collection::<crate::models::Profile>("profiles");
+    
+    let profile_doc = profiles.find_one(doc! { "user_id": user.user_id }, None).await?;
+
+    let organizer_name = match profile_doc {
+        Some(p) => p.username,
+        None => "Unknown".to_string(),
+    };
+
+    let start_dt = chrono::DateTime::parse_from_rfc3339(&payload.start_datetime)
+        .map_err(|_| AppError::BadRequest("Invalid start datetime format".to_string()))?;
+    
+    let end_dt = chrono::DateTime::parse_from_rfc3339(&payload.end_datetime)
+        .map_err(|_| AppError::BadRequest("Invalid end datetime format".to_string()))?;
+
+    let reg_start = match payload.registration_start {
+        Some(ref s) => Some(chrono::DateTime::parse_from_rfc3339(s).map_err(|_| AppError::BadRequest("Invalid reg start".to_string()))?.into()),
+        None => None
+    };
+    
+    let reg_end = match payload.registration_end {
+        Some(ref s) => Some(chrono::DateTime::parse_from_rfc3339(s).map_err(|_| AppError::BadRequest("Invalid reg end".to_string()))?.into()),
+        None => None
+    };
+
+    let rec_end = match payload.recurrence_end_date {
+        Some(ref s) => Some(chrono::DateTime::parse_from_rfc3339(s).map_err(|_| AppError::BadRequest("Invalid rec end".to_string()))?.into()),
+        None => None
+    };
+
+    let new_event = Event {
+        id: None,
+        title: payload.title,
+        description: payload.description,
+        location: payload.location,
+        location_type: payload.location_type.unwrap_or_else(|| "Physical".to_string()),
+        venue_name: payload.venue_name,
+        venue_address: payload.venue_address,
+        virtual_meeting_url: payload.virtual_meeting_url,
+        start_datetime: start_dt.into(),
+        end_datetime: end_dt.into(),
+        registration_start: reg_start,
+        registration_end: reg_end,
+        max_attendees: payload.max_attendees,
+        current_attendees: 0,
+        category: payload.category,
+        tags: payload.tags,
+        organizer_id: user.user_id,
+        organizer_name,
+        organizer_contact: payload.organizer_contact,
+        event_type: payload.event_type.unwrap_or_else(|| "General".to_string()),
+        status: payload.status.unwrap_or("published".to_string()),
+        is_recurring: payload.is_recurring.unwrap_or(false),
+        recurrence_pattern: payload.recurrence_pattern,
+        recurrence_end_date: rec_end,
+        image_url: payload.image_url,
+        banner_url: payload.banner_url,
+        featured: payload.featured.unwrap_or(false),
+        ticket_price: payload.ticket_price.map(|p| (p * 100.0) as i64),
+        currency: payload.currency.or(Some("KES".to_string())),
+        rsvp_required: payload.rsvp_required.unwrap_or(false),
+        waitlist_enabled: payload.waitlist_enabled.unwrap_or(false),
+        waitlist_count: 0,
+        created_at: DateTime::now(),
+        updated_at: DateTime::now(),
+    };
+
+    let result = events.insert_one(new_event, None).await?;
+
+    Ok((StatusCode::CREATED, Json(IdResponse { 
+        id: result.inserted_id.as_object_id().unwrap().to_hex(),
+        message: Some("Event created successfully".to_string())
+    })))
+}
 
 pub async fn list_events_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
+    user: Option<AuthUser>,
     Query(params): Query<EventFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
+) -> AppResult<impl IntoResponse> {
     let events = state.mongo.collection::<Event>("events");
+    
+    let is_admin = match &user {
+        Some(u) => {
+            let users = state.mongo.collection::<User>("users");
+            match users.find_one(doc! { "_id": u.user_id }, None).await {
+                Ok(Some(ud)) if ud.role == "admin" || ud.role == "superadmin" => true,
+                _ => false,
+            }
+        },
+        None => false,
+    };
     
     let mut query = doc! {};
     
-    if let Some(status) = &params.status {
-        query.insert("status", status);
+    if !is_admin {
+        query.insert("status", "published");
+    } else if let Some(status) = &params.status {
+        if status != "all" {
+            query.insert("status", status);
+        }
     }
     
     if let Some(category) = &params.category {
-        query.insert("category", category);
+        if category != "all" {
+            query.insert("category", category);
+        }
     }
     
     if let Some(location_type) = &params.location_type {
@@ -216,6 +202,10 @@ pub async fn list_events_handler(
         }
     }
 
+    if let Some(true) = params.upcoming {
+        query.insert("start_datetime", doc! { "$gte": mongodb::bson::DateTime::now() });
+    }
+
     let sort_by = params.sort_by.unwrap_or_else(|| "start_datetime".to_string());
     let sort_order = params.sort_order.unwrap_or_else(|| "asc".to_string());
     let page = params.page.unwrap_or(1);
@@ -227,8 +217,7 @@ pub async fn list_events_handler(
         _ => doc! { sort_by: 1 },
     };
 
-    let total_count = events.count_documents(query.clone(), None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let total_count = events.count_documents(query.clone(), None).await?;
 
     let find_options = mongodb::options::FindOptions::builder()
         .sort(sort_doc)
@@ -236,47 +225,45 @@ pub async fn list_events_handler(
         .limit(Some(limit))
         .build();
 
-    let mut cursor = events.find(query, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = events.find(query, find_options).await?;
 
-    let mut paginated_events = Vec::new();
-    
+    let mut raw_events = Vec::new();
     while let Some(event) = cursor.next().await {
         if let Ok(e) = event {
-            let event_info = build_event_response(&e, &state).await?;
-            paginated_events.push(event_info);
+            raw_events.push(e);
         }
     }
 
-    Ok((StatusCode::OK, Json(json!({
-        "events": paginated_events,
-        "pagination": {
-            "current_page": page,
-            "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
-            "total_items": total_count,
-            "items_per_page": limit,
-            "has_next": (skip + limit) < total_count as i64,
-            "has_prev": page > 1
-        }
-    }))))
+    let mut paginated_events = Vec::new();
+    for e in &raw_events {
+        paginated_events.push(build_event_response(e, &state).await?);
+    }
+
+    Ok((StatusCode::OK, Json(PaginatedResponse {
+        items: paginated_events,
+        pagination: PaginationInfo {
+            current_page: page,
+            total_pages: (total_count as f64 / limit as f64).ceil() as i64,
+            total_items: total_count,
+            items_per_page: limit,
+            has_next: (skip + limit) < total_count as i64,
+            has_prev: page > 1,
+        },
+    })))
 }
 
 pub async fn get_event_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
     Path(event_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
+) -> AppResult<impl IntoResponse> {
     let oid = ObjectId::parse_str(&event_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid event ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
 
     let events = state.mongo.collection::<Event>("events");
-    let event = events.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Event not found"}))))?;
+    let event = events.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Event not found".to_string()))?;
 
-    let event_info = build_event_response(&event, &state).await?;
+    let event_info: crate::dto::EventResponse = build_event_response(&event, &state).await?;
     Ok((StatusCode::OK, Json(event_info)))
 }
 
@@ -285,11 +272,11 @@ pub async fn update_event_handler(
     user: AuthUser,
     Path(event_id): Path<String>,
     Json(payload): Json<UpdateEventRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&event_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid event ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
 
     let events = state.mongo.collection::<Event>("events");
     
@@ -304,36 +291,24 @@ pub async fn update_event_handler(
     if let Some(location) = payload.location {
         update_doc.insert("location", location);
     }
-    if let Some(location_type) = payload.location_type {
-        update_doc.insert("location_type", location_type);
-    }
-    if let Some(venue_name) = payload.venue_name {
-        update_doc.insert("venue_name", venue_name);
-    }
-    if let Some(venue_address) = payload.venue_address {
-        update_doc.insert("venue_address", venue_address);
-    }
-    if let Some(virtual_meeting_url) = payload.virtual_meeting_url {
-        update_doc.insert("virtual_meeting_url", virtual_meeting_url);
-    }
-    if let Some(start_datetime) = payload.start_datetime {
+    if let Some(ref start_datetime) = payload.start_datetime {
         let dt = chrono::DateTime::parse_from_rfc3339(&start_datetime)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid start datetime format"}))))?;
+            .map_err(|_| AppError::BadRequest("Invalid start datetime format".to_string()))?;
         update_doc.insert("start_datetime", dt);
     }
-    if let Some(end_datetime) = payload.end_datetime {
+    if let Some(ref end_datetime) = payload.end_datetime {
         let dt = chrono::DateTime::parse_from_rfc3339(&end_datetime)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid end datetime format"}))))?;
+            .map_err(|_| AppError::BadRequest("Invalid end datetime format".to_string()))?;
         update_doc.insert("end_datetime", dt);
     }
-    if let Some(registration_start) = payload.registration_start {
+    if let Some(ref registration_start) = payload.registration_start {
         let dt = chrono::DateTime::parse_from_rfc3339(&registration_start)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid registration start format"}))))?;
+            .map_err(|_| AppError::BadRequest("Invalid registration start format".to_string()))?;
         update_doc.insert("registration_start", dt);
     }
-    if let Some(registration_end) = payload.registration_end {
+    if let Some(ref registration_end) = payload.registration_end {
         let dt = chrono::DateTime::parse_from_rfc3339(&registration_end)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid registration end format"}))))?;
+            .map_err(|_| AppError::BadRequest("Invalid registration end format".to_string()))?;
         update_doc.insert("registration_end", dt);
     }
     if let Some(max_attendees) = payload.max_attendees {
@@ -348,41 +323,6 @@ pub async fn update_event_handler(
     if let Some(event_type) = payload.event_type {
         update_doc.insert("event_type", event_type);
     }
-    if let Some(status) = payload.status {
-        update_doc.insert("status", status);
-    }
-    if let Some(is_recurring) = payload.is_recurring {
-        update_doc.insert("is_recurring", is_recurring);
-    }
-    if let Some(recurrence_pattern) = payload.recurrence_pattern {
-        update_doc.insert("recurrence_pattern", recurrence_pattern);
-    }
-    if let Some(recurrence_end_date) = payload.recurrence_end_date {
-        let dt = chrono::DateTime::parse_from_rfc3339(&recurrence_end_date)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid recurrence end date format"}))))?;
-        update_doc.insert("recurrence_end_date", dt);
-    }
-    if let Some(image_url) = payload.image_url {
-        update_doc.insert("image_url", image_url);
-    }
-    if let Some(banner_url) = payload.banner_url {
-        update_doc.insert("banner_url", banner_url);
-    }
-    if let Some(featured) = payload.featured {
-        update_doc.insert("featured", featured);
-    }
-    if let Some(ticket_price) = payload.ticket_price {
-        update_doc.insert("ticket_price", ticket_price);
-    }
-    if let Some(currency) = payload.currency {
-        update_doc.insert("currency", currency);
-    }
-    if let Some(rsvp_required) = payload.rsvp_required {
-        update_doc.insert("rsvp_required", rsvp_required);
-    }
-    if let Some(waitlist_enabled) = payload.waitlist_enabled {
-        update_doc.insert("waitlist_enabled", waitlist_enabled);
-    }
 
     update_doc.insert("updated_at", DateTime::now());
 
@@ -390,60 +330,50 @@ pub async fn update_event_handler(
         doc! { "_id": oid },
         doc! { "$set": update_doc },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
-    Ok((StatusCode::OK, Json(json!({"message": "Event updated successfully"}))))
+    Ok((StatusCode::OK, Json(MessageResponse { message: "Event updated successfully".to_string() })))
 }
 
 pub async fn delete_event_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(event_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&event_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid event ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
 
     let events = state.mongo.collection::<Event>("events");
     
-    events.delete_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    events.delete_one(doc! { "_id": oid }, None).await?;
 
     // Also delete associated data
     let event_rsvps = state.mongo.collection::<EventRSVP>("event_rsvps");
-    event_rsvps.delete_many(doc! { "event_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    event_rsvps.delete_many(doc! { "event_id": oid }, None).await?;
 
     let event_attendees = state.mongo.collection::<EventAttendee>("event_attendees");
-    event_attendees.delete_many(doc! { "event_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    event_attendees.delete_many(doc! { "event_id": oid }, None).await?;
 
     let event_comments = state.mongo.collection::<EventComment>("event_comments");
-    event_comments.delete_many(doc! { "event_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    event_comments.delete_many(doc! { "event_id": oid }, None).await?;
 
     let event_notifications = state.mongo.collection::<EventNotification>("event_notifications");
-    event_notifications.delete_many(doc! { "event_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    event_notifications.delete_many(doc! { "event_id": oid }, None).await?;
 
     let event_analytics = state.mongo.collection::<EventAnalytics>("event_analytics");
-    event_analytics.delete_many(doc! { "event_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    event_analytics.delete_many(doc! { "event_id": oid }, None).await?;
 
-    Ok((StatusCode::OK, Json(json!({"message": "Event deleted successfully"}))))
+    Ok((StatusCode::OK, Json(MessageResponse { message: "Event deleted successfully".to_string() })))
 }
 
 pub async fn get_event_calendar_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
+) -> AppResult<impl IntoResponse> {
     let events = state.mongo.collection::<Event>("events");
     
-    let mut cursor = events.find(doc! {}, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = events.find(doc! {}, None).await?;
 
     let mut calendar_events = Vec::new();
     let mut total_events = 0;
@@ -454,8 +384,8 @@ pub async fn get_event_calendar_handler(
     
     let now = chrono::Utc::now();
     
-    while let Some(event) = cursor.next().await {
-        if let Ok(e) = event {
+    while let Some(event_res) = cursor.next().await {
+        if let Ok(e) = event_res {
             total_events += 1;
             
             // Count event types
@@ -507,14 +437,14 @@ pub async fn check_in_attendee_handler(
     user: AuthUser,
     Path(event_id): Path<String>,
     Json(payload): Json<CheckInRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let event_oid = ObjectId::parse_str(&event_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid event ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
     
-    let user_oid = ObjectId::parse_str(&payload.user_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid user ID"}))))?;
+    let user_oid = ObjectId::parse_str(&user.user_id.to_hex())
+        .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let event_attendees = state.mongo.collection::<EventAttendee>("event_attendees");
     
@@ -522,9 +452,8 @@ pub async fn check_in_attendee_handler(
     let attendee = event_attendees.find_one(doc! { 
         "event_id": event_oid, 
         "user_id": user_oid 
-    }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Attendee not found"}))))?;
+    }, None).await?
+        .ok_or(AppError::NotFound("Attendee not found".to_string()))?;
 
     // Update check-in status
     event_attendees.update_one(
@@ -536,7 +465,7 @@ pub async fn check_in_attendee_handler(
             }
         },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Attendee check-in updated"}))))
 }
@@ -545,99 +474,62 @@ pub async fn get_event_analytics_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(event_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&event_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid event ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
 
     // Get event info
     let events = state.mongo.collection::<Event>("events");
-    let event = events.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Event not found"}))))?;
+    let event = events.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Event not found".to_string()))?;
 
-    // Get RSVP stats
-    let event_rsvps = state.mongo.collection::<EventRSVP>("event_rsvps");
-    let interested_count = event_rsvps.count_documents(doc! { "event_id": oid, "status": "interested" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let going_count = event_rsvps.count_documents(doc! { "event_id": oid, "status": "going" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let maybe_count = event_rsvps.count_documents(doc! { "event_id": oid, "status": "maybe" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let not_going_count = event_rsvps.count_documents(doc! { "event_id": oid, "status": "not_going" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Get attendance stats
-    let event_attendees = state.mongo.collection::<EventAttendee>("event_attendees");
-    let checked_in_count = event_attendees.count_documents(doc! { "event_id": oid, "checked_in": true }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let total_attendees_count = event_attendees.count_documents(doc! { "event_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let attendance_rate = if total_attendees_count > 0 {
-        (checked_in_count as f64 / total_attendees_count as f64) * 100.0
-    } else {
-        0.0
-    };
-
-    let rsvp_stats = RSVPStats {
-        interested: interested_count as i32,
-        going: going_count as i32,
-        maybe: maybe_count as i32,
-        not_going: not_going_count as i32,
-    };
-
-    let attendance_stats = AttendanceStats {
-        checked_in: checked_in_count as i32,
-        total_attendees: total_attendees_count as i32,
-        attendance_rate,
-    };
-
-    let analytics = EventResponse {
-        id: event.id.unwrap().to_hex(),
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        location_type: event.location_type,
-        venue_name: event.venue_name,
-        venue_address: event.venue_address,
-        virtual_meeting_url: event.virtual_meeting_url,
-        start_datetime: event.start_datetime.to_chrono().to_rfc3339(),
-        end_datetime: event.end_datetime.to_chrono().to_rfc3339(),
-        registration_start: event.registration_start.map(|dt| dt.to_chrono().to_rfc3339()),
-        registration_end: event.registration_end.map(|dt| dt.to_chrono().to_rfc3339()),
-        max_attendees: event.max_attendees,
-        current_attendees: event.current_attendees,
-        category: event.category,
-        tags: event.tags,
-        organizer_id: event.organizer_id.to_hex(),
-        organizer_name: event.organizer_name,
-        organizer_contact: event.organizer_contact,
-        event_type: event.event_type,
-        status: event.status,
-        is_recurring: event.is_recurring,
-        recurrence_pattern: event.recurrence_pattern,
-        recurrence_end_date: event.recurrence_end_date.map(|dt| dt.to_chrono().to_rfc3339()),
-        image_url: event.image_url,
-        banner_url: event.banner_url,
-        featured: event.featured,
-        ticket_price: event.ticket_price.map(|p| p as f64 / 100.0),
-        currency: event.currency,
-        rsvp_required: event.rsvp_required,
-        waitlist_enabled: event.waitlist_enabled,
-        waitlist_count: event.waitlist_count,
-        created_at: event.created_at.to_chrono().to_rfc3339(),
-        updated_at: event.updated_at.to_chrono().to_rfc3339(),
-        rsvp_stats,
-        attendance_stats,
-    };
-
+    let analytics: crate::dto::EventResponse = build_event_response(&event, &state).await?;
     Ok((StatusCode::OK, Json(analytics)))
+}
+
+pub async fn rsvp_event_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(event_id): Path<String>,
+    Json(payload): Json<RSVPRequest>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&event_id)
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
+    
+    let event_rsvps = state.mongo.collection::<EventRSVP>("event_rsvps");
+    let events = state.mongo.collection::<Event>("events");
+
+    if events.find_one(doc! { "_id": oid }, None).await?.is_none() {
+        return Err(AppError::NotFound("Event not found".to_string()));
+    }
+
+    let filter = doc! { "event_id": oid, "user_id": user.user_id };
+    let update = doc! {
+        "$set": { "status": payload.status },
+        "$setOnInsert": { "created_at": mongodb::bson::DateTime::now() }
+    };
+    let options = mongodb::options::UpdateOptions::builder().upsert(true).build();
+
+    event_rsvps.update_one(filter, update, options).await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "RSVP updated successfully"}))))
+}
+
+pub async fn remove_rsvp_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(event_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&event_id)
+        .map_err(|_| AppError::BadRequest("Invalid event ID".to_string()))?;
+        
+    let event_rsvps = state.mongo.collection::<EventRSVP>("event_rsvps");
+    
+    event_rsvps.delete_one(doc! { "event_id": oid, "user_id": user.user_id }, None).await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "RSVP removed successfully"}))))
 }
 
 // --- Helper Functions ---
@@ -645,28 +537,20 @@ pub async fn get_event_analytics_handler(
 async fn build_event_response(
     event: &Event,
     state: &Arc<AppState>,
-) -> Result<EventResponse, (StatusCode, Json<serde_json::Value>)> {
-    // Get RSVP stats
+) -> AppResult<EventResponse> {
+    // Run all count queries concurrently using try_join!
     let event_rsvps = state.mongo.collection::<EventRSVP>("event_rsvps");
-    let interested_count = event_rsvps.count_documents(doc! { "event_id": event.id.unwrap(), "status": "interested" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let going_count = event_rsvps.count_documents(doc! { "event_id": event.id.unwrap(), "status": "going" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let maybe_count = event_rsvps.count_documents(doc! { "event_id": event.id.unwrap(), "status": "maybe" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let not_going_count = event_rsvps.count_documents(doc! { "event_id": event.id.unwrap(), "status": "not_going" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Get attendance stats
     let event_attendees = state.mongo.collection::<EventAttendee>("event_attendees");
-    let checked_in_count = event_attendees.count_documents(doc! { "event_id": event.id.unwrap(), "checked_in": true }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let total_attendees_count = event_attendees.count_documents(doc! { "event_id": event.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let event_id = event.id.unwrap();
+
+    let (interested_count, going_count, maybe_count, not_going_count, checked_in_count, total_attendees_count) = tokio::try_join!(
+        event_rsvps.count_documents(doc! { "event_id": event_id, "status": "interested" }, None),
+        event_rsvps.count_documents(doc! { "event_id": event_id, "status": "going" }, None),
+        event_rsvps.count_documents(doc! { "event_id": event_id, "status": "maybe" }, None),
+        event_rsvps.count_documents(doc! { "event_id": event_id, "status": "not_going" }, None),
+        event_attendees.count_documents(doc! { "event_id": event_id, "checked_in": true }, None),
+        event_attendees.count_documents(doc! { "event_id": event_id }, None),
+    )?;
 
     let attendance_rate = if total_attendees_count > 0 {
         (checked_in_count as f64 / total_attendees_count as f64) * 100.0
@@ -679,7 +563,8 @@ async fn build_event_response(
         title: event.title.clone(),
         description: event.description.clone(),
         location: event.location.clone(),
-        location_type: event.location_type.clone(),
+        is_virtual: event.location_type == "virtual",
+        location_type: Some(event.location_type.clone()),
         venue_name: event.venue_name.clone(),
         venue_address: event.venue_address.clone(),
         virtual_meeting_url: event.virtual_meeting_url.clone(),
@@ -687,8 +572,8 @@ async fn build_event_response(
         end_datetime: event.end_datetime.to_chrono().to_rfc3339(),
         registration_start: event.registration_start.map(|dt| dt.to_chrono().to_rfc3339()),
         registration_end: event.registration_end.map(|dt| dt.to_chrono().to_rfc3339()),
-        max_attendees: event.max_attendees,
-        current_attendees: event.current_attendees,
+        max_attendees: event.max_attendees.unwrap_or(100) as u64,
+        current_attendees: event.current_attendees as u64,
         category: event.category.clone(),
         tags: event.tags.clone(),
         organizer_id: event.organizer_id.to_hex(),
@@ -706,7 +591,7 @@ async fn build_event_response(
         currency: event.currency.clone(),
         rsvp_required: event.rsvp_required,
         waitlist_enabled: event.waitlist_enabled,
-        waitlist_count: event.waitlist_count,
+        waitlist_count: event.waitlist_count as u64,
         created_at: event.created_at.to_chrono().to_rfc3339(),
         updated_at: event.updated_at.to_chrono().to_rfc3339(),
         rsvp_stats: RSVPStats {
@@ -725,8 +610,9 @@ async fn build_event_response(
 
 pub fn event_routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", get(list_events_handler))
+        .route("/", get(list_events_handler).post(create_event_handler))
         .route("/:id", get(get_event_handler).put(update_event_handler).delete(delete_event_handler))
+        .route("/:id/rsvp", post(rsvp_event_handler).delete(remove_rsvp_handler))
         .route("/:id/checkin", post(check_in_attendee_handler))
         .route("/:id/analytics", get(get_event_analytics_handler))
         .route("/calendar", get(get_event_calendar_handler))

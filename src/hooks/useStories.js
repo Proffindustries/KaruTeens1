@@ -5,7 +5,7 @@ export const useStories = () => {
     return useQuery({
         queryKey: ['stories'],
         queryFn: async () => {
-            const { data } = await api.get('/stories');
+            const { data } = await api.get('/stories/feed');
             return data;
         },
         refetchInterval: 60000, // Refresh every minute

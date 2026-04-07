@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { handleApiError, parseApiError } from '../utils/errorHandling.js';
 
 let baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000/api';
 if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
@@ -9,8 +10,10 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 30000, // 30 second timeout
 });
 
+// Request interceptor
 api.interceptors.request.use(
     (config) => {
         // Strip redundant /api if it's already there (it might be '/api/...')
@@ -24,30 +27,108 @@ api.interceptors.request.use(
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
+
+        // Add request ID for tracking
+        config.headers['X-Request-ID'] = generateRequestId();
+        
         return config;
     },
     (error) => {
-        return Promise.reject(error);
+        return Promise.reject(parseApiError(error));
     },
 );
 
+// Response interceptor with enhanced error handling
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
+        const appError = parseApiError(error);
+        
+        // Handle authentication errors
+        if (appError.requiresAuth()) {
             // Don't fire the event if we're already trying to logout or if it's the Ably auth endpoint
             // (Ably auth might fail if user is not logged in, but shouldn't trigger a logout loop)
-            const isLogoutCall = error.config.url.endsWith('/auth/logout') || error.config.url.endsWith('/logout');
-            const isAblyAuthCall = error.config.url.endsWith('/ably/auth');
+            const isLogoutCall = error.config?.url?.endsWith('/auth/logout') || error.config?.url?.endsWith('/logout');
+            const isAblyAuthCall = error.config?.url?.endsWith('/ably/auth');
+            const isMediaCall = error.config?.url?.includes('/media/signature/');
             
-            if (!isLogoutCall && !isAblyAuthCall) {
+            if (!isLogoutCall && !isAblyAuthCall && !isMediaCall) {
                 // Fire an event so AuthContext can clear state + React Router navigates cleanly
-                // instead of doing a hard page reload that nukes all React state.
                 window.dispatchEvent(new CustomEvent('auth:unauthorized'));
             }
         }
-        return Promise.reject(error);
+        
+        // Log detailed error information for debugging
+        if (appError.isServerError()) {
+            console.error('Server Error:', {
+                error: appError,
+                requestId: appError.requestId,
+                timestamp: appError.timestamp,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                }
+            });
+        }
+        
+        return Promise.reject(appError);
     },
 );
 
-export default api;
+// Generate unique request ID for tracking
+function generateRequestId() {
+    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Enhanced API methods with error handling
+const apiMethods = {
+    get: (url, config = {}) => {
+        return api.get(url, config).catch(error => {
+            throw handleApiError(error, { showToast: false }); // Let calling component handle toast
+        });
+    },
+    
+    post: (url, data = {}, config = {}) => {
+        return api.post(url, data, config).catch(error => {
+            throw handleApiError(error, { showToast: false });
+        });
+    },
+    
+    put: (url, data = {}, config = {}) => {
+        return api.put(url, data, config).catch(error => {
+            throw handleApiError(error, { showToast: false });
+        });
+    },
+    
+    patch: (url, data = {}, config = {}) => {
+        return api.patch(url, data, config).catch(error => {
+            throw handleApiError(error, { showToast: false });
+        });
+    },
+    
+    delete: (url, config = {}) => {
+        return api.delete(url, config).catch(error => {
+            throw handleApiError(error, { showToast: false });
+        });
+    },
+    
+    // Method for file uploads with progress tracking
+    upload: (url, formData, onProgress = null, config = {}) => {
+        return api.post(url, formData, {
+            ...config,
+            headers: {
+                ...config.headers,
+                'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                onProgress(progress, progressEvent);
+            } : undefined,
+        }).catch(error => {
+            throw handleApiError(error, { showToast: false });
+        });
+    },
+};
+
+export default apiMethods;
+export { api }; // Export raw axios instance for advanced use cases

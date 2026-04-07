@@ -100,3 +100,32 @@ export const useRemoveUser = () => {
         },
     });
 };
+
+export const useRoomHistory = (roomId) => {
+    return useQuery({
+        queryKey: ['studyRoomHistory', roomId],
+        queryFn: async () => {
+            const { data } = await api.get(`/study-rooms/${roomId}/history`);
+            return data;
+        },
+        enabled: !!roomId,
+    });
+};
+
+export const useSaveRoomMessage = () => {
+    return useMutation({
+        mutationFn: async ({ roomId, message }) => {
+            const { data } = await api.post(`/study-rooms/${roomId}/messages`, message);
+            return data;
+        },
+    });
+};
+
+export const useSaveRoomFile = () => {
+    return useMutation({
+        mutationFn: async ({ roomId, fileData }) => {
+            const { data } = await api.post(`/study-rooms/${roomId}/files`, fileData);
+            return data;
+        },
+    });
+};

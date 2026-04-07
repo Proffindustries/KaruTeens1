@@ -129,7 +129,48 @@ body {
   overflow: hidden !important;
 }
 
+
 .avatar-img {
   border-radius: 50% !important;
   object-fit: cover !important;
+}
+
+/* Global Time Picker Enhancements */
+.time-picker-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.time-picker-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: rgb(var(--primary));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  z-index: 2;
+}
+
+.time-picker-btn:hover {
+  background: rgba(var(--primary), 0.1);
+}
+
+.datetime-input-group {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 0.5rem;
+}
+
+@media (max-width: 500px) {
+    .datetime-input-group {
+        grid-template-columns: 1fr;
+    }
 }

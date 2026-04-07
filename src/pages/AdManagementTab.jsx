@@ -2738,34 +2738,66 @@ const AdManagementTab = () => {
                                 ></textarea>
                             </div>
 
-                            <div className="form-group">
-                                <label>Start Date</label>
-                                <input
-                                    type="date"
-                                    className="form-input"
-                                    value={editingCampaign.start_date}
-                                    onChange={(e) =>
-                                        setEditingCampaign({
-                                            ...editingCampaign,
-                                            start_date: e.target.value,
-                                        })
-                                    }
-                                />
-                            </div>
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label>Start Date & Time</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
+                                        <input
+                                            type="date"
+                                            className="form-input"
+                                            value={editingCampaign.start_date?.split('T')[0] || ''}
+                                            onChange={(e) => {
+                                                const time = editingCampaign.start_date?.split('T')[1] || '00:00:00Z';
+                                                setEditingCampaign({
+                                                    ...editingCampaign,
+                                                    start_date: `${e.target.value}T${time}`
+                                                });
+                                            }}
+                                        />
+                                        <input
+                                            type="time"
+                                            className="form-input"
+                                            defaultValue={editingCampaign.start_date?.split('T')[1]?.slice(0, 5) || '00:00'}
+                                            onChange={(e) => {
+                                                const date = editingCampaign.start_date?.split('T')[0] || '';
+                                                setEditingCampaign({
+                                                    ...editingCampaign,
+                                                    start_date: `${date}T${e.target.value}:00Z`
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="form-group">
-                                <label>End Date (Optional)</label>
-                                <input
-                                    type="date"
-                                    className="form-input"
-                                    value={editingCampaign.end_date || ''}
-                                    onChange={(e) =>
-                                        setEditingCampaign({
-                                            ...editingCampaign,
-                                            end_date: e.target.value || null,
-                                        })
-                                    }
-                                />
+                                <div className="form-group">
+                                    <label>End Date & Time (Optional)</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
+                                        <input
+                                            type="date"
+                                            className="form-input"
+                                            value={editingCampaign.end_date?.split('T')[0] || ''}
+                                            onChange={(e) => {
+                                                const time = editingCampaign.end_date?.split('T')[1] || '23:59:59Z';
+                                                setEditingCampaign({
+                                                    ...editingCampaign,
+                                                    end_date: `${e.target.value}T${time}`
+                                                });
+                                            }}
+                                        />
+                                        <input
+                                            type="time"
+                                            className="form-input"
+                                            defaultValue={editingCampaign.end_date?.split('T')[1]?.slice(0, 5) || '23:59'}
+                                            onChange={(e) => {
+                                                const date = editingCampaign.end_date?.split('T')[0] || '';
+                                                setEditingCampaign({
+                                                    ...editingCampaign,
+                                                    end_date: `${date}T${e.target.value}:00Z`
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="modal-actions">

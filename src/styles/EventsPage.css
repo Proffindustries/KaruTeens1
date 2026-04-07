@@ -106,3 +106,46 @@
         margin-bottom: 0.5rem;
     }
 }
+
+.schedule-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.datetime-input-group {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 0.5rem;
+}
+
+@media (max-width: 500px) {
+    .schedule-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.time-picker-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.time-picker-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: rgb(var(--primary));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.time-picker-btn:hover {
+    background: rgba(var(--primary), 0.1);
+}

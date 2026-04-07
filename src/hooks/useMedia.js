@@ -76,18 +76,14 @@ export const useMediaUpload = () => {
         setIsUploading(true);
         try {
             // 1. Get presigned URL from backend
-            const {
-                data: { url, public_url },
-            } = await api.post('/media/signature/r2', {
+            const { data: { url, public_url } } = await api.post('/media/signature/r2', {
                 file_name: file.name,
                 content_type: file.type,
             });
 
-            // 2. Upload to R2 directly using the presigned URL
+            // 2. Upload directly to R2 using the presigned URL (no auth header needed)
             await axios.put(url, file, {
-                headers: {
-                    'Content-Type': file.type,
-                },
+                headers: { 'Content-Type': file.type },
                 onUploadProgress: (progressEvent) => {
                     if (onProgress && progressEvent.total) {
                         const percentCompleted = Math.round(
@@ -96,7 +92,7 @@ export const useMediaUpload = () => {
                         onProgress(percentCompleted, progressEvent.loaded);
                     }
                 },
-                cancelToken: cancelToken,
+                cancelToken,
             });
 
             return public_url;

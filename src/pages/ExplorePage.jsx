@@ -298,13 +298,13 @@ const ExplorePage = () => {
                         {trending.map((tag, i) => (
                             <Link
                                 key={i}
-                                to={`/search?q=${tag._id.replace('#', '')}`}
+                                to={`/search?q=${tag.id.replace('#', '')}`}
                                 className="trending-tag"
                             >
                                 <span className="hashtag-icon">
                                     <Hash size={14} />
                                 </span>
-                                <span className="hashtag-name">{tag._id.replace('#', '')}</span>
+                                <span className="hashtag-name">{tag.id.replace('#', '')}</span>
                                 <span className="hashtag-count">{tag.count}</span>
                             </Link>
                         ))}

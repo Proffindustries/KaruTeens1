@@ -103,6 +103,10 @@ pub struct Post {
     pub poll: Option<Poll>,
     #[serde(default)]
     pub is_anonymous: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group_id: Option<ObjectId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_id: Option<ObjectId>,
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
 }

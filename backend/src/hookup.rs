@@ -31,6 +31,19 @@ pub struct AliasDiscovery {
     pub gender: String,
     pub age: i32,
     pub bio: String,
+    pub created_at: String,
+}
+
+#[derive(Serialize)]
+pub struct AliasResponse {
+    pub id: String,
+    pub user_id: String,
+    pub alias_username: String,
+    pub gender: String,
+    pub age: i32,
+    pub bio: String,
+    pub is_verified: bool,
+    pub created_at: String,
 }
 
 // --- Handlers ---
@@ -44,7 +57,16 @@ pub async fn get_my_alias_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     match alias {
-        Some(a) => Ok((StatusCode::OK, Json(a))),
+        Some(a) => Ok((StatusCode::OK, Json(AliasResponse {
+            id: a.id.unwrap().to_hex(),
+            user_id: a.user_id.to_hex(),
+            alias_username: a.alias_username,
+            gender: a.gender,
+            age: a.age,
+            bio: a.bio,
+            is_verified: a.is_verified,
+            created_at: a.created_at.to_chrono().to_rfc3339(),
+        }))),
         None => Err((StatusCode::NOT_FOUND, Json(json!({"error": "No alias found"})))),
     }
 }
@@ -135,6 +157,7 @@ pub async fn discover_aliases_handler(
                 gender: alias.gender,
                 age: alias.age,
                 bio: alias.bio,
+                created_at: alias.created_at.to_chrono().to_rfc3339(),
             });
         }
     }

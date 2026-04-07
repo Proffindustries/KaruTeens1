@@ -2,7 +2,7 @@ use axum::{
     extract::{State, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post},
+    routing::{get, post, delete},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -10,673 +10,228 @@ use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
-use crate::models::{Page, PageRevision, PageView, PageLike, PageComment, PageAnalytics, User, Profile};
+use crate::models::{Page, PageFollow, Post, Profile, User};
+use crate::dto::{PageResponse, CreatePageRequest, PageFilter};
+use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
 use futures::stream::StreamExt;
-
-// --- DTOs ---
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct UpdatePageRequest {
-    pub title: Option<String>,
-    pub slug: Option<String>,
-    pub content: Option<String>,
-    pub excerpt: Option<String>,
-    pub featured_image: Option<String>,
-    pub meta_title: Option<String>,
-    pub meta_description: Option<String>,
-    pub meta_keywords: Option<Vec<String>>,
-    pub status: Option<String>,
-    pub visibility: Option<String>,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub template: Option<String>,
-    pub redirect_url: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct PublishPageRequest {
-    pub publish_now: bool,
-    pub scheduled_date: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct PageFilter {
-    pub status: Option<String>,
-    pub visibility: Option<String>,
-    pub category: Option<String>,
-    pub search: Option<String>,
-    pub sort_by: Option<String>,
-    pub sort_order: Option<String>,
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
-#[derive(Serialize)]
-pub struct PageResponse {
-    pub id: String,
-    pub title: String,
-    pub slug: String,
-    pub excerpt: Option<String>,
-    pub featured_image: Option<String>,
-    pub meta_title: Option<String>,
-    pub meta_description: Option<String>,
-    pub meta_keywords: Option<Vec<String>>,
-    pub status: String,
-    pub visibility: String,
-    pub author_id: String,
-    pub author_name: String,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub template: Option<String>,
-    pub redirect_url: Option<String>,
-    pub seo_score: Option<f64>,
-    pub view_count: i32,
-    pub likes_count: i32,
-    pub comments_count: i32,
-    pub published_at: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Serialize)]
-pub struct PageAnalyticsResponse {
-    pub page_id: String,
-    pub page_title: String,
-    pub total_views: i32,
-    pub unique_visitors: i32,
-    pub avg_time_on_page: f64,
-    pub bounce_rate: f64,
-    pub top_referrers: Vec<ReferrerInfo>,
-    pub traffic_by_hour: Vec<TrafficHour>,
-    pub traffic_by_day: Vec<TrafficDay>,
-}
-
-#[derive(Serialize)]
-pub struct ReferrerInfo {
-    pub referrer: String,
-    pub views: i32,
-}
-
-#[derive(Serialize)]
-pub struct TrafficHour {
-    pub hour: i32,
-    pub views: i32,
-}
-
-#[derive(Serialize)]
-pub struct TrafficDay {
-    pub date: String,
-    pub views: i32,
-}
-
-async fn check_admin(
-    user_id: ObjectId,
-    state: &Arc<AppState>,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let users = state.mongo.collection::<User>("users");
-    let user_doc = users.find_one(doc! { "_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    match user_doc {
-        Some(u) if u.role == "admin" || u.role == "superadmin" => Ok(()),
-        _ => Err((StatusCode::FORBIDDEN, Json(json!({"error": "Admin access required"})))),
-    }
-}
 
 // --- Handlers ---
 
 pub async fn list_pages_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
+    user: Option<AuthUser>,
     Query(params): Query<PageFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
+) -> AppResult<impl IntoResponse> {
+    let pages_coll = state.mongo.collection::<Page>("pages");
+    let follows_coll = state.mongo.collection::<PageFollow>("page_follows");
 
-    let pages = state.mongo.collection::<Page>("pages");
-    
-    let mut query = doc! {};
-    
-    if let Some(status) = &params.status {
-        query.insert("status", status);
+    let mut filter = doc! {};
+    if let Some(cat) = params.category {
+        if cat != "all" {
+            filter.insert("category", cat);
+        }
     }
-    
-    if let Some(visibility) = &params.visibility {
-        query.insert("visibility", visibility);
-    }
-    
-    if let Some(category) = &params.category {
-        query.insert("category", category);
-    }
-    
     if let Some(search) = &params.search {
-        let escaped_search = regex::escape(search);
-        query.insert("$or", vec![
-            doc! { "title": { "$regex": &escaped_search, "$options": "i" } },
-            doc! { "content": { "$regex": &escaped_search, "$options": "i" } },
-            doc! { "excerpt": { "$regex": &escaped_search, "$options": "i" } },
-        ]);
+        if !(search as &str).is_empty() {
+            filter.insert("name", doc! { "$regex": search, "$options": "i" });
+        }
     }
 
-    let sort_by = params.sort_by.unwrap_or_else(|| "created_at".to_string());
-    let sort_order = params.sort_order.unwrap_or_else(|| "desc".to_string());
-    let page = params.page.unwrap_or(1);
     let limit = params.limit.unwrap_or(20);
-    let skip = (page - 1) * limit;
+    let mut cursor = pages_coll.find(filter, mongodb::options::FindOptions::builder().limit(Some(limit as i64)).build()).await?;
 
-    let sort_doc = match sort_order.as_str() {
-        "asc" => doc! { sort_by: 1 },
-        _ => doc! { sort_by: -1 },
+    let mut result = Vec::new();
+    while let Some(page_res) = cursor.next().await {
+        if let Ok(page) = page_res {
+            let is_following = if let Some(ref u) = user {
+                follows_coll.find_one(doc! { "page_id": page.id.unwrap(), "user_id": u.user_id }, None).await?.is_some()
+            } else {
+                false
+            };
+
+            let is_creator = user.as_ref().map(|u| u.user_id == page.creator_id).unwrap_or(false);
+
+            result.push(PageResponse {
+                id: page.id.unwrap().to_hex(),
+                name: page.name,
+                slug: page.slug,
+                description: page.description,
+                avatar_url: page.avatar_url,
+                cover_url: page.cover_url,
+                creator_id: page.creator_id.to_hex(),
+                category: page.category,
+                is_official: page.is_official,
+                follower_count: page.follower_count as u64,
+                post_count: page.post_count as u64,
+                is_following,
+                is_creator,
+                created_at: page.created_at.to_chrono().to_rfc3339(),
+            });
+        }
+    }
+
+    Ok((StatusCode::OK, Json(result)))
+}
+
+pub async fn create_page_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<CreatePageRequest>,
+) -> AppResult<impl IntoResponse> {
+    let pages_coll = state.mongo.collection::<Page>("pages");
+
+    // Generate slug
+    let slug = payload.name.to_lowercase()
+        .replace(" ", "-")
+        .chars()
+        .filter(|c: &char| c.is_alphanumeric() || *c == '-')
+        .collect::<String>();
+
+    // Check if slug exists
+    if pages_coll.find_one(doc! { "slug": &slug }, None).await?.is_some() {
+         return Err(AppError::BadRequest("A page with this name already exists".to_string()));
+    }
+
+    let new_page = Page {
+        id: None,
+        name: payload.name,
+        slug,
+        description: payload.description,
+        avatar_url: payload.avatar_url,
+        cover_url: payload.cover_url,
+        creator_id: user.user_id,
+        category: payload.category,
+        is_official: false,
+        follower_count: 0,
+        post_count: 0,
+        created_at: DateTime::now(),
+        updated_at: DateTime::now(),
     };
 
-    let total_count = pages.count_documents(query.clone(), None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let res = pages_coll.insert_one(new_page, None).await?;
 
-    let find_options = mongodb::options::FindOptions::builder()
-        .sort(sort_doc)
-        .skip(Some(skip as u64))
-        .limit(Some(limit))
-        .build();
-
-    let mut cursor = pages.find(query, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut pages_list = Vec::new();
-    let mut author_ids = std::collections::HashSet::new();
-    
-    while let Some(page_res) = cursor.next().await {
-        if let Ok(p) = page_res {
-            author_ids.insert(p.author_id);
-            pages_list.push(p);
-        }
-    }
-
-    // Bulk fetch profiles
-    let profiles_coll = state.mongo.collection::<Profile>("profiles");
-    let authors_cursor = profiles_coll.find(doc! { "user_id": { "$in": author_ids.into_iter().collect::<Vec<ObjectId>>() } }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let mut author_map = std::collections::HashMap::new();
-    let mut authors_stream = authors_cursor;
-    while let Some(result) = authors_stream.next().await {
-        if let Ok(profile) = result {
-            author_map.insert(profile.user_id, profile.username);
-        }
-    }
-
-    let mut paginated_pages = Vec::new();
-    for p in pages_list {
-        let author_name = author_map.get(&p.author_id).cloned().unwrap_or_else(|| "Unknown".to_string());
-        let page_info = PageResponse {
-            id: p.id.unwrap().to_hex(),
-            title: p.title.clone(),
-            slug: p.slug.clone(),
-            excerpt: p.excerpt.clone(),
-            featured_image: p.featured_image.clone(),
-            meta_title: p.meta_title.clone(),
-            meta_description: p.meta_description.clone(),
-            meta_keywords: p.meta_keywords.clone(),
-            status: p.status.clone(),
-            visibility: p.visibility.clone(),
-            author_id: p.author_id.to_hex(),
-            author_name,
-            category: p.category.clone(),
-            tags: p.tags.clone(),
-            template: p.template.clone(),
-            redirect_url: p.redirect_url.clone(),
-            seo_score: p.seo_score,
-            view_count: p.view_count,
-            likes_count: p.likes_count,
-            comments_count: p.comments_count,
-            published_at: p.published_at.map(|dt| dt.to_chrono().to_rfc3339()),
-            created_at: p.created_at.to_chrono().to_rfc3339(),
-            updated_at: p.updated_at.to_chrono().to_rfc3339(),
-        };
-        paginated_pages.push(page_info);
-    }
-
-    Ok((StatusCode::OK, Json(json!({
-        "pages": paginated_pages,
-        "pagination": {
-            "current_page": page,
-            "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
-            "total_items": total_count,
-            "items_per_page": limit,
-            "has_next": (skip + limit) < total_count as i64,
-            "has_prev": page > 1
-        }
-    }))))
+    Ok((StatusCode::CREATED, Json(json!({"id": res.inserted_id.as_object_id().unwrap().to_hex()}))))
 }
 
 pub async fn get_page_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(page_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
+    user: Option<AuthUser>,
+    Path(slug_or_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let pages_coll = state.mongo.collection::<Page>("pages");
+    let follows_coll = state.mongo.collection::<PageFollow>("page_follows");
 
-    let oid = ObjectId::parse_str(&page_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid page ID"}))))?;
-
-    let pages = state.mongo.collection::<Page>("pages");
-    let page = pages.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Page not found"}))))?;
-
-    let page_info = build_page_response(&page, &state).await?;
-    Ok((StatusCode::OK, Json(page_info)))
-}
-
-pub async fn update_page_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(page_id): Path<String>,
-    Json(payload): Json<UpdatePageRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let oid = ObjectId::parse_str(&page_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid page ID"}))))?;
-
-    let pages = state.mongo.collection::<Page>("pages");
-    
-    // Get current page to create revision
-    let _current_page = pages.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Page not found"}))))?;
-
-    let mut update_doc = doc! {};
-    
-    if let Some(title) = &payload.title {
-        update_doc.insert("title", title);
-    }
-    if let Some(slug) = &payload.slug {
-        update_doc.insert("slug", slug);
-    }
-    if let Some(content) = &payload.content {
-        update_doc.insert("content", content);
-    }
-    if let Some(excerpt) = &payload.excerpt {
-        update_doc.insert("excerpt", excerpt);
-    }
-    if let Some(featured_image) = &payload.featured_image {
-        update_doc.insert("featured_image", featured_image);
-    }
-    if let Some(meta_title) = &payload.meta_title {
-        update_doc.insert("meta_title", meta_title);
-    }
-    if let Some(meta_description) = &payload.meta_description {
-        update_doc.insert("meta_description", meta_description);
-    }
-    if let Some(meta_keywords) = &payload.meta_keywords {
-        update_doc.insert("meta_keywords", meta_keywords);
-    }
-    if let Some(status) = &payload.status {
-        update_doc.insert("status", status);
-        if status == "published" {
-            update_doc.insert("published_at", DateTime::now());
-        }
-    }
-    if let Some(visibility) = &payload.visibility {
-        update_doc.insert("visibility", visibility);
-    }
-    if let Some(category) = &payload.category {
-        update_doc.insert("category", category);
-    }
-    if let Some(tags) = &payload.tags {
-        update_doc.insert("tags", tags);
-    }
-    if let Some(template) = &payload.template {
-        update_doc.insert("template", template);
-    }
-    if let Some(redirect_url) = &payload.redirect_url {
-        update_doc.insert("redirect_url", redirect_url);
-    }
-
-    update_doc.insert("updated_at", DateTime::now());
-
-    pages.update_one(
-        doc! { "_id": oid },
-        doc! { "$set": update_doc },
-        None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::OK, Json(json!({"message": "Page updated successfully"}))))
-}
-
-pub async fn delete_page_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(page_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let oid = ObjectId::parse_str(&page_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid page ID"}))))?;
-
-    let pages = state.mongo.collection::<Page>("pages");
-    
-    pages.delete_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Also delete associated data
-    let page_revisions = state.mongo.collection::<PageRevision>("page_revisions");
-    page_revisions.delete_many(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let page_views = state.mongo.collection::<PageView>("page_views");
-    page_views.delete_many(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let page_likes = state.mongo.collection::<PageLike>("page_likes");
-    page_likes.delete_many(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let page_comments = state.mongo.collection::<PageComment>("page_comments");
-    page_comments.delete_many(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let page_analytics = state.mongo.collection::<PageAnalytics>("page_analytics");
-    page_analytics.delete_many(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::OK, Json(json!({"message": "Page deleted successfully"}))))
-}
-
-pub async fn publish_page_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(page_id): Path<String>,
-    Json(payload): Json<PublishPageRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let oid = ObjectId::parse_str(&page_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid page ID"}))))?;
-
-    let pages = state.mongo.collection::<Page>("pages");
-    
-    let mut update_doc = doc! {
-        "status": "published",
-        "published_at": DateTime::now(),
-        "updated_at": DateTime::now()
-    };
-
-    if payload.publish_now {
-        update_doc.insert("published_at", DateTime::now());
-    } else if let Some(scheduled_date) = payload.scheduled_date {
-        let scheduled_time = chrono::DateTime::parse_from_rfc3339(&scheduled_date)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid scheduled date format"}))))?;
-        update_doc.insert("published_at", scheduled_time);
-    }
-
-    pages.update_one(
-        doc! { "_id": oid },
-        doc! { "$set": update_doc },
-        None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::OK, Json(json!({"message": "Page published successfully"}))))
-}
-
-pub async fn unpublish_page_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(page_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let oid = ObjectId::parse_str(&page_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid page ID"}))))?;
-
-    let pages = state.mongo.collection::<Page>("pages");
-    
-    pages.update_one(
-        doc! { "_id": oid },
-        doc! { 
-            "$set": { 
-                "status": "draft",
-                "published_at": null,
-                "updated_at": DateTime::now()
-            }
-        },
-        None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    Ok((StatusCode::OK, Json(json!({"message": "Page unpublished successfully"}))))
-}
-
-pub async fn get_page_analytics_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-    Path(page_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let oid = ObjectId::parse_str(&page_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid page ID"}))))?;
-
-    // Get page info
-    let pages = state.mongo.collection::<Page>("pages");
-    let page = pages.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Page not found"}))))?;
-
-    // Calculate analytics
-    let page_views = state.mongo.collection::<PageView>("page_views");
-    let total_views = page_views.count_documents(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let unique_visitors = page_views.distinct("user_id", doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .len() as i32;
-
-    // Get referrers
-    let referrers_cursor = page_views.aggregate(vec![
-        doc! { "$match": { "page_id": oid, "referrer": { "$ne": null } } },
-        doc! { "$group": { "_id": "$referrer", "count": { "$sum": 1 } } },
-        doc! { "$sort": { "count": -1 } },
-        doc! { "$limit": 10 }
-    ], None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut top_referrers = Vec::new();
-    let mut referrers_stream = referrers_cursor;
-    while let Some(result) = referrers_stream.next().await {
-        if let Ok(doc) = result {
-            if let Some(referrer) = doc.get("_id").and_then(|v| v.as_str()) {
-                if let Some(count) = doc.get("count").and_then(|v| v.as_i32()) {
-                    top_referrers.push(ReferrerInfo {
-                        referrer: referrer.to_string(),
-                        views: count,
-                    });
-                }
-            }
-        }
-    }
-
-    // Get traffic by hour
-    let traffic_by_hour = get_traffic_by_hour(&state, oid).await?;
-    let traffic_by_day = get_traffic_by_day(&state, oid).await?;
-
-    // Calculate average time on page and bounce rate
-    let mut cursor = page_views.find(doc! { "page_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let mut total_duration: u64 = 0;
-    let mut views_with_duration: u64 = 0;
-    let mut bounced_views: u64 = 0;
-    
-    while let Some(result) = cursor.next().await {
-        if let Ok(view) = result {
-            if let Some(dur) = view.duration_seconds {
-                total_duration += dur;
-                views_with_duration += 1;
-                if dur < 10 {
-                    bounced_views += 1;
-                }
-            }
-        }
-    }
-
-    let avg_time_on_page = if views_with_duration > 0 {
-        total_duration as f64 / views_with_duration as f64 
+    let filter = if let Ok(oid) = ObjectId::parse_str(&slug_or_id) {
+        doc! { "_id": oid }
     } else {
-        0.0
+        doc! { "slug": &slug_or_id }
     };
-    
-    let bounce_rate = if total_views > 0 {
-        (bounced_views as f64 / total_views as f64) * 100.0
+
+    let page = pages_coll.find_one(filter, None).await?
+        .ok_or(AppError::NotFound("Page not found".to_string()))?;
+
+    let is_following = if let Some(ref u) = user {
+        follows_coll.find_one(doc! { "page_id": page.id.unwrap(), "user_id": u.user_id }, None).await?.is_some()
     } else {
-        0.0
+        false
     };
 
-    let analytics = PageAnalyticsResponse {
-        page_id: page.id.unwrap().to_hex(),
-        page_title: page.title,
-        total_views: total_views as i32,
-        unique_visitors,
-        avg_time_on_page,
-        bounce_rate,
-        top_referrers,
-        traffic_by_hour,
-        traffic_by_day,
-    };
+    let is_creator = user.as_ref().map(|u| u.user_id == page.creator_id).unwrap_or(false);
 
-    Ok((StatusCode::OK, Json(analytics)))
-}
-
-// --- Helper Functions ---
-
-async fn build_page_response(
-    page: &Page,
-    state: &Arc<AppState>,
-) -> Result<PageResponse, (StatusCode, Json<serde_json::Value>)> {
-    let profiles = state.mongo.collection::<Profile>("profiles");
-    
-    let author_name = if let Ok(Some(profile)) = profiles.find_one(doc! { "user_id": page.author_id }, None).await {
-        profile.username
-    } else {
-        "Unknown".to_string()
-    };
-
-    Ok(PageResponse {
+    Ok((StatusCode::OK, Json(PageResponse {
         id: page.id.unwrap().to_hex(),
-        title: page.title.clone(),
-        slug: page.slug.clone(),
-        excerpt: page.excerpt.clone(),
-        featured_image: page.featured_image.clone(),
-        meta_title: page.meta_title.clone(),
-        meta_description: page.meta_description.clone(),
-        meta_keywords: page.meta_keywords.clone(),
-        status: page.status.clone(),
-        visibility: page.visibility.clone(),
-        author_id: page.author_id.to_hex(),
-        author_name,
-        category: page.category.clone(),
-        tags: page.tags.clone(),
-        template: page.template.clone(),
-        redirect_url: page.redirect_url.clone(),
-        seo_score: page.seo_score,
-        view_count: page.view_count,
-        likes_count: page.likes_count,
-        comments_count: page.comments_count,
-        published_at: page.published_at.map(|dt| dt.to_chrono().to_rfc3339()),
+        name: page.name,
+        slug: page.slug,
+        description: page.description,
+        avatar_url: page.avatar_url,
+        cover_url: page.cover_url,
+        creator_id: page.creator_id.to_hex(),
+        category: page.category,
+        is_official: page.is_official,
+        follower_count: page.follower_count as u64,
+        post_count: page.post_count as u64,
+        is_following,
+        is_creator,
         created_at: page.created_at.to_chrono().to_rfc3339(),
-        updated_at: page.updated_at.to_chrono().to_rfc3339(),
-    })
+    })))
 }
 
-async fn get_traffic_by_hour(
-    state: &Arc<AppState>,
-    page_id: ObjectId,
-) -> Result<Vec<TrafficHour>, (StatusCode, Json<serde_json::Value>)> {
-    let page_views = state.mongo.collection::<PageView>("page_views");
-    
-    let pipeline = vec![
-        doc! { "$match": { "page_id": page_id } },
-        doc! { "$group": {
-            "_id": { "$hour": "$created_at" },
-            "count": { "$sum": 1 }
-        }},
-        doc! { "$sort": { "_id": 1 } }
-    ];
+pub async fn follow_page_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(page_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&page_id).map_err(|_| AppError::BadRequest("Invalid ID".to_string()))?;
+    let follows_coll = state.mongo.collection::<PageFollow>("page_follows");
+    let pages_coll = state.mongo.collection::<Page>("pages");
 
-    let mut cursor = page_views.aggregate(pipeline, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    if follows_coll.find_one(doc! { "page_id": oid, "user_id": user.user_id }, None).await?.is_some() {
+        return Ok((StatusCode::OK, Json(json!({"message": "Already following"}))));
+    }
+
+    let follow = PageFollow {
+        id: None,
+        page_id: oid,
+        user_id: user.user_id,
+        created_at: DateTime::now(),
+    };
+
+    follows_coll.insert_one(follow, None).await?;
     
-    let mut traffic_map = std::collections::HashMap::new();
-    while let Some(result) = cursor.next().await {
-        if let Ok(doc) = result {
-            if let (Some(hour), Some(count)) = (doc.get("_id").and_then(|v| v.as_i32()), doc.get("count").and_then(|v| v.as_i32())) {
-                traffic_map.insert(hour, count);
+    pages_coll.update_one(doc! { "_id": oid }, doc! { "$inc": { "follower_count": 1 } }, None).await.ok();
+
+    Ok((StatusCode::OK, Json(json!({"message": "Followed successfully"}))))
+}
+
+pub async fn unfollow_page_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(page_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&page_id).map_err(|_| AppError::BadRequest("Invalid ID".to_string()))?;
+    let follows_coll = state.mongo.collection::<PageFollow>("page_follows");
+    let pages_coll = state.mongo.collection::<Page>("pages");
+
+    let res = follows_coll.delete_one(doc! { "page_id": oid, "user_id": user.user_id }, None).await?;
+
+    if res.deleted_count > 0 {
+        pages_coll.update_one(doc! { "_id": oid }, doc! { "$inc": { "follower_count": -1 } }, None).await.ok();
+    }
+
+    Ok((StatusCode::OK, Json(json!({"message": "Unfollowed successfully"}))))
+}
+
+pub async fn list_page_followers_handler(
+    State(state): State<Arc<AppState>>,
+    Path(page_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&page_id).map_err(|_| AppError::BadRequest("Invalid ID".to_string()))?;
+    let follows_coll = state.mongo.collection::<PageFollow>("page_follows");
+    let profiles_coll = state.mongo.collection::<Profile>("profiles");
+
+    let mut cursor = follows_coll.find(doc! { "page_id": oid }, None).await?;
+
+    let mut users = Vec::new();
+    while let Some(follow_res) = cursor.next().await {
+        if let Ok(follow) = follow_res {
+            if let Ok(Some(profile)) = profiles_coll.find_one(doc! { "user_id": follow.user_id }, None).await {
+                users.push(json!({
+                    "username": profile.username,
+                    "avatar_url": profile.avatar_url,
+                    "user_id": follow.user_id.to_hex()
+                }));
             }
         }
     }
 
-    let mut traffic = Vec::new();
-    for hour in 0..24 {
-        traffic.push(TrafficHour {
-            hour,
-            views: *traffic_map.get(&hour).unwrap_or(&0),
-        });
-    }
-
-    Ok(traffic)
-}
-
-async fn get_traffic_by_day(
-    state: &Arc<AppState>,
-    page_id: ObjectId,
-) -> Result<Vec<TrafficDay>, (StatusCode, Json<serde_json::Value>)> {
-    let page_views = state.mongo.collection::<PageView>("page_views");
-    
-    let thirty_days_ago = chrono::Utc::now() - chrono::Duration::days(30);
-    
-    let pipeline = vec![
-        doc! { "$match": { 
-            "page_id": page_id,
-            "created_at": { "$gte": mongodb::bson::DateTime::from_chrono(thirty_days_ago) }
-        }},
-        doc! { "$group": {
-            "_id": { "$dateToString": { "format": "%Y-%m-%d", "date": "$created_at" } },
-            "count": { "$sum": 1 }
-        }},
-        doc! { "$sort": { "_id": 1 } }
-    ];
-
-    let mut cursor = page_views.aggregate(pipeline, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let mut traffic_map = std::collections::HashMap::new();
-    while let Some(result) = cursor.next().await {
-        if let Ok(doc) = result {
-            if let (Some(date_str), Some(count)) = (doc.get("_id").and_then(|v| v.as_str()), doc.get("count").and_then(|v| v.as_i32())) {
-                traffic_map.insert(date_str.to_string(), count);
-            }
-        }
-    }
-
-    let mut traffic = Vec::new();
-    for i in 0..30 {
-        let date = chrono::Utc::now() - chrono::Duration::days(i);
-        let date_str = date.format("%Y-%m-%d").to_string();
-        
-        traffic.push(TrafficDay {
-            date: date_str.clone(),
-            views: *traffic_map.get(&date_str).unwrap_or(&0),
-        });
-    }
-
-    traffic.reverse(); // Oldest first
-    Ok(traffic)
+    Ok((StatusCode::OK, Json(users)))
 }
 
 pub fn page_routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", get(list_pages_handler))
-        .route("/:id", get(get_page_handler).put(update_page_handler).delete(delete_page_handler))
-        .route("/:id/publish", post(publish_page_handler))
-        .route("/:id/unpublish", post(unpublish_page_handler))
-        .route("/:id/analytics", get(get_page_analytics_handler))
+        .route("/", get(list_pages_handler).post(create_page_handler))
+        .route("/:id", get(get_page_handler))
+        .route("/:id/follow", post(follow_page_handler).delete(unfollow_page_handler))
+        .route("/:id/followers", get(list_page_followers_handler))
 }

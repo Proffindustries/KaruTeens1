@@ -13,6 +13,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod db;
 mod models;
 mod error;
+mod dto;
+mod utils;
 mod auth;
 mod content;
 mod marketplace;
@@ -186,6 +188,7 @@ async fn main() {
                      axum::http::header::CONTENT_TYPE,
                      axum::http::header::ACCEPT,
                      axum::http::header::ORIGIN,
+                     axum::http::header::HeaderName::from_static("x-request-id"),
                  ])
                  .expose_headers([
                      axum::http::header::AUTHORIZATION,

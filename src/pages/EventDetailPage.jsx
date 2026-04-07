@@ -80,9 +80,19 @@ const EventDetailPage = () => {
                     <span className="event-category-badge">{event.category}</span>
                     <h1>{event.title}</h1>
                     <div className="event-hero-meta">
-                        <span>
-                            <Users size={16} /> {event.attendee_count} attending
-                        </span>
+                        {event.rsvp_stats && (
+                            <>
+                                <span title="Going">
+                                    <Check size={16} color="#2ed573" style={{ marginRight: '4px' }} /> {event.rsvp_stats.going} going
+                                </span>
+                                <span title="Interested">
+                                    <Heart size={16} color="#ff4757" style={{ marginRight: '4px' }} /> {event.rsvp_stats.interested} interested
+                                </span>
+                                <span title="Maybe">
+                                    <Users size={16} color="#ffa502" style={{ marginRight: '4px' }} /> {event.rsvp_stats.maybe} maybe
+                                </span>
+                            </>
+                        )}
                         {event.max_attendees && <span>• Max: {event.max_attendees}</span>}
                     </div>
                 </div>

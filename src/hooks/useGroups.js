@@ -67,6 +67,20 @@ export const useJoinGroup = () => {
     });
 };
 
+export const useUpdateGroup = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ groupId, updateData }) => {
+            const { data } = await api.put(`/groups/${groupId}`, updateData);
+            return data;
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['group', variables.groupId] });
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+        },
+    });
+};
+
 export const useLeaveGroup = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -84,12 +98,14 @@ export const useLeaveGroup = () => {
 export const useCreateGroupPost = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ groupId, content, media_urls }) => {
-            const { data } = await api.post(`/groups/${groupId}/posts`, { content, media_urls });
+        mutationFn: async ({ groupId, postData }) => {
+            const { data } = await api.post(`/groups/${groupId}/posts`, postData);
             return data;
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groupPosts', variables.groupId] });
+            queryClient.invalidateQueries({ queryKey: ['feed', 'infinite'] });
+            queryClient.invalidateQueries({ queryKey: ['feed', 'for-you'] });
         },
     });
 };

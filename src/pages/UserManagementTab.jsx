@@ -267,9 +267,17 @@ const UserManagementTab = () => {
                     <div className="filter-row">
                         <div className="filter-item">
                             <label>Registration Date Range</label>
-                            <div className="date-range">
-                                <input type="date" placeholder="From" />
-                                <input type="date" placeholder="To" />
+                            <div className="date-range" style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: '0.5rem', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'rgb(var(--text-muted))' }}>From:</span>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
+                                    <input type="date" className="form-input" />
+                                    <input type="time" className="form-input" defaultValue="00:00" />
+                                </div>
+                                <span style={{ fontSize: '0.8rem', color: 'rgb(var(--text-muted))' }}>To:</span>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
+                                    <input type="date" className="form-input" />
+                                    <input type="time" className="form-input" defaultValue="23:59" />
+                                </div>
                             </div>
                         </div>
 

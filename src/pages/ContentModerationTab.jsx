@@ -91,7 +91,7 @@ const ContentModerationTab = () => {
             );
 
             // Ondoa iliyokwishela process kwenye list
-            setModerationQueue((prev) => prev.filter((item) => (item.id || item._id) !== itemId));
+            setModerationQueue((prev) => prev.filter((item) => item.id !== itemId));
         } catch (error) {
             showToast(error.response?.data?.error || 'Failed to process item', 'error');
         }
@@ -399,7 +399,7 @@ const ContentModerationTab = () => {
                                 const Icon = getTypeIcon(item.type);
                                 return (
                                     <div
-                                        key={item._id}
+                                        key={item.id}
                                         className={`moderation-item ${item.status}`}
                                     >
                                         <div className="item-header">
@@ -432,11 +432,11 @@ const ContentModerationTab = () => {
                                                     {item.status.toUpperCase()}
                                                 </span>
                                             </div>
-                                            <div className="item-actions">
+                                            <div className="action-buttons">
                                                 <button
                                                     className="action-btn approve"
                                                     onClick={() =>
-                                                        handleModerationAction(item._id, 'approve')
+                                                        handleModerationAction(item.id, 'approve')
                                                     }
                                                 >
                                                     <CheckCircle size={16} />
@@ -445,7 +445,7 @@ const ContentModerationTab = () => {
                                                 <button
                                                     className="action-btn reject"
                                                     onClick={() =>
-                                                        handleModerationAction(item._id, 'reject')
+                                                        handleModerationAction(item.id, 'reject')
                                                     }
                                                 >
                                                     <XCircle size={16} />
@@ -454,7 +454,7 @@ const ContentModerationTab = () => {
                                                 <button
                                                     className="action-btn warn"
                                                     onClick={() =>
-                                                        handleModerationAction(item._id, 'warn')
+                                                        handleModerationAction(item.id, 'warn')
                                                     }
                                                 >
                                                     <AlertTriangle size={16} />
@@ -463,7 +463,7 @@ const ContentModerationTab = () => {
                                                 <button
                                                     className="action-btn ban"
                                                     onClick={() =>
-                                                        handleModerationAction(item._id, 'ban')
+                                                        handleModerationAction(item.id, 'ban')
                                                     }
                                                 >
                                                     <Shield size={16} />

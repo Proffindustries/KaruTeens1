@@ -65,3 +65,27 @@ pub struct StudyPlaylist {
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RoomMessage {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub room_id: ObjectId,
+    pub user_id: ObjectId,
+    pub username: String,
+    pub content: String,
+    pub timestamp: bson::DateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RoomFile {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub room_id: ObjectId,
+    pub user_id: ObjectId,
+    pub username: String,
+    pub filename: String,
+    pub url: String,
+    pub file_type: String,
+    pub timestamp: bson::DateTime,
+}

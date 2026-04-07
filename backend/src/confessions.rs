@@ -10,11 +10,17 @@ use serde_json::json;
 use std::sync::Arc;
 use crate::db::AppState;
 use crate::auth::AuthUser;
+use crate::dto::{
+    ConfessionResponse, ConfessionCommentResponse, CreateConfessionRequest, 
+    CreateConfessionCommentRequest, ReportConfessionRequest, 
+    UpdateConfessionRequest, ConfessionFilter, IdResponse, MessageResponse
+};
+use crate::error::{AppResult, AppError};
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
 use crate::models::ContentModeration;
 
-// --- DTOs ---
+// --- Models (keeping internal models here for simplicity, or move to models.rs if preferred) ---
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Confession {
@@ -22,8 +28,8 @@ pub struct Confession {
     pub id: Option<ObjectId>,
     pub content: String,
     pub is_anonymous: bool,
-    pub author_id: Option<ObjectId>, // Only set if not anonymous
-    pub author_name: Option<String>, // Only set if not anonymous
+    pub author_id: Option<ObjectId>,
+    pub author_name: Option<String>,
     pub likes: u64,
     pub comments: u64,
     pub created_at: DateTime,
@@ -41,72 +47,41 @@ pub struct ConfessionComment {
     pub created_at: DateTime,
 }
 
-#[derive(Deserialize)]
-pub struct CreateConfessionRequest {
-    pub content: String,
-    pub is_anonymous: bool,
-    pub author_id: Option<ObjectId>, // Required if not anonymous
-    pub author_name: Option<String>, // Required if not anonymous
-}
-
-#[derive(Deserialize)]
-pub struct CreateCommentRequest {
-    pub content: String,
-}
-
-#[derive(Deserialize)]
-pub struct ReportConfessionRequest {
-    pub reason: String,
-}
-
-#[derive(Deserialize)]
-pub struct UpdateConfessionRequest {
-    pub content: Option<String>,
-    pub is_anonymous: Option<bool>,
-}
-
-#[derive(Deserialize)]
-pub struct ConfessionFilter {
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
 // --- Handlers ---
 
 pub async fn list_confessions_handler(
     State(state): State<Arc<AppState>>,
     _user: AuthUser,
     Query(params): Query<ConfessionFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     let confessions = state.mongo.collection::<Confession>("confessions");
     
     let page = params.page.unwrap_or(1);
-    let limit = params.limit.unwrap_or(50).min(100); // Max 100 confessions per page
+    let limit = params.limit.unwrap_or(50).min(100);
     let skip = (page - 1) * limit;
 
     let find_options = mongodb::options::FindOptions::builder()
         .sort(doc! { "created_at": -1 })
-        .skip(skip as u64)
-        .limit(limit)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
         .build();
     
-    let mut cursor = confessions.find(doc! {}, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+    let mut cursor = confessions.find(doc! {}, find_options).await?;
     
     let mut confessions_list = Vec::new();
-    while let Some(confession) = cursor.next().await {
-        if let Ok(c) = confession {
-            confessions_list.push(json!({
-                "id": c.id.unwrap().to_hex(),
-                "content": c.content,
-                "is_anonymous": c.is_anonymous,
-                "author_id": c.author_id.map(|oid| oid.to_hex()),
-                "author_name": c.author_name,
-                "likes": c.likes,
-                "comments": c.comments,
-                "created_at": c.created_at.to_chrono().to_rfc3339(),
-                "updated_at": c.updated_at.to_chrono().to_rfc3339(),
-            }));
+    while let Some(confession_res) = cursor.next().await {
+        if let Ok(c) = confession_res {
+            confessions_list.push(ConfessionResponse {
+                id: c.id.unwrap().to_hex(),
+                content: c.content,
+                is_anonymous: c.is_anonymous,
+                author_id: c.author_id.map(|oid| oid.to_hex()).unwrap_or_else(|| "anonymous".to_string()),
+                author_name: c.author_name.unwrap_or_else(|| "Anonymous".to_string()),
+                likes: c.likes as i32,
+                comments: c.comments as i32,
+                created_at: c.created_at.to_chrono().to_rfc3339(),
+                updated_at: c.updated_at.to_chrono().to_rfc3339(),
+            });
         }
     }
     
@@ -115,17 +90,23 @@ pub async fn list_confessions_handler(
 
 pub async fn create_confession_handler(
     State(state): State<Arc<AppState>>,
-    _user: AuthUser,
-    request: Json<CreateConfessionRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    user: AuthUser,
+    Json(payload): Json<CreateConfessionRequest>,
+) -> AppResult<impl IntoResponse> {
     let now = DateTime::now();
     
+    let author_id = if !payload.is_anonymous.unwrap_or(false) {
+        payload.author_id.and_then(|id| ObjectId::parse_str(id).ok()).unwrap_or(user.user_id)
+    } else {
+        ObjectId::new()
+    };
+
     let confession = Confession {
         id: None,
-        content: request.content.clone(),
-        is_anonymous: request.is_anonymous,
-        author_id: if !request.is_anonymous { request.author_id } else { None },
-        author_name: if !request.is_anonymous { request.author_name.clone() } else { None },
+        content: payload.content,
+        is_anonymous: payload.is_anonymous.unwrap_or(false),
+        author_id: Some(author_id),
+        author_name: if !payload.is_anonymous.unwrap_or(false) { payload.author_name } else { None },
         likes: 0,
         comments: 0,
         created_at: now,
@@ -134,63 +115,93 @@ pub async fn create_confession_handler(
     
     let result = state.mongo.collection::<Confession>("confessions")
         .insert_one(confession, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+        .await?;
     
-    Ok((StatusCode::CREATED, Json(json!({ "id": result.inserted_id.as_object_id().unwrap().to_hex() }))))
+    Ok((StatusCode::CREATED, Json(IdResponse { 
+        id: result.inserted_id.as_object_id().unwrap().to_hex(),
+        message: Some("Confession created successfully".to_string())
+    })))
 }
 
 pub async fn update_confession_handler(
     State(state): State<Arc<AppState>>,
-    _user: AuthUser,
+    user: AuthUser,
     Path(id): Path<String>,
-    request: Json<UpdateConfessionRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid confession ID" }))))?;
+    Json(payload): Json<UpdateConfessionRequest>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
     
-    let mut update_doc = doc! {};
-    if let Some(content) = &request.content {
-        update_doc.insert("content", content.clone());
+    let confessions = state.mongo.collection::<Confession>("confessions");
+    let confession = confessions.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Confession not found".to_string()))?;
+
+    // Check ownership if not anonymous
+    if let Some(author_id) = confession.author_id {
+        if author_id != user.user_id {
+            // Also check if admin
+            if crate::utils::check_admin(user.user_id, &state).await.is_err() {
+                return Err(AppError::Forbidden("Not authorized to update this confession".to_string()));
+            }
+        }
+    } else {
+        // Anonymous confession, only admins can update
+        crate::utils::check_admin(user.user_id, &state).await?;
     }
-    if let Some(is_anonymous) = request.is_anonymous {
+
+    let mut update_doc = doc! {};
+    if let Some(content) = payload.content {
+        update_doc.insert("content", content);
+    }
+    if let Some(is_anonymous) = payload.is_anonymous {
         update_doc.insert("is_anonymous", is_anonymous);
     }
+
+    if update_doc.is_empty() {
+        return Ok((StatusCode::OK, Json(MessageResponse { message: "No changes made".to_string() })));
+    }
+
     update_doc.insert("updated_at", DateTime::now());
     
-    let _ = state.mongo.collection::<Confession>("confessions")
-        .update_one(doc! { "_id": oid }, doc! { "$set": update_doc }, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+    confessions.update_one(doc! { "_id": oid }, doc! { "$set": update_doc }, None).await?;
     
-    Ok((StatusCode::OK, Json(json!({ "message": "Confession updated successfully" }))))
+    Ok((StatusCode::OK, Json(MessageResponse { message: "Confession updated successfully".to_string() })))
 }
 
 pub async fn delete_confession_handler(
     State(state): State<Arc<AppState>>,
-    _user: AuthUser,
+    user: AuthUser,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid confession ID" }))))?;
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
     
-    let _ = state.mongo.collection::<Confession>("confessions")
-        .delete_one(doc! { "_id": oid }, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+    let confessions = state.mongo.collection::<Confession>("confessions");
+    let confession = confessions.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Confession not found".to_string()))?;
+
+    // Check ownership or admin
+    if let Some(author_id) = confession.author_id {
+        if author_id != user.user_id {
+            crate::utils::check_admin(user.user_id, &state).await?;
+        }
+    } else {
+        crate::utils::check_admin(user.user_id, &state).await?;
+    }
+
+    confessions.delete_one(doc! { "_id": oid }, None).await?;
     
-    Ok((StatusCode::OK, Json(json!({ "message": "Confession deleted successfully" }))))
+    Ok((StatusCode::OK, Json(MessageResponse { message: "Confession deleted successfully".to_string() })))
 }
 
 pub async fn like_confession_handler(
     State(state): State<Arc<AppState>>,
     _user: AuthUser,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid confession ID" }))))?;
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
     
     state.mongo.collection::<Confession>("confessions")
         .update_one(doc! { "_id": oid }, doc! { "$inc": { "likes": 1 } }, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+        .await?;
     
     Ok(StatusCode::OK)
 }
@@ -199,24 +210,23 @@ pub async fn list_confession_comments_handler(
     State(state): State<Arc<AppState>>,
     _user: AuthUser,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid confession ID" }))))?;
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
     
     let comments_coll = state.mongo.collection::<ConfessionComment>("confession_comments");
-    let mut cursor = comments_coll.find(doc! { "confession_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+    let mut cursor = comments_coll.find(doc! { "confession_id": oid }, None).await?;
     
     let mut comments = Vec::new();
-    while let Some(comment) = cursor.next().await {
-        if let Ok(c) = comment {
-            comments.push(json!({
-                "id": c.id.unwrap().to_hex(),
-                "confession_id": c.confession_id.to_hex(),
-                "author_id": c.author_id.to_hex(),
-                "author_username": c.author_username,
-                "content": c.content,
-                "created_at": c.created_at.to_chrono().to_rfc3339(),
-            }));
+    while let Some(comment_res) = cursor.next().await {
+        if let Ok(c) = comment_res {
+            comments.push(ConfessionCommentResponse {
+                id: c.id.unwrap().to_hex(),
+                confession_id: c.confession_id.to_hex(),
+                author_id: c.author_id.to_hex(),
+                author_username: c.author_username,
+                content: c.content,
+                created_at: c.created_at.to_chrono().to_rfc3339(),
+            });
         }
     }
     
@@ -227,15 +237,13 @@ pub async fn add_confession_comment_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(id): Path<String>,
-    Json(payload): Json<CreateCommentRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid confession ID" }))))?;
+    Json(payload): Json<CreateConfessionCommentRequest>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
     
-    // Get username
     let profiles = state.mongo.collection::<crate::models::Profile>("profiles");
-    let profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "Profile not found" }))))?;
+    let profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await?
+        .ok_or(AppError::NotFound("Profile not found".to_string()))?;
 
     let comment = ConfessionComment {
         id: None,
@@ -248,14 +256,11 @@ pub async fn add_confession_comment_handler(
     
     state.mongo.collection::<ConfessionComment>("confession_comments")
         .insert_one(comment, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+        .await?;
 
-    // Increment comment count
     state.mongo.collection::<Confession>("confessions")
         .update_one(doc! { "_id": oid }, doc! { "$inc": { "comments": 1 } }, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+        .await?;
     
     Ok(StatusCode::CREATED)
 }
@@ -265,14 +270,12 @@ pub async fn report_confession_handler(
     user: AuthUser,
     Path(id): Path<String>,
     Json(payload): Json<ReportConfessionRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid confession ID" }))))?;
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
     
-    // Fetch confession to get content
-    let confession = state.mongo.collection::<Confession>("confessions")
-        .find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "Confession not found" }))))?;
+    let confessions = state.mongo.collection::<Confession>("confessions");
+    let confession = confessions.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Confession not found".to_string()))?;
 
     let moderation = ContentModeration {
         id: None,
@@ -293,8 +296,7 @@ pub async fn report_confession_handler(
     
     state.mongo.collection::<ContentModeration>("content_moderation")
         .insert_one(moderation, None)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))))?;
+        .await?;
     
     Ok(StatusCode::OK)
 }

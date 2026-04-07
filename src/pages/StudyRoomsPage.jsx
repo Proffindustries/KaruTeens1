@@ -12,13 +12,26 @@ import {
     Loader,
     Send,
     Eraser,
+    Plus,
+    Square,
+    Circle,
+    Type,
+    VideoOff,
+    Music,
+    Volume2,
+    Copy,
+    Link,
+    Timer,
+    Coffee,
+    Search,
+    UserPlus,
     X,
     Upload,
     Download,
     File,
-    PhoneOff,
-    Phone,
-    VideoOff,
+    MicOff,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/StudyRoomsPage.css';
@@ -30,6 +43,9 @@ import {
     useStudyRoom,
     useGenerateInviteLink,
     useRemoveUser,
+    useRoomHistory,
+    useSaveRoomMessage,
+    useSaveRoomFile,
 } from '../hooks/useStudyRooms';
 import { useAbly } from '../context/AblyContext';
 import { useToast } from '../context/ToastContext';
@@ -40,11 +56,8 @@ import Avatar from '../components/Avatar';
 
 const StudyRoomsPage = () => {
     const { roomId } = useParams();
-    const navigate = useNavigate();
     const { user } = useAuth();
-    const { showToast } = useToast();
 
-    // Check premium status
     if (!user?.is_premium && user?.role !== 'premium') {
         return <PremiumGate feature="Study Rooms" />;
     }
@@ -71,32 +84,12 @@ const RoomLobby = () => {
             showToast('Please enter a room name', 'error');
             return;
         }
-
-        createRoom(
-            { name: roomName, subject: roomSubject },
-            {
-                onSuccess: (data) => {
-                    showToast('Room created!', 'success');
-                    setShowCreateModal(false);
-                    setRoomName('');
-                    setRoomSubject('');
-                    navigate(`/study-rooms/${data.id}`);
-                },
-                onError: (err) => {
-                    showToast(err.response?.data?.error || 'Failed to create room', 'error');
-                },
+        createRoom({ name: roomName, subject: roomSubject }, {
+            onSuccess: (data) => {
+                showToast('Room created!', 'success');
+                navigate(`/study-rooms/${data.id}`);
             },
-        );
-    };
-
-    const handleJoinRoom = (id) => {
-        joinRoom(id, {
-            onSuccess: () => {
-                navigate(`/study-rooms/${id}`);
-            },
-            onError: (err) => {
-                showToast(err.response?.data?.error || 'Failed to join room', 'error');
-            },
+            onError: (err) => showToast(err.response?.data?.error || 'Failed to create room', 'error'),
         });
     };
 
@@ -113,107 +106,31 @@ const RoomLobby = () => {
             </div>
 
             {isLoading ? (
-                <div className="loading-state">
-                    <Loader size={48} className="spin-anim" />
-                    <p>Loading rooms...</p>
-                </div>
+                <div className="loading-state"><Loader size={48} className="spin-anim" /></div>
             ) : (
                 <div className="rooms-grid">
-                    {rooms && rooms.length > 0 ? (
-                        rooms.map((room) => (
-                            <div key={room.id} className="room-card card">
-                                <div className="room-card-header">
-                                    <h3>{room.name}</h3>
-                                    <span className="live-badge">LIVE</span>
-                                </div>
-                                {room.subject && (
-                                    <div className="room-subject">
-                                        <span className="subject-tag">{room.subject}</span>
-                                    </div>
-                                )}
-                                <div className="room-info">
-                                    <span className="participants-count">
-                                        <Users size={16} /> {room.participant_count}/
-                                        {room.max_participants}
-                                    </span>
-                                    <span className="room-time">
-                                        {new Date(room.created_at).toLocaleTimeString([], {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
-                                    </span>
-                                </div>
-                                <button
-                                    className="btn btn-outline btn-full"
-                                    onClick={() => handleJoinRoom(room.id)}
-                                    disabled={room.participant_count >= room.max_participants || joinRoom.isPending}
-                                >
-                                    {joinRoom.isPending
-                                        ? 'Joining...'
-                                        : room.participant_count >= room.max_participants
-                                          ? 'Full'
-                                          : 'Join Room'}
-                                </button>
+                    {rooms?.map((room) => (
+                        <div key={room.id} className="room-card card">
+                            <div className="room-card-header">
+                                <h3>{room.name}</h3>
+                                <span className="live-badge">LIVE</span>
                             </div>
-                        ))
-                    ) : (
-                        <div className="empty-state">
-                            <Monitor size={64} color="#ccc" />
-                            <p>No active study rooms</p>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => setShowCreateModal(true)}
-                            >
-                                Create the First Room
-                            </button>
+                            <div className="room-info">
+                                <span className="participants-count"><Users size={16} /> {room.participant_count}/{room.max_participants}</span>
+                            </div>
+                            <button className="btn btn-outline btn-full" onClick={() => navigate(`/study-rooms/${room.id}`)}>Join Room</button>
                         </div>
-                    )}
+                    ))}
                 </div>
             )}
 
-            {/* Create Room Modal */}
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-                    <div
-                        className="modal-content"
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ maxWidth: '450px' }}
-                    >
-                        <div className="modal-header">
-                            <h3>Create Study Room</h3>
-                            <button className="close-btn" onClick={() => setShowCreateModal(false)}>
-                                ×
-                            </button>
-                        </div>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+                        <div className="modal-header"><h3>Create Study Room</h3></div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label>Room Name *</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="e.g. Calculus 101 Revision"
-                                    value={roomName}
-                                    onChange={(e) => setRoomName(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleCreateRoom()}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Subject/Topic (Optional)</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="e.g. Mathematics, Physics, etc."
-                                    value={roomSubject}
-                                    onChange={(e) => setRoomSubject(e.target.value)}
-                                />
-                            </div>
-                            <button 
-                                className="btn btn-primary btn-full" 
-                                onClick={handleCreateRoom}
-                                disabled={!roomName.trim() || createRoom.isPending}
-                            >
-                                {createRoom.isPending ? 'Creating...' : 'Create Room'}
-                            </button>
+                            <input className="form-input mb-4" placeholder="Room Name" value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+                            <button className="btn btn-primary btn-full" onClick={handleCreateRoom}>Create</button>
                         </div>
                     </div>
                 </div>
@@ -223,13 +140,26 @@ const RoomLobby = () => {
 };
 
 const ActiveRoom = ({ roomId }) => {
+    const { showToast } = useToast();
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const { ably } = useAbly();
+    const { uploadFile } = useMediaUpload();
+    
+    const { data: room } = useStudyRoom(roomId);
+    const { data: history } = useRoomHistory(roomId);
+    const { mutate: saveMessage } = useSaveRoomMessage();
+    const { mutate: saveFile } = useSaveRoomFile();
+    const { mutate: leaveRoom } = useLeaveRoom();
+    const { mutate: generateInviteLink } = useGenerateInviteLink();
+    const { mutate: removeUser } = useRemoveUser();
+
     const canvasRef = useRef(null);
     const chatEndRef = useRef(null);
     const lastPosRef = useRef({ x: 0, y: 0 });
-    const fileInputRef = useRef(null);
     const localVideoRef = useRef(null);
-    const remoteVideosRef = useRef({});
-    const peerConnectionsRef = useRef({});
+    const screenVideoRef = useRef(null);
+    const lofiAudioRef = useRef(new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'));
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentColor, setCurrentColor] = useState('#000000');
@@ -237,1166 +167,326 @@ const ActiveRoom = ({ roomId }) => {
     const [tool, setTool] = useState('pen');
     const [chatMessage, setChatMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const [showChat, setShowChat] = useState(true);
-    const [showParticipants, setShowParticipants] = useState(true);
     const [sharedFiles, setSharedFiles] = useState([]);
+    
+    // Load history
+    useEffect(() => {
+        if (history) {
+            setMessages(history.messages || []);
+            setSharedFiles(history.files || []);
+        }
+    }, [history]);
+
     const [uploadingFile, setUploadingFile] = useState(false);
-
-    // Chat enhancements
-    const [isTyping, setIsTyping] = useState(false);
-    const [typingUsers, setTypingUsers] = useState(new Set());
-
-    // Whiteboard improvements
     const [undoStack, setUndoStack] = useState([]);
     const [redoStack, setRedoStack] = useState([]);
-    const [isDrawingShape, setIsDrawingShape] = useState(false);
     const [shapeStart, setShapeStart] = useState({ x: 0, y: 0 });
-
-    // WebRTC states
-    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
-    const [isVideoEnabled, setIsVideoEnabled] = useState(false);
-    const [isScreenSharing, setIsScreenSharing] = useState(false);
-    const [localStream, setLocalStream] = useState(null);
-    const [screenStream, setScreenStream] = useState(null);
-
-    // New feature states
+    const [chalkPos, setChalkPos] = useState({ x: 0, y: 0 });
+    const [isMouseOverCanvas, setIsMouseOverCanvas] = useState(false);
+    const [typingUsers, setTypingUsers] = useState(new Set());
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
     const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [userToRemove, setUserToRemove] = useState(null);
 
-    // Pomodoro Timer States
+    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [localStream, setLocalStream] = useState(null);
+    const [screenStream, setScreenStream] = useState(null);
+
     const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
     const [isPomodoroActive, setIsPomodoroActive] = useState(false);
-    const [pomodoroMode, setPomodoroMode] = useState('work'); // work, shortBreak, longBreak
-
-    // Lofi Music States
+    const [pomodoroMode, setPomodoroMode] = useState('work');
     const [isLofiPlaying, setIsLofiPlaying] = useState(false);
     const [lofiVolume, setLofiVolume] = useState(0.5);
-    const lofiAudioRef = useRef(
-        new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
-    ); // Placeholder Lofi URL
 
-    // ... existing useEffects ...
-
-    // Pomodoro Timer Effect
-    useEffect(() => {
-        let interval;
-        if (isPomodoroActive && pomodoroTime > 0) {
-            interval = setInterval(() => {
-                setPomodoroTime((prev) => prev - 1);
-            }, 1000);
-        } else if (pomodoroTime === 0) {
-            setIsPomodoroActive(false);
-            showToast(`${pomodoroMode === 'work' ? 'Work' : 'Break'} session finished!`, 'success');
-            // Play notification sound?
-        }
-        return () => clearInterval(interval);
-    }, [isPomodoroActive, pomodoroTime, pomodoroMode, showToast]);
-
-    const togglePomodoro = () => {
-        setIsPomodoroActive(!isPomodoroActive);
-    };
-
-    const resetPomodoro = () => {
-        setIsPomodoroActive(false);
-        if (pomodoroMode === 'work') setPomodoroTime(25 * 60);
-        else if (pomodoroMode === 'shortBreak') setPomodoroTime(5 * 60);
-        else setPomodoroTime(15 * 60);
-    };
-
-    const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s < 10 ? '0' : ''}${s}`;
-    };
-
-    // Lofi Music Effect
-    useEffect(() => {
-        const audio = lofiAudioRef.current;
-        audio.loop = true;
-        audio.volume = lofiVolume;
-
-        if (isLofiPlaying) {
-            audio.play().catch(() => {
-                setIsLofiPlaying(false);
-                showToast('Auto-play blocked. Please click play again.', 'info');
-            });
-        } else {
-            audio.pause();
-        }
-    }, [isLofiPlaying, lofiVolume, showToast]);
-
-    const toggleLofi = () => {
-        setIsLofiPlaying(!isLofiPlaying);
-    };
-
-    // Whiteboard enhancement states
-    const [whiteboardHistory, setWhiteboardHistory] = useState([]);
-    const [currentStep, setCurrentStep] = useState(-1);
-    const [toolSize, setToolSize] = useState(3);
-    const [toolOpacity, setToolOpacity] = useState(1.0);
-    const [isFilling, setIsFilling] = useState(false);
-    const [shapes, setShapes] = useState([]);
-    const [currentShape, setCurrentShape] = useState(null);
-
-    const { data: room } = useStudyRoom(roomId);
-    const { mutate: leaveRoom } = useLeaveRoom();
-    const { mutate: generateInviteLink } = useGenerateInviteLink();
-    const { mutate: removeUser } = useRemoveUser();
-    const navigate = useNavigate();
-    const { ably } = useAbly();
     const [whiteboardChannel, setWhiteboardChannel] = useState(null);
     const [chatChannel, setChatChannel] = useState(null);
     const [filesChannel, setFilesChannel] = useState(null);
-    const [webrtcChannel, setWebrtcChannel] = useState(null);
-    const { showToast } = useToast();
-    const { user } = useAuth();
-    const { uploadFile } = useMediaUpload();
 
-    // Define drawLine with useCallback to prevent recreation
-    const drawLine = useCallback((x1, y1, x2, y2, color = '#000', width = 3) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-    }, []);
-
-    // Define clearCanvas with useCallback
-    const clearCanvas = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }, []);
-
-    // Enhanced whiteboard functions
-    const saveCanvasState = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        // Update history
-        const newHistory = whiteboardHistory.slice(0, currentStep + 1);
-        newHistory.push(imageData);
-
-        setWhiteboardHistory(newHistory);
-        setCurrentStep(newHistory.length - 1);
-    }, [whiteboardHistory, currentStep]);
-
-    const undo = useCallback(() => {
-        if (currentStep > 0) {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            const previousState = whiteboardHistory[currentStep - 1];
-
-            ctx.putImageData(previousState, 0, 0);
-            setCurrentStep(currentStep - 1);
-        }
-    }, [currentStep, whiteboardHistory]);
-
-    const redo = useCallback(() => {
-        if (currentStep < whiteboardHistory.length - 1) {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            const nextState = whiteboardHistory[currentStep + 1];
-
-            ctx.putImageData(nextState, 0, 0);
-            setCurrentStep(currentStep + 1);
-        }
-    }, [currentStep, whiteboardHistory]);
-
-    const handleToolSizeChange = (size) => {
-        setToolSize(size);
-        setLineWidth(size);
-    };
-
-    const handleToolOpacityChange = (opacity) => {
-        setToolOpacity(opacity);
-    };
-
-    const handleFillToggle = () => {
-        setIsFilling(!isFilling);
-    };
-
-    // Initialize Ably channels
     useEffect(() => {
         if (!ably || !roomId) return;
-
-        const wbChannelName = `study-room:${roomId}:whiteboard`;
-        const wbChannel = ably.channels.get(wbChannelName);
-
-        wbChannel.subscribe('draw', (message) => {
-            const { x, y, prevX, prevY, color, width } = message.data;
-            drawLine(prevX, prevY, x, y, color, width);
+        const wb = ably.channels.get(`study-room:${roomId}:whiteboard`);
+        wb.subscribe('draw', (msg) => {
+            const { x, y, prevX, prevY, color, width, type } = msg.data;
+            drawLineRaw(prevX, prevY, x, y, color, width, type);
         });
+        wb.subscribe('clear', () => clearCanvasRaw());
+        setWhiteboardChannel(wb);
 
-        wbChannel.subscribe('clear', () => {
-            clearCanvas();
+        const chat = ably.channels.get(`study-room:${roomId}:chat`);
+        chat.subscribe('message', (msg) => setMessages(p => [...p, msg.data]));
+        chat.subscribe('typing', (msg) => setTypingUsers(p => new Set([...p, msg.data.username])));
+        chat.subscribe('stop-typing', (msg) => setTypingUsers(p => {const n=new Set(p); n.delete(msg.data.username); return n;}));
+        setChatChannel(chat);
+
+        const files = ably.channels.get(`study-room:${roomId}:files`);
+        files.subscribe('file-shared', (msg) => {
+            setSharedFiles(p => (p.some(f=>f.url===msg.data.url)?p:[...p, msg.data]));
         });
+        setFilesChannel(files);
 
-        setWhiteboardChannel(wbChannel);
+        return () => { wb.unsubscribe(); chat.unsubscribe(); files.unsubscribe(); };
+    }, [ably, roomId]);
 
-        const chatChannelName = `study-room:${roomId}:chat`;
-        const cChannel = ably.channels.get(chatChannelName);
-
-        cChannel.subscribe('message', (message) => {
-            setMessages((prev) => [...prev, message.data]);
-        });
-
-        cChannel.subscribe('typing', (message) => {
-            setTypingUsers((prev) => new Set([...prev, message.data.username]));
-        });
-
-        cChannel.subscribe('stop-typing', (message) => {
-            setTypingUsers((prev) => {
-                const newSet = new Set(prev);
-                newSet.delete(message.data.username);
-                return newSet;
-            });
-        });
-
-        setChatChannel(cChannel);
-
-        // Files channel
-        const filesChannelName = `study-room:${roomId}:files`;
-        const fChannel = ably.channels.get(filesChannelName);
-
-        fChannel.subscribe('file-shared', (message) => {
-            setSharedFiles((prev) => [...prev, message.data]);
-            showToast(`${message.data.username} shared a file`, 'info');
-        });
-
-        setFilesChannel(fChannel);
-
-        // WebRTC signaling channel
-        const webrtcChannelName = `study-room:${roomId}:webrtc`;
-        const rtcChannel = ably.channels.get(webrtcChannelName);
-
-        rtcChannel.subscribe('offer', handleWebRTCOffer);
-        rtcChannel.subscribe('answer', handleWebRTCAnswer);
-        rtcChannel.subscribe('ice-candidate', handleICECandidate);
-
-        setWebrtcChannel(rtcChannel);
-
-        return () => {
-            wbChannel.unsubscribe();
-            cChannel.unsubscribe();
-            fChannel.unsubscribe();
-            rtcChannel.unsubscribe();
-        };
-    }, [ably, roomId, drawLine, clearCanvas, showToast]);
-
-    // Auto-scroll chat
-    useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    // Canvas setup
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
+    const drawLineRaw = (x1, y1, x2, y2, color, width, type = 'pen') => {
+        const ctx = canvasRef.current?.getContext('2d');
+        if (!ctx) return;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.lineWidth = lineWidth;
-        ctx.strokeStyle = currentColor;
-    }, [lineWidth, currentColor]);
+        ctx.beginPath();
+        if (type === 'rect') ctx.rect(x1, y1, x2 - x1, y2 - y1);
+        else if (type === 'circle') ctx.arc(x1, y1, Math.sqrt((x2-x1)**2 + (y2-y1)**2), 0, 2*Math.PI);
+        else { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+        ctx.stroke();
+    };
 
-    // Cleanup WebRTC on unmount
-    useEffect(() => {
-        return () => {
-            if (localStream) {
-                localStream.getTracks().forEach((track) => track.stop());
-            }
-            Object.values(peerConnectionsRef.current).forEach((pc) => pc.close());
-        };
-    }, [localStream]);
+    const clearCanvasRaw = () => canvasRef.current?.getContext('2d').clearRect(0,0,1200,800);
+    const saveToUndo = () => setUndoStack(p => [...p, canvasRef.current.toDataURL()]);
+    const undo = () => {
+        if (!undoStack.length) return;
+        const last = undoStack.pop();
+        setRedoStack(p => [...p, canvasRef.current.toDataURL()]);
+        const img = new Image(); img.src = last; img.onload = () => { clearCanvasRaw(); canvasRef.current.getContext('2d').drawImage(img,0,0); };
+    };
+    const redo = () => {
+        if (!redoStack.length) return;
+        const next = redoStack.pop();
+        setUndoStack(p => [...p, canvasRef.current.toDataURL()]);
+        const img = new Image(); img.src = next; img.onload = () => { clearCanvasRaw(); canvasRef.current.getContext('2d').drawImage(img,0,0); };
+    };
 
     const startDrawing = (e) => {
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        lastPosRef.current = {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-        };
-        // Save canvas state before starting to draw
-        saveCanvasState();
-        setIsDrawing(true);
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        lastPosRef.current = { x, y }; setShapeStart({ x, y }); saveToUndo(); setIsDrawing(true);
     };
 
     const draw = (e) => {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        setChalkPos({ x: e.clientX, y: e.clientY });
         if (!isDrawing) return;
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        const drawColor = tool === 'eraser' ? '#FFFFFF' : currentColor;
-        const drawWidth = tool === 'eraser' ? 20 : lineWidth;
-
-        drawLine(lastPosRef.current.x, lastPosRef.current.y, x, y, drawColor, drawWidth);
-
-        if (whiteboardChannel) {
-            whiteboardChannel.publish('draw', {
-                x,
-                y,
-                prevX: lastPosRef.current.x,
-                prevY: lastPosRef.current.y,
-                color: drawColor,
-                width: drawWidth,
-            });
+        if (tool === 'pen' || tool === 'eraser') {
+            const c = tool === 'eraser' ? '#ffffff' : currentColor;
+            const w = tool === 'eraser' ? 30 : lineWidth;
+            drawLineRaw(lastPosRef.current.x, lastPosRef.current.y, x, y, c, w, 'pen');
+            whiteboardChannel?.publish('draw', { x, y, prevX: lastPosRef.current.x, prevY: lastPosRef.current.y, color: c, width: w, type: 'pen' });
+            lastPosRef.current = { x, y };
         }
-
-        lastPosRef.current = { x, y };
     };
 
-    const stopDrawing = () => {
+    const stopDrawing = (e) => {
+        if (!isDrawing) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        if (tool === 'rect' || tool === 'circle') {
+            drawLineRaw(shapeStart.x, shapeStart.y, x, y, currentColor, lineWidth, tool);
+            whiteboardChannel?.publish('draw', { x, y, prevX: shapeStart.x, prevY: shapeStart.y, color: currentColor, width: lineWidth, type: tool });
+        }
         setIsDrawing(false);
     };
 
-    // Whiteboard logic consolidated to use the useCallback version above
+    useEffect(() => {
+        let int; if (isPomodoroActive && pomodoroTime > 0) int = setInterval(() => setPomodoroTime(t => t - 1), 1000);
+        return () => clearInterval(int);
+    }, [isPomodoroActive, pomodoroTime]);
 
-    const handleUndo = () => {
-        const canvas = canvasRef.current;
-        if (!canvas || undoStack.length === 0) return;
-
-        const ctx = canvas.getContext('2d');
-        const lastState = undoStack[undoStack.length - 1];
-        const img = new Image();
-
-        img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            setRedoStack((prev) => [...prev, undoStack[undoStack.length - 1]]);
-            setUndoStack((prev) => prev.slice(0, -1));
-        };
-        img.src = lastState;
-    };
-
-    const handleRedo = () => {
-        const canvas = canvasRef.current;
-        if (!canvas || redoStack.length === 0) return;
-
-        const ctx = canvas.getContext('2d');
-        const nextState = redoStack[redoStack.length - 1];
-        const img = new Image();
-
-        img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            setUndoStack((prev) => [...prev, redoStack[redoStack.length - 1]]);
-            setRedoStack((prev) => prev.slice(0, -1));
-        };
-        img.src = nextState;
-    };
-
-    const handleClearCanvas = () => {
-        saveCanvasState();
-        clearCanvas();
-        if (whiteboardChannel) {
-            whiteboardChannel.publish('clear', {});
-        }
-    };
-
-    const handleSaveCanvas = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const link = document.createElement('a');
-        link.download = `whiteboard-${Date.now()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-        showToast('Canvas saved', 'success');
-    };
+    const formatTime = (s) => `${Math.floor(s/60)}:${s%60<10?'0':''}${s%60}`;
+    
+    useEffect(() => {
+        const a = lofiAudioRef.current; a.loop = true; a.volume = lofiVolume;
+        if (isLofiPlaying) a.play().catch(() => setIsLofiPlaying(false)); else a.pause();
+    }, [isLofiPlaying, lofiVolume]);
 
     const handleSendMessage = () => {
-        if (!chatMessage.trim() || !chatChannel) return;
-
-        const message = {
-            username: user?.username || 'Anonymous',
-            content: chatMessage,
-            timestamp: new Date().toISOString(),
-            avatar: user?.avatar_url,
-        };
-
-        chatChannel.publish('message', message);
-        setMessages((prev) => [...prev, message]);
+        if (!chatMessage.trim()) return;
+        const m = { username: user?.username, content: chatMessage, timestamp: new Date().toISOString() };
+        chatChannel?.publish('message', m); 
+        saveMessage({ roomId, message: { content: chatMessage, username: user?.username } });
         setChatMessage('');
-
-        // Stop typing indicator
-        setIsTyping(false);
-        chatChannel.publish('stop-typing', { username: user?.username });
-    };
-
-    const handleTyping = (e) => {
-        const value = e.target.value;
-        setChatMessage(value);
-
-        if (value.trim() && !isTyping) {
-            setIsTyping(true);
-            chatChannel.publish('typing', { username: user?.username });
-        }
     };
 
     const handleFileUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setUploadingFile(true);
-        try {
+        const file = e.target.files?.[0]; if (!file) return;
+        setUploadingFile(true); try {
             const url = await uploadFile(file);
-
-            const fileData = {
-                filename: file.name,
-                url,
-                size: file.size,
-                type: file.type,
-                username: user?.username || 'Anonymous',
-                timestamp: new Date().toISOString(),
-            };
-
-            if (filesChannel) {
-                filesChannel.publish('file-shared', fileData);
-            }
-            setSharedFiles((prev) => [...prev, fileData]);
-            showToast('File uploaded successfully', 'success');
-        } catch (error) {
-            showToast('Failed to upload file', 'error');
-        } finally {
-            setUploadingFile(false);
-        }
+            const fileData = { filename: file.name, url, username: user?.username, type: file.type };
+            filesChannel?.publish('file-shared', fileData);
+            saveFile({ roomId, fileData: { ...fileData, file_type: file.type } });
+            showToast('File shared!', 'success');
+        } catch (e) { showToast('Failed', 'error'); } finally { setUploadingFile(false); }
     };
 
-    // WebRTC Functions
-    const toggleAudio = async () => {
-        if (!isAudioEnabled) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: false,
-                });
-                setLocalStream(stream);
-                setIsAudioEnabled(true);
-                showToast('Microphone enabled', 'success');
-            } catch (error) {
-                showToast('Failed to access microphone', 'error');
-            }
+    const toggleAudio = () => {
+        if (localStream) {
+            localStream.getAudioTracks().forEach(t => t.enabled = !isAudioEnabled);
+            setIsAudioEnabled(!isAudioEnabled);
         } else {
-            if (localStream) {
-                localStream.getAudioTracks().forEach((track) => track.stop());
-                setLocalStream(null);
-            }
-            setIsAudioEnabled(false);
-            showToast('Microphone disabled', 'info');
+            showToast('Start video to use microphone', 'info');
         }
     };
+
+    useEffect(() => {
+        if (localVideoRef.current && localStream) {
+            localVideoRef.current.srcObject = localStream;
+        }
+    }, [localStream, isVideoEnabled]);
+
+    useEffect(() => {
+        if (screenVideoRef.current && screenStream) {
+            screenVideoRef.current.srcObject = screenStream;
+        }
+    }, [screenStream, isScreenSharing]);
 
     const toggleVideo = async () => {
         if (!isVideoEnabled) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: isAudioEnabled,
-                    video: true,
-                });
-                setLocalStream(stream);
-                if (localVideoRef.current) {
-                    localVideoRef.current.srcObject = stream;
-                }
+                const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                setLocalStream(s); 
                 setIsVideoEnabled(true);
-                showToast('Camera enabled', 'success');
-            } catch (error) {
-                showToast('Failed to access camera', 'error');
-            }
-        } else {
-            if (localStream) {
-                localStream.getVideoTracks().forEach((track) => track.stop());
-                if (!isAudioEnabled) {
-                    setLocalStream(null);
-                }
-            }
-            setIsVideoEnabled(false);
-            showToast('Camera disabled', 'info');
+                setIsAudioEnabled(true);
+            } catch (e) { showToast('Camera access denied', 'error'); }
+        } else { 
+            localStream?.getTracks().forEach(t => t.stop()); 
+            setLocalStream(null); 
+            setIsVideoEnabled(false); 
+            setIsAudioEnabled(false);
         }
     };
 
     const toggleScreenShare = async () => {
         if (!isScreenSharing) {
             try {
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true,
-                    audio: false,
-                });
-
-                setScreenStream(screenStream);
+                const s = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                setScreenStream(s); 
                 setIsScreenSharing(true);
-                showToast('Screen sharing started', 'success');
-
-                // Handle screen share end
-                screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-                    setIsScreenSharing(false);
-                    showToast('Screen sharing stopped', 'info');
-                });
-            } catch (error) {
-                showToast('Failed to start screen sharing', 'error');
-            }
-        } else {
-            if (screenStream) {
-                screenStream.getTracks().forEach((track) => track.stop());
-                setScreenStream(null);
-            }
-            setIsScreenSharing(false);
-            showToast('Screen sharing stopped', 'info');
+            } catch (e) { showToast('Screen share failed', 'error'); }
+        } else { 
+            screenStream?.getTracks().forEach(t => t.stop()); 
+            setScreenStream(null); 
+            setIsScreenSharing(false); 
         }
     };
-
-    const handleWebRTCOffer = async (message) => {
-        // Handle incoming WebRTC offer
-    };
-
-    const handleWebRTCAnswer = async (message) => {
-        // Handle incoming WebRTC answer
-    };
-
-    const handleICECandidate = async (message) => {
-        // Handle incoming ICE candidate
-    };
-
-    const handleLeaveRoom = () => {
-        if (localStream) {
-            localStream.getTracks().forEach((track) => track.stop());
-        }
-
-        leaveRoom(roomId, {
-            onSuccess: () => {
-                showToast('Left room', 'info');
-                navigate('/study-rooms');
-            },
-        });
-    };
-
-    const handleGenerateInviteLink = () => {
-        setIsGeneratingInvite(true);
-        generateInviteLink(roomId, {
-            onSuccess: (data) => {
-                setInviteLink(data.invite_link);
-                setShowInviteModal(true);
-                showToast('Invite link generated', 'success');
-            },
-            onError: (err) => {
-                showToast(err.response?.data?.error || 'Failed to generate invite link', 'error');
-            },
-            onSettled: () => {
-                setIsGeneratingInvite(false);
-            },
-        });
-    };
-
-    const handleCopyInviteLink = () => {
-        navigator.clipboard.writeText(inviteLink);
-        showToast('Invite link copied to clipboard', 'success');
-    };
-
-    const handleRemoveUser = (userId, username) => {
-        setUserToRemove({ userId, username });
-        setShowRemoveModal(true);
-    };
-
-    const confirmRemoveUser = () => {
-        if (!userToRemove) return;
-
-        removeUser(
-            { roomId, userId: userToRemove.userId },
-            {
-                onSuccess: () => {
-                    showToast(`${userToRemove.username} has been removed from the room`, 'info');
-                    setShowRemoveModal(false);
-                    setUserToRemove(null);
-                },
-                onError: (err) => {
-                    showToast(err.response?.data?.error || 'Failed to remove user', 'error');
-                },
-            },
-        );
-    };
-
-    const participants = room?.participants || [];
 
     return (
-        <div className="study-rooms-page">
-            <div className="study-header">
-                <div className="room-info-header">
-                    <h1>{room?.name || 'Loading...'}</h1>
-                    <span className="live-badge">LIVE</span>
-                    <span className="participants">
-                        <Users size={16} /> {participants.length} Participants
-                    </span>
+        <div className="study-layout">
+            <div className="column-card">
+                <div className="column-header">
+                    <h3>👥 Participants ({room?.participant_count || 0})</h3>
+                    <button className="btn-icon-small" onClick={() => setShowInviteModal(true)}><UserPlus size={16} /></button>
                 </div>
-                <div className="room-controls">
-                    <button
-                        className={`control-btn ${isAudioEnabled ? 'active' : ''}`}
-                        onClick={toggleAudio}
-                        title={isAudioEnabled ? 'Mute' : 'Unmute'}
-                    >
-                        {isAudioEnabled ? <Mic size={20} /> : <PhoneOff size={20} />}
-                    </button>
-                    <button
-                        className={`control-btn ${isVideoEnabled ? 'active' : ''}`}
-                        onClick={toggleVideo}
-                        title={isVideoEnabled ? 'Stop Video' : 'Start Video'}
-                    >
-                        {isVideoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
-                    </button>
-                    <button
-                        className={`control-btn ${isScreenSharing ? 'active' : ''}`}
-                        onClick={toggleScreenShare}
-                        title={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
-                    >
-                        <Monitor size={20} />
-                    </button>
-                    <button
-                        className="control-btn"
-                        onClick={handleGenerateInviteLink}
-                        disabled={isGeneratingInvite}
-                        title="Generate Invite Link"
-                    >
-                        {isGeneratingInvite ? (
-                            <Loader size={20} className="spin-anim" />
-                        ) : (
-                            <PlusCircle size={20} />
-                        )}
-                    </button>
-                    <button
-                        className={`control-btn ${showChat ? 'active' : ''}`}
-                        onClick={() => setShowChat(!showChat)}
-                        title="Toggle Chat"
-                    >
-                        <MessageSquare size={20} />
-                    </button>
-                    <button
-                        className={`control-btn ${showParticipants ? 'active' : ''}`}
-                        onClick={() => setShowParticipants(!showParticipants)}
-                        title="Toggle Participants"
-                    >
-                        <Users size={20} />
-                    </button>
-                    <button 
-                        className="btn btn-danger" 
-                        onClick={handleLeaveRoom}
-                        disabled={leaveRoom.isPending}
-                    >
-                        {leaveRoom.isPending ? <Loader size={16} className="spin-anim" /> : <LogOut size={18} />} Leave
-                    </button>
+                <div className="participants-list" style={{ flex: 1, overflowY: 'auto' }}>
+                    <div className="participant-item">
+                        <Avatar src={user?.avatar_url} name={user?.username} size="sm" />
+                        <div className="item-info"><span className="item-title">{user?.username} (You)</span></div>
+                    </div>
+                </div>
+                <div className="column-header" style={{ borderTop: '1px solid var(--study-glass-border)' }}>
+                    <h3>📂 Shared Files</h3>
+                    <label className="btn-icon-small" style={{ cursor: 'pointer' }}><PlusCircle size={16} /><input type="file" hidden onChange={handleFileUpload} /></label>
+                </div>
+                <div className="files-list" style={{ height: '300px', overflowY: 'auto' }}>
+                    {sharedFiles.map((f, i) => (
+                        <div key={i} className="file-card">
+                            {f.type?.startsWith('image') && <img src={f.url} className="file-preview" alt="" />}
+                            <div className="flex items-center gap-2">
+                                <File size={16} /><a href={f.url} className="item-title truncate flex-1" target="_blank" rel="noreferrer">{f.filename}</a>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            <div className="study-layout">
-                {/* Study Tools Bar */}
-                <div className="study-tools-bar card mb-4 flex items-center justify-between p-3">
-                    <div className="pomodoro-timer flex items-center gap-4">
-                        <span className="text-xl font-mono font-bold">
-                            {formatTime(pomodoroTime)}
-                        </span>
-                        <div className="pomodoro-modes flex gap-2">
-                            <button
-                                className={`px-2 py-1 text-xs rounded ${pomodoroMode === 'work' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
-                                onClick={() => {
-                                    setPomodoroMode('work');
-                                    setPomodoroTime(25 * 60);
-                                    setIsPomodoroActive(false);
-                                }}
-                            >
-                                Work
-                            </button>
-                            <button
-                                className={`px-2 py-1 text-xs rounded ${pomodoroMode === 'shortBreak' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
-                                onClick={() => {
-                                    setPomodoroMode('shortBreak');
-                                    setPomodoroTime(5 * 60);
-                                    setIsPomodoroActive(false);
-                                }}
-                            >
-                                Break
-                            </button>
-                        </div>
-                        <div className="flex gap-2">
-                            <button className="btn btn-sm btn-outline" onClick={togglePomodoro}>
-                                {isPomodoroActive ? 'Pause' : 'Start'}
-                            </button>
-                            <button
-                                className="btn btn-sm btn-icon"
-                                onClick={resetPomodoro}
-                                title="Reset"
-                            >
-                                <LogOut size={16} className="rotate-90" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="lofi-controller flex items-center gap-4 border-l border-gray-200 pl-4 ml-4">
-                        <span className="text-sm font-medium">🎧 Lofi Beats</span>
-                        <button
-                            className={`tool-btn ${isLofiPlaying ? 'active' : ''}`}
-                            onClick={toggleLofi}
-                            title={isLofiPlaying ? 'Pause Music' : 'Play Lofi'}
+            <div className="main-content-area">
+                <div className="study-header">
+                    <div className="room-info-header"><h1>{room?.name}</h1></div>
+                    <div className="room-controls">
+                        <button 
+                            className={`control-btn ${isAudioEnabled ? 'active' : ''}`} 
+                            onClick={toggleAudio}
+                            title={isAudioEnabled ? "Mute" : "Unmute"}
                         >
-                            {isLofiPlaying ? <VideoOff size={18} /> : <Video size={18} />}
+                            {isAudioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
                         </button>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.1"
-                            value={lofiVolume}
-                            onChange={(e) => setLofiVolume(parseFloat(e.target.value))}
-                            className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                        />
+                        <button className={`control-btn ${isVideoEnabled ? 'active' : ''}`} onClick={toggleVideo}><Video size={20} /></button>
+                        <button className={`control-btn ${isScreenSharing ? 'active' : ''}`} onClick={toggleScreenShare}><Monitor size={20} /></button>
+                        <button className="control-btn danger" onClick={() => navigate('/study-rooms')}><LogOut size={20} /></button>
                     </div>
                 </div>
 
-                {/* Participants Sidebar */}
-                {showParticipants && (
-                    <div className="participants-sidebar card">
-                        <div className="sidebar-header">
-                            <h3>👥 Participants ({participants.length})</h3>
-                        </div>
-                        <div className="participants-list">
-                            {participants.map((participant) => (
-                                <div key={participant.user_id} className="participant-item">
-                                    <Avatar
-                                        src={participant.avatar_url}
-                                        name={participant.username}
-                                        size="sm"
-                                    />
-                                    <span className="participant-name">{participant.username}</span>
-                                    {participant.user_id === room?.creator_id && (
-                                        <span className="creator-badge">Host</span>
-                                    )}
-                                    {user?.user_id === room?.creator_id &&
-                                        participant.user_id !== room?.creator_id && (
-                                            <button
-                                                className="remove-user-btn"
-                                                onClick={() =>
-                                                    handleRemoveUser(
-                                                        participant.user_id,
-                                                        participant.username,
-                                                    )
-                                                }
-                                                title="Remove User"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        )}
-                                </div>
-                            ))}
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {isVideoEnabled && <div className="video-tile"><video ref={localVideoRef} autoPlay muted playsInline /><div className="video-label">You</div></div>}
+                    {isScreenSharing && <div className="video-tile"><video ref={screenVideoRef} autoPlay playsInline /><div className="video-label">Screen</div></div>}
+                </div>
 
-                        {/* Shared Files Section */}
-                        <div className="shared-files-section">
-                            <div className="files-header">
-                                <h4>📎 Shared Files</h4>
-                                <button
-                                    className="btn-icon-small"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={uploadingFile}
-                                    title="Upload File"
-                                >
-                                    {uploadingFile ? (
-                                        <Loader size={16} className="spin-anim" />
-                                    ) : (
-                                        <Upload size={16} />
-                                    )}
-                                </button>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    hidden
-                                    onChange={handleFileUpload}
-                                />
-                            </div>
-                            <div className="files-list">
-                                {sharedFiles.length === 0 ? (
-                                    <p className="empty-files">No files shared yet</p>
-                                ) : (
-                                    sharedFiles.map((file, idx) => (
-                                        <div key={idx} className="file-item">
-                                            <File size={16} />
-                                            <div className="file-info">
-                                                <a
-                                                    href={file.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="file-name"
-                                                >
-                                                    {file.filename}
-                                                </a>
-                                                <span className="file-meta">
-                                                    {file.username} •{' '}
-                                                    {(file.size / 1024).toFixed(1)} KB
-                                                </span>
-                                            </div>
-                                            <a href={file.url} download className="btn-icon-small">
-                                                <Download size={14} />
-                                            </a>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Main Content Area */}
-                <div className="main-content-area">
-                    {/* Video Grid (if enabled) */}
-                    {(isVideoEnabled || isAudioEnabled || isScreenSharing) && (
-                        <div className="video-grid">
-                            {isVideoEnabled && (
-                                <div className="video-tile">
-                                    <video
-                                        ref={localVideoRef}
-                                        autoPlay
-                                        muted
-                                        playsInline
-                                        className="local-video"
-                                    />
-                                    <span className="video-label">You</span>
-                                </div>
-                            )}
-                            {isScreenSharing && screenStream && (
-                                <div className="video-tile screen-share-tile">
-                                    <video
-                                        autoPlay
-                                        playsInline
-                                        className="screen-share-video"
-                                        srcObject={screenStream}
-                                    />
-                                    <span className="video-label">Screen Share</span>
-                                </div>
-                            )}
+                <div className="whiteboard-wrapper" onMouseEnter={() => setIsMouseOverCanvas(true)} onMouseLeave={() => setIsMouseOverCanvas(false)}>
+                    {isMouseOverCanvas && (
+                        <div className={`chalk-cursor ${isDrawing?'drawing':''}`} style={{ left: chalkPos.x, top: chalkPos.y }}>
+                            <PenTool size={24} color={currentColor} />
                         </div>
                     )}
-
-                    {/* Whiteboard */}
-                    <div className="whiteboard-container card">
+                    <div className="whiteboard-container">
                         <div className="wb-toolbar">
-                            <strong>📝 Shared Whiteboard</strong>
-                            <div className="tools">
-                                <button
-                                    className={`tool-btn ${tool === 'pen' ? 'active' : ''}`}
-                                    onClick={() => setTool('pen')}
-                                    title="Pen"
-                                >
-                                    <PenTool size={16} />
-                                </button>
-                                <button
-                                    className={`tool-btn ${tool === 'eraser' ? 'active' : ''}`}
-                                    onClick={() => setTool('eraser')}
-                                    title="Eraser"
-                                >
-                                    <Eraser size={16} />
-                                </button>
-                                <input
-                                    type="color"
-                                    value={currentColor}
-                                    onChange={(e) => setCurrentColor(e.target.value)}
-                                    className="color-picker"
-                                    title="Color"
-                                />
-                                <select
-                                    value={lineWidth}
-                                    onChange={(e) => setLineWidth(Number(e.target.value))}
-                                    className="width-select"
-                                    title="Line Width"
-                                >
-                                    <option value="1">Thin</option>
-                                    <option value="3">Normal</option>
-                                    <option value="5">Thick</option>
-                                    <option value="8">Very Thick</option>
+                            <div className="tools-group">
+                                <button className={`wb-tool-btn ${tool==='pen'?'active':''}`} onClick={()=>setTool('pen')}><PenTool size={18} /></button>
+                                <button className={`wb-tool-btn ${tool==='rect'?'active':''}`} onClick={()=>setTool('rect')}><Square size={18} /></button>
+                                <button className={`wb-tool-btn ${tool==='circle'?'active':''}`} onClick={()=>setTool('circle')}><Circle size={18} /></button>
+                                <button className={`wb-tool-btn ${tool==='eraser'?'active':''}`} onClick={()=>setTool('eraser')}><Eraser size={18} /></button>
+                                <input type="color" value={currentColor} onChange={e=>setCurrentColor(e.target.value)} />
+                                <select value={lineWidth} onChange={e=>setLineWidth(Number(e.target.value))}>
+                                    {[1,3,5,10].map(w=><option key={w} value={w}>{w}px</option>)}
                                 </select>
-                                <button
-                                    className="tool-btn"
-                                    onClick={handleUndo}
-                                    title="Undo"
-                                    disabled={undoStack.length === 0}
-                                >
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M3 7v6h6"></path>
-                                        <path d="M3 10l4-4 4 4"></path>
-                                        <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-                                    </svg>
-                                </button>
-                                <button
-                                    className="tool-btn"
-                                    onClick={handleRedo}
-                                    title="Redo"
-                                    disabled={redoStack.length === 0}
-                                >
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M21 7v6h-6"></path>
-                                        <path d="M21 10l-4-4-4 4"></path>
-                                        <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
-                                    </svg>
-                                </button>
-                                <button
-                                    className="tool-btn"
-                                    onClick={handleSaveCanvas}
-                                    title="Save Canvas"
-                                >
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                        <polyline points="7 3 7 8 15 8"></polyline>
-                                    </svg>
-                                </button>
-                                <button
-                                    className="tool-btn"
-                                    onClick={handleClearCanvas}
-                                    title="Clear All"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                                <button
-                                    className="tool-btn"
-                                    onClick={handleSaveCanvas}
-                                    title="Save Canvas"
-                                >
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                        <polyline points="7 3 7 8 15 8"></polyline>
-                                    </svg>
-                                </button>
+                            </div>
+                            <div className="flex gap-2">
+                                <button className="wb-tool-btn" onClick={undo}><ChevronLeft size={18} /></button>
+                                <button className="wb-tool-btn" onClick={redo}><ChevronRight size={18} /></button>
+                                <button className="wb-tool-btn" onClick={clearCanvasRaw}><Trash2 size={18} /></button>
                             </div>
                         </div>
-                        <canvas
-                            ref={canvasRef}
-                            width={1000}
-                            height={600}
-                            className="drawing-canvas"
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                        />
-                        <div className="canvas-tip">
-                            <p>
-                                <strong>💡 Pro Tip:</strong> All participants can see your drawings
-                                in real-time!
-                            </p>
-                        </div>
+                        <canvas ref={canvasRef} className="drawing-canvas" width={1200} height={800} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseOut={stopDrawing} />
                     </div>
                 </div>
-
-                {/* Chat Sidebar */}
-                {showChat && (
-                    <div className="chat-sidebar card">
-                        <div className="chat-header">
-                            <h3>💬 Chat</h3>
-                            <button className="close-chat-btn" onClick={() => setShowChat(false)}>
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <div className="chat-messages">
-                            {messages.length === 0 ? (
-                                <div className="empty-chat">
-                                    <MessageSquare size={48} color="#ccc" />
-                                    <p>No messages yet. Start the conversation!</p>
-                                </div>
-                            ) : (
-                                messages.map((msg, idx) => (
-                                    <div key={idx} className="chat-message">
-                                        <Avatar src={msg.avatar} name={msg.username} size="sm" />
-                                        <div className="message-content">
-                                            <div className="message-header">
-                                                <strong>{msg.username}</strong>
-                                                <span className="message-time">
-                                                    {new Date(msg.timestamp).toLocaleTimeString(
-                                                        [],
-                                                        { hour: '2-digit', minute: '2-digit' },
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <p>{msg.content}</p>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-
-                            {/* Typing indicators */}
-                            {typingUsers.size > 0 && (
-                                <div className="typing-indicator">
-                                    <div className="typing-dots">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
-                                    <span className="typing-text">
-                                        {Array.from(typingUsers).join(', ')}{' '}
-                                        {typingUsers.size === 1 ? 'is' : 'are'} typing...
-                                    </span>
-                                </div>
-                            )}
-
-                            <div ref={chatEndRef} />
-                        </div>
-                        <div className="chat-input-container">
-                            <input
-                                type="text"
-                                className="chat-input"
-                                placeholder="Type a message..."
-                                value={chatMessage}
-                                onChange={handleTyping}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                            />
-                            <button
-                                className="send-btn"
-                                onClick={handleSendMessage}
-                                disabled={!chatMessage.trim()}
-                            >
-                                <Send size={18} />
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Invite Link Modal */}
-                {showInviteModal && (
-                    <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
-                        <div
-                            className="modal-content"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ maxWidth: '500px' }}
-                        >
-                            <div className="modal-header">
-                                <h3>Share Room Invite</h3>
-                                <button
-                                    className="close-btn"
-                                    onClick={() => setShowInviteModal(false)}
-                                >
-                                    ×
-                                </button>
-                            </div>
-                            <div className="modal-body">
-                                <div className="invite-link-container">
-                                    <label>Invite Link</label>
-                                    <div className="invite-link-input-group">
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={inviteLink}
-                                            readOnly
-                                            style={{ flex: 1 }}
-                                        />
-                                        <button
-                                            className="btn btn-primary"
-                                            onClick={handleCopyInviteLink}
-                                        >
-                                            Copy Link
-                                        </button>
-                                    </div>
-                                    <p className="invite-tip">
-                                        <strong>💡 Tip:</strong> Share this link with friends to
-                                        invite them to your study room.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Remove User Confirmation Modal */}
-                {showRemoveModal && userToRemove && (
-                    <div className="modal-overlay" onClick={() => setShowRemoveModal(false)}>
-                        <div
-                            className="modal-content"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ maxWidth: '400px' }}
-                        >
-                            <div className="modal-header">
-                                <h3>Remove User</h3>
-                                <button
-                                    className="close-btn"
-                                    onClick={() => setShowRemoveModal(false)}
-                                >
-                                    ×
-                                </button>
-                            </div>
-                            <div className="modal-body">
-                                <p>
-                                    Are you sure you want to remove{' '}
-                                    <strong>{userToRemove.username}</strong> from this room?
-                                </p>
-                                <div className="modal-actions">
-                                    <button
-                                        className="btn btn-outline"
-                                        onClick={() => setShowRemoveModal(false)}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        className="btn btn-danger" 
-                                        onClick={confirmRemoveUser}
-                                        disabled={removeUser.isPending}
-                                    >
-                                        {removeUser.isPending ? 'Removing...' : 'Remove User'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
+
+            <div className="column-card">
+                <div className="focus-panel">
+                    <div className="timer-display"><div className="timer-time">{formatTime(pomodoroTime)}</div></div>
+                    <div className="timer-controls">
+                        <button className="btn btn-primary btn-sm" onClick={()=>setIsPomodoroActive(!isPomodoroActive)}>{isPomodoroActive?'Pause':'Start'}</button>
+                        <button className="btn btn-outline btn-sm" onClick={()=>setPomodoroTime(25*60)}>Reset</button>
+                    </div>
+                    <div className="lofi-controls">
+                        <div className="lofi-header"><span>Music</span><button onClick={()=>setIsLofiPlaying(!isLofiPlaying)}>{isLofiPlaying?'Mute':'Play'}</button></div>
+                        <input type="range" min="0" max="1" step="0.01" value={lofiVolume} onChange={e=>setLofiVolume(e.target.value)} />
+                    </div>
+                </div>
+                <div className="chat-messages" style={{ flex: 1, overflowY: 'auto' }}>
+                    {messages.map((m, i) => (
+                        <div key={i} className={`chat-bubble ${m.username===user?.username?'own':''}`}>
+                            <div className="chat-name">{m.username}</div><div className="chat-text">{m.content}</div>
+                        </div>
+                    ))}
+                    <div ref={chatEndRef} />
+                </div>
+                <div className="chat-input-container">
+                    <input className="chat-input" value={chatMessage} onChange={e=>setChatMessage(e.target.value)} onKeyPress={e=>e.key==='Enter'&&handleSendMessage()} />
+                    <button className="send-btn" onClick={handleSendMessage}><Send size={18} /></button>
+                </div>
+            </div>
+
+            {showInviteModal && (
+                <div className="modal-overlay" onClick={()=>setShowInviteModal(false)}>
+                    <div className="modal-content premium-modal" onClick={e=>e.stopPropagation()}>
+                        <h2>Invite</h2><div className="invite-link-box">{inviteLink}</div>
+                        <button className="btn btn-primary" onClick={handleGenerateInviteLink}>Get Link</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

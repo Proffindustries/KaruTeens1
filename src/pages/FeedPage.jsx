@@ -115,8 +115,8 @@ const FeedPage = () => {
                 <div className="card create-post-widget shadow-sm">
                     <div className="create-post-top">
                         <Avatar
-                            src={user.avatar_url}
-                            name={user.username || 'User'}
+                            src={user?.avatar_url}
+                            name={user?.username || 'User'}
                             className="widget-avatar shadow-sm"
                         />
                         <div
@@ -214,7 +214,7 @@ const FeedPage = () => {
                     ) : (
                         <>
                             {allPosts.map((post) => (
-                                <PostCard key={post.id || post._id} post={post} />
+                                <PostCard key={post.id} post={post} />
                             ))}
                             {/* Infinite scroll sentinel */}
                             <div ref={ref} style={{ height: 1 }} />

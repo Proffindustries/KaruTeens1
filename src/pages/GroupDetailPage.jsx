@@ -8,14 +8,24 @@ import {
     Loader,
     Send,
     Image as ImageIcon,
+    Video,
     Shield,
     X,
+    FileText,
+    MoreVertical,
 } from 'lucide-react';
-import { useGroup, useGroupPosts, useLeaveGroup, useCreateGroupPost } from '../hooks/useGroups';
-import { useToast } from '../context/ToastContext';
+import CreatePostModal from '../components/CreatePostModal.jsx';
+import { useGroup, useGroupPosts, useLeaveGroup, useUpdateGroup } from '../hooks/useGroups';
+import { useMediaUpload } from '../hooks/useMedia';
+import { useUpload } from '../context/UploadContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import '../styles/GroupDetailPage.css';
 import Avatar from '../components/Avatar.jsx';
+import CustomVideoPlayer from '../components/CustomVideoPlayer.jsx';
+import CustomAudioPlayer from '../components/CustomAudioPlayer.jsx';
+import PostCard from '../components/PostCard.jsx';
 import { shouldBlur } from '../utils/contentFilters.js';
+import { useAuthContext } from '../context/AuthContext.jsx';
 
 const GroupDetailPage = () => {
     const { groupId } = useParams();
@@ -34,14 +44,45 @@ const GroupDetailPage = () => {
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
     const { data: posts, isLoading: postsLoading } = useGroupPosts(groupId);
     const { mutate: leaveGroup } = useLeaveGroup();
-    const { mutate: createPost } = useCreateGroupPost();
     const { showToast } = useToast();
-    const [postContent, setPostContent] = useState('');
-    const [isPosting, setIsPosting] = useState(false);
-    const [revealedNsfwPosts, setRevealedNsfwPosts] = useState(new Set());
-    const [selectedImages, setSelectedImages] = useState([]);
-    const fileInputRef = useRef(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { user: currentUser } = useAuthContext();
+    const { mutate: updateGroup } = useUpdateGroup();
+    const [isEditingGroup, setIsEditingGroup] = useState(false);
+    const [editGroupData, setEditGroupData] = useState({
+        name: '',
+        description: '',
+        avatar_url: '',
+    });
+    const { uploadImage } = useMediaUpload();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
+    const avatarInputRef = useRef(null);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploadingAvatar(true);
+        const uploadId = addUpload({
+            fileName: file.name,
+            fileSize: file.size,
+            type: 'image',
+        });
+
+        try {
+            const url = await uploadImage(file, (p, l) => updateUploadProgress(uploadId, p, l));
+            completeUpload(uploadId, { url });
+            setEditGroupData((prev) => ({ ...prev, avatar_url: url }));
+            showToast('Avatar uploaded!', 'success');
+        } catch (err) {
+            failUpload(uploadId, err);
+            showToast('Failed to upload avatar', 'error');
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    };
     const handleLeaveGroup = () => {
         if (confirm('Are you sure you want to leave this group?')) {
             leaveGroup(groupId, {
@@ -53,42 +94,34 @@ const GroupDetailPage = () => {
         }
     };
 
-    const handleImageSelect = (e) => {
-        const files = Array.from(e.target.files);
-        const newImages = files.map((file) => ({
-            file,
-            preview: URL.createObjectURL(file),
-        }));
-        setSelectedImages((prev) => [...prev, ...newImages]);
+    const handleEditBtnClick = () => {
+        setEditGroupData({
+            name: group.name || '',
+            description: group.description || '',
+            avatar_url: group.avatar_url || '',
+        });
+        setIsEditingGroup(true);
     };
 
-    const removeImage = (index) => {
-        setSelectedImages((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const handleCreatePost = (e) => {
+    const handleUpdateGroup = (e) => {
         e.preventDefault();
-        if (!postContent.trim() && selectedImages.length === 0) return;
-
-        setIsPosting(true);
-
-        // For now, we'll just send the content. Image upload would require
-        // additional API integration for file uploads
-        createPost(
-            { groupId, content: postContent, media_urls: selectedImages.map((img) => img.preview) },
+        updateGroup(
+            { groupId, updateData: editGroupData },
             {
                 onSuccess: () => {
-                    setPostContent('');
-                    showToast('Posted to group!', 'success');
-                    setIsPosting(false);
+                    showToast('Group updated successfully!', 'success');
+                    setIsEditingGroup(false);
                 },
-                onError: (err) => {
-                    showToast(err.response?.data?.error || 'Failed to post', 'error');
-                    setIsPosting(false);
+                onError: () => {
+                    showToast('Failed to update group.', 'error');
                 },
             },
         );
     };
+
+    const canEdit =
+        currentUser &&
+        (group?.creator_id === currentUser?.id || group?.admins?.includes(currentUser?.id));
 
     if (groupLoading) {
         return (
@@ -111,8 +144,25 @@ const GroupDetailPage = () => {
     }
 
     return (
-        <div className="container group-detail-page">
-            <button className="back-btn" onClick={() => navigate('/groups')}>
+        <div
+            className="container group-detail-page feed-layout"
+            style={{
+                maxWidth: '800px',
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <CreatePostModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                groupId={groupId}
+            />
+            <button
+                className="back-btn"
+                onClick={() => navigate('/groups')}
+                style={{ marginBottom: '1rem', width: 'fit-content' }}
+            >
                 <ChevronLeft size={20} /> Back to Communities
             </button>
 
@@ -144,73 +194,205 @@ const GroupDetailPage = () => {
                         </div>
                     </div>
                     {group.is_member && (
-                        <button className="btn btn-outline" onClick={handleLeaveGroup}>
-                            <LogOut size={18} /> Leave Group
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <button className="btn-icon" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                <MoreVertical size={24} />
+                            </button>
+                            {isMenuOpen && (
+                                <div
+                                    className="post-options-menu"
+                                    style={{
+                                        position: 'absolute',
+                                        right: 0,
+                                        top: '100%',
+                                        zIndex: 10,
+                                    }}
+                                >
+                                    {canEdit && (
+                                        <button
+                                            className="menu-item"
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                handleEditBtnClick();
+                                            }}
+                                        >
+                                            <Settings size={18} /> Edit Settings
+                                        </button>
+                                    )}
+                                    <button
+                                        className="menu-item danger"
+                                        onClick={() => {
+                                            setIsMenuOpen(false);
+                                            handleLeaveGroup();
+                                        }}
+                                    >
+                                        <LogOut size={18} /> Leave Group
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
 
+            {/* Edit Group Modal */}
+            {isEditingGroup && (
+                <div className="modal-overlay">
+                    <div
+                        className="group-modal card"
+                        style={{ padding: '2rem', maxWidth: '400px', width: '100%' }}
+                    >
+                        <div
+                            className="modal-header"
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '1rem',
+                            }}
+                        >
+                            <h3>Edit Group Settings</h3>
+                            <button className="icon-btn" onClick={() => setIsEditingGroup(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form
+                            onSubmit={handleUpdateGroup}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                        >
+                            <div className="form-group">
+                                <label>Group Name</label>
+                                <input
+                                    type="text"
+                                    value={editGroupData.name}
+                                    onChange={(e) =>
+                                        setEditGroupData({ ...editGroupData, name: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea
+                                    value={editGroupData.description}
+                                    onChange={(e) =>
+                                        setEditGroupData({
+                                            ...editGroupData,
+                                            description: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Avatar</label>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: '1rem',
+                                        alignItems: 'center',
+                                        marginTop: '0.5rem',
+                                    }}
+                                >
+                                    <Avatar
+                                        src={editGroupData.avatar_url}
+                                        name={editGroupData.name}
+                                        size="xl"
+                                    />
+                                    <input
+                                        type="file"
+                                        ref={avatarInputRef}
+                                        onChange={handleAvatarUpload}
+                                        hidden
+                                        accept="image/*"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline btn-sm"
+                                        onClick={() => avatarInputRef.current.click()}
+                                        disabled={isUploadingAvatar}
+                                    >
+                                        {isUploadingAvatar ? 'Uploading...' : 'Update Avatar'}
+                                    </button>
+                                </div>
+                            </div>
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                style={{ marginTop: '1rem' }}
+                            >
+                                Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Group Feed */}
             {group.is_member ? (
                 <div className="group-feed">
-                    {/* Create Post */}
-                    <div className="card create-post-card">
-                        <form onSubmit={handleCreatePost}>
-                            <textarea
-                                className="post-textarea"
-                                placeholder="Share something with the group..."
-                                value={postContent}
-                                onChange={(e) => setPostContent(e.target.value)}
-                                rows="3"
+                    {/* Create Post Widget */}
+                    <div
+                        className="card create-post-widget shadow-sm"
+                        style={{ marginBottom: '1.5rem' }}
+                    >
+                        <div className="create-post-top">
+                            <Avatar
+                                src={currentUser?.avatar_url}
+                                name={currentUser?.username || 'User'}
+                                className="widget-avatar shadow-sm"
                             />
-                            {selectedImages.length > 0 && (
-                                <div className="selected-images mb-3">
-                                    <div className="images-preview">
-                                        {selectedImages.map((img, index) => (
-                                            <div key={index} className="image-preview-item">
-                                                <img src={img.preview} alt="Selected" />
-                                                <button
-                                                    type="button"
-                                                    className="remove-image"
-                                                    onClick={() => removeImage(index)}
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
+                            <div
+                                className="create-post-input"
+                                onClick={() => setIsModalOpen(true)}
+                                style={{ cursor: 'pointer', flex: 1 }}
+                            >
+                                <div
+                                    style={{
+                                        padding: '0.65rem 1rem',
+                                        borderRadius: '20px',
+                                        background: 'rgba(var(--border), 0.15)',
+                                        color: 'rgb(var(--text-muted))',
+                                        fontSize: '0.95rem',
+                                        userSelect: 'none',
+                                    }}
+                                >
+                                    Share something with {group.name}...
                                 </div>
-                            )}
-                            <div className="post-actions">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleImageSelect}
-                                    accept="image/*"
-                                    multiple
-                                    className="hidden"
-                                />
-                                <button
-                                    type="button"
-                                    className="btn-icon"
-                                    title="Add image"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <ImageIcon size={20} />
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary btn-sm"
-                                    disabled={
-                                        (!postContent.trim() && selectedImages.length === 0) ||
-                                        isPosting
-                                    }
-                                >
-                                    {isPosting ? 'Posting...' : 'Post'}
-                                </button>
                             </div>
-                        </form>
+                        </div>
+                        <div
+                            className="create-post-actions"
+                            style={{
+                                display: 'flex',
+                                gap: '0.5rem',
+                                marginTop: '1rem',
+                                paddingLeft: '3rem',
+                            }}
+                        >
+                            <button
+                                className="cp-action"
+                                onClick={() => setIsModalOpen(true)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <ImageIcon size={18} color="#00b894" /> Photo/Media
+                            </button>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                style={{
+                                    marginLeft: 'auto',
+                                    borderRadius: '20px',
+                                    padding: '0.5rem 1.25rem',
+                                }}
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                Post
+                            </button>
+                        </div>
                     </div>
 
                     {/* Posts List */}
@@ -220,53 +402,7 @@ const GroupDetailPage = () => {
                             <p>Loading posts...</p>
                         </div>
                     ) : posts && posts.length > 0 ? (
-                        posts.map((post) => (
-                            <div key={post.id} className="card post-card">
-                                <div className="post-header">
-                                    <Avatar
-                                        src={post.avatar_url}
-                                        name={post.username}
-                                        className="post-avatar"
-                                    />
-                                    <div>
-                                        <strong>{post.username}</strong>
-                                        <span className="post-time">
-                                            {new Date(post.created_at).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`post-content ${shouldBlur(post) && !revealedNsfwPosts.has(post.id) ? 'nsfw-blurred' : ''}`}
-                                >
-                                    <p>{post.content}</p>
-                                    {post.media_urls && post.media_urls.length > 0 && (
-                                        <div className="post-media">
-                                            {post.media_urls.map((url, idx) => (
-                                                <img key={idx} src={url} alt="Post media" />
-                                            ))}
-                                        </div>
-                                    )}
-                                    {shouldBlur(post) && !revealedNsfwPosts.has(post.id) && (
-                                        <div
-                                            className="nsfw-overlay"
-                                            onClick={() =>
-                                                setRevealedNsfwPosts((prev) =>
-                                                    new Set(prev).add(post.id),
-                                                )
-                                            }
-                                        >
-                                            <Shield size={32} />
-                                            <p>Sensitive Content</p>
-                                            <button className="reveal-btn">Tap to View</button>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="post-footer">
-                                    <span>{post.likes_count} likes</span>
-                                    <span>{post.comments_count} comments</span>
-                                </div>
-                            </div>
-                        ))
+                        posts.map((post) => <PostCard key={post.id} post={post} />)
                     ) : (
                         <div className="empty-state">
                             <p>No posts yet. Be the first to post!</p>

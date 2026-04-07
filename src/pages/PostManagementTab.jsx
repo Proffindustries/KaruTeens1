@@ -1013,8 +1013,11 @@ const PostManagementTab = () => {
 
                                     <div className="form-row">
                                         <div className="form-group">
-                                            <label>Scheduled Publish Date (Optional)</label>
-                                            <input type="datetime-local" className="form-input" />
+                                            <label>Scheduled Date (Optional)</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                                <input type="date" className="form-input" name="scheduled_date" />
+                                                <input type="time" className="form-input" name="scheduled_time" defaultValue="12:00" />
+                                            </div>
                                         </div>
                                         <div className="form-group">
                                             <label>Custom Meta Data (JSON)</label>
@@ -1269,13 +1272,28 @@ const PostManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Scheduled Publish Date</label>
-                                            <input
-                                                type="datetime-local"
-                                                className="form-input"
-                                                defaultValue={
-                                                    editingPost.scheduled_publish_date || ''
-                                                }
-                                            />
+                                            <div className="datetime-input-group">
+                                                <input
+                                                    type="date"
+                                                    className="form-input"
+                                                    defaultValue={editingPost.scheduled_publish_date?.split('T')[0] || ''}
+                                                />
+                                                <div className="time-picker-container">
+                                                    <input
+                                                        type="time"
+                                                        id={`schedule_time_${editingPost.id}`}
+                                                        className="form-input"
+                                                        defaultValue={editingPost.scheduled_publish_date?.split('T')[1]?.slice(0, 5) || '12:00'}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="time-picker-btn"
+                                                        onClick={() => document.getElementById(`schedule_time_${editingPost.id}`).showPicker?.()}
+                                                    >
+                                                        <Clock size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="form-group">
                                             <label>Custom Meta Data</label>

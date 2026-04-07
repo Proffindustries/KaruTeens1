@@ -23,8 +23,9 @@ import { useUpload } from '../context/UploadContext.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from './Avatar.jsx';
+import { useCreateGroupPost } from '../hooks/useGroups.js';
 
-const CreatePostModal = React.memo(({ isOpen, onClose }) => {
+const CreatePostModal = React.memo(({ isOpen, onClose, groupId = null, pageId = null, pageName = null }) => {
     const [text, setText] = useState('');
     const [location, setLocation] = useState(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -35,7 +36,7 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
     const [audience, setAudience] = useState(['all']);
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [isNsfw, setIsNsfw] = useState(false);
-    const [scheduledDate, setScheduledDate] = useState('');
+    const [scheduledDatetime, setScheduledDatetime] = useState('');
     const [showScheduling, setShowScheduling] = useState(false);
     const [isPosting, setIsPosting] = useState(false);
 
@@ -59,9 +60,12 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
     const { isAuthenticated, user } = useAuth();
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const { mutate: createPost } = useCreatePost();
+    const { mutate: createFeedPost } = useCreatePost();
+    const { mutate: createGroupPost } = useCreateGroupPost();
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { uploadImage, uploadFile } = useMediaUpload();
+
+    const createPost = groupId ? (data, options) => createGroupPost({ groupId, postData: data }, options) : createFeedPost;
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
@@ -98,21 +102,15 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
         if (!text.trim() && selectedFiles.length === 0) return;
         setIsPosting(true);
 
-        const postContent = text;
-        const postLocation = location;
-        const files = [...selectedFiles];
-        const postAudience = audience.includes('all') ? null : audience;
-        const postScheduled = scheduledDate ? new Date(scheduledDate).toISOString() : null;
-        const postIsAnonymous = isAnonymous;
         const postIsNsfw = isNsfw;
 
         const postType =
-            files.length > 0
-                ? files[0].type.startsWith('image/')
+            selectedFiles.length > 0
+                ? selectedFiles[0].type.startsWith('image/')
                     ? 'image'
-                    : files[0].type.startsWith('video/')
+                    : selectedFiles[0].type.startsWith('video/')
                       ? 'video'
-                      : files[0].type.startsWith('audio/')
+                      : selectedFiles[0].type.startsWith('audio/')
                         ? 'audio'
                         : 'file'
                 : 'text';
@@ -125,13 +123,13 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
             setAudience(['all']);
             setIsAnonymous(false);
             setIsNsfw(false);
-            setScheduledDate('');
+            setScheduledDatetime('');
             onClose();
         };
 
         // Upload files in background
-        if (files.length > 0) {
-            const uploadPromises = files.map(async (file) => {
+        if (selectedFiles.length > 0) {
+            const uploadPromises = selectedFiles.map(async (file) => {
                 const uploadId = addUpload({
                     fileName: file.name,
                     fileSize: file.size,
@@ -159,16 +157,19 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
 
             try {
                 const mediaUrls = await Promise.all(uploadPromises);
+                const finalScheduledDate = scheduledDatetime ? new Date(scheduledDatetime).toISOString() : null;
+
                 createPost({
-                    content: postContent,
+                    content: text,
                     media_urls: mediaUrls.filter(Boolean),
                     post_type: postType,
-                    location: postLocation,
-                    audience: postAudience,
-                    scheduled_publish_date: postScheduled,
-                    is_anonymous: postIsAnonymous,
+                    location: location,
+                    audience: audience,
+                    scheduled_publish_date: finalScheduledDate,
+                    is_anonymous: isAnonymous,
                     is_nsfw: postIsNsfw,
-                    status: postScheduled ? 'scheduled' : 'published',
+                    status: scheduledDatetime ? 'scheduled' : 'published',
+                    page_id: pageId, // Missing page_id added
                 }, {
                     onSuccess: resetForm,
                     onError: (err) => showToast(err.message || 'Failed to create post', 'error'),
@@ -179,16 +180,19 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                 setIsPosting(false);
             }
         } else {
+            const finalScheduledDate = scheduledDatetime ? new Date(scheduledDatetime).toISOString() : null;
+
             createPost({
-                content: postContent,
+                content: text,
                 media_urls: [],
                 post_type: 'text',
-                location: postLocation,
-                audience: postAudience,
-                scheduled_publish_date: postScheduled,
-                is_anonymous: postIsAnonymous,
+                location: location,
+                audience: audience,
+                scheduled_publish_date: finalScheduledDate,
+                is_anonymous: isAnonymous,
                 is_nsfw: postIsNsfw,
-                status: postScheduled ? 'scheduled' : 'published',
+                status: scheduledDatetime ? 'scheduled' : 'published',
+                page_id: pageId, // Missing page_id added
             }, {
                 onSuccess: resetForm,
                 onError: (err) => showToast(err.message || 'Failed to create post', 'error'),
@@ -351,13 +355,13 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
                                             </select>
 
                                             <button
-                                                className={`schedule-btn ${scheduledDate ? 'active' : ''}`}
+                                                className={`schedule-btn ${scheduledDatetime ? 'active' : ''}`}
                                                 onClick={() => !isPosting && setShowScheduling(!showScheduling)}
                                                 disabled={isPosting}
                                                 title="Schedule Post"
                                             >
                                                 <Calendar size={14} />{' '}
-                                                {scheduledDate ? 'Scheduled' : 'Now'}
+                                                {scheduledDatetime ? 'Scheduled' : 'Now'}
                                             </button>
                                         </div>
                                     </div>
@@ -365,13 +369,18 @@ const CreatePostModal = React.memo(({ isOpen, onClose }) => {
 
                                 {showScheduling && (
                                     <div className="scheduling-panel">
-                                        <label>Publish on:</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={scheduledDate}
-                                            onChange={(e) => setScheduledDate(e.target.value)}
-                                            min={new Date().toISOString().slice(0, 16)}
-                                        />
+                                        <div className="scheduling-row">
+                                            <div className="form-group" style={{width: "100%"}}>
+                                                <label>Date & Time:</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    style={{ width: "100%", padding: "0.5rem" }}
+                                                    value={scheduledDatetime}
+                                                    onChange={(e) => setScheduledDatetime(e.target.value)}
+                                                    min={new Date().toISOString().slice(0, 16)}
+                                                />
+                                            </div>
+                                        </div>
                                         <button
                                             className="clear-schedule"
                                             onClick={() => {

@@ -59,7 +59,8 @@ const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800')
 };
 
 const PostCard = React.memo(({ post }) => {
-    console.log('PostCard rendering for post:', post.id || post._id);
+    const postId = post.id;
+    console.log('PostCard rendering for post:', postId);
     const navigate = useNavigate();
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
@@ -70,9 +71,6 @@ const PostCard = React.memo(({ post }) => {
     const { showToast } = useToast();
     const currentUser = JSON.parse(localStorage.getItem('user'));
     const fileInputRef = useRef(null);
-
-    // Support both id (Postgres/Normalized) and _id (MongoDB)
-    const postId = post.id || post._id;
 
     const isOwner = currentUser?.username === post.user;
     const cardRef = React.useRef(null);
@@ -286,25 +284,24 @@ const PostCard = React.memo(({ post }) => {
 
         // First pass: create a map of all comments
         comments.forEach((comment) => {
-            commentMap[comment._id] = { ...comment, replies: [] };
+            commentMap[comment.id] = { ...comment, replies: [] };
         });
 
         // Second pass: organize into tree structure
         comments.forEach((comment) => {
-            if (comment.parent_comment_id) {
-                // This is a reply
-                const parent = commentMap[comment.parent_comment_id];
+            if (comment.parent_id) {
+                const parent = commentMap[comment.parent_id];
                 if (parent) {
-                    // Attach parent info to the reply for WhatsApp style preview
-                    commentMap[comment._id].parentInfo = {
+                    commentMap[comment.id].parentInfo = {
                         username: parent.username,
                         content: parent.content,
                     };
-                    parent.replies.push(commentMap[comment._id]);
+                    parent.replies.push(commentMap[comment.id]);
+                } else {
+                    topLevelComments.push(commentMap[comment.id]);
                 }
             } else {
-                // This is a top-level comment
-                topLevelComments.push(commentMap[comment._id]);
+                topLevelComments.push(commentMap[comment.id]);
             }
         });
 
@@ -409,6 +406,29 @@ const PostCard = React.memo(({ post }) => {
                                         }}
                                     >
                                         {post.group_name}
+                                    </Link>
+                                </>
+                            )}
+                            {post.page_name && (
+                                <>
+                                    <span
+                                        style={{
+                                            fontWeight: 'normal',
+                                            color: '#636e72',
+                                            margin: '0 4px',
+                                        }}
+                                    >
+                                        ▶
+                                    </span>
+                                    <Link
+                                        to={`/p/${post.page_id}`}
+                                        style={{
+                                            color: '#e84393',
+                                            fontWeight: '600',
+                                            textDecoration: 'none',
+                                        }}
+                                    >
+                                        {post.page_name}
                                     </Link>
                                 </>
                             )}
@@ -827,7 +847,7 @@ const PostCard = React.memo(({ post }) => {
                         ) : (
                             organizedComments.map((comment) => (
                                 <Comment
-                                    key={comment._id}
+                                    key={comment.id}
                                     comment={comment}
                                     onReply={handleReply}
                                     level={0}

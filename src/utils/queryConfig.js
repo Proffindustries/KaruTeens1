@@ -105,7 +105,7 @@ export const infiniteQueryConfig = {
     getNextPageParam: (lastPage) => {
         if (!lastPage || lastPage.length === 0) return undefined;
         const lastItem = lastPage[lastPage.length - 1];
-        return lastItem?.id || lastItem?._id;
+        return lastItem?.id;
     },
 };
 

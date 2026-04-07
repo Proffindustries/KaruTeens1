@@ -91,7 +91,7 @@ const StoryManagementTab = () => {
         setIsLoading(true);
         // Fetch real data from API
         Promise.all([
-            api.get('/stories'),
+            api.get('/stories/admin'),
             api.get('/user/stats'),
             api.get('/highlights'),
             api.get('/templates'),

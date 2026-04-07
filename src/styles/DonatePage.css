@@ -55,6 +55,13 @@
     color: rgb(var(--primary));
 }
 
+.preset-amounts button.selected {
+    border-color: rgb(var(--primary));
+    background: rgba(var(--primary), 0.1);
+    color: rgb(var(--primary));
+    box-shadow: 0 0 0 1px rgb(var(--primary));
+}
+
 .custom-amount {
     display: flex;
     align-items: center;

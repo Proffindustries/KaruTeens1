@@ -62,7 +62,7 @@ const VirtualizedFeed = ({ posts = [], isLoading, error, height = 600 }) => {
     return (
         <div style={{ height: height, overflowY: 'auto', padding: '1rem' }}>
             {posts.map((post) => (
-                <PostCard key={post.id || post._id} post={post} />
+                <PostCard key={post.id} post={post} />
             ))}
         </div>
     );

@@ -40,6 +40,7 @@ import {
     Zap,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import api from '../api/client';
 
 const EventManagementTab = () => {
     const [events, setEvents] = useState([]);
@@ -64,110 +65,227 @@ const EventManagementTab = () => {
 
     const { showToast } = useToast();
 
-    // Fetch events from API
-    useEffect(() => {
-        let isMounted = true;
-
-        const loadEvents = async () => {
-            setIsLoading(true);
-            try {
-                const { data } = await api.get('/events');
-                if (isMounted) {
-                    setEvents(data);
-                }
-            } catch (error) {
-                console.error('Failed to load events:', error);
-                if (isMounted) {
-                    showToast('Failed to load events. Please try again later.', 'error');
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
+    const filteredEvents = useMemo(() => {
+        return events.filter((event) => {
+            if (filters.status !== 'all' && event.status !== filters.status) return false;
+            if (filters.category !== 'all' && event.category !== filters.category) return false;
+            if (filters.location_type !== 'all' && event.location_type !== filters.location_type) return false;
+            if (filters.event_type !== 'all' && event.event_type !== filters.event_type) return false;
+            if (filters.search) {
+                const searchLower = filters.search.toLowerCase();
+                const titleMatch = event.title?.toLowerCase().includes(searchLower);
+                const descMatch = event.description?.toLowerCase().includes(searchLower);
+                const locMatch = event.location?.toLowerCase().includes(searchLower);
+                if (!titleMatch && !descMatch && !locMatch) return false;
             }
-        };
+            return true;
+        }).sort((a, b) => {
+            const dateA = new Date(a[filters.sortBy] || 0);
+            const dateB = new Date(b[filters.sortBy] || 0);
+            return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+    }, [events, filters]);
 
+    const loadEvents = async () => {
+        setIsLoading(true);
+        try {
+            const { data } = await api.get('/events');
+            setEvents(data.events || []);
+        } catch (error) {
+            console.error('Failed to load events:', error);
+            showToast('Failed to load events. Please try again later.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         loadEvents();
-
-        return () => {
-            isMounted = false;
-        };
     }, []);
+
+    const handleAddEvent = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Combine date and time
+        if (data.start_date && data.start_time) {
+            data.start_datetime = `${data.start_date}T${data.start_time}:00Z`;
+        }
+        if (data.end_date && data.end_time) {
+            data.end_datetime = `${data.end_date}T${data.end_time}:00Z`;
+        }
+        if (data.reg_start_date && data.reg_start_time) {
+            data.registration_start = `${data.reg_start_date}T${data.reg_start_time}:00Z`;
+        }
+        if (data.reg_end_date && data.reg_end_time) {
+            data.registration_end = `${data.reg_end_date}T${data.reg_end_time}:00Z`;
+        }
+        
+        delete data.start_date;
+        delete data.start_time;
+        delete data.end_date;
+        delete data.end_time;
+        delete data.reg_start_date;
+        delete data.reg_start_time;
+        delete data.reg_end_date;
+        delete data.reg_end_time;
+
+        data.featured = !!data.featured;
+        data.rsvp_required = !!data.rsvp_required;
+        data.waitlist_enabled = !!data.waitlist_enabled;
+
+        if (data.max_attendees) data.max_attendees = parseInt(data.max_attendees);
+        if (data.ticket_price) data.ticket_price = parseFloat(data.ticket_price);
+        
+        if (data.tags && typeof data.tags === 'string') {
+            data.tags = data.tags.split(',').map(t => t.trim()).filter(Boolean);
+        }
+        
+        try {
+            await api.post('/events', data);
+            showToast('Event created successfully', 'success');
+            setShowAddModal(false);
+            loadEvents();
+        } catch (error) {
+            console.error('Failed to create event:', error);
+            showToast('Failed to create event', 'error');
+        }
+    };
+
+    const handleEditEvent = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Combine date and time
+        if (data.start_date && data.start_time) {
+            data.start_datetime = `${data.start_date}T${data.start_time}:00Z`;
+        }
+        if (data.end_date && data.end_time) {
+            data.end_datetime = `${data.end_date}T${data.end_time}:00Z`;
+        }
+        if (data.reg_start_date && data.reg_start_time) {
+            data.registration_start = `${data.reg_start_date}T${data.reg_start_time}:00Z`;
+        }
+        if (data.reg_end_date && data.reg_end_time) {
+            data.registration_end = `${data.reg_end_date}T${data.reg_end_time}:00Z`;
+        }
+        
+        delete data.start_date;
+        delete data.start_time;
+        delete data.end_date;
+        delete data.end_time;
+        delete data.reg_start_date;
+        delete data.reg_start_time;
+        delete data.reg_end_date;
+        delete data.reg_end_time;
+
+        data.featured = !!data.featured;
+        data.rsvp_required = !!data.rsvp_required;
+        data.waitlist_enabled = !!data.waitlist_enabled;
+
+        if (data.max_attendees) data.max_attendees = parseInt(data.max_attendees);
+        if (data.ticket_price) data.ticket_price = parseFloat(data.ticket_price);
+        
+        if (data.tags && typeof data.tags === 'string') {
+            data.tags = data.tags.split(',').map(t => t.trim()).filter(Boolean);
+        }
+        
+        try {
+            await api.put(`/events/${editingEvent.id}`, data);
+            showToast('Event updated successfully', 'success');
+            setShowEditModal(false);
+            loadEvents();
+        } catch (error) {
+            console.error('Failed to update event:', error);
+            showToast('Failed to update event', 'error');
+        }
+    };
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedEvents.length === 0) {
             showToast('Please select events first', 'warning');
             return;
         }
 
-        if (bulkAction === 'publish') {
-            setEvents((prev) =>
-                prev.map((e) =>
-                    selectedEvents.includes(e.id) ? { ...e, status: 'published' } : e,
-                ),
-            );
-            setSelectedEvents([]);
-            setBulkAction('');
-            showToast('Events published', 'success');
-        } else if (bulkAction === 'cancel') {
-            setEvents((prev) =>
-                prev.map((e) =>
-                    selectedEvents.includes(e.id) ? { ...e, status: 'cancelled' } : e,
-                ),
-            );
-            setSelectedEvents([]);
-            setBulkAction('');
-            showToast('Events cancelled', 'info');
-        } else if (bulkAction === 'make_public') {
-            setEvents((prev) =>
-                prev.map((e) =>
-                    selectedEvents.includes(e.id) ? { ...e, event_type: 'public' } : e,
-                ),
-            );
-            setSelectedEvents([]);
-            setBulkAction('');
-            showToast('Events made public', 'success');
-        } else if (bulkAction === 'make_private') {
-            setEvents((prev) =>
-                prev.map((e) =>
-                    selectedEvents.includes(e.id) ? { ...e, event_type: 'private' } : e,
-                ),
-            );
-            setSelectedEvents([]);
-            setBulkAction('');
-            showToast('Events made private', 'success');
-        } else if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedEvents.length} events? This action cannot be undone.`)) {
-                setEvents((prev) => prev.filter((e) => !selectedEvents.includes(e.id)));
-                setSelectedEvents([]);
-                setBulkAction('');
-                showToast('Events deleted', 'success');
+        try {
+            if (bulkAction === 'publish') {
+                await Promise.all(selectedEvents.map(id => {
+                    const evt = events.find(e => e.id === id);
+                    return api.put(`/events/${id}`, { ...evt, status: 'published' });
+                }));
+                showToast('Events published', 'success');
+            } else if (bulkAction === 'cancel') {
+                await Promise.all(selectedEvents.map(id => {
+                    const evt = events.find(e => e.id === id);
+                    return api.put(`/events/${id}`, { ...evt, status: 'cancelled' });
+                }));
+                showToast('Events cancelled', 'info');
+            } else if (bulkAction === 'make_public') {
+                await Promise.all(selectedEvents.map(id => {
+                    const evt = events.find(e => e.id === id);
+                    return api.put(`/events/${id}`, { ...evt, event_type: 'public' });
+                }));
+                showToast('Events made public', 'success');
+            } else if (bulkAction === 'make_private') {
+                await Promise.all(selectedEvents.map(id => {
+                    const evt = events.find(e => e.id === id);
+                    return api.put(`/events/${id}`, { ...evt, event_type: 'private' });
+                }));
+                showToast('Events made private', 'success');
+            } else if (bulkAction === 'delete') {
+                if (confirm(`Delete ${selectedEvents.length} events? This action cannot be undone.`)) {
+                    await Promise.all(selectedEvents.map(id => api.delete(`/events/${id}`)));
+                    showToast('Events deleted', 'success');
+                } else {
+                    return;
+                }
             }
+            setSelectedEvents([]);
+            setBulkAction('');
+            loadEvents();
+        } catch (error) {
+            console.error('Bulk action failed:', error);
+            showToast('Failed to perform bulk action', 'error');
         }
     };
 
-    const handlePublishEvent = (eventId) => {
-        setEvents((prev) =>
-            prev.map((e) => (e.id === eventId ? { ...e, status: 'published' } : e)),
-        );
-        showToast('Event published', 'success');
+    const handlePublishEvent = async (eventId) => {
+        try {
+            const evt = events.find(e => e.id === eventId);
+            await api.put(`/events/${eventId}`, { ...evt, status: 'published' });
+            showToast('Event published', 'success');
+            loadEvents();
+        } catch (error) {
+            showToast('Failed to publish event', 'error');
+        }
     };
 
-    const handleCancelEvent = (eventId) => {
-        setEvents((prev) =>
-            prev.map((e) => (e.id === eventId ? { ...e, status: 'cancelled' } : e)),
-        );
-        showToast('Event cancelled', 'info');
+    const handleCancelEvent = async (eventId) => {
+        try {
+            const evt = events.find(e => e.id === eventId);
+            await api.put(`/events/${eventId}`, { ...evt, status: 'cancelled' });
+            showToast('Event cancelled', 'info');
+            loadEvents();
+        } catch (error) {
+            showToast('Failed to cancel event', 'error');
+        }
     };
 
-    const handleDeleteEvent = (eventId) => {
+    const handleDeleteEvent = async (eventId) => {
         if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-            setEvents((prev) => prev.filter((e) => e.id !== eventId));
-            showToast('Event deleted', 'success');
+            try {
+                await api.delete(`/events/${eventId}`);
+                showToast('Event deleted', 'success');
+                loadEvents();
+            } catch (error) {
+                showToast('Failed to delete event', 'error');
+            }
         }
     };
 
@@ -178,10 +296,10 @@ const EventManagementTab = () => {
     };
 
     const selectAllEvents = () => {
-        if (selectedEvents.length === events.length) {
+        if (selectedEvents.length === filteredEvents.length && filteredEvents.length > 0) {
             setSelectedEvents([]);
         } else {
-            setSelectedEvents(events.map((e) => e.id));
+            setSelectedEvents(filteredEvents.map((e) => e.id));
         }
     };
 
@@ -329,7 +447,7 @@ const EventManagementTab = () => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => {}}>
+                    <button className="refresh-btn" onClick={loadEvents}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
@@ -426,15 +544,15 @@ const EventManagementTab = () => {
                                 <input
                                     type="checkbox"
                                     checked={
-                                        selectedEvents.length === events.length && events.length > 0
+                                        selectedEvents.length === filteredEvents.length && filteredEvents.length > 0
                                     }
                                     onChange={selectAllEvents}
                                 />
                                 <span>Select All</span>
                             </div>
                             <div className="table-actions">
-                                <span className="event-count">{events.length} events found</span>
-                                <button className="refresh-btn" onClick={() => {}}>
+                                <span className="event-count">{filteredEvents.length} events found</span>
+                                <button className="refresh-btn" onClick={loadEvents}>
                                     <RefreshCw size={18} />
                                     Refresh
                                 </button>
@@ -449,8 +567,8 @@ const EventManagementTab = () => {
                                             <input
                                                 type="checkbox"
                                                 checked={
-                                                    selectedEvents.length === events.length &&
-                                                    events.length > 0
+                                                    selectedEvents.length === filteredEvents.length &&
+                                                    filteredEvents.length > 0
                                                 }
                                                 onChange={selectAllEvents}
                                             />
@@ -465,7 +583,7 @@ const EventManagementTab = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {events.map((event) => (
+                                    {filteredEvents.map((event) => (
                                         <tr
                                             key={event.id}
                                             className={
@@ -666,7 +784,15 @@ const EventManagementTab = () => {
                                                                 Going:
                                                             </span>
                                                             <span className="stat-value going">
-                                                                {event.rsvp_stats.going}
+                                                                {event.rsvp_stats?.going || 0}
+                                                            </span>
+                                                        </div>
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">
+                                                                Interested:
+                                                            </span>
+                                                            <span className="stat-value interested">
+                                                                {event.rsvp_stats?.interested || 0}
                                                             </span>
                                                         </div>
                                                         <div className="stat-item">
@@ -674,7 +800,7 @@ const EventManagementTab = () => {
                                                                 Maybe:
                                                             </span>
                                                             <span className="stat-value maybe">
-                                                                {event.rsvp_stats.maybe}
+                                                                {event.rsvp_stats?.maybe || 0}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -684,7 +810,7 @@ const EventManagementTab = () => {
                                                                 Checked In:
                                                             </span>
                                                             <span className="stat-value checked-in">
-                                                                {event.attendance_stats.checked_in}
+                                                                {event.attendance_stats?.checked_in || 0}
                                                             </span>
                                                         </div>
                                                         <div className="stat-item">
@@ -692,9 +818,9 @@ const EventManagementTab = () => {
                                                                 Rate:
                                                             </span>
                                                             <span className="stat-value rate">
-                                                                {event.attendance_stats.attendance_rate.toFixed(
+                                                                {event.attendance_stats?.attendance_rate?.toFixed(
                                                                     1,
-                                                                )}
+                                                                ) || "0.0"}
                                                                 %
                                                             </span>
                                                         </div>
@@ -796,19 +922,21 @@ const EventManagementTab = () => {
                             </button>
                         </div>
                         <div className="modal-body">
-                            <form>
+                            <form onSubmit={handleAddEvent}>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Event Title *</label>
                                         <input
                                             type="text"
+                                            name="title"
                                             className="form-input"
                                             placeholder="Enter event title"
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Category *</label>
-                                        <select className="form-input">
+                                        <select name="category" className="form-input" required>
                                             <option value="">Select category</option>
                                             <option value="Technology">Technology</option>
                                             <option value="Education">Education</option>
@@ -821,16 +949,18 @@ const EventManagementTab = () => {
                                 <div className="form-group">
                                     <label>Description *</label>
                                     <textarea
+                                        name="description"
                                         className="form-input"
                                         rows="4"
                                         placeholder="Enter event description"
+                                        required
                                     ></textarea>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Location Type *</label>
-                                        <select className="form-input">
+                                        <select name="location_type" className="form-input" required>
                                             <option value="physical">Physical</option>
                                             <option value="virtual">Virtual</option>
                                             <option value="hybrid">Hybrid</option>
@@ -838,7 +968,7 @@ const EventManagementTab = () => {
                                     </div>
                                     <div className="form-group">
                                         <label>Event Type *</label>
-                                        <select className="form-input">
+                                        <select name="event_type" className="form-input" required>
                                             <option value="public">Public</option>
                                             <option value="private">Private</option>
                                             <option value="invite_only">Invite Only</option>
@@ -851,14 +981,17 @@ const EventManagementTab = () => {
                                         <label>Location *</label>
                                         <input
                                             type="text"
+                                            name="location"
                                             className="form-input"
                                             placeholder="Enter location"
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Venue Name (Optional)</label>
                                         <input
                                             type="text"
+                                            name="venue_name"
                                             className="form-input"
                                             placeholder="Enter venue name"
                                         />
@@ -869,6 +1002,7 @@ const EventManagementTab = () => {
                                     <label>Venue Address (Optional)</label>
                                     <input
                                         type="text"
+                                        name="venue_address"
                                         className="form-input"
                                         placeholder="Enter venue address"
                                     />
@@ -877,22 +1011,22 @@ const EventManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Start Date & Time *</label>
-                                        <input type="datetime-local" className="form-input" />
+                                        <input type="datetime-local" name="start_datetime" className="form-input" required />
                                     </div>
                                     <div className="form-group">
                                         <label>End Date & Time *</label>
-                                        <input type="datetime-local" className="form-input" />
+                                        <input type="datetime-local" name="end_datetime" className="form-input" required />
                                     </div>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Registration Start (Optional)</label>
-                                        <input type="datetime-local" className="form-input" />
+                                        <input type="datetime-local" name="registration_start" className="form-input" />
                                     </div>
                                     <div className="form-group">
                                         <label>Registration End (Optional)</label>
-                                        <input type="datetime-local" className="form-input" />
+                                        <input type="datetime-local" name="registration_end" className="form-input" />
                                     </div>
                                 </div>
 
@@ -901,6 +1035,7 @@ const EventManagementTab = () => {
                                         <label>Max Attendees (Optional)</label>
                                         <input
                                             type="number"
+                                            name="max_attendees"
                                             className="form-input"
                                             placeholder="Enter maximum attendees"
                                         />
@@ -909,6 +1044,7 @@ const EventManagementTab = () => {
                                         <label>Ticket Price (Optional)</label>
                                         <input
                                             type="number"
+                                            name="ticket_price"
                                             className="form-input"
                                             placeholder="Enter ticket price"
                                         />
@@ -919,6 +1055,7 @@ const EventManagementTab = () => {
                                     <label>Tags (comma-separated)</label>
                                     <input
                                         type="text"
+                                        name="tags"
                                         className="form-input"
                                         placeholder="tag1, tag2, tag3"
                                     />
@@ -931,6 +1068,7 @@ const EventManagementTab = () => {
                                             <label>Organizer Contact</label>
                                             <input
                                                 type="email"
+                                                name="organizer_contact"
                                                 className="form-input"
                                                 placeholder="Enter organizer email"
                                             />
@@ -939,6 +1077,7 @@ const EventManagementTab = () => {
                                             <label>Virtual Meeting URL (for virtual events)</label>
                                             <input
                                                 type="url"
+                                                name="virtual_meeting_url"
                                                 className="form-input"
                                                 placeholder="Enter meeting URL"
                                             />
@@ -948,19 +1087,19 @@ const EventManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" />
+                                                <input type="checkbox" name="featured" value="true" />
                                                 Featured Event
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" />
+                                                <input type="checkbox" name="rsvp_required" value="true" />
                                                 RSVP Required
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" />
+                                                <input type="checkbox" name="waitlist_enabled" value="true" />
                                                 Enable Waitlist
                                             </label>
                                         </div>
@@ -1000,21 +1139,25 @@ const EventManagementTab = () => {
                             </button>
                         </div>
                         <div className="modal-body">
-                            <form>
+                            <form onSubmit={handleEditEvent}>
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Event Title</label>
                                         <input
                                             type="text"
+                                            name="title"
                                             className="form-input"
                                             defaultValue={editingEvent.title}
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Category</label>
                                         <select
+                                            name="category"
                                             className="form-input"
                                             defaultValue={editingEvent.category}
+                                            required
                                         >
                                             <option value="Technology">Technology</option>
                                             <option value="Education">Education</option>
@@ -1027,9 +1170,11 @@ const EventManagementTab = () => {
                                 <div className="form-group">
                                     <label>Description</label>
                                     <textarea
+                                        name="description"
                                         className="form-input"
                                         rows="4"
                                         defaultValue={editingEvent.description}
+                                        required
                                     ></textarea>
                                 </div>
 
@@ -1037,8 +1182,10 @@ const EventManagementTab = () => {
                                     <div className="form-group">
                                         <label>Location Type</label>
                                         <select
+                                            name="location_type"
                                             className="form-input"
                                             defaultValue={editingEvent.location_type}
+                                            required
                                         >
                                             <option value="physical">Physical</option>
                                             <option value="virtual">Virtual</option>
@@ -1048,8 +1195,10 @@ const EventManagementTab = () => {
                                     <div className="form-group">
                                         <label>Event Type</label>
                                         <select
+                                            name="event_type"
                                             className="form-input"
                                             defaultValue={editingEvent.event_type}
+                                            required
                                         >
                                             <option value="public">Public</option>
                                             <option value="private">Private</option>
@@ -1063,14 +1212,17 @@ const EventManagementTab = () => {
                                         <label>Location</label>
                                         <input
                                             type="text"
+                                            name="location"
                                             className="form-input"
                                             defaultValue={editingEvent.location}
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Venue Name</label>
                                         <input
                                             type="text"
+                                            name="venue_name"
                                             className="form-input"
                                             defaultValue={editingEvent.venue_name || ''}
                                         />
@@ -1081,6 +1233,7 @@ const EventManagementTab = () => {
                                     <label>Venue Address</label>
                                     <input
                                         type="text"
+                                        name="venue_address"
                                         className="form-input"
                                         defaultValue={editingEvent.venue_address || ''}
                                     />
@@ -1091,16 +1244,20 @@ const EventManagementTab = () => {
                                         <label>Start Date & Time</label>
                                         <input
                                             type="datetime-local"
+                                            name="start_datetime"
                                             className="form-input"
-                                            defaultValue={editingEvent.start_datetime}
+                                            defaultValue={editingEvent.start_datetime ? new Date(editingEvent.start_datetime).toISOString().slice(0,16) : ''}
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>End Date & Time</label>
                                         <input
                                             type="datetime-local"
+                                            name="end_datetime"
                                             className="form-input"
-                                            defaultValue={editingEvent.end_datetime}
+                                            defaultValue={editingEvent.end_datetime ? new Date(editingEvent.end_datetime).toISOString().slice(0,16) : ''}
+                                            required
                                         />
                                     </div>
                                 </div>
@@ -1110,16 +1267,18 @@ const EventManagementTab = () => {
                                         <label>Registration Start</label>
                                         <input
                                             type="datetime-local"
+                                            name="registration_start"
                                             className="form-input"
-                                            defaultValue={editingEvent.registration_start || ''}
+                                            defaultValue={editingEvent.registration_start ? new Date(editingEvent.registration_start).toISOString().slice(0,16) : ''}
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Registration End</label>
                                         <input
                                             type="datetime-local"
+                                            name="registration_end"
                                             className="form-input"
-                                            defaultValue={editingEvent.registration_end || ''}
+                                            defaultValue={editingEvent.registration_end ? new Date(editingEvent.registration_end).toISOString().slice(0,16) : ''}
                                         />
                                     </div>
                                 </div>
@@ -1129,6 +1288,7 @@ const EventManagementTab = () => {
                                         <label>Max Attendees</label>
                                         <input
                                             type="number"
+                                            name="max_attendees"
                                             className="form-input"
                                             defaultValue={editingEvent.max_attendees || ''}
                                         />
@@ -1137,6 +1297,7 @@ const EventManagementTab = () => {
                                         <label>Ticket Price</label>
                                         <input
                                             type="number"
+                                            name="ticket_price"
                                             className="form-input"
                                             defaultValue={editingEvent.ticket_price || ''}
                                         />
@@ -1147,6 +1308,7 @@ const EventManagementTab = () => {
                                     <label>Tags</label>
                                     <input
                                         type="text"
+                                        name="tags"
                                         className="form-input"
                                         defaultValue={editingEvent.tags?.join(', ') || ''}
                                     />
@@ -1159,6 +1321,7 @@ const EventManagementTab = () => {
                                             <label>Organizer Contact</label>
                                             <input
                                                 type="email"
+                                                name="organizer_contact"
                                                 className="form-input"
                                                 defaultValue={editingEvent.organizer_contact || ''}
                                             />
@@ -1167,6 +1330,7 @@ const EventManagementTab = () => {
                                             <label>Virtual Meeting URL</label>
                                             <input
                                                 type="url"
+                                                name="virtual_meeting_url"
                                                 className="form-input"
                                                 defaultValue={
                                                     editingEvent.virtual_meeting_url || ''
@@ -1180,6 +1344,8 @@ const EventManagementTab = () => {
                                             <label className="checkbox-label">
                                                 <input
                                                     type="checkbox"
+                                                    name="featured"
+                                                    value="true"
                                                     defaultChecked={editingEvent.featured}
                                                 />
                                                 Featured Event
@@ -1189,6 +1355,8 @@ const EventManagementTab = () => {
                                             <label className="checkbox-label">
                                                 <input
                                                     type="checkbox"
+                                                    name="rsvp_required"
+                                                    value="true"
                                                     defaultChecked={editingEvent.rsvp_required}
                                                 />
                                                 RSVP Required
@@ -1198,6 +1366,8 @@ const EventManagementTab = () => {
                                             <label className="checkbox-label">
                                                 <input
                                                     type="checkbox"
+                                                    name="waitlist_enabled"
+                                                    value="true"
                                                     defaultChecked={editingEvent.waitlist_enabled}
                                                 />
                                                 Enable Waitlist

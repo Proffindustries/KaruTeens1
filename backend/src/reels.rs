@@ -291,7 +291,331 @@ async fn check_admin(
     }
 }
 
-// --- Handlers ---
+// --- User-Facing Handlers ---
+
+#[derive(Serialize)]
+pub struct ReelFeedItem {
+    pub id: String,
+    pub user_id: String,
+    pub username: String,
+    pub user_avatar: Option<String>,
+    pub video_url: String,
+    pub thumbnail_url: String,
+    pub title: Option<String>,
+    pub description: String,
+    pub duration: f64,
+    pub hashtags: Option<Vec<String>>,
+    pub music_track: Option<String>,
+    pub like_count: i32,
+    pub comment_count: i32,
+    pub share_count: i32,
+    pub is_liked: bool,
+    pub is_nsfw: bool,
+    pub created_at: String,
+}
+
+pub async fn get_reels_feed_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let reels_coll = state.mongo.collection::<Reel>("reels");
+    let posts_coll = state.mongo.collection::<crate::models::Post>("posts");
+    let profiles_coll = state.mongo.collection::<Profile>("profiles");
+
+    let mut feed: Vec<ReelFeedItem> = Vec::new();
+
+    // 1. Fetch Dedicated Reels
+    let reels_query = doc! {
+        "is_deleted": { "$ne": true },
+        "moderation_status": { "$in": ["approved", "pending"] }
+    };
+    let reels_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .limit(Some(30))
+        .build();
+    let mut reels_cursor = reels_coll.find(reels_query, reels_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    // Get current user's liked reels for "is_liked" status
+    let reel_likes = state.mongo.collection::<ReelLike>("reel_likes");
+    let mut liked_reel_ids = std::collections::HashSet::new();
+    if let Ok(mut lc) = reel_likes.find(doc! { "user_id": user.user_id }, None).await {
+        while let Some(Ok(like)) = lc.next().await {
+            liked_reel_ids.insert(like.reel_id);
+        }
+    }
+
+    while let Some(Ok(r)) = reels_cursor.next().await {
+        let rid = r.id.unwrap();
+        feed.push(ReelFeedItem {
+            id: rid.to_hex(),
+            user_id: r.user_id.to_hex(),
+            username: r.username,
+            user_avatar: r.user_avatar,
+            video_url: r.video_url,
+            thumbnail_url: r.thumbnail_url,
+            title: r.title,
+            description: r.description,
+            duration: r.duration,
+            hashtags: r.hashtags,
+            music_track: r.music_track,
+            like_count: r.like_count,
+            comment_count: r.comment_count,
+            share_count: r.share_count,
+            is_liked: liked_reel_ids.contains(&rid),
+            is_nsfw: r.age_restriction.as_ref().map(|a| a != "none").unwrap_or(false) || r.content_warning.is_some(),
+            created_at: r.created_at.to_chrono().to_rfc3339(),
+        });
+    }
+
+    // 2. Fetch Video Posts as Reels
+    let posts_query = doc! {
+        "post_type": "video",
+        "status": "published",
+        "media_urls": { "$exists": true, "$not": { "$size": 0 } }
+    };
+    let posts_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .limit(Some(30))
+        .build();
+    let mut posts_cursor = posts_coll.find(posts_query, posts_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    // Also need post likes for "is_liked" status of video posts
+    let post_likes = state.mongo.collection::<crate::models::Like>("likes");
+    let mut liked_post_ids = std::collections::HashSet::new();
+    if let Ok(mut plc) = post_likes.find(doc! { "user_id": user.user_id }, None).await {
+        while let Some(Ok(like)) = plc.next().await {
+            liked_post_ids.insert(like.post_id);
+        }
+    }
+
+    let mut video_posts = Vec::new();
+    while let Some(Ok(p)) = posts_cursor.next().await {
+        video_posts.push(p);
+    }
+
+    if !video_posts.is_empty() {
+        let author_ids: Vec<ObjectId> = video_posts.iter().map(|p| p.author_id).collect();
+        let mut profiles_cursor = profiles_coll.find(doc! { "user_id": { "$in": author_ids } }, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        
+        let mut profile_map = std::collections::HashMap::new();
+        while let Some(Ok(prof)) = profiles_cursor.next().await {
+            profile_map.insert(prof.user_id, prof);
+        }
+
+        for p in video_posts {
+            let pid = p.id.unwrap();
+            let video_url = p.media_urls.as_ref().and_then(|urls| urls.first()).cloned().unwrap_or_default();
+            let profile = profile_map.get(&p.author_id);
+            
+            feed.push(ReelFeedItem {
+                id: pid.to_hex(),
+                user_id: p.author_id.to_hex(),
+                username: p.author_name,
+                user_avatar: profile.and_then(|pr| pr.avatar_url.clone()),
+                video_url,
+                thumbnail_url: "".to_string(), // Posts don't have thumbnails usually
+                title: Some(p.title),
+                description: p.content,
+                duration: 0.0,
+                hashtags: p.tags,
+                music_track: None,
+                like_count: p.like_count,
+                comment_count: p.comment_count,
+                share_count: p.share_count,
+                is_liked: liked_post_ids.contains(&pid),
+                is_nsfw: p.is_nsfw.unwrap_or(false),
+                created_at: p.created_at.to_chrono().to_rfc3339(),
+            });
+        }
+    }
+
+    // 3. Sort Combined Feed
+    feed.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    feed.truncate(30);
+
+    Ok((StatusCode::OK, Json(feed)))
+}
+
+#[derive(Deserialize)]
+pub struct CreateReelPayload {
+    pub video_url: String,
+    pub thumbnail_url: String,
+    pub title: Option<String>,
+    pub description: String,
+    pub duration: f64,
+    pub hashtags: Option<Vec<String>>,
+    pub music_track: Option<String>,
+    pub is_private: Option<bool>,
+}
+
+pub async fn create_reel_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<CreateReelPayload>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let profiles = state.mongo.collection::<Profile>("profiles");
+    let profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let (username, user_avatar) = profile.map(|p| (p.username, p.avatar_url))
+        .unwrap_or_else(|| ("Unknown".to_string(), None));
+
+    let now = DateTime::now();
+    let new_reel = Reel {
+        id: None,
+        user_id: user.user_id,
+        username,
+        user_avatar,
+        video_url: payload.video_url,
+        thumbnail_url: payload.thumbnail_url,
+        title: payload.title,
+        description: payload.description,
+        duration: payload.duration,
+        video_size: 0,
+        video_format: "mp4".to_string(),
+        resolution: "1080p".to_string(),
+        bitrate: None,
+        audio_bitrate: None,
+        location: None,
+        hashtags: payload.hashtags,
+        mentions: None,
+        music_track: payload.music_track,
+        effects: None,
+        filters: None,
+        duet_enabled: true,
+        stitch_enabled: true,
+        comments_enabled: true,
+        shares_enabled: true,
+        downloads_enabled: false,
+        is_private: payload.is_private.unwrap_or(false),
+        allowed_users: None,
+        age_restriction: None,
+        content_warning: None,
+        created_at: now,
+        published_at: Some(now),
+        is_deleted: false,
+        deleted_at: None,
+        deleted_by: None,
+        deleted_reason: None,
+        moderation_status: "pending".to_string(),
+        moderation_notes: None,
+        spam_score: None,
+        sentiment_score: None,
+        reported_count: 0,
+        view_count: 0,
+        like_count: 0,
+        comment_count: 0,
+        share_count: 0,
+        duet_count: 0,
+        stitch_count: 0,
+        save_count: 0,
+        engagement_score: 0.0,
+        trending_score: 0.0,
+        virality_score: 0.0,
+        updated_at: now,
+        transcoding_status: "pending".to_string(),
+        transcoding_progress: None,
+        transcoding_error: None,
+        available_qualities: None,
+        subtitles: None,
+        captions: None,
+    };
+
+    let reels = state.mongo.collection::<Reel>("reels");
+    let result = reels.insert_one(new_reel, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok((StatusCode::CREATED, Json(json!({
+        "id": result.inserted_id.as_object_id().unwrap().to_hex(),
+        "message": "Reel created successfully"
+    }))))
+}
+
+pub async fn like_reel_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(reel_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let reel_oid = ObjectId::parse_str(&reel_id)
+        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid reel ID"}))))?;
+
+    let reels = state.mongo.collection::<Reel>("reels");
+    let posts = state.mongo.collection::<crate::models::Post>("posts");
+    
+    // Check if it's a dedicated reel
+    let reel_doc = reels.find_one(doc! { "_id": reel_oid }, None).await.unwrap_or(None);
+    
+    if reel_doc.is_some() {
+        let reel_likes = state.mongo.collection::<ReelLike>("reel_likes");
+        let existing = reel_likes.find_one(
+            doc! { "reel_id": reel_oid, "user_id": user.user_id }, None
+        ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+        if existing.is_some() {
+            reel_likes.delete_one(doc! { "reel_id": reel_oid, "user_id": user.user_id }, None).await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            reels.update_one(doc! { "_id": reel_oid }, doc! { "$inc": { "like_count": -1 } }, None).await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            return Ok((StatusCode::OK, Json(json!({"liked": false}))));
+        }
+
+        let profiles = state.mongo.collection::<Profile>("profiles");
+        let profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await.ok().flatten();
+        let username = profile.map(|p| p.username).unwrap_or_else(|| "Unknown".to_string());
+
+        let new_like = ReelLike {
+            id: None,
+            reel_id: reel_oid,
+            user_id: user.user_id,
+            username,
+            liked_at: DateTime::now(),
+        };
+        reel_likes.insert_one(new_like, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        reels.update_one(doc! { "_id": reel_oid }, doc! { "$inc": { "like_count": 1 } }, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+        return Ok((StatusCode::OK, Json(json!({"liked": true}))));
+    }
+
+    // Check if it's a video post
+    let post_doc = posts.find_one(doc! { "_id": reel_oid, "post_type": "video" }, None).await.unwrap_or(None);
+    
+    if post_doc.is_some() {
+        let post_likes = state.mongo.collection::<crate::models::Like>("likes");
+        let existing = post_likes.find_one(
+            doc! { "post_id": reel_oid, "user_id": user.user_id }, None
+        ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+        if existing.is_some() {
+            post_likes.delete_one(doc! { "post_id": reel_oid, "user_id": user.user_id }, None).await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            posts.update_one(doc! { "_id": reel_oid }, doc! { "$inc": { "like_count": -1 } }, None).await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            return Ok((StatusCode::OK, Json(json!({"liked": false}))));
+        }
+
+        let new_like = crate::models::Like {
+            id: None,
+            post_id: reel_oid,
+            user_id: user.user_id,
+            created_at: DateTime::now(),
+        };
+        post_likes.insert_one(new_like, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        posts.update_one(doc! { "_id": reel_oid }, doc! { "$inc": { "like_count": 1 } }, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+        return Ok((StatusCode::OK, Json(json!({"liked": true}))));
+    }
+
+    Err((StatusCode::NOT_FOUND, Json(json!({"error": "Content not found"}))))
+}
+
+// --- Admin-only Handlers ---
 
 pub async fn list_reels_handler(
     State(state): State<Arc<AppState>>,
@@ -1061,7 +1385,12 @@ fn determine_reel_priority(spam_score: f64, reported_count: i32, transcoding_sta
 
 pub fn reel_routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", get(list_reels_handler))
+        // User-facing
+        .route("/feed", get(get_reels_feed_handler))
+        .route("/", get(list_reels_handler).post(create_reel_handler))
+        .route("/:id/like", post(like_reel_handler))
+        // Admin routes
+        .route("/admin", get(list_reels_handler))
         .route("/:id", get(get_reel_handler).put(moderate_reel_handler).delete(delete_reel_handler))
         .route("/:id/moderate", post(moderate_reel_handler))
         .route("/queue", get(get_moderation_queue_handler))

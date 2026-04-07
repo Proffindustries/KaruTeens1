@@ -59,6 +59,7 @@ export const useCreatePost = () => {
             is_anonymous?: boolean;
             audience?: string[];
             is_nsfw?: boolean;
+            page_id?: string;
         }) => {
             const { data } = await api.post('/posts', postData);
             return data;
@@ -91,8 +92,7 @@ export const useLikePost = () => {
                     ...old,
                     pages: old.pages.map((page: PostResponse[]) =>
                         page.map((post: PostResponse) => {
-                            const postIdToCheck = post.id || (post as any)._id;
-                            if (postIdToCheck === postId) {
+                            if (post.id === postId) {
                                 return {
                                     ...post,
                                     likes: (post.likes || 0) + 1,
@@ -106,6 +106,11 @@ export const useLikePost = () => {
             });
 
             return { previousFeed };
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['feed'] });
+            queryClient.invalidateQueries({ queryKey: ['groupPosts'] });
+            queryClient.invalidateQueries({ queryKey: ['post'] });
         },
         onError: (err: any, postId: string, context: any) => {
             if (context?.previousFeed) {
@@ -134,8 +139,7 @@ export const useUnlikePost = () => {
                     ...old,
                     pages: old.pages.map((page: PostResponse[]) =>
                         page.map((post: PostResponse) => {
-                            const postIdToCheck = post.id || (post as any)._id;
-                            if (postIdToCheck === postId) {
+                            if (post.id === postId) {
                                 return {
                                     ...post,
                                     likes: Math.max((post.likes || 1) - 1, 0),
@@ -149,6 +153,11 @@ export const useUnlikePost = () => {
             });
 
             return { previousFeed };
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['feed'] });
+            queryClient.invalidateQueries({ queryKey: ['groupPosts'] });
+            queryClient.invalidateQueries({ queryKey: ['post'] });
         },
         onError: (err: any, postId: string, context: any) => {
             if (context?.previousFeed) {
@@ -180,6 +189,8 @@ export const useAddComment = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['post'] });
+            queryClient.invalidateQueries({ queryKey: ['feed'] });
+            queryClient.invalidateQueries({ queryKey: ['groupPosts'] });
             showToast('Comment added!', 'success');
         },
         onError: (err: any) => {
@@ -280,7 +291,7 @@ export const useSaveDraft = () => {
             is_nsfw?: boolean;
             title?: string;
         }) => {
-            const { data } = await api.post('/posts/drafts', draftData);
+            const { data } = await api.post<PostResponse>('/posts/drafts', draftData);
             return data;
         },
         onSuccess: () => {

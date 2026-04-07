@@ -5,13 +5,12 @@ import { useToast } from '../context/ToastContext';
 import '../styles/DonatePage.css';
 
 const PremiumPage = () => {
+    const { showToast } = useToast();
     const [step, setStep] = useState('pending'); // pending, processing, complete
     const [phone, setPhone] = useState('');
     const [checkoutId, setCheckoutId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('monthly');
-    const [selectedTier, setSelectedTier] = useState('pro'); // pro or elite
-    const { showToast } = useToast();
 
     const handleUpgrade = async (e) => {
         if (e) e.preventDefault();
@@ -27,8 +26,7 @@ const PremiumPage = () => {
             formattedPhone = '254' + formattedPhone;
 
         setLoading(true);
-        const isElite = selectedTier === 'elite';
-        const amount = selectedPlan === 'monthly' ? (isElite ? 400 : 150) : isElite ? 2000 : 800;
+        const amount = selectedPlan === 'weekly' ? 10 : selectedPlan === 'monthly' ? 40 : 200;
 
         try {
             const { data } = await api.post('/payments/verify', {
@@ -76,7 +74,7 @@ const PremiumPage = () => {
             }, 3000);
         }
         return () => clearInterval(interval);
-    }, [step, checkoutId]);
+    }, [step, checkoutId, showToast]);
 
     return (
         <div className="container premium-page" style={{ paddingBottom: '4rem' }}>

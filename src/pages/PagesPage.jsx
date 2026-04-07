@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Search, ArrowRight, BookOpen, Globe, Users, Star } from 'lucide-react';
+import { Layout, Search, ArrowRight, BookOpen, Globe, Users, Star, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import useDebounce from '../hooks/useDebounce';
+import CreatePageModal from '../components/CreatePageModal';
 import '../styles/PagesPage.css';
 
 const PagesPage = () => {
     const [pages, setPages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const { showToast } = useToast();
 
@@ -34,7 +36,7 @@ const PagesPage = () => {
             ? pages
             : pages.filter(
                   (page) =>
-                      page.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                      (page.name && page.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
                       (page.description &&
                           page.description
                               .toLowerCase()
@@ -44,8 +46,15 @@ const PagesPage = () => {
     return (
         <div className="container pages-page py-8">
             <div className="pages-header mb-8">
-                <h1>Official Pages</h1>
-                <p>Discover student organizations, departments, and official campus channels.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h1>Discover Pages</h1>
+                        <p>Explore channels from student leaders, organizations, and official campus bodies.</p>
+                    </div>
+                    <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+                        <Plus size={18} /> Create Page
+                    </button>
+                </div>
 
                 <div className="search-bar mt-6">
                     <Search size={20} />
@@ -57,6 +66,8 @@ const PagesPage = () => {
                     />
                 </div>
             </div>
+
+            {isCreateModalOpen && <CreatePageModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); fetchPages(); }} />}
 
             {loading ? (
                 <div className="pages-loading">Loading pages...</div>
@@ -73,7 +84,7 @@ const PagesPage = () => {
                                     {page.featured_image ? (
                                         <img
                                             src={page.featured_image}
-                                            alt={page.title}
+                                            alt={page.name}
                                             loading="lazy"
                                         />
                                     ) : (
@@ -91,7 +102,7 @@ const PagesPage = () => {
                                     <div className="page-category">
                                         {page.category || 'General'}
                                     </div>
-                                    <h3>{page.title}</h3>
+                                    <h3>{page.name}</h3>
                                     <p>{page.description || 'No description available.'}</p>
                                     <div className="page-footer">
                                         <span>

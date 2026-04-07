@@ -11,138 +11,16 @@ use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
 use crate::models::{Comment, CommentReport, CommentModeration, UserCommentStats, SpamDetectionRule, User, Profile};
+use crate::dto::{
+    CommentResponse, CommentModerationQueueResponse, UserCommentStatsResponse,
+    UpdateCommentRequest, ReportCommentRequest, ModerateCommentRequest, 
+    CommentFilter, SpamRuleRequest, PaginatedResponse, PaginationInfo,
+    MessageResponse, IdResponse
+};
+use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
+use crate::utils::check_admin;
 use futures::stream::StreamExt;
-
-// --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct UpdateCommentRequest {
-    pub content: String,
-    pub moderation_notes: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct ReportCommentRequest {
-    pub reason: String,
-    pub description: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct ModerateCommentRequest {
-    pub action: String, // approve, reject, delete, edit, warn
-    pub reason: Option<String>,
-    pub notes: Option<String>,
-    pub after_content: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CommentFilter {
-    pub status: Option<String>,
-    pub content_type: Option<String>,
-    pub user_id: Option<String>,
-    pub spam_score_min: Option<f64>,
-    pub spam_score_max: Option<f64>,
-    pub reported_count_min: Option<i32>,
-    pub date_from: Option<String>,
-    pub date_to: Option<String>,
-    pub sort_by: Option<String>,
-    pub sort_order: Option<String>,
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
-#[derive(Serialize)]
-pub struct CommentResponse {
-    pub id: String,
-    pub content_id: String,
-    pub content_type: String,
-    pub user_id: String,
-    pub username: String,
-    pub user_avatar: Option<String>,
-    pub parent_id: Option<String>,
-    pub content: String,
-    pub status: String,
-    pub spam_score: Option<f64>,
-    pub sentiment_score: Option<f64>,
-    pub reported_count: i32,
-    pub likes: i32,
-    pub replies_count: i32,
-    pub edited_at: Option<String>,
-    pub deleted_at: Option<String>,
-    pub deleted_by: Option<String>,
-    pub deleted_reason: Option<String>,
-    pub moderation_notes: Option<String>,
-    pub ip_address: Option<String>,
-    pub user_agent: Option<String>,
-    pub is_edited: bool,
-    pub created_at: String,
-    pub updated_at: String,
-    pub reports: Vec<CommentReport>,
-    pub moderation_history: Vec<CommentModeration>,
-}
-
-#[derive(Serialize)]
-pub struct CommentModerationQueueResponse {
-    pub comment_id: String,
-    pub content_id: String,
-    pub content_type: String,
-    pub user_id: String,
-    pub username: String,
-    pub content: String,
-    pub spam_score: f64,
-    pub sentiment_score: f64,
-    pub reported_count: i32,
-    pub created_at: String,
-    pub priority: String,
-    pub assigned_to: Option<String>,
-    pub assigned_at: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct UserCommentStatsResponse {
-    pub user_id: String,
-    pub username: String,
-    pub total_comments: i32,
-    pub approved_comments: i32,
-    pub pending_comments: i32,
-    pub rejected_comments: i32,
-    pub spam_comments: i32,
-    pub deleted_comments: i32,
-    pub total_likes_received: i32,
-    pub total_replies_received: i32,
-    pub avg_spam_score: Option<f64>,
-    pub avg_sentiment_score: Option<f64>,
-    pub last_comment_at: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Deserialize)]
-pub struct SpamRuleRequest {
-    pub name: String,
-    pub description: String,
-    pub pattern: String,
-    pub score: f64,
-    pub category: String,
-    pub is_active: bool,
-}
-
-// --- Middleware: Check Admin ---
-
-async fn check_admin(
-    user_id: ObjectId,
-    state: &Arc<AppState>,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let users = state.mongo.collection::<User>("users");
-    let user_doc = users.find_one(doc! { "_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    match user_doc {
-        Some(u) if u.role == "admin" || u.role == "superadmin" => Ok(()),
-        _ => Err((StatusCode::FORBIDDEN, Json(json!({"error": "Admin access required"})))),
-    }
-}
 
 // --- Handlers ---
 
@@ -150,7 +28,7 @@ pub async fn list_comments_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Query(params): Query<CommentFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let comments = state.mongo.collection::<Comment>("comments");
@@ -165,9 +43,9 @@ pub async fn list_comments_handler(
         query.insert("content_type", content_type);
     }
     
-    if let Some(user_id) = &params.user_id {
-        let oid = ObjectId::parse_str(user_id)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid user ID"}))))?;
+    if let Some(user_id_str) = &params.user_id {
+        let oid = ObjectId::parse_str(user_id_str)
+            .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
         query.insert("user_id", oid);
     }
 
@@ -206,8 +84,7 @@ pub async fn list_comments_handler(
         _ => doc! { sort_by: 1 },
     };
 
-    let total_count = comments.count_documents(query.clone(), None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let total_count = comments.count_documents(query.clone(), None).await?;
 
     let find_options = mongodb::options::FindOptions::builder()
         .sort(sort_doc)
@@ -215,45 +92,43 @@ pub async fn list_comments_handler(
         .limit(Some(limit))
         .build();
 
-    let mut cursor = comments.find(query, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = comments.find(query, find_options).await?;
 
     let mut paginated_comments = Vec::new();
     
-    while let Some(comment) = cursor.next().await {
-        if let Ok(c) = comment {
+    while let Some(comment_res) = cursor.next().await {
+        if let Ok(c) = comment_res {
             let comment_info = build_comment_response(&c, &state).await?;
             paginated_comments.push(comment_info);
         }
     }
 
-    Ok((StatusCode::OK, Json(json!({
-        "comments": paginated_comments,
-        "pagination": {
-            "current_page": page,
-            "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
-            "total_items": total_count,
-            "items_per_page": limit,
-            "has_next": (skip + limit) < total_count as i64,
-            "has_prev": page > 1
-        }
-    }))))
+    Ok((StatusCode::OK, Json(PaginatedResponse {
+        items: paginated_comments,
+        pagination: PaginationInfo {
+            current_page: page,
+            total_pages: (total_count as f64 / limit as f64).ceil() as i64,
+            total_items: total_count,
+            items_per_page: limit,
+            has_next: (skip + limit) < total_count as i64,
+            has_prev: page > 1,
+        },
+    })))
 }
 
 pub async fn get_comment_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(comment_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&comment_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid comment ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid comment ID".to_string()))?;
 
     let comments = state.mongo.collection::<Comment>("comments");
-    let comment = comments.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Comment not found"}))))?;
+    let comment = comments.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Comment not found".to_string()))?;
 
     let comment_info = build_comment_response(&comment, &state).await?;
     Ok((StatusCode::OK, Json(comment_info)))
@@ -264,16 +139,15 @@ pub async fn moderate_comment_handler(
     user: AuthUser,
     Path(comment_id): Path<String>,
     Json(payload): Json<ModerateCommentRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&comment_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid comment ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid comment ID".to_string()))?;
 
     let comments = state.mongo.collection::<Comment>("comments");
-    let comment = comments.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Comment not found"}))))?;
+    let comment = comments.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Comment not found".to_string()))?;
 
     let mut update_doc = doc! {};
     let mut new_status = comment.status.clone();
@@ -308,7 +182,7 @@ pub async fn moderate_comment_handler(
         "warn" => {
             update_doc.insert("moderation_notes", format!("Warning: {}", payload.reason.clone().unwrap_or_default()));
         },
-        _ => return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid moderation action"})))),
+        _ => return Err(AppError::BadRequest("Invalid moderation action".to_string())),
     }
 
     update_doc.insert("updated_at", DateTime::now());
@@ -317,15 +191,15 @@ pub async fn moderate_comment_handler(
         doc! { "_id": oid },
         doc! { "$set": update_doc },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     // Create moderation record
-    let moderation = state.mongo.collection::<CommentModeration>("comment_moderation");
+    let moderation_coll = state.mongo.collection::<CommentModeration>("comment_moderation");
     let moderation_record = CommentModeration {
         id: None,
         comment_id: oid,
         moderator_id: user.user_id,
-        moderator_name: comment.username,
+        moderator_name: "Admin".to_string(), // In a real app, you'd fetch the moderator's name
         action: payload.action,
         reason: payload.reason,
         notes: payload.notes,
@@ -334,11 +208,14 @@ pub async fn moderate_comment_handler(
         created_at: DateTime::now(),
     };
 
-    moderation.insert_one(moderation_record, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    moderation_coll.insert_one(moderation_record, None).await?;
 
     // Update user stats
-    update_user_comment_stats(&state, comment.user_id).await?;
+    let state_clone = state.clone();
+    let comment_user_id = comment.user_id;
+    tokio::spawn(async move {
+        let _ = update_user_comment_stats(&state_clone, comment_user_id).await;
+    });
 
     Ok((StatusCode::OK, Json(json!({"message": format!("Comment {} successfully", new_status)}))))
 }
@@ -347,14 +224,22 @@ pub async fn delete_comment_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(comment_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
+) -> AppResult<impl IntoResponse> {
     let oid = ObjectId::parse_str(&comment_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid comment ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid comment ID".to_string()))?;
 
     let comments = state.mongo.collection::<Comment>("comments");
     
+    let comment = comments.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Comment not found".to_string()))?;
+
+    // Check if user is author or admin
+    let is_admin = check_admin(user.user_id, &state).await.is_ok();
+    
+    if !is_admin && comment.user_id != user.user_id {
+        return Err(AppError::Forbidden("Not authorized to delete this comment".to_string()));
+    }
+
     comments.update_one(
         doc! { "_id": oid },
         doc! { 
@@ -362,19 +247,19 @@ pub async fn delete_comment_handler(
                 "status": "deleted",
                 "deleted_at": DateTime::now(),
                 "deleted_by": user.user_id,
-                "deleted_reason": "Admin deletion",
+                "deleted_reason": "User/Admin deletion",
                 "updated_at": DateTime::now()
             }
         },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     // Update user stats
-    let comment = comments.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Comment not found"}))))?;
-
-    update_user_comment_stats(&state, comment.user_id).await?;
+    let state_clone = state.clone();
+    let comment_user_id = comment.user_id;
+    tokio::spawn(async move {
+        let _ = update_user_comment_stats(&state_clone, comment_user_id).await;
+    });
 
     Ok((StatusCode::OK, Json(json!({"message": "Comment deleted successfully"}))))
 }
@@ -383,7 +268,7 @@ pub async fn get_moderation_queue_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Query(params): Query<CommentFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let comments = state.mongo.collection::<Comment>("comments");
@@ -410,15 +295,12 @@ pub async fn get_moderation_queue_handler(
         }
     }
 
-    let _sort_doc = doc! { "spam_score": -1, "reported_count": -1, "created_at": 1 };
-
-    let mut cursor = comments.find(query, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = comments.find(query, None).await?;
 
     let mut queue_items = Vec::new();
     
-    while let Some(comment) = cursor.next().await {
-        if let Ok(c) = comment {
+    while let Some(comment_res) = cursor.next().await {
+        if let Ok(c) = comment_res {
             let queue_item = CommentModerationQueueResponse {
                 comment_id: c.id.unwrap().to_hex(),
                 content_id: c.content_id.to_hex(),
@@ -444,16 +326,15 @@ pub async fn get_moderation_queue_handler(
 pub async fn get_user_comment_stats_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
-    Path(user_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    Path(user_id_str): Path<String>,
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let oid = ObjectId::parse_str(&user_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid user ID"}))))?;
+    let oid = ObjectId::parse_str(&user_id_str)
+        .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
-    let stats = state.mongo.collection::<UserCommentStats>("user_comment_stats");
-    let user_stats = stats.find_one(doc! { "user_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let stats_coll = state.mongo.collection::<UserCommentStats>("user_comment_stats");
+    let user_stats = stats_coll.find_one(doc! { "user_id": oid }, None).await?;
 
     if let Some(stats) = user_stats {
         let stats_response = UserCommentStatsResponse {
@@ -473,25 +354,24 @@ pub async fn get_user_comment_stats_handler(
             created_at: stats.created_at.to_chrono().to_rfc3339(),
             updated_at: stats.updated_at.to_chrono().to_rfc3339(),
         };
-        Ok((StatusCode::OK, Json(serde_json::to_value(stats_response).unwrap())))
+        Ok((StatusCode::OK, Json(stats_response)))
     } else {
-        Ok((StatusCode::NOT_FOUND, Json(json!({"error": "User stats not found"}))))
+        Err(AppError::NotFound("User stats not found".to_string()))
     }
 }
 
 pub async fn list_spam_rules_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let rules = state.mongo.collection::<SpamDetectionRule>("spam_detection_rules");
-    let mut cursor = rules.find(doc! {}, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let rules_coll = state.mongo.collection::<SpamDetectionRule>("spam_detection_rules");
+    let mut cursor = rules_coll.find(doc! {}, None).await?;
 
     let mut rules_list = Vec::new();
-    while let Some(rule) = cursor.next().await {
-        if let Ok(r) = rule {
+    while let Some(rule_res) = cursor.next().await {
+        if let Ok(r) = rule_res {
             rules_list.push(r);
         }
     }
@@ -503,25 +383,24 @@ pub async fn create_spam_rule_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Json(payload): Json<SpamRuleRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let rules = state.mongo.collection::<SpamDetectionRule>("spam_detection_rules");
+    let rules_coll = state.mongo.collection::<SpamDetectionRule>("spam_detection_rules");
     
     let new_rule = SpamDetectionRule {
         id: None,
         name: payload.name,
-        description: payload.description,
+        description: payload.description.unwrap_or_default(),
         pattern: payload.pattern,
-        score: payload.score,
-        category: payload.category,
-        is_active: payload.is_active,
+        score: payload.score.unwrap_or(0.0),
+        category: payload.category.unwrap_or_default(),
+        is_active: payload.is_active.unwrap_or(true),
         created_at: DateTime::now(),
         updated_at: DateTime::now(),
     };
 
-    rules.insert_one(new_rule, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    rules_coll.insert_one(new_rule, None).await?;
 
     Ok((StatusCode::CREATED, Json(json!({"message": "Spam detection rule created"}))))
 }
@@ -531,28 +410,26 @@ pub async fn create_spam_rule_handler(
 async fn build_comment_response(
     comment: &Comment,
     state: &Arc<AppState>,
-) -> Result<CommentResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<CommentResponse> {
     // Get reports
-    let reports = state.mongo.collection::<CommentReport>("comment_reports");
-    let mut reports_cursor = reports.find(doc! { "comment_id": comment.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let reports_coll = state.mongo.collection::<CommentReport>("comment_reports");
+    let mut reports_cursor = reports_coll.find(doc! { "comment_id": comment.id.unwrap() }, None).await?;
 
     let mut reports_list = Vec::new();
-    while let Some(report) = reports_cursor.next().await {
-        if let Ok(r) = report {
+    while let Some(report_res) = reports_cursor.next().await {
+        if let Ok(r) = report_res {
             reports_list.push(r);
         }
     }
 
     // Get moderation history
-    let moderation = state.mongo.collection::<CommentModeration>("comment_moderation");
-    let mut moderation_cursor = moderation.find(doc! { "comment_id": comment.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let moderation_coll = state.mongo.collection::<CommentModeration>("comment_moderation");
+    let mut moderation_cursor = moderation_coll.find(doc! { "comment_id": comment.id.unwrap() }, None).await?;
 
     let mut moderation_list = Vec::new();
-    while let Some(m) = moderation_cursor.next().await {
-        if let Ok(moderation_record) = m {
-            moderation_list.push(moderation_record);
+    while let Some(m_res) = moderation_cursor.next().await {
+        if let Ok(m) = m_res {
+            moderation_list.push(m);
         }
     }
 
@@ -581,50 +458,38 @@ async fn build_comment_response(
         is_edited: comment.is_edited,
         created_at: comment.created_at.to_chrono().to_rfc3339(),
         updated_at: comment.updated_at.to_chrono().to_rfc3339(),
-        reports: reports_list,
-        moderation_history: moderation_list,
+        reports: Some(reports_list.into_iter().map(|r| serde_json::to_value(r).unwrap_or(serde_json::Value::Null)).collect()),
+        moderation_history: Some(moderation_list.into_iter().map(|m| serde_json::to_value(m).unwrap_or(serde_json::Value::Null)).collect()),
     })
 }
 
 async fn update_user_comment_stats(
     state: &Arc<AppState>,
     user_id: ObjectId,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<()> {
     let comments = state.mongo.collection::<Comment>("comments");
     
     // Count comments by status
-    let total_comments = comments.count_documents(doc! { "user_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let approved_comments = comments.count_documents(doc! { "user_id": user_id, "status": "approved" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let pending_comments = comments.count_documents(doc! { "user_id": user_id, "status": "pending" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let rejected_comments = comments.count_documents(doc! { "user_id": user_id, "status": "rejected" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let spam_comments = comments.count_documents(doc! { "user_id": user_id, "status": "spam" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let deleted_comments = comments.count_documents(doc! { "user_id": user_id, "status": "deleted" }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let total_comments: u64 = comments.count_documents(doc! { "user_id": user_id }, None).await?;
+    let approved_comments: u64 = comments.count_documents(doc! { "user_id": user_id, "status": "approved" }, None).await?;
+    let pending_comments: u64 = comments.count_documents(doc! { "user_id": user_id, "status": "pending" }, None).await?;
+    let rejected_comments: u64 = comments.count_documents(doc! { "user_id": user_id, "status": "rejected" }, None).await?;
+    let spam_comments: u64 = comments.count_documents(doc! { "user_id": user_id, "status": "spam" }, None).await?;
+    let deleted_comments: u64 = comments.count_documents(doc! { "user_id": user_id, "status": "deleted" }, None).await?;
 
     // Calculate averages
     let mut avg_spam_score = None;
     let mut avg_sentiment_score = None;
     
-    let mut cursor = comments.find(doc! { "user_id": user_id, "spam_score": { "$exists": true } }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = comments.find(doc! { "user_id": user_id, "spam_score": { "$exists": true } }, None).await?;
     
     let mut total_spam_score = 0.0;
     let mut spam_count = 0;
     let mut total_sentiment_score = 0.0;
     let mut sentiment_count = 0;
 
-    while let Some(comment) = cursor.next().await {
-        if let Ok(c) = comment {
+    while let Some(comment_res) = cursor.next().await {
+        if let Ok(c) = comment_res {
             if let Some(score) = c.spam_score {
                 total_spam_score += score;
                 spam_count += 1;
@@ -647,17 +512,15 @@ async fn update_user_comment_stats(
     let last_comment = comments.find_one(
         doc! { "user_id": user_id },
         Some(mongodb::options::FindOneOptions::builder().sort(doc! { "created_at": -1 }).build())
-    ).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     // Get user info
     let profiles = state.mongo.collection::<Profile>("profiles");
-    let user_profile = profiles.find_one(doc! { "user_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "User profile not found"}))))?;
+    let user_profile = profiles.find_one(doc! { "user_id": user_id }, None).await?
+        .ok_or(AppError::NotFound("User profile not found".to_string()))?;
 
     // Update or create stats
-    let stats = state.mongo.collection::<UserCommentStats>("user_comment_stats");
+    let stats_coll = state.mongo.collection::<UserCommentStats>("user_comment_stats");
     let stats_doc = UserCommentStats {
         id: None,
         user_id,
@@ -668,8 +531,8 @@ async fn update_user_comment_stats(
         rejected_comments: rejected_comments as i32,
         spam_comments: spam_comments as i32,
         deleted_comments: deleted_comments as i32,
-        total_likes_received: 0, // Would need to count from likes collection
-        total_replies_received: 0, // Would need to count replies
+        total_likes_received: 0, 
+        total_replies_received: 0, 
         avg_spam_score,
         avg_sentiment_score,
         last_comment_at: last_comment.map(|c| c.created_at),
@@ -677,12 +540,11 @@ async fn update_user_comment_stats(
         updated_at: DateTime::now(),
     };
 
-    stats.update_one(
+    stats_coll.update_one(
         doc! { "user_id": user_id },
         doc! { "$set": mongodb::bson::to_document(&stats_doc).unwrap() },
         Some(mongodb::options::UpdateOptions::builder().upsert(true).build())
-    ).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     Ok(())
 }

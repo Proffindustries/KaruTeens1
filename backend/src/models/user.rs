@@ -40,6 +40,8 @@ pub struct Profile {
     pub year_of_study: Option<i32>,
     pub age: Option<i32>,
     pub gender: Option<String>,
+    pub quote: Option<String>,
+    pub location: Option<String>,
     pub social_links: Option<SocialLinks>,
     pub last_seen_at: Option<bson::DateTime>,
     pub last_location: Option<Location>,
@@ -50,6 +52,8 @@ pub struct Profile {
     pub notification_settings: Option<NotificationSettings>,
     #[serde(default)]
     pub onboarded: bool,
+    #[serde(default)]
+    pub is_locked: bool,
     #[serde(default)]
     pub follower_count: u64,
     #[serde(default)]

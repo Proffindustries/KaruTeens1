@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, PlusCircle, Users, Loader } from 'lucide-react';
+import { Calendar, MapPin, Clock, PlusCircle, Users, Loader, Heart, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import '../styles/EventsPage.css';
@@ -47,9 +47,20 @@ const EventCard = ({ event, navigate }) => (
                     </span>
                 </div>
                 <div className="event-meta" style={{ marginTop: '0.5rem' }}>
-                    <span>
-                        <Users size={14} /> {event.attendee_count} attending
-                    </span>
+                    {event.rsvp_stats ? (
+                        <>
+                            <span>
+                                <Check size={14} color="#2ed573" /> {event.rsvp_stats.going} going
+                            </span>
+                            <span>
+                                <Heart size={14} color="#ff4757" /> {event.rsvp_stats.interested} interested
+                            </span>
+                        </>
+                    ) : (
+                        <span>
+                            <Users size={14} /> {event.current_attendees || 0} attending
+                        </span>
+                    )}
                     <span className="category-badge">{event.category}</span>
                 </div>
             </div>
@@ -60,7 +71,8 @@ const EventCard = ({ event, navigate }) => (
 const EventsPage = () => {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const { data: events, isLoading } = useEvents({ category: categoryFilter, upcoming: true });
+    const { data: eventsData, isLoading } = useEvents({ category: categoryFilter, upcoming: true });
+    const events = eventsData?.events || [];
     const navigate = useNavigate();
 
     const categories = ['all', 'Academic', 'Social', 'Sports', 'Cultural', 'Career', 'Other'];
@@ -105,8 +117,10 @@ const CreateEventModal = ({ isOpen, onClose }) => {
         title: '',
         description: '',
         location: '',
-        start_datetime: '',
-        end_datetime: '',
+        start_date: '',
+        start_time: '12:00',
+        end_date: '',
+        end_time: '14:00',
         category: 'Social',
         image_url: '',
         max_attendees: '',
@@ -117,8 +131,8 @@ const CreateEventModal = ({ isOpen, onClose }) => {
 
         const eventData = {
             ...formData,
-            start_datetime: new Date(formData.start_datetime).toISOString(),
-            end_datetime: new Date(formData.end_datetime).toISOString(),
+            start_datetime: new Date(`${formData.start_date}T${formData.start_time}`).toISOString(),
+            end_datetime: new Date(`${formData.end_date}T${formData.end_time}`).toISOString(),
             max_attendees: formData.max_attendees ? parseInt(formData.max_attendees) : null,
         };
 
@@ -175,35 +189,76 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                         />
                     </div>
 
-                    <div
-                        className="form-row"
-                        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}
-                    >
-                        <div className="form-group">
-                            <label>Start Date & Time</label>
+                    <div className="form-row schedule-row">
+                    <div className="form-group">
+                        <label>Start Date & Time</label>
+                        <div className="datetime-input-group">
                             <input
-                                type="datetime-local"
+                                type="date"
                                 className="form-input"
-                                value={formData.start_datetime}
+                                value={formData.start_date}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, start_datetime: e.target.value })
+                                    setFormData({ ...formData, start_date: e.target.value })
                                 }
                                 required
                             />
+                            <div className="time-picker-container">
+                                <input
+                                    type="time"
+                                    className="form-input"
+                                    id="start_time_input"
+                                    value={formData.start_time}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, start_time: e.target.value })
+                                    }
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    className="time-picker-btn"
+                                    onClick={() => document.getElementById('start_time_input').showPicker?.()}
+                                    title="Set Time"
+                                >
+                                    <Clock size={16} />
+                                </button>
+                            </div>
                         </div>
+                    </div>
 
-                        <div className="form-group">
-                            <label>End Date & Time</label>
+                    <div className="form-group">
+                        <label>End Date & Time</label>
+                        <div className="datetime-input-group">
                             <input
-                                type="datetime-local"
+                                type="date"
                                 className="form-input"
-                                value={formData.end_datetime}
+                                value={formData.end_date}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, end_datetime: e.target.value })
+                                    setFormData({ ...formData, end_date: e.target.value })
                                 }
                                 required
                             />
+                            <div className="time-picker-container">
+                                <input
+                                    type="time"
+                                    className="form-input"
+                                    id="end_time_input"
+                                    value={formData.end_time}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, end_time: e.target.value })
+                                    }
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    className="time-picker-btn"
+                                    onClick={() => document.getElementById('end_time_input').showPicker?.()}
+                                    title="Set Time"
+                                >
+                                    <Clock size={16} />
+                                </button>
+                            </div>
                         </div>
+                    </div>
                     </div>
 
                     <div className="form-group">

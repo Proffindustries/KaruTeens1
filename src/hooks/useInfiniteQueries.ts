@@ -27,7 +27,7 @@ export const useInfinitePosts = (
         getNextPageParam: (lastPage) => {
             if (!lastPage || lastPage.length === 0) return undefined;
             const lastItem = lastPage[lastPage.length - 1];
-            return lastItem?.id || lastItem?._id;
+            return lastItem?.id;
         },
         initialPageParam: null as string | null,
         staleTime: STALE_TIMES.FEED_POSTS,
@@ -102,7 +102,7 @@ export const useInfiniteUserContent = (
         getNextPageParam: (lastPage) => {
             if (!lastPage || lastPage.length === 0) return undefined;
             const lastItem = lastPage[lastPage.length - 1];
-            return lastItem?.id || lastItem?._id;
+            return lastItem?.id;
         },
         initialPageParam: null as string | null,
         staleTime: STALE_TIMES.USER_PROFILE,
@@ -128,10 +128,21 @@ export const useInfiniteChatMessages = (chatId: string) => {
         getNextPageParam: (lastPage) => {
             if (!lastPage || lastPage.length === 0) return undefined;
             const lastMessage = lastPage[lastPage.length - 1];
-            return lastMessage?.id || lastMessage?._id;
+            return lastMessage?.id;
         },
         initialPageParam: null as string | null,
         staleTime: STALE_TIMES.CHAT_MESSAGES,
         ...infiniteQueryConfig,
     });
+};
+export const useInfinitePagePosts = (pageId) => {
+    return useInfinitePosts(
+        '/posts/feed',
+        ['page-posts', pageId],
+        (pageParam) => ({
+            last_id: pageParam,
+            page_id: pageId
+        }),
+        (response) => response.posts,
+    );
 };

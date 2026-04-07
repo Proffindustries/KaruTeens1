@@ -18,10 +18,7 @@ const ConfessionsPage = () => {
         queryKey: ['confessions'],
         queryFn: async () => {
             const { data } = await api.get('/confessions');
-            return data.map(c => ({
-                ...c,
-                id: c.id || c._id?.$oid || c._id
-            }));
+            return data;
         },
     });
     const [newConfession, setNewConfession] = useState('');
@@ -48,7 +45,7 @@ const ConfessionsPage = () => {
             const { data } = await api.post('/confessions', newConfessionObj);
             return {
                 ...newConfessionObj,
-                id: data.id?.$oid || data.id || data._id,
+                id: data.id,
                 likes: 0,
                 comments: 0,
                 created_at: new Date().toISOString(),

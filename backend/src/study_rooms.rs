@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use crate::db::AppState;
-use crate::models::{StudyRoom, User};
+use crate::models::{StudyRoom, User, RoomMessage, RoomFile};
 use crate::auth::AuthUser;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
@@ -26,6 +26,26 @@ pub struct CreateRoomRequest {
 pub struct InviteLinkResponse {
     pub invite_link: String,
     pub expires_at: String,
+}
+
+#[derive(Deserialize)]
+pub struct SaveMessageRequest {
+    pub content: String,
+    pub username: String,
+}
+
+#[derive(Deserialize)]
+pub struct SaveFileRequest {
+    pub filename: String,
+    pub url: String,
+    pub username: String,
+    pub file_type: String,
+}
+
+#[derive(Serialize)]
+pub struct RoomHistoryResponse {
+    pub messages: Vec<RoomMessage>,
+    pub files: Vec<RoomFile>,
 }
 
 #[derive(Serialize)]
@@ -342,6 +362,76 @@ pub async fn remove_user_handler(
     Ok((StatusCode::OK, Json(json!({"message": "User removed from room"}))))
 }
 
+pub async fn save_message_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(id): Path<String>,
+    Json(payload): Json<SaveMessageRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let room_id = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid room ID"}))))?;
+    let collection = state.mongo.collection::<RoomMessage>("room_messages");
+    
+    let new_msg = RoomMessage {
+        id: None,
+        room_id,
+        user_id: user.user_id,
+        username: payload.username,
+        content: payload.content,
+        timestamp: DateTime::now(),
+    };
+
+    collection.insert_one(new_msg, None).await.map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    Ok(StatusCode::CREATED)
+}
+
+pub async fn save_file_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(id): Path<String>,
+    Json(payload): Json<SaveFileRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let room_id = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid room ID"}))))?;
+    let collection = state.mongo.collection::<RoomFile>("room_files");
+
+    let new_file = RoomFile {
+        id: None,
+        room_id,
+        user_id: user.user_id,
+        username: payload.username,
+        filename: payload.filename,
+        url: payload.url,
+        file_type: payload.file_type,
+        timestamp: DateTime::now(),
+    };
+
+    collection.insert_one(new_file, None).await.map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    Ok(StatusCode::CREATED)
+}
+
+pub async fn get_room_history_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let room_id = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid room ID"}))))?;
+    
+    let msg_coll = state.mongo.collection::<RoomMessage>("room_messages");
+    let file_coll = state.mongo.collection::<RoomFile>("room_files");
+
+    let mut msg_cursor = msg_coll.find(doc! { "room_id": room_id }, None).await.map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut messages = Vec::new();
+    while let Some(m) = msg_cursor.next().await {
+        if let Ok(msg) = m { messages.push(msg); }
+    }
+
+    let mut file_cursor = file_coll.find(doc! { "room_id": room_id }, None).await.map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut files = Vec::new();
+    while let Some(f) = file_cursor.next().await {
+        if let Ok(file) = f { files.push(file); }
+    }
+
+    Ok((StatusCode::OK, Json(RoomHistoryResponse { messages, files })))
+}
+
 pub fn study_room_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", post(create_room_handler).get(list_rooms_handler))
@@ -350,4 +440,7 @@ pub fn study_room_routes() -> Router<Arc<AppState>> {
         .route("/:id/leave", post(leave_room_handler))
         .route("/:id/invite", get(generate_invite_link_handler))
         .route("/:id/remove/:user_id", delete(remove_user_handler))
+        .route("/:id/messages", post(save_message_handler))
+        .route("/:id/files", post(save_file_handler))
+        .route("/:id/history", get(get_room_history_handler))
 }

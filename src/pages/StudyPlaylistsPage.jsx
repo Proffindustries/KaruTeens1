@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Plus,
@@ -28,8 +28,6 @@ const StudyPlaylistsPage = () => {
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showAddItemModal, setShowAddItemModal] = useState(false);
-    const [subjectFilter, setSubjectFilter] = useState('');
-
     const subjects = [
         'Mathematics',
         'Physics',
@@ -41,12 +39,9 @@ const StudyPlaylistsPage = () => {
         'Economics',
         'Other',
     ];
+    const [subjectFilter, setSubjectFilter] = useState('');
 
-    useEffect(() => {
-        fetchPlaylists();
-    }, [subjectFilter]);
-
-    const fetchPlaylists = async () => {
+    const fetchPlaylists = useCallback(async () => {
         try {
             setLoading(true);
             const params = subjectFilter ? { subject: subjectFilter } : {};
@@ -57,16 +52,20 @@ const StudyPlaylistsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [subjectFilter, showToast]);
 
-    const fetchPlaylistDetails = async (playlistId) => {
+    const fetchPlaylistDetails = useCallback(async (playlistId) => {
         try {
             const { data } = await api.get(`/playlists/${playlistId}`);
             setSelectedPlaylist(data);
         } catch (err) {
             showToast('Failed to load playlist details', 'error');
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchPlaylists();
+    }, [fetchPlaylists]);
 
     const handleCreatePlaylist = async (e) => {
         e.preventDefault();

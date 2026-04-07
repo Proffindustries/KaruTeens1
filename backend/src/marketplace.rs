@@ -10,47 +10,12 @@ use serde_json::json;
 use std::sync::Arc;
 use crate::db::AppState;
 use crate::models::{MarketplaceItem, Profile, User};
+use crate::dto::{MarketplaceItemResponse, CreateItemRequest, ItemFilter, IdResponse, MessageResponse};
+use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
 use mongodb::{bson::{doc, oid::ObjectId}, options::FindOptions};
 use futures::stream::StreamExt;
 use std::collections::HashMap;
-
-// --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct CreateItemRequest {
-    pub title: String,
-    pub description: String,
-    pub price: f64,
-    pub currency: String,
-    pub condition: String,
-    pub category: String,
-    pub images: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub struct ItemFilter {
-    pub category: Option<String>,
-    pub search: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct ItemResponse {
-    pub id: String,
-    pub seller_id: String,
-    pub seller_name: String,
-    pub seller_avatar: Option<String>,
-    pub title: String,
-    pub description: String,
-    pub price: f64,
-    pub currency: String,
-    pub condition: String,
-    pub category: String,
-    pub images: Vec<String>,
-    pub status: String,
-    pub created_at: String,
-    pub seller_is_verified: bool,
-}
 
 // --- Handlers ---
 
@@ -58,7 +23,7 @@ pub async fn create_item_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Json(payload): Json<CreateItemRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     let collection = state.mongo.collection::<MarketplaceItem>("marketplace_items");
 
     let new_item = MarketplaceItem {
@@ -67,27 +32,26 @@ pub async fn create_item_handler(
         title: payload.title,
         description: payload.description,
         price: (payload.price * 100.0) as i64,
-        currency: payload.currency,
+        currency: payload.currency.unwrap_or_else(|| "USD".to_string()),
         condition: payload.condition,
         category: payload.category,
-        images: payload.images,
+        images: payload.images.unwrap_or_default(),
         status: "available".to_string(),
         created_at: mongodb::bson::DateTime::now(),
     };
 
-    let result = collection.insert_one(new_item, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let result = collection.insert_one(new_item, None).await?;
 
-    Ok((StatusCode::CREATED, Json(json!({
-        "message": "Item listed successfully", 
-        "id": result.inserted_id.as_object_id().unwrap().to_hex()
-    }))))
+    Ok((StatusCode::CREATED, Json(IdResponse {
+        message: Some("Item listed successfully".to_string()), 
+        id: result.inserted_id.as_object_id().unwrap().to_hex()
+    })))
 }
 
 pub async fn get_items_handler(
     State(state): State<Arc<AppState>>,
     Query(filter): Query<ItemFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     let items_collection = state.mongo.collection::<MarketplaceItem>("marketplace_items");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
     let users_collection = state.mongo.collection::<User>("users");
@@ -100,50 +64,53 @@ pub async fn get_items_handler(
         }
     }
 
-    if let Some(search) = filter.search {
-        if !search.is_empty() {
+    if let Some(search) = &filter.search {
+        if !(search as &str).is_empty() {
             let escaped_search = regex::escape(&search);
             query.insert("title", doc! { "$regex": &escaped_search, "$options": "i" });
         }
     }
 
     let find_options = FindOptions::builder().sort(doc! { "created_at": -1 }).limit(50).build();
-    let mut cursor = items_collection.find(query, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = items_collection.find(query, find_options).await?;
 
     let mut items = Vec::new();
-    while let Some(Ok(item)) = cursor.next().await {
-        items.push(item);
+    while let Some(item_res) = cursor.next().await {
+        if let Ok(item) = item_res {
+            items.push(item);
+        }
     }
 
     if items.is_empty() {
-        return Ok((StatusCode::OK, Json(json!([]))));
+        return Ok((StatusCode::OK, Json(Vec::<MarketplaceItemResponse>::new())));
     }
 
     // Batch fetch profiles and users
     let seller_ids: Vec<ObjectId> = items.iter().map(|i| i.seller_id).collect();
     
     let mut profile_map = HashMap::new();
-    let profile_cursor_res = profiles_collection.find(doc! { "user_id": { "$in": &seller_ids } }, None).await;
-    if let Ok(mut profile_cursor) = profile_cursor_res {
-        while let Some(Ok(p)) = profile_cursor.next().await {
+    let mut profile_cursor = profiles_collection.find(doc! { "user_id": { "$in": &seller_ids } }, None).await?;
+    while let Some(result) = profile_cursor.next().await {
+        if let Ok(p) = result {
             profile_map.insert(p.user_id, p);
         }
     }
 
     let mut user_map = HashMap::new();
-    let user_cursor_res = users_collection.find(doc! { "_id": { "$in": &seller_ids } }, None).await;
-    if let Ok(mut user_cursor) = user_cursor_res {
-        while let Some(Ok(u)) = user_cursor.next().await {
-            user_map.insert(u.id.unwrap(), u);
+    let mut user_cursor = users_collection.find(doc! { "_id": { "$in": &seller_ids } }, None).await?;
+    while let Some(result) = user_cursor.next().await {
+        if let Ok(u) = result {
+            if let Some(oid) = u.id {
+                user_map.insert(oid, u);
+            }
         }
     }
 
-    let item_responses: Vec<ItemResponse> = items.into_iter().map(|item| {
+    let item_responses: Vec<MarketplaceItemResponse> = items.into_iter().map(|item| {
         let profile = profile_map.get(&item.seller_id);
         let user = user_map.get(&item.seller_id);
 
-        ItemResponse {
+        MarketplaceItemResponse {
             id: item.id.unwrap().to_hex(),
             seller_id: item.seller_id.to_hex(),
             seller_name: profile.map(|p| p.username.clone()).unwrap_or_else(|| "Unknown".to_string()),
@@ -154,31 +121,29 @@ pub async fn get_items_handler(
             currency: item.currency,
             condition: item.condition,
             category: item.category,
-            images: item.images,
+            images: Some(item.images),
             status: item.status,
             created_at: item.created_at.to_chrono().to_rfc3339(),
             seller_is_verified: user.map(|u| u.is_verified).unwrap_or(false),
         }
     }).collect();
 
-    Ok((StatusCode::OK, Json(json!(item_responses))))
+    Ok((StatusCode::OK, Json(item_responses)))
 }
 
 pub async fn get_item_details_handler(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid ID".to_string()))?;
     
     let items_collection = state.mongo.collection::<MarketplaceItem>("marketplace_items");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
-    let item = items_collection.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Item not found"}))))?;
+    let item = items_collection.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Item not found".to_string()))?;
 
-    let profile = profiles_collection.find_one(doc! { "user_id": item.seller_id }, None).await
-        .unwrap_or(None);
+    let profile = profiles_collection.find_one(doc! { "user_id": item.seller_id }, None).await?;
 
     let (seller_name, seller_avatar) = match profile {
         Some(p) => (p.username, p.avatar_url),
@@ -186,10 +151,10 @@ pub async fn get_item_details_handler(
     };
 
     let users = state.mongo.collection::<User>("users");
-    let user = users.find_one(doc! { "_id": item.seller_id }, None).await.unwrap_or(None);
+    let user = users.find_one(doc! { "_id": item.seller_id }, None).await?;
     let seller_is_verified = user.map(|u| u.is_verified).unwrap_or(false);
 
-    let response = ItemResponse {
+    let response = MarketplaceItemResponse {
         id: item.id.unwrap().to_hex(),
         seller_id: item.seller_id.to_hex(),
         seller_name,
@@ -200,7 +165,7 @@ pub async fn get_item_details_handler(
         currency: item.currency,
         condition: item.condition,
         category: item.category,
-        images: item.images,
+        images: Some(item.images),
         status: item.status,
         created_at: item.created_at.to_chrono().to_rfc3339(),
         seller_is_verified,
@@ -213,27 +178,25 @@ pub async fn mark_sold_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid ID".to_string()))?;
     let items_collection = state.mongo.collection::<MarketplaceItem>("marketplace_items");
 
     // Verify ownership
-    let item = items_collection.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Item not found"}))))?;
+    let item = items_collection.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Item not found".to_string()))?;
 
     if item.seller_id != user.user_id {
-        return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Not authorized"}))));
+        return Err(AppError::Forbidden("Not authorized to mark this item as sold".to_string()));
     }
 
     items_collection.update_one(
         doc! { "_id": oid },
         doc! { "$set": { "status": "sold" } },
         None
-    ).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
-    Ok((StatusCode::OK, Json(json!({"message": "Item marked as sold"}))))
+    Ok((StatusCode::OK, Json(MessageResponse { message: "Item marked as sold".to_string() })))
 }
 
 pub fn marketplace_routes() -> Router<Arc<AppState>> {

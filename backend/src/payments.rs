@@ -195,6 +195,18 @@ pub async fn initiate_verification_payment(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let token = get_mpesa_token(&state).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))))?;
 
+    let tx_amount = match payload.tx_type.as_str() {
+        "premium" => match payload.premium_duration.as_deref() {
+            Some("weekly") => 10.0,
+            Some("monthly") => 40.0,
+            Some("semi-annual") => 200.0,
+            _ => 40.0,
+        },
+        "hookup" => 20.0,
+        "donation" => payload.amount,
+        _ => 20.0, // Default verification
+    };
+
     let shortcode = std::env::var("MPESA_BUSINESS_SHORTCODE").unwrap_or_else(|_| "174379".to_string());
     let passkey = std::env::var("MPESA_PASSKEY").unwrap_or_default();
     let transaction_type = std::env::var("MPESA_TRANSACTION_TYPE").unwrap_or_else(|_| "CustomerPayBillOnline".to_string());
@@ -216,7 +228,7 @@ pub async fn initiate_verification_payment(
         "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
     };
 
-    tracing::info!("Initiating STK Push at {} (Env: {}) for {}", url, mpesa_env, payload.phone);
+    tracing::info!("Initiating STK Push for {} (Amount: {})", payload.phone, tx_amount);
 
     let mpesa_res = client.post(url)
         .header("Authorization", format!("Bearer {}", token))
@@ -225,7 +237,7 @@ pub async fn initiate_verification_payment(
             "Password": password,
             "Timestamp": timestamp,
             "TransactionType": transaction_type,
-            "Amount": payload.amount.round() as i32,
+            "Amount": tx_amount as i32,
             "PartyA": payload.phone,
             "PartyB": party_b,
             "PhoneNumber": payload.phone,
@@ -234,6 +246,7 @@ pub async fn initiate_verification_payment(
             "TransactionDesc": match payload.tx_type.as_str() {
                 "premium" => "Premium Upgrade",
                 "hookup" => "Hookup Alias Activation",
+                "donation" => "Donation to KaruTeens",
                 _ => "Account Verification"
             }
         }))
@@ -252,11 +265,23 @@ pub async fn initiate_verification_payment(
 
     // Save pending transaction to MongoDB
     let collection = state.mongo.collection::<Transaction>("transactions");
+    let tx_amount = match payload.tx_type.as_str() {
+        "premium" => match payload.premium_duration.as_deref() {
+            Some("weekly") => 10.0,
+            Some("monthly") => 40.0,
+            Some("semi-annual") => 200.0,
+            _ => 40.0,
+        },
+        "hookup" => 20.0,
+        "donation" => payload.amount,
+        _ => 5.0, // Default verification
+    };
+
     let new_tx = Transaction {
         id: None,
         user_id: user.user_id,
         phone_number: payload.phone,
-        amount: (payload.amount * 100.0) as i64,
+        amount: (tx_amount * 100.0) as i64,
         mpesa_receipt_number: None,
         checkout_request_id: checkout_request_id.clone(),
         status: "pending".to_string(),
@@ -455,9 +480,68 @@ pub async fn get_transaction_status(
     }
 }
 
+pub async fn get_donation_stats(
+    State(state): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let collection = state.mongo.collection::<Transaction>("transactions");
+    
+    // Sum all completed donations
+    let filter = doc! { "transaction_type": "donation", "status": "completed" };
+    let mut cursor = collection.find(filter, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut total_raised_cents: i64 = 0;
+    use futures::StreamExt;
+    while let Some(Ok(tx)) = cursor.next().await {
+        total_raised_cents += tx.amount;
+    }
+    
+    Ok(Json(json!({
+        "raised": total_raised_cents as f64 / 100.0,
+        "goal": 50000.0, // Placeholder goal
+    })))
+}
+
+pub async fn get_recent_donors(
+    State(state): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let collection = state.mongo.collection::<Transaction>("transactions");
+    
+    let filter = doc! { "transaction_type": "donation", "status": "completed" };
+    let options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .limit(5)
+        .build();
+        
+    let mut cursor = collection.find(filter, options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    
+    let mut donors = Vec::new();
+    use futures::StreamExt;
+    while let Some(Ok(tx)) = cursor.next().await {
+        // Find user name from profiles
+        let profile_collection = state.mongo.collection::<crate::models::Profile>("profiles");
+        let name = if let Ok(Some(profile)) = profile_collection.find_one(doc! { "user_id": tx.user_id }, None).await {
+            profile.username
+        } else {
+            "Anonymous".to_string()
+        };
+        
+        donors.push(json!({
+            "name": name,
+            "amount": tx.amount as f64 / 100.0,
+            "created_at": tx.created_at.to_chrono().to_rfc3339()
+        }));
+    }
+    
+    Ok(Json(donors))
+}
+
 pub fn payment_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/verify", post(initiate_verification_payment))
         .route("/callback", post(mpesa_callback_handler))
         .route("/status/:id", get(get_transaction_status))
+        .route("/donations/stats", get(get_donation_stats))
+        .route("/donations/recent", get(get_recent_donors))
 }

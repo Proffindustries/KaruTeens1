@@ -11,162 +11,15 @@ use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::db::AppState;
 use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, User, Profile};
+use crate::dto::{
+    PostDetailResponse, PostAnalyticsSummary, PostWorkflowResponse, 
+    CreatePostRequest, UpdatePostRequest, ApprovePostRequest, PostFilter,
+    PaginatedResponse, PaginationInfo
+};
+use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
+use crate::utils::check_admin;
 use futures::stream::StreamExt;
-
-// --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct UpdatePostRequest {
-    pub title: Option<String>,
-    pub content: Option<String>,
-    pub excerpt: Option<String>,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub post_type: Option<String>,
-    pub scheduled_publish_date: Option<String>,
-    pub language: Option<String>,
-    pub is_featured: Option<bool>,
-    pub is_premium: Option<bool>,
-    pub allow_comments: Option<bool>,
-    pub allow_sharing: Option<bool>,
-    pub seo_title: Option<String>,
-    pub seo_description: Option<String>,
-    pub seo_keywords: Option<Vec<String>>,
-    pub meta_data: Option<serde_json::Value>,
-    pub content_rating: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreatePostRequest {
-    pub title: Option<String>,
-    pub content: String,
-    pub excerpt: Option<String>,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub post_type: Option<String>,
-    pub scheduled_publish_date: Option<String>,
-    pub language: Option<String>,
-    pub is_featured: Option<bool>,
-    pub is_premium: Option<bool>,
-    pub allow_comments: Option<bool>,
-    pub allow_sharing: Option<bool>,
-    pub seo_title: Option<String>,
-    pub seo_description: Option<String>,
-    pub seo_keywords: Option<Vec<String>>,
-    pub media_urls: Option<Vec<String>>,
-    pub meta_data: Option<serde_json::Value>,
-    pub content_rating: Option<String>,
-    pub status: Option<String>,
-    pub is_nsfw: Option<bool>,
-    pub is_anonymous: Option<bool>,
-}
-
-#[derive(Deserialize)]
-pub struct ApprovePostRequest {
-    pub status: String, // approved, rejected
-    pub comments: Option<String>,
-    pub rejection_reason: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-pub struct PostFilter {
-    pub status: Option<String>,
-    pub post_type: Option<String>,
-    pub category: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub language: Option<String>,
-    pub is_featured: Option<bool>,
-    pub is_premium: Option<bool>,
-    pub scheduled_publish_date: Option<String>,
-    pub search: Option<String>,
-    pub date_from: Option<String>,
-    pub date_to: Option<String>,
-    pub sort_by: Option<String>,
-    pub sort_order: Option<String>,
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
-#[derive(Serialize)]
-pub struct PostResponse {
-    pub id: String,
-    pub title: String,
-    pub content: String,
-    pub excerpt: Option<String>,
-    pub slug: String,
-    pub status: String,
-    pub post_type: String,
-    pub category: String,
-    pub tags: Option<Vec<String>>,
-    pub author_id: String,
-    pub author_name: String,
-    pub media_urls: Option<Vec<String>>,
-    pub scheduled_publish_date: Option<String>,
-    pub published_at: Option<String>,
-    pub approved_at: Option<String>,
-    pub approved_by: Option<String>,
-    pub rejected_at: Option<String>,
-    pub rejected_by: Option<String>,
-    pub rejection_reason: Option<String>,
-    pub view_count: i32,
-    pub like_count: i32,
-    pub comment_count: i32,
-    pub share_count: i32,
-    pub reading_time: Option<i32>,
-    pub language: String,
-    pub is_featured: bool,
-    pub is_premium: bool,
-    pub allow_comments: bool,
-    pub allow_sharing: bool,
-    pub seo_title: Option<String>,
-    pub seo_description: Option<String>,
-    pub seo_keywords: Option<Vec<String>>,
-    pub is_nsfw: Option<bool>,
-    pub is_anonymous: bool,
-    pub source_url: Option<String>,
-    pub source_author: Option<String>,
-    pub plagiarism_score: Option<f64>,
-    pub content_rating: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-    pub analytics: PostAnalyticsSummary,
-}
-
-#[derive(Serialize)]
-pub struct PostAnalyticsSummary {
-    pub total_views: i32,
-    pub unique_views: i32,
-    pub total_likes: i32,
-    pub total_comments: i32,
-    pub total_shares: i32,
-    pub avg_reading_time: Option<f64>,
-    pub engagement_rate: f64,
-}
-
-#[derive(Serialize)]
-pub struct PostWorkflowResponse {
-    pub post: PostResponse,
-    pub revisions: Vec<PostRevision>,
-    pub approvals: Vec<PostApproval>,
-    pub moderation_history: Vec<ContentModeration>,
-}
-
-// --- Middleware: Check Admin ---
-
-async fn check_admin(
-    user_id: ObjectId,
-    state: &Arc<AppState>,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let users = state.mongo.collection::<User>("users");
-    let user_doc = users.find_one(doc! { "_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    match user_doc {
-        Some(u) if u.role == "admin" || u.role == "superadmin" => Ok(()),
-        _ => Err((StatusCode::FORBIDDEN, Json(json!({"error": "Admin access required"})))),
-    }
-}
 
 // --- Handlers ---
 
@@ -174,35 +27,21 @@ pub async fn list_posts_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Query(params): Query<PostFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
     
-    // Create a cache key based on the query parameters
-    let cache_key = format!(
-        "posts:list:{:?}",
-        params
-    );
+    let cache_key = format!("posts:list:{:?}", params);
     
-    // Try to get from cache first (cache for 2 minutes for list queries)
-    if let Some(cached_result) = state.cache.get::<serde_json::Value>(&cache_key).await {
+    if let Some(cached_result) = state.cache.get::<PaginatedResponse<PostDetailResponse>>(&cache_key).await {
         return Ok((StatusCode::OK, Json(cached_result)));
     }
     
     let posts = state.mongo.collection::<Post>("posts");
-    
     let mut query = doc! {};
     
-    if let Some(status) = &params.status {
-        query.insert("status", status);
-    }
-    
-    if let Some(post_type) = &params.post_type {
-        query.insert("post_type", post_type);
-    }
-    
-    if let Some(category) = &params.category {
-        query.insert("category", category);
-    }
+    if let Some(status) = &params.status { query.insert("status", status); }
+    if let Some(post_type) = &params.post_type { query.insert("post_type", post_type); }
+    if let Some(category) = &params.category { query.insert("category", category); }
     
     if let Some(search) = &params.search {
         let escaped_search = regex::escape(search);
@@ -236,61 +75,56 @@ pub async fn list_posts_handler(
         _ => doc! { sort_by: 1 },
     };
     
-    let total_count = posts.count_documents(query.clone(), None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let total_count = posts.count_documents(query.clone(), None).await?;
     
     let find_options = mongodb::options::FindOptions::builder()
         .sort(sort_doc)
-        .skip(skip as u64)
-        .limit(limit)
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
         .build();
     
-    let mut cursor = posts.find(query, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
+    let mut cursor = posts.find(query, find_options).await?;
     let mut paginated_posts = Vec::new();
     
-    while let Some(post) = cursor.next().await {
-        if let Ok(p) = post {
+    while let Some(post_res) = cursor.next().await {
+        if let Ok(p) = post_res {
             let post_info = build_post_response(&p, &state).await?;
             paginated_posts.push(post_info);
         }
     }
     
-    let response = Json(json!({
-        "posts": paginated_posts,
-        "pagination": {
-            "current_page": page,
-            "total_pages": (total_count as f64 / limit as f64).ceil() as i64,
-            "total_items": total_count,
-            "items_per_page": limit,
-            "has_next": (skip + limit) < (total_count as i64),
-            "has_prev": page > 1
-        }
-    }));
+    let response_data: PaginatedResponse<PostDetailResponse> = PaginatedResponse {
+        items: paginated_posts,
+        pagination: PaginationInfo {
+            current_page: page,
+            total_pages: (total_count as f64 / limit as f64).ceil() as i64,
+            total_items: total_count,
+            items_per_page: limit,
+            has_next: (skip + limit) < (total_count as i64),
+            has_prev: page > 1,
+        },
+    };
     
-    // Cache the response for 2 minutes
-    let _ = state.cache.set(&cache_key, &response.0, 120).await;
+    let _ = state.cache.set(&cache_key, &response_data, 120).await;
     
-    Ok((StatusCode::OK, response))
+    Ok((StatusCode::OK, Json(response_data)))
 }
 
 pub async fn get_post_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(post_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
-    let post = posts.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Post not found"}))))?;
+    let post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
 
-    let post_info = build_post_response(&post, &state).await?;
+    let post_info: PostDetailResponse = build_post_response(&post, &state).await?;
     Ok((StatusCode::OK, Json(post_info)))
 }
 
@@ -299,82 +133,52 @@ pub async fn update_post_handler(
     user: AuthUser,
     Path(post_id): Path<String>,
     Json(payload): Json<UpdatePostRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
     
-    // Get current post to create revision
-    let _current_post = posts.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Post not found"}))))?;
+    if posts.find_one(doc! { "_id": oid }, None).await?.is_none() {
+        return Err(AppError::NotFound("Post not found".to_string()));
+    }
 
     let mut update_doc = doc! {};
     
-    if let Some(title) = payload.title {
-        update_doc.insert("title", title);
-    }
-    if let Some(content) = payload.content {
-        update_doc.insert("content", content);
-    }
-    if let Some(excerpt) = payload.excerpt {
-        update_doc.insert("excerpt", excerpt);
-    }
-    if let Some(category) = payload.category {
-        update_doc.insert("category", category);
-    }
-    if let Some(tags) = payload.tags {
-        update_doc.insert("tags", tags);
-    }
-    if let Some(post_type) = payload.post_type {
-        update_doc.insert("post_type", post_type);
-    }
-    if let Some(scheduled_publish_date) = payload.scheduled_publish_date {
+    if let Some(title) = payload.title { update_doc.insert("title", title); }
+    if let Some(content) = payload.content { update_doc.insert("content", content); }
+    if let Some(excerpt) = payload.excerpt { update_doc.insert("excerpt", excerpt); }
+    if let Some(category) = payload.category { update_doc.insert("category", category); }
+    if let Some(tags) = payload.tags { update_doc.insert("tags", tags); }
+    if let Some(post_type) = payload.post_type { update_doc.insert("post_type", post_type); }
+    if let Some(ref scheduled_publish_date) = payload.scheduled_publish_date {
         let dt = chrono::DateTime::parse_from_rfc3339(&scheduled_publish_date)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid scheduled publish date format"}))))?;
+            .map_err(|_| AppError::BadRequest("Invalid scheduled publish date format".to_string()))?;
         update_doc.insert("scheduled_publish_date", dt);
     }
-    if let Some(language) = payload.language {
-        update_doc.insert("language", language);
+    if let Some(language) = payload.language { update_doc.insert("language", language); }
+    if let Some(is_featured) = payload.is_featured { update_doc.insert("is_featured", is_featured); }
+    if let Some(is_premium) = payload.is_premium { update_doc.insert("is_premium", is_premium); }
+    if let Some(allow_comments) = payload.allow_comments { update_doc.insert("allow_comments", allow_comments); }
+    if let Some(allow_sharing) = payload.allow_sharing { update_doc.insert("allow_sharing", allow_sharing); }
+    if let Some(seo_title) = payload.seo_title { update_doc.insert("seo_title", seo_title); }
+    if let Some(seo_description) = payload.seo_description { update_doc.insert("seo_description", seo_description); }
+    if let Some(seo_keywords) = payload.seo_keywords { update_doc.insert("seo_keywords", seo_keywords); }
+    if let Some(meta_data) = payload.meta_data { 
+        let bson_meta = bson::to_bson(&meta_data).map_err(|e| AppError::BadRequest(format!("Invalid meta_data: {}", e)))?;
+        update_doc.insert("meta_data", bson_meta); 
     }
-    if let Some(is_featured) = payload.is_featured {
-        update_doc.insert("is_featured", is_featured);
-    }
-    if let Some(is_premium) = payload.is_premium {
-        update_doc.insert("is_premium", is_premium);
-    }
-    if let Some(allow_comments) = payload.allow_comments {
-        update_doc.insert("allow_comments", allow_comments);
-    }
-    if let Some(allow_sharing) = payload.allow_sharing {
-        update_doc.insert("allow_sharing", allow_sharing);
-    }
-    if let Some(seo_title) = payload.seo_title {
-        update_doc.insert("seo_title", seo_title);
-    }
-    if let Some(seo_description) = payload.seo_description {
-        update_doc.insert("seo_description", seo_description);
-    }
-    if let Some(seo_keywords) = payload.seo_keywords {
-        update_doc.insert("seo_keywords", seo_keywords);
-    }
-    if let Some(meta_data) = payload.meta_data {
-        update_doc.insert("meta_data", meta_data.to_string());
-    }
-    if let Some(content_rating) = payload.content_rating {
-        update_doc.insert("content_rating", content_rating);
+    if let Some(content_rating) = payload.content_rating { update_doc.insert("content_rating", content_rating); }
+
+    if update_doc.is_empty() {
+        return Ok((StatusCode::OK, Json(json!({"message": "No changes made"}))));
     }
 
     update_doc.insert("updated_at", DateTime::now());
 
-    posts.update_one(
-        doc! { "_id": oid },
-        doc! { "$set": update_doc.clone() },
-        None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    posts.update_one(doc! { "_id": oid }, doc! { "$set": update_doc }, None).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Post updated successfully"}))))
 }
@@ -384,16 +188,15 @@ pub async fn approve_post_handler(
     user: AuthUser,
     Path(post_id): Path<String>,
     Json(payload): Json<ApprovePostRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
-    let post = posts.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Post not found"}))))?;
+    let post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
 
     let mut update_doc = doc! {};
     let status = payload.status.clone();
@@ -402,29 +205,24 @@ pub async fn approve_post_handler(
         update_doc.insert("status", "approved");
         update_doc.insert("approved_at", DateTime::now());
         update_doc.insert("approved_by", user.user_id);
-        update_doc.insert("rejected_at", None::<DateTime>);
-        update_doc.insert("rejected_by", None::<ObjectId>);
-        update_doc.insert("rejection_reason", None::<String>);
+        update_doc.insert("rejected_at", mongodb::bson::Bson::Null);
+        update_doc.insert("rejected_by", mongodb::bson::Bson::Null);
+        update_doc.insert("rejection_reason", mongodb::bson::Bson::Null);
     } else if status == "rejected" {
         update_doc.insert("status", "rejected");
         update_doc.insert("rejected_at", DateTime::now());
         update_doc.insert("rejected_by", user.user_id);
         update_doc.insert("rejection_reason", payload.rejection_reason);
-        update_doc.insert("approved_at", None::<DateTime>);
-        update_doc.insert("approved_by", None::<ObjectId>);
+        update_doc.insert("approved_at", mongodb::bson::Bson::Null);
+        update_doc.insert("approved_by", mongodb::bson::Bson::Null);
     } else {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid approval status"}))));
+        return Err(AppError::BadRequest("Invalid approval status".to_string()));
     }
 
     update_doc.insert("updated_at", DateTime::now());
 
-    posts.update_one(
-        doc! { "_id": oid },
-        doc! { "$set": update_doc },
-        None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    posts.update_one(doc! { "_id": oid }, doc! { "$set": update_doc }, None).await?;
 
-    // Create approval record
     let approvals = state.mongo.collection::<PostApproval>("post_approvals");
     let approval = PostApproval {
         id: None,
@@ -432,13 +230,12 @@ pub async fn approve_post_handler(
         approver_id: user.user_id,
         approver_name: post.author_name,
         status: payload.status.clone(),
-        comments: payload.comments.clone(),
+        comments: payload.comments,
         reviewed_at: DateTime::now(),
         created_at: DateTime::now(),
     };
 
-    approvals.insert_one(approval, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    approvals.insert_one(approval, None).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": format!("Post {} successfully", status)}))))
 }
@@ -447,11 +244,11 @@ pub async fn publish_post_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(post_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
     
@@ -465,7 +262,7 @@ pub async fn publish_post_handler(
             }
         },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Post published successfully"}))))
 }
@@ -474,45 +271,33 @@ pub async fn delete_post_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(post_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
-    
-    posts.delete_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    posts.delete_one(doc! { "_id": oid }, None).await?;
 
-    // Also delete associated data
+    // Cleanup associated data
     let revisions = state.mongo.collection::<PostRevision>("post_revisions");
-    revisions.delete_many(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
     let approvals = state.mongo.collection::<PostApproval>("post_approvals");
-    approvals.delete_many(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
     let views = state.mongo.collection::<PostView>("post_views");
-    views.delete_many(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
     let likes = state.mongo.collection::<PostLike>("post_likes");
-    likes.delete_many(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
     let shares = state.mongo.collection::<PostShare>("post_shares");
-    shares.delete_many(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
     let analytics = state.mongo.collection::<PostAnalytics>("post_analytics");
-    analytics.delete_many(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
     let moderation = state.mongo.collection::<ContentModeration>("content_moderation");
-    moderation.delete_many(doc! { "content_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let _ = tokio::try_join!(
+        revisions.delete_many(doc! { "post_id": oid }, None),
+        approvals.delete_many(doc! { "post_id": oid }, None),
+        views.delete_many(doc! { "post_id": oid }, None),
+        likes.delete_many(doc! { "post_id": oid }, None),
+        shares.delete_many(doc! { "post_id": oid }, None),
+        analytics.delete_many(doc! { "post_id": oid }, None),
+        moderation.delete_many(doc! { "content_id": oid }, None)
+    )?;
 
     Ok((StatusCode::OK, Json(json!({"message": "Post deleted successfully"}))))
 }
@@ -521,103 +306,66 @@ pub async fn get_post_workflow_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(post_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
-    // Get post
     let posts = state.mongo.collection::<Post>("posts");
-    let post = posts.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Post not found"}))))?;
+    let post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
 
-    // Get revisions
-    let revisions = state.mongo.collection::<PostRevision>("post_revisions");
-    let mut revision_cursor = revisions.find(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
+    let mut revision_cursor = state.mongo.collection::<PostRevision>("post_revisions").find(doc! { "post_id": oid }, None).await?;
     let mut revisions_list = Vec::new();
-    while let Some(revision) = revision_cursor.next().await {
-        if let Ok(r) = revision {
-            revisions_list.push(r);
-        }
-    }
+    while let Some(Ok(r)) = revision_cursor.next().await { revisions_list.push(r); }
 
-    // Get approvals
-    let approvals = state.mongo.collection::<PostApproval>("post_approvals");
-    let mut approval_cursor = approvals.find(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
+    let mut approval_cursor = state.mongo.collection::<PostApproval>("post_approvals").find(doc! { "post_id": oid }, None).await?;
     let mut approvals_list = Vec::new();
-    while let Some(approval) = approval_cursor.next().await {
-        if let Ok(a) = approval {
-            approvals_list.push(a);
-        }
-    }
+    while let Some(Ok(a)) = approval_cursor.next().await { approvals_list.push(a); }
 
-    // Get moderation history
-    let moderation = state.mongo.collection::<ContentModeration>("content_moderation");
-    let mut moderation_cursor = moderation.find(doc! { "content_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
+    let mut moderation_cursor = state.mongo.collection::<ContentModeration>("content_moderation").find(doc! { "content_id": oid }, None).await?;
     let mut moderation_list = Vec::new();
-    while let Some(moderation_item) = moderation_cursor.next().await {
-        if let Ok(m) = moderation_item {
-            moderation_list.push(m);
-        }
-    }
+    while let Some(Ok(m)) = moderation_cursor.next().await { moderation_list.push(m); }
 
     let post_info = build_post_response(&post, &state).await?;
     
-    let workflow_response = PostWorkflowResponse {
+    Ok((StatusCode::OK, Json(PostWorkflowResponse {
         post: post_info,
-        revisions: revisions_list,
-        approvals: approvals_list,
-        moderation_history: moderation_list,
-    };
-
-    Ok((StatusCode::OK, Json(workflow_response)))
+        revisions: revisions_list.iter().map(|r| serde_json::to_value(r).unwrap_or(serde_json::Value::Null)).collect(),
+        approvals: approvals_list.iter().map(|a| serde_json::to_value(a).unwrap_or(serde_json::Value::Null)).collect(),
+        moderation_history: moderation_list.iter().map(|m| serde_json::to_value(m).unwrap_or(serde_json::Value::Null)).collect(),
+    })))
 }
 
 pub async fn get_post_analytics_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(post_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let oid = ObjectId::parse_str(&post_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid post ID"}))))?;
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
-    // Get post info
     let posts = state.mongo.collection::<Post>("posts");
-    let post = posts.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Post not found"}))))?;
+    let post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
 
-    // Get analytics summary
-    let views = state.mongo.collection::<PostView>("post_views");
-    let total_views = views.count_documents(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let unique_views = views.distinct("session_id", doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .len() as i32;
+    let views_coll = state.mongo.collection::<PostView>("post_views");
+    let likes_coll = state.mongo.collection::<PostLike>("post_likes");
+    let comments_coll = state.mongo.collection::<crate::models::Comment>("comments");
+    let shares_coll = state.mongo.collection::<PostShare>("post_shares");
 
-    let likes = state.mongo.collection::<PostLike>("post_likes");
-    let total_likes = likes.count_documents(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let (total_views, unique_views_res, total_likes, total_comments, total_shares) = tokio::try_join!(
+        views_coll.count_documents(doc! { "post_id": oid }, None),
+        views_coll.distinct("session_id", doc! { "post_id": oid }, None),
+        likes_coll.count_documents(doc! { "post_id": oid }, None),
+        comments_coll.count_documents(doc! { "post_id": oid }, None),
+        shares_coll.count_documents(doc! { "post_id": oid }, None)
+    )?;
 
-    let comments = state.mongo.collection::<crate::models::Comment>("comments");
-    let total_comments = comments.count_documents(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let shares = state.mongo.collection::<PostShare>("post_shares");
-    let total_shares = shares.count_documents(doc! { "post_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
+    let unique_views = unique_views_res.len() as i32;
     let engagement_rate = if total_views > 0 {
         ((total_likes + total_comments + total_shares) as f64 / total_views as f64) * 100.0
     } else {
@@ -634,7 +382,7 @@ pub async fn get_post_analytics_handler(
         engagement_rate,
     };
 
-    let post_info = build_post_response(&post, &state).await?;
+    let post_info: PostDetailResponse = build_post_response(&post, &state).await?;
     
     Ok((StatusCode::OK, Json(json!({
         "post": post_info,
@@ -647,35 +395,28 @@ pub async fn get_post_analytics_handler(
 async fn build_post_response(
     post: &Post,
     state: &Arc<AppState>,
-) -> Result<PostResponse, (StatusCode, Json<serde_json::Value>)> {
-    // Get analytics summary
-    let views = state.mongo.collection::<PostView>("post_views");
-    let total_views = views.count_documents(doc! { "post_id": post.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let unique_views = views.distinct("session_id", doc! { "post_id": post.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .len() as i32;
+) -> AppResult<PostDetailResponse> {
+    let views_coll = state.mongo.collection::<PostView>("post_views");
+    let likes_coll = state.mongo.collection::<PostLike>("post_likes");
+    let comments_coll = state.mongo.collection::<crate::models::Comment>("comments");
+    let shares_coll = state.mongo.collection::<PostShare>("post_shares");
 
-    let likes = state.mongo.collection::<PostLike>("post_likes");
-    let total_likes = likes.count_documents(doc! { "post_id": post.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let (total_views, unique_views_res, total_likes, total_comments, total_shares) = tokio::try_join!(
+        views_coll.count_documents(doc! { "post_id": post.id.unwrap() }, None),
+        views_coll.distinct("session_id", doc! { "post_id": post.id.unwrap() }, None),
+        likes_coll.count_documents(doc! { "post_id": post.id.unwrap() }, None),
+        comments_coll.count_documents(doc! { "post_id": post.id.unwrap() }, None),
+        shares_coll.count_documents(doc! { "post_id": post.id.unwrap() }, None)
+    )?;
 
-    let comments = state.mongo.collection::<crate::models::Comment>("comments");
-    let total_comments = comments.count_documents(doc! { "post_id": post.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let shares = state.mongo.collection::<PostShare>("post_shares");
-    let total_shares = shares.count_documents(doc! { "post_id": post.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
+    let unique_views = unique_views_res.len() as i32;
     let engagement_rate = if total_views > 0 {
         ((total_likes + total_comments + total_shares) as f64 / total_views as f64) * 100.0
     } else {
         0.0
     };
 
-    Ok(PostResponse {
+    Ok(PostDetailResponse {
         id: post.id.unwrap().to_hex(),
         title: post.title.clone(),
         content: post.content.clone(),
@@ -687,6 +428,8 @@ async fn build_post_response(
         tags: post.tags.clone(),
         author_id: post.author_id.to_hex(),
         author_name: post.author_name.clone(),
+        author_username: None,
+        author_avatar: None,
         media_urls: post.media_urls.clone(),
         scheduled_publish_date: post.scheduled_publish_date.map(|dt| dt.to_chrono().to_rfc3339()),
         published_at: post.published_at.map(|dt| dt.to_chrono().to_rfc3339()),
@@ -700,7 +443,7 @@ async fn build_post_response(
         comment_count: post.comment_count,
         share_count: post.share_count,
         reading_time: post.reading_time,
-        language: post.language.clone(),
+        language: Some(post.language.clone()),
         is_featured: post.is_featured,
         is_premium: post.is_premium,
         allow_comments: post.allow_comments,
@@ -708,7 +451,7 @@ async fn build_post_response(
         seo_title: post.seo_title.clone(),
         seo_description: post.seo_description.clone(),
         seo_keywords: post.seo_keywords.clone(),
-        is_nsfw: post.is_nsfw,
+        is_nsfw: post.is_nsfw.unwrap_or(false),
         is_anonymous: post.is_anonymous,
         source_url: post.source_url.clone(),
         source_author: post.source_author.clone(),
@@ -716,7 +459,7 @@ async fn build_post_response(
         content_rating: post.content_rating.clone(),
         created_at: post.created_at.to_chrono().to_rfc3339(),
         updated_at: post.updated_at.to_chrono().to_rfc3339(),
-        analytics: PostAnalyticsSummary {
+        analytics: Some(PostAnalyticsSummary {
             total_views: total_views as i32,
             unique_views,
             total_likes: total_likes as i32,
@@ -724,7 +467,7 @@ async fn build_post_response(
             total_shares: total_shares as i32,
             avg_reading_time: post.reading_time.map(|rt| rt as f64),
             engagement_rate,
-        },
+        }),
     })
 }
 
@@ -732,43 +475,44 @@ pub async fn create_post_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Json(payload): Json<CreatePostRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    // Get user profile for username
+) -> AppResult<impl IntoResponse> {
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
-    let profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Profile not found"}))))?;
+    let profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await?
+        .ok_or(AppError::NotFound("Profile not found".to_string()))?;
 
     let posts_collection = state.mongo.collection::<Post>("posts");
     
+    let scheduled_publish_date = if let Some(ref s) = payload.scheduled_publish_date {
+        Some(chrono::DateTime::parse_from_rfc3339(&s)
+            .map_err(|_| AppError::BadRequest("Invalid scheduled_publish_date format".to_string()))?
+            .with_timezone(&chrono::Utc).into())
+    } else {
+        None
+    };
+
     let new_post = Post {
         id: None,
+        group_id: None,
+        page_id: None,
         author_id: user.user_id,
         author_name: profile.username.clone(),
-        title: payload.title.clone().unwrap_or_else(|| "Untitled Post".to_string()),
+        title: payload.title.unwrap_or_else(|| "Untitled Post".to_string()),
         content: payload.content,
         excerpt: payload.excerpt,
-        slug: "".to_string(), // Will be generated by the model if needed
+        slug: "".to_string(),
         status: payload.status.clone().unwrap_or_else(|| "draft".to_string()),
-        post_type: payload.post_type.clone().unwrap_or_else(|| "text".to_string()),
-        category: payload.category.clone().unwrap_or_else(|| "general".to_string()),
+        post_type: payload.post_type.unwrap_or_else(|| "text".to_string()),
+        category: payload.category,
         tags: payload.tags,
         media_urls: payload.media_urls,
-        scheduled_publish_date: if let Some(s) = payload.scheduled_publish_date {
-            match chrono::DateTime::parse_from_rfc3339(&s) {
-                Ok(dt) => Some(dt.with_timezone(&chrono::Utc).into()),
-                Err(_) => return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid scheduled_publish_date format. Use RFC3339, e.g. 2026-01-01T12:00:00Z"})))),
-            }
-        } else {
-            None
-        },
-        language: payload.language.clone().unwrap_or_else(|| "en".to_string()),
+        scheduled_publish_date,
+        language: payload.language.unwrap_or_else(|| "en".to_string()),
         is_featured: payload.is_featured.unwrap_or(false),
         is_premium: payload.is_premium.unwrap_or(false),
         allow_comments: payload.allow_comments.unwrap_or(true),
         allow_sharing: payload.allow_sharing.unwrap_or(true),
-        seo_title: payload.seo_title.clone(),
-        seo_description: payload.seo_description.clone(),
+        seo_title: payload.seo_title,
+        seo_description: payload.seo_description,
         seo_keywords: payload.seo_keywords,
         meta_data: payload.meta_data,
         content_rating: payload.content_rating,
@@ -776,12 +520,7 @@ pub async fn create_post_handler(
         is_anonymous: payload.is_anonymous.unwrap_or(false),
         location: None,
         poll: None,
-        // If no schedule date, publish immediately
-        published_at: if payload.status.as_deref().unwrap_or("published") == "published" {
-            Some(bson::DateTime::now())
-        } else {
-            None
-        },
+        published_at: if payload.status.as_deref().unwrap_or("published") == "published" { Some(bson::DateTime::now()) } else { None },
         view_count: 0,
         like_count: 0,
         comment_count: 0,
@@ -799,10 +538,8 @@ pub async fn create_post_handler(
         updated_at: bson::DateTime::now(),
     };
 
-    let result = posts_collection.insert_one(new_post, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let result = posts_collection.insert_one(new_post, None).await?;
 
-    // Clear relevant caches
     let _ = state.cache.invalidate_pattern("posts:list:*").await;
     let _ = state.cache.invalidate_pattern("feed:*").await;
 
@@ -812,18 +549,12 @@ pub async fn create_post_handler(
     }))))
 }
 
-
-
 pub fn post_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(list_posts_handler).post(create_post_handler))
-        .route("/:id", get(get_post_handler))
-        .route("/:id", put(update_post_handler))
-        .route("/:id", delete(delete_post_handler))
+        .route("/:id", get(get_post_handler).put(update_post_handler).delete(delete_post_handler))
         .route("/:id/approve", post(approve_post_handler))
         .route("/:id/publish", post(publish_post_handler))
         .route("/:id/workflow", get(get_post_workflow_handler))
         .route("/:id/analytics", get(get_post_analytics_handler))
 }
-
-// Add CreatePostRequest DTO near the top with other DTOs

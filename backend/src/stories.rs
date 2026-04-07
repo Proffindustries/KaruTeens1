@@ -15,270 +15,293 @@ use crate::models::{
     StoryReport, StoryModeration, StorySchedule, StoryTemplate,
     User, Profile, Location
 };
+use crate::dto::{
+    StoryResponse, StoryModerationQueueResponse, UserStoryStatsResponse,
+    CreateStoryRequest, UpdateStoryRequest, CreateStoryViewRequest,
+    CreateStoryReplyRequest, CreateStoryReportRequest, ModerateStoryRequest,
+    StoryFilter, CreateStoryScheduleRequest, CreateStoryTemplateRequest
+};
+use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
+use crate::utils::check_admin;
 use futures::stream::StreamExt;
 
-// --- DTOs ---
-
-#[derive(Deserialize)]
-pub struct CreateStoryRequest {
-    pub media_url: String,
-    pub media_type: String, // image, video, text
-    pub caption: Option<String>,
-    pub location: Option<Location>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub is_highlight: bool,
-    pub highlight_category: Option<String>,
-    pub story_type: Option<String>, // normal, live, poll, question, quiz
-    pub story_data: Option<serde_json::Value>,
-    pub is_private: bool,
-    pub allowed_users: Option<Vec<String>>, // user IDs as strings
-}
-
-#[derive(Deserialize)]
-pub struct UpdateStoryRequest {
-    pub caption: Option<String>,
-    pub location: Option<Location>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub is_highlight: Option<bool>,
-    pub highlight_category: Option<String>,
-    pub story_type: Option<String>,
-    pub story_data: Option<serde_json::Value>,
-    pub is_private: Option<bool>,
-    pub allowed_users: Option<Vec<String>>,
-    pub moderation_notes: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryViewRequest {
-    pub viewer_id: String,
-    pub viewer_username: String,
-    pub view_duration: Option<i32>,
-    pub is_replay: bool,
-    pub location: Option<Location>,
-    pub device_info: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryReplyRequest {
-    pub content: String,
-    pub reply_type: String, // text, emoji, sticker
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryReportRequest {
-    pub reason: String,
-    pub description: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct ModerateStoryRequest {
-    pub action: String, // approve, reject, delete, edit, warn
-    pub reason: Option<String>,
-    pub notes: Option<String>,
-    pub after_caption: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct StoryFilter {
-    pub status: Option<String>,
-    pub user_id: Option<String>,
-    pub media_type: Option<String>,
-    pub story_type: Option<String>,
-    pub is_highlight: Option<bool>,
-    pub is_private: Option<bool>,
-    pub spam_score_min: Option<f64>,
-    pub spam_score_max: Option<f64>,
-    pub reported_count_min: Option<i32>,
-    pub date_from: Option<String>,
-    pub date_to: Option<String>,
-    pub sort_by: Option<String>,
-    pub sort_order: Option<String>,
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
-#[derive(Serialize)]
-pub struct StoryResponse {
-    pub id: String,
-    pub user_id: String,
-    pub username: String,
-    pub user_avatar: Option<String>,
-    pub media_url: String,
-    pub media_type: String,
-    pub caption: Option<String>,
-    pub location: Option<Location>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub is_highlight: bool,
-    pub highlight_category: Option<String>,
-    pub created_at: String,
-    pub expires_at: String,
-    pub is_deleted: bool,
-    pub deleted_at: Option<String>,
-    pub deleted_by: Option<String>,
-    pub deleted_reason: Option<String>,
-    pub moderation_status: String,
-    pub moderation_notes: Option<String>,
-    pub spam_score: Option<f64>,
-    pub sentiment_score: Option<f64>,
-    pub reported_count: i32,
-    pub view_count: i32,
-    pub reply_count: i32,
-    pub engagement_score: f64,
-    pub is_private: bool,
-    pub allowed_users: Option<Vec<String>>,
-    pub story_type: String,
-    pub story_data: Option<serde_json::Value>,
-    pub updated_at: String,
-    pub views: Vec<StoryView>,
-    pub replies: Vec<StoryReply>,
-    pub reports: Vec<StoryReport>,
-    pub moderation_history: Vec<StoryModeration>,
-}
-
-#[derive(Serialize)]
-pub struct StoryModerationQueueResponse {
-    pub story_id: String,
-    pub user_id: String,
-    pub username: String,
-    pub media_url: String,
-    pub caption: Option<String>,
-    pub media_type: String,
-    pub spam_score: f64,
-    pub sentiment_score: f64,
-    pub reported_count: i32,
-    pub created_at: String,
-    pub priority: String,
-    pub assigned_to: Option<String>,
-    pub assigned_at: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct UserStoryStatsResponse {
-    pub user_id: String,
-    pub username: String,
-    pub total_stories: i32,
-    pub active_stories: i32,
-    pub expired_stories: i32,
-    pub highlights: i32,
-    pub total_views: i32,
-    pub total_replies: i32,
-    pub avg_completion_rate: f64,
-    pub avg_engagement_rate: f64,
-    pub avg_view_duration: f64,
-    pub last_story_at: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryScheduleRequest {
-    pub scheduled_for: String, // ISO datetime string
-    pub media_url: String,
-    pub media_type: String,
-    pub caption: Option<String>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub is_highlight: bool,
-    pub highlight_category: Option<String>,
-    pub story_type: Option<String>,
-    pub story_data: Option<serde_json::Value>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryTemplateRequest {
-    pub name: String,
-    pub description: Option<String>,
-    pub background_color: Option<String>,
-    pub font_style: Option<String>,
-    pub text_color: Option<String>,
-    pub layout: Option<serde_json::Value>,
-    pub media_overlay: Option<String>,
-    pub stickers: Option<Vec<String>>,
-    pub is_public: bool,
-}
-
-// --- Middleware: Check Admin ---
-
-async fn check_admin(
-    user_id: ObjectId,
-    state: &Arc<AppState>,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
-    let users = state.mongo.collection::<User>("users");
-    let user_doc = users.find_one(doc! { "_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    match user_doc {
-        Some(u) if u.role == "admin" || u.role == "superadmin" => Ok(()),
-        _ => Err((StatusCode::FORBIDDEN, Json(json!({"error": "Admin access required"})))),
-    }
-}
-
 // --- Handlers ---
+
+pub async fn get_stories_feed_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> AppResult<impl IntoResponse> {
+    let stories_coll = state.mongo.collection::<Story>("stories");
+    let profiles_coll = state.mongo.collection::<Profile>("profiles");
+
+    let now = DateTime::now();
+    let query = doc! {
+        "expires_at": { "$gt": now },
+        "is_deleted": false,
+        "moderation_status": { "$in": ["approved", "pending"] },
+        "$or": [
+            { "is_private": false },
+            { "user_id": user.user_id },
+            { "allowed_users": user.user_id }
+        ]
+    };
+
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .build();
+
+    let mut cursor = stories_coll.find(query, find_options).await?;
+
+    let mut stories_by_user: std::collections::HashMap<ObjectId, Vec<serde_json::Value>> = std::collections::HashMap::new();
+    let mut user_ids = std::collections::HashSet::new();
+
+    while let Some(story_res) = cursor.next().await {
+        if let Ok(s) = story_res {
+            user_ids.insert(s.user_id);
+            let rid = s.id.unwrap().to_hex();
+            let story_val = json!({
+                "id": rid.clone(),
+                "media_url": s.media_url,
+                "media_type": s.media_type,
+                "caption": s.caption,
+                "created_at": s.created_at.to_chrono().to_rfc3339(),
+                "expires_at": s.expires_at.to_chrono().to_rfc3339(),
+                "is_nsfw": s.is_nsfw,
+                "is_viewed": false,
+            });
+            stories_by_user.entry(s.user_id).or_default().push(story_val);
+        }
+    }
+
+    // Fetch user profiles for avatars
+    let mut profiles_cursor = profiles_coll.find(doc! { "user_id": { "$in": user_ids.into_iter().collect::<Vec<_>>() } }, None).await?;
+    
+    let mut profile_map = std::collections::HashMap::new();
+    while let Some(profile_res) = profiles_cursor.next().await {
+        if let Ok(p) = profile_res {
+            profile_map.insert(p.user_id, p);
+        }
+    }
+
+    let mut response_data = Vec::new();
+    for (user_id, stories) in stories_by_user {
+        let profile = profile_map.get(&user_id);
+        response_data.push(json!({
+            "user_id": user_id.to_hex(),
+            "username": profile.map(|p| p.username.clone()).unwrap_or_else(|| "Unknown".to_string()),
+            "avatar_url": profile.and_then(|p| p.avatar_url.clone()),
+            "stories": stories,
+            "has_unviewed": true
+        }));
+    }
+
+    Ok((StatusCode::OK, Json(response_data)))
+}
+
+pub async fn create_story_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<CreateStoryRequest>,
+) -> AppResult<impl IntoResponse> {
+    let stories_coll = state.mongo.collection::<Story>("stories");
+    let profiles_coll = state.mongo.collection::<Profile>("profiles");
+
+    let profile = profiles_coll.find_one(doc! { "user_id": user.user_id }, None).await?
+        .ok_or(AppError::NotFound("User profile not found".to_string()))?;
+
+    let now = DateTime::now();
+    let expires_at = DateTime::from_millis(now.timestamp_millis() + 24 * 60 * 60 * 1000);
+
+    let mut allowed_user_ids = Vec::new();
+    if let Some(ids) = payload.allowed_users {
+        for id_str in ids {
+            if let Ok(oid) = ObjectId::parse_str(&id_str) {
+                allowed_user_ids.push(oid);
+            }
+        }
+    }
+
+    let new_story = Story {
+        id: None,
+        user_id: user.user_id,
+        username: profile.username,
+        user_avatar: profile.avatar_url,
+        media_url: payload.media_url,
+        media_type: payload.media_type,
+        caption: payload.caption,
+        location: payload.location,
+        hashtags: payload.hashtags,
+        mentions: payload.mentions,
+        is_highlight: payload.is_highlight.unwrap_or(false),
+        highlight_category: payload.highlight_category,
+        created_at: now,
+        expires_at,
+        is_deleted: false,
+        deleted_at: None,
+        deleted_by: None,
+        deleted_reason: None,
+        moderation_status: "approved".to_string(),
+        moderation_notes: None,
+        spam_score: None,
+        sentiment_score: None,
+        reported_count: 0,
+        view_count: 0,
+        reply_count: 0,
+        engagement_score: 0.0,
+        is_private: payload.is_private.unwrap_or(false),
+        allowed_users: if allowed_user_ids.is_empty() { None } else { Some(allowed_user_ids) },
+        story_type: payload.story_type.unwrap_or_else(|| "normal".to_string()),
+        story_data: payload.story_data,
+        updated_at: now,
+        is_nsfw: payload.is_nsfw.unwrap_or(false),
+    };
+
+    let result = stories_coll.insert_one(new_story, None).await?;
+
+    Ok((StatusCode::CREATED, Json(json!({
+        "id": result.inserted_id.as_object_id().unwrap().to_hex(),
+        "message": "Story created successfully"
+    }))))
+}
+
+pub async fn mark_story_viewed_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(story_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&story_id).map_err(|_| AppError::BadRequest("Invalid story ID".to_string()))?;
+
+    let stories = state.mongo.collection::<Story>("stories");
+    let views = state.mongo.collection::<StoryView>("story_views");
+    let profiles = state.mongo.collection::<Profile>("profiles");
+
+    let _story = stories.find_one(doc! { "_id": oid, "is_deleted": false }, None).await?
+        .ok_or(AppError::NotFound("Story not found".to_string()))?;
+
+    let existing_view = views.find_one(doc! { "story_id": oid, "viewer_id": user.user_id }, None).await?;
+
+    if existing_view.is_none() {
+        let profile = profiles.find_one(doc! { "user_id": user.user_id }, None).await?;
+
+        let new_view = StoryView {
+            id: None,
+            story_id: oid,
+            viewer_id: user.user_id,
+            viewer_username: profile.as_ref().map(|p| p.username.clone()).unwrap_or_else(|| "Unknown".to_string()),
+            viewer_avatar: profile.and_then(|p| p.avatar_url),
+            viewed_at: DateTime::now(),
+            view_duration: None,
+            is_replay: false,
+            location: None,
+            device_info: None,
+        };
+
+        views.insert_one(new_view, None).await?;
+
+        stories.update_one(
+            doc! { "_id": oid },
+            doc! { "$inc": { "view_count": 1 } },
+            None
+        ).await?;
+    }
+
+    Ok((StatusCode::OK, Json(json!({"message": "Story marked as viewed"}))))
+}
+
+pub async fn get_user_stories_handler(
+    State(state): State<Arc<AppState>>,
+    _user: AuthUser,
+    Path(target_user_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&target_user_id).map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
+
+    let stories_coll = state.mongo.collection::<Story>("stories");
+    let now = DateTime::now();
+
+    let query = doc! {
+        "user_id": oid,
+        "expires_at": { "$gt": now },
+        "is_deleted": false,
+        "moderation_status": "approved"
+    };
+
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .build();
+
+    let mut cursor = stories_coll.find(query, find_options).await?;
+
+    let mut user_stories = Vec::new();
+    while let Some(story_res) = cursor.next().await {
+        if let Ok(s) = story_res {
+            user_stories.push(json!({
+                "id": s.id.unwrap().to_hex(),
+                "media_url": s.media_url,
+                "media_type": s.media_type,
+                "caption": s.caption,
+                "created_at": s.created_at.to_chrono().to_rfc3339(),
+                "expires_at": s.expires_at.to_chrono().to_rfc3339(),
+            }));
+        }
+    }
+
+    Ok((StatusCode::OK, Json(user_stories)))
+}
+
+pub async fn get_story_viewers_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(story_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&story_id).map_err(|_| AppError::BadRequest("Invalid story ID".to_string()))?;
+
+    let stories = state.mongo.collection::<Story>("stories");
+    let views = state.mongo.collection::<StoryView>("story_views");
+
+    let story = stories.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Story not found".to_string()))?;
+
+    if story.user_id != user.user_id {
+        return Err(AppError::Forbidden("Only creator can view story viewers".to_string()));
+    }
+
+    let mut cursor = views.find(doc! { "story_id": oid }, None).await?;
+
+    let mut viewers = Vec::new();
+    while let Some(view_res) = cursor.next().await {
+        if let Ok(v) = view_res {
+            viewers.push(json!({
+                "viewer_id": v.viewer_id.to_hex(),
+                "username": v.viewer_username,
+                "viewed_at": v.viewed_at.to_chrono().to_rfc3339(),
+            }));
+        }
+    }
+
+    Ok((StatusCode::OK, Json(viewers)))
+}
 
 pub async fn list_stories_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Query(params): Query<StoryFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let stories = state.mongo.collection::<Story>("stories");
     
     let mut query = doc! {};
     
-    if let Some(status) = &params.status {
-        query.insert("moderation_status", status);
-    }
-    
-    if let Some(user_id) = &params.user_id {
-        let oid = ObjectId::parse_str(user_id)
-            .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid user ID"}))))?;
+    if let Some(status) = &params.status { query.insert("moderation_status", status); }
+    if let Some(user_id_str) = &params.user_id {
+        let oid = ObjectId::parse_str(user_id_str).map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
         query.insert("user_id", oid);
     }
-
-    if let Some(media_type) = &params.media_type {
-        query.insert("media_type", media_type);
-    }
-
-    if let Some(story_type) = &params.story_type {
-        query.insert("story_type", story_type);
-    }
-
-    if let Some(is_highlight) = params.is_highlight {
-        query.insert("is_highlight", is_highlight);
-    }
-
-    if let Some(is_private) = params.is_private {
-        query.insert("is_private", is_private);
-    }
-
-    if let Some(spam_score_min) = params.spam_score_min {
-        query.insert("spam_score", doc! { "$gte": spam_score_min });
-    }
-
-    if let Some(spam_score_max) = params.spam_score_max {
-        query.insert("spam_score", doc! { "$lte": spam_score_max });
-    }
-
-    if let Some(reported_count_min) = params.reported_count_min {
-        query.insert("reported_count", doc! { "$gte": reported_count_min });
-    }
-
-    if let Some(date_from) = &params.date_from {
-        if let Ok(date) = chrono::DateTime::parse_from_rfc3339(date_from) {
-            query.insert("created_at", doc! { "$gte": date });
-        }
-    }
-
-    if let Some(date_to) = &params.date_to {
-        if let Ok(date) = chrono::DateTime::parse_from_rfc3339(date_to) {
-            query.insert("created_at", doc! { "$lte": date });
-        }
-    }
+    if let Some(media_type) = &params.media_type { query.insert("media_type", media_type); }
+    if let Some(story_type) = &params.story_type { query.insert("story_type", story_type); }
+    if let Some(is_highlight) = params.is_highlight { query.insert("is_highlight", is_highlight); }
+    if let Some(is_private) = params.is_private { query.insert("is_private", is_private); }
 
     let sort_by = params.sort_by.unwrap_or_else(|| "created_at".to_string());
     let sort_order = params.sort_order.unwrap_or_else(|| "desc".to_string());
@@ -291,8 +314,7 @@ pub async fn list_stories_handler(
         _ => doc! { sort_by: 1 },
     };
 
-    let total_count = stories.count_documents(query.clone(), None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let total_count = stories.count_documents(query.clone(), None).await?;
 
     let find_options = mongodb::options::FindOptions::builder()
         .sort(sort_doc)
@@ -300,14 +322,12 @@ pub async fn list_stories_handler(
         .limit(Some(limit))
         .build();
 
-    let mut cursor = stories.find(query, find_options).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = stories.find(query, find_options).await?;
 
     let mut paginated_stories = Vec::new();
-    
-    while let Some(story) = cursor.next().await {
-        if let Ok(s) = story {
-            let story_info = build_story_response(&s, &state).await?;
+    while let Some(story_res) = cursor.next().await {
+        if let Ok(s) = story_res {
+            let story_info: crate::dto::StoryResponse = build_story_response(&s, &state).await?;
             paginated_stories.push(story_info);
         }
     }
@@ -329,18 +349,16 @@ pub async fn get_story_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(story_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let oid = ObjectId::parse_str(&story_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid story ID"}))))?;
+    let oid = ObjectId::parse_str(&story_id).map_err(|_| AppError::BadRequest("Invalid story ID".to_string()))?;
 
     let stories = state.mongo.collection::<Story>("stories");
-    let story = stories.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Story not found"}))))?;
+    let story = stories.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Story not found".to_string()))?;
 
-    let story_info = build_story_response(&story, &state).await?;
+    let story_info: crate::dto::StoryResponse = build_story_response(&story, &state).await?;
     Ok((StatusCode::OK, Json(story_info)))
 }
 
@@ -349,16 +367,14 @@ pub async fn moderate_story_handler(
     user: AuthUser,
     Path(story_id): Path<String>,
     Json(payload): Json<ModerateStoryRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let oid = ObjectId::parse_str(&story_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid story ID"}))))?;
+    let oid = ObjectId::parse_str(&story_id).map_err(|_| AppError::BadRequest("Invalid story ID".to_string()))?;
 
     let stories = state.mongo.collection::<Story>("stories");
-    let story = stories.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Story not found"}))))?;
+    let story = stories.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Story not found".to_string()))?;
 
     let mut update_doc = doc! {};
     let mut new_status = story.moderation_status.clone();
@@ -392,34 +408,27 @@ pub async fn moderate_story_handler(
         "warn" => {
             update_doc.insert("moderation_notes", format!("Warning: {}", payload.reason.clone().unwrap_or_default()));
         },
-        _ => return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid moderation action"})))),
+        _ => return Err(AppError::BadRequest("Invalid moderation action".to_string())),
     }
 
     update_doc.insert("updated_at", DateTime::now());
 
-    stories.update_one(
-        doc! { "_id": oid },
-        doc! { "$set": update_doc },
-        None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    stories.update_one(doc! { "_id": oid }, doc! { "$set": update_doc }, None).await?;
 
-    // Create moderation record
     let moderation = state.mongo.collection::<StoryModeration>("story_moderation");
     let moderation_record = StoryModeration {
         id: None,
         story_id: oid,
         moderator_id: user.user_id,
-        moderator_name: story.username,
+        moderator_name: "Admin".to_string(),
         action: payload.action,
         reason: payload.reason,
         notes: payload.notes,
         created_at: DateTime::now(),
     };
 
-    moderation.insert_one(moderation_record, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    moderation.insert_one(moderation_record, None).await?;
 
-    // Update user stats
     update_user_story_stats(&state, story.user_id).await?;
 
     Ok((StatusCode::OK, Json(json!({"message": format!("Story {} successfully", new_status)}))))
@@ -429,14 +438,16 @@ pub async fn delete_story_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Path(story_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let oid = ObjectId::parse_str(&story_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid story ID"}))))?;
+    let oid = ObjectId::parse_str(&story_id).map_err(|_| AppError::BadRequest("Invalid story ID".to_string()))?;
 
     let stories = state.mongo.collection::<Story>("stories");
     
+    let story = stories.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Story not found".to_string()))?;
+
     stories.update_one(
         doc! { "_id": oid },
         doc! { 
@@ -450,12 +461,7 @@ pub async fn delete_story_handler(
             }
         },
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Update user stats
-    let story = stories.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Story not found"}))))?;
+    ).await?;
 
     update_user_story_stats(&state, story.user_id).await?;
 
@@ -466,7 +472,7 @@ pub async fn get_moderation_queue_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
     Query(params): Query<StoryFilter>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
     let stories = state.mongo.collection::<Story>("stories");
@@ -479,45 +485,30 @@ pub async fn get_moderation_queue_handler(
         ]
     };
     
-    if let Some(media_type) = &params.media_type {
-        query.insert("media_type", media_type);
-    }
+    if let Some(media_type) = &params.media_type { query.insert("media_type", media_type); }
 
-    if let Some(spam_score_min) = params.spam_score_min {
-        query.insert("spam_score", doc! { "$gte": spam_score_min });
-    }
-
-    if let Some(date_from) = &params.date_from {
-        if let Ok(date) = chrono::DateTime::parse_from_rfc3339(date_from) {
-            query.insert("created_at", doc! { "$gte": date });
-        }
-    }
-
-    let _sort_doc = doc! { "spam_score": -1, "reported_count": -1, "created_at": 1 };
-
-    let mut cursor = stories.find(query, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut cursor = stories.find(query, None).await?;
 
     let mut queue_items = Vec::new();
-    
-    while let Some(story) = cursor.next().await {
-        if let Ok(s) = story {
-            let queue_item = StoryModerationQueueResponse {
+    while let Some(story_res) = cursor.next().await {
+        if let Ok(s) = story_res {
+            queue_items.push(StoryModerationQueueResponse {
+                id: s.id.unwrap().to_hex(),
                 story_id: s.id.unwrap().to_hex(),
                 user_id: s.user_id.to_hex(),
                 username: s.username,
                 media_url: s.media_url,
                 caption: s.caption,
                 media_type: s.media_type,
+                status: s.moderation_status,
                 spam_score: s.spam_score.unwrap_or(0.0),
                 sentiment_score: s.sentiment_score.unwrap_or(0.0),
                 reported_count: s.reported_count,
-                created_at: s.created_at.to_chrono().to_rfc3339(),
                 priority: determine_priority(s.spam_score.unwrap_or(0.0), s.reported_count),
                 assigned_to: None,
                 assigned_at: None,
-            };
-            queue_items.push(queue_item);
+                created_at: s.created_at.to_chrono().to_rfc3339(),
+            });
         }
     }
 
@@ -527,16 +518,14 @@ pub async fn get_moderation_queue_handler(
 pub async fn get_user_story_stats_handler(
     State(state): State<Arc<AppState>>,
     user: AuthUser,
-    Path(user_id): Path<String>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    Path(user_id_str): Path<String>,
+) -> AppResult<impl IntoResponse> {
     check_admin(user.user_id, &state).await?;
 
-    let oid = ObjectId::parse_str(&user_id)
-        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid user ID"}))))?;
+    let oid = ObjectId::parse_str(&user_id_str).map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let stats = state.mongo.collection::<UserStoryStats>("user_story_stats");
-    let user_stats = stats.find_one(doc! { "user_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let user_stats = stats.find_one(doc! { "user_id": oid }, None).await?;
 
     if let Some(stats) = user_stats {
         let stats_response = UserStoryStatsResponse {
@@ -557,48 +546,8 @@ pub async fn get_user_story_stats_handler(
         };
         Ok((StatusCode::OK, Json(stats_response)))
     } else {
-        Err((StatusCode::NOT_FOUND, Json(json!({"error": "User stats not found"}))))
+        Err(AppError::NotFound("User stats not found".to_string()))
     }
-}
-
-pub async fn list_story_schedules_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let schedules = state.mongo.collection::<StorySchedule>("story_schedules");
-    let mut cursor = schedules.find(doc! {}, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut schedules_list = Vec::new();
-    while let Some(schedule) = cursor.next().await {
-        if let Ok(s) = schedule {
-            schedules_list.push(s);
-        }
-    }
-
-    Ok((StatusCode::OK, Json(schedules_list)))
-}
-
-pub async fn list_story_templates_handler(
-    State(state): State<Arc<AppState>>,
-    user: AuthUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    check_admin(user.user_id, &state).await?;
-
-    let templates = state.mongo.collection::<StoryTemplate>("story_templates");
-    let mut cursor = templates.find(doc! {}, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut templates_list = Vec::new();
-    while let Some(template) = cursor.next().await {
-        if let Ok(t) = template {
-            templates_list.push(t);
-        }
-    }
-
-    Ok((StatusCode::OK, Json(templates_list)))
 }
 
 // --- Helper Functions ---
@@ -606,57 +555,39 @@ pub async fn list_story_templates_handler(
 async fn build_story_response(
     story: &Story,
     state: &Arc<AppState>,
-) -> Result<StoryResponse, (StatusCode, Json<serde_json::Value>)> {
-    // Get views
-    let views = state.mongo.collection::<StoryView>("story_views");
-    let mut views_cursor = views.find(doc! { "story_id": story.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+) -> AppResult<StoryResponse> {
+    let sid = story.id.unwrap();
+    
+    let views_coll = state.mongo.collection::<StoryView>("story_views");
+    let replies_coll = state.mongo.collection::<StoryReply>("story_replies");
+    let reports_coll = state.mongo.collection::<StoryReport>("story_reports");
+    let mod_history_coll = state.mongo.collection::<StoryModeration>("story_moderation");
+    
+    let (views_res, replies_res, reports_res, moderation_res) = tokio::try_join!(
+        views_coll.find(doc! { "story_id": sid }, None),
+        replies_coll.find(doc! { "story_id": sid }, None),
+        reports_coll.find(doc! { "story_id": sid }, None),
+        mod_history_coll.find(doc! { "story_id": sid }, None),
+    )?;
 
-    let mut views_list = Vec::new();
-    while let Some(view) = views_cursor.next().await {
-        if let Ok(v) = view {
-            views_list.push(v);
-        }
-    }
+    let mut views = Vec::new();
+    let mut cursor = views_res;
+    while let Some(Ok(v)) = cursor.next().await { views.push(v); }
 
-    // Get replies
-    let replies = state.mongo.collection::<StoryReply>("story_replies");
-    let mut replies_cursor = replies.find(doc! { "story_id": story.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let mut replies = Vec::new();
+    let mut cursor = replies_res;
+    while let Some(Ok(r)) = cursor.next().await { replies.push(r); }
 
-    let mut replies_list = Vec::new();
-    while let Some(reply) = replies_cursor.next().await {
-        if let Ok(r) = reply {
-            replies_list.push(r);
-        }
-    }
+    let mut reports = Vec::new();
+    let mut cursor = reports_res;
+    while let Some(Ok(r)) = cursor.next().await { reports.push(r); }
 
-    // Get reports
-    let reports = state.mongo.collection::<StoryReport>("story_reports");
-    let mut reports_cursor = reports.find(doc! { "story_id": story.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut reports_list = Vec::new();
-    while let Some(report) = reports_cursor.next().await {
-        if let Ok(r) = report {
-            reports_list.push(r);
-        }
-    }
-
-    // Get moderation history
-    let moderation = state.mongo.collection::<StoryModeration>("story_moderation");
-    let mut moderation_cursor = moderation.find(doc! { "story_id": story.id.unwrap() }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let mut moderation_list = Vec::new();
-    while let Some(m) = moderation_cursor.next().await {
-        if let Ok(moderation_record) = m {
-            moderation_list.push(moderation_record);
-        }
-    }
+    let mut moderation_history = Vec::new();
+    let mut cursor = moderation_res;
+    while let Some(Ok(m)) = cursor.next().await { moderation_history.push(m); }
 
     Ok(StoryResponse {
-        id: story.id.unwrap().to_hex(),
+        id: sid.to_hex(),
         user_id: story.user_id.to_hex(),
         username: story.username.clone(),
         user_avatar: story.user_avatar.clone(),
@@ -687,125 +618,75 @@ async fn build_story_response(
         story_type: story.story_type.clone(),
         story_data: story.story_data.clone(),
         updated_at: story.updated_at.to_chrono().to_rfc3339(),
-        views: views_list,
-        replies: replies_list,
-        reports: reports_list,
-        moderation_history: moderation_list,
+        views: Some(views.iter().map(|v| serde_json::to_value(v).unwrap_or(serde_json::Value::Null)).collect()),
+        replies: Some(replies.iter().map(|r| serde_json::to_value(r).unwrap_or(serde_json::Value::Null)).collect()),
+        reports: Some(reports.iter().map(|r| serde_json::to_value(r).unwrap_or(serde_json::Value::Null)).collect()),
+        moderation_history: Some(moderation_history.iter().map(|m| serde_json::to_value(m).unwrap_or(serde_json::Value::Null)).collect()),
     })
 }
 
 async fn update_user_story_stats(
     state: &Arc<AppState>,
     user_id: ObjectId,
-) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<()> {
     let stories = state.mongo.collection::<Story>("stories");
     
-    // Count stories by status
-    let total_stories = stories.count_documents(doc! { "user_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let active_stories = stories.count_documents(doc! { 
-        "user_id": user_id, 
-        "is_deleted": false, 
-        "expires_at": { "$gt": DateTime::now() } 
-    }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let expired_stories = stories.count_documents(doc! { 
-        "user_id": user_id, 
-        "is_deleted": false, 
-        "expires_at": { "$lt": DateTime::now() } 
-    }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let highlights = stories.count_documents(doc! { "user_id": user_id, "is_highlight": true }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    let total_stories = stories.count_documents(doc! { "user_id": user_id }, None).await?;
+    let active_stories = stories.count_documents(doc! { "user_id": user_id, "is_deleted": false, "expires_at": { "$gt": DateTime::now() } }, None).await?;
+    let expired_stories = stories.count_documents(doc! { "user_id": user_id, "is_deleted": false, "expires_at": { "$lt": DateTime::now() } }, None).await?;
+    let highlights = stories.count_documents(doc! { "user_id": user_id, "is_highlight": true }, None).await?;
 
-    // Calculate averages
-    let mut avg_completion_rate = 0.0;
-    let mut avg_engagement_rate = 0.0;
-    let mut avg_view_duration = 0.0;
+    let mut cursor = stories.find(doc! { "user_id": user_id }, None).await?;
     let mut total_views = 0;
     let mut total_replies = 0;
-
-    let mut cursor = stories.find(doc! { "user_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-    
-    let mut story_count = 0;
-    while let Some(story) = cursor.next().await {
-        if let Ok(s) = story {
-            total_views += s.view_count;
-            total_replies += s.reply_count;
-            story_count += 1;
-        }
+    while let Some(Ok(s)) = cursor.next().await {
+        total_views += s.view_count;
+        total_replies += s.reply_count;
     }
 
-    if story_count > 0 {
-        avg_completion_rate = 0.0; // Would need analytics data
-        avg_engagement_rate = (total_replies as f64 / total_views as f64) * 100.0;
-        avg_view_duration = 0.0; // Would need view duration data
-    }
+    let profile = state.mongo.collection::<Profile>("profiles").find_one(doc! { "user_id": user_id }, None).await?
+        .ok_or(AppError::NotFound("Profile not found".to_string()))?;
 
-    // Get last story date
-    let last_story = stories.find_one(
-        doc! { "user_id": user_id },
-        Some(mongodb::options::FindOneOptions::builder().sort(doc! { "created_at": -1 }).build())
-    ).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    // Get user info
-    let profiles = state.mongo.collection::<Profile>("profiles");
-    let user_profile = profiles.find_one(doc! { "user_id": user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
-        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "User profile not found"}))))?;
-
-    // Update or create stats
-    let stats = state.mongo.collection::<UserStoryStats>("user_story_stats");
-    let stats_doc = UserStoryStats {
+    let stats = UserStoryStats {
         id: None,
         user_id,
-        username: user_profile.username,
+        username: profile.username,
         total_stories: total_stories as i32,
         active_stories: active_stories as i32,
         expired_stories: expired_stories as i32,
         highlights: highlights as i32,
-        total_views,
-        total_replies,
-        avg_completion_rate,
-        avg_engagement_rate,
-        avg_view_duration,
-        last_story_at: last_story.map(|s| s.created_at),
+        total_views: total_views as i32,
+        total_replies: total_replies as i32,
+        avg_completion_rate: 0.0,
+        avg_engagement_rate: 0.0,
+        avg_view_duration: 0.0,
+        last_story_at: None,
         created_at: DateTime::now(),
         updated_at: DateTime::now(),
     };
 
-    stats.update_one(
-        doc! { "user_id": user_id },
-        doc! { "$set": mongodb::bson::to_document(&stats_doc).unwrap() },
-        Some(mongodb::options::UpdateOptions::builder().upsert(true).build())
-    ).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    state.mongo.collection::<UserStoryStats>("user_story_stats")
+        .update_one(doc! { "user_id": user_id }, doc! { "$set": mongodb::bson::to_document(&stats).unwrap() }, Some(mongodb::options::UpdateOptions::builder().upsert(true).build()))
+        .await?;
 
     Ok(())
 }
 
-fn determine_priority(spam_score: f64, reported_count: i32) -> String {
-    if spam_score > 0.8 || reported_count > 5 {
-        "high".to_string()
-    } else if spam_score > 0.5 || reported_count > 2 {
-        "medium".to_string()
-    } else {
-        "low".to_string()
-    }
+fn determine_priority(spam_score: f64, reported_count: i32) -> i32 {
+    if spam_score > 0.8 || reported_count > 5 { 1 }
+    else if spam_score > 0.5 || reported_count > 2 { 2 }
+    else { 3 }
 }
 
 pub fn story_routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", get(list_stories_handler))
-        .route("/:id", get(get_story_handler).put(moderate_story_handler).delete(delete_story_handler))
+        .route("/feed", get(get_stories_feed_handler))
+        .route("/", get(list_stories_handler).post(create_story_handler))
+        .route("/:id", get(get_story_handler).delete(delete_story_handler))
+        .route("/:id/view", post(mark_story_viewed_handler))
+        .route("/:id/viewers", get(get_story_viewers_handler))
+        .route("/user/:user_id", get(get_user_stories_handler))
         .route("/:id/moderate", post(moderate_story_handler))
         .route("/queue", get(get_moderation_queue_handler))
         .route("/stats/:user_id", get(get_user_story_stats_handler))
-        .route("/schedules", get(list_story_schedules_handler))
-        .route("/templates", get(list_story_templates_handler))
 }

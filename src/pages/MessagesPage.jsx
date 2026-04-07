@@ -1079,7 +1079,7 @@ const MessagesPage = () => {
                             >
                                 {(chats || []).map((chat) => (
                                     <ChatRow
-                                        key={chat.id || chat._id}
+                                        key={chat.id}
                                         data={{
                                             chats: chats || [],
                                             presenceData,
