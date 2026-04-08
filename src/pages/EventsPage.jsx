@@ -6,6 +6,7 @@ import '../styles/EventsPage.css';
 import { useEvents, useCreateEvent } from '../hooks/useEvents';
 import { useToast } from '../context/ToastContext';
 import ListPage from '../components/ListPage.jsx';
+import { useMediaUpload } from '../hooks/useMedia';
 
 const EventCard = ({ event, navigate }) => (
     <motion.div
@@ -112,6 +113,9 @@ const EventsPage = () => {
 
 const CreateEventModal = ({ isOpen, onClose }) => {
     const { mutate: createEvent, isPending } = useCreateEvent();
+    const { uploadImage } = useMediaUpload();
+    const imageInputRef = React.useRef(null);
+    const [isUploading, setIsUploading] = useState(false);
     const { showToast } = useToast();
     const [formData, setFormData] = useState({
         title: '',
@@ -310,16 +314,37 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="form-group">
-                        <label>Event Image URL (Optional)</label>
-                        <input
-                            type="url"
-                            className="form-input"
-                            placeholder="https://..."
-                            value={formData.image_url}
-                            onChange={(e) =>
-                                setFormData({ ...formData, image_url: e.target.value })
-                            }
-                        />
+                        <label>Event Image (Optional)</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button 
+                                type="button" 
+                                className="btn btn-outline"
+                                onClick={() => imageInputRef.current?.click()}
+                                disabled={isUploading}
+                            >
+                                {isUploading ? 'Uploading...' : 'Upload Image'}
+                            </button>
+                            {formData.image_url && <span style={{ color: '#00b894', fontSize: '0.9rem' }}>Image Attached</span>}
+                            <input 
+                                type="file"
+                                ref={imageInputRef}
+                                hidden
+                                accept="image/*"
+                                onChange={async (e) => {
+                                    const file = e.target.files[0];
+                                    if(!file) return;
+                                    setIsUploading(true);
+                                    try {
+                                        const url = await uploadImage(file);
+                                        setFormData({ ...formData, image_url: url });
+                                    } catch (err) {
+                                        showToast('Image upload failed', 'error');
+                                    } finally {
+                                        setIsUploading(false);
+                                    }
+                                }}
+                            />
+                        </div>
                     </div>
 
                     <button type="submit" className="btn btn-primary btn-full" disabled={isPending}>

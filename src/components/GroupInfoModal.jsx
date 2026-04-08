@@ -1,7 +1,8 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import Avatar from './Avatar.jsx';
-
+import { useMediaUpload } from '../hooks/useMedia';
+import { useToast } from '../context/ToastContext';
 const GroupInfoModal = ({
     showGroupInfoModal,
     selectedChat,
@@ -24,6 +25,10 @@ const GroupInfoModal = ({
 
     const currentUser = JSON.parse(localStorage.getItem('user'));
     const isCurrentUserAdmin = selectedChat.admins?.includes(currentUser?.id);
+    const { uploadImage } = useMediaUpload();
+    const fileInputRef = React.useRef(null);
+    const [isUploading, setIsUploading] = React.useState(false);
+    const { showToast } = useToast();
 
     return (
         <div className="modal-overlay">
@@ -50,12 +55,36 @@ const GroupInfoModal = ({
                                     value={editGroupName}
                                     onChange={(e) => setEditGroupName(e.target.value)}
                                 />
-                                <input
-                                    type="text"
-                                    placeholder="Avatar URL"
-                                    value={editGroupAvatar}
-                                    onChange={(e) => setEditGroupAvatar(e.target.value)}
-                                />
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                    >
+                                        {isUploading ? 'Uploading...' : 'Upload Avatar'}
+                                    </button>
+                                    {editGroupAvatar && <span style={{ color: '#00b894', fontSize: '0.9rem' }}>Image Attached</span>}
+                                    <input 
+                                        type="file"
+                                        ref={fileInputRef}
+                                        hidden
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            const file = e.target.files[0];
+                                            if(!file) return;
+                                            setIsUploading(true);
+                                            try {
+                                                const url = await uploadImage(file);
+                                                setEditGroupAvatar(url);
+                                            } catch (err) {
+                                                showToast('Image upload failed', 'error');
+                                            } finally {
+                                                setIsUploading(false);
+                                            }
+                                        }}
+                                    />
+                                </div>
                                 <div className="edit-actions">
                                     <button
                                         className="save-btn"

@@ -178,6 +178,7 @@
 
 .item-info {
     flex: 1;
+    min-width: 0;
 }
 
 .item-info a {
@@ -185,6 +186,9 @@
     text-decoration: none;
     font-weight: 500;
     display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .item-info a:hover {

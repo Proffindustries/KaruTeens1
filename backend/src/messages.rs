@@ -140,6 +140,7 @@ pub struct ParentMessageSummary {
 #[derive(Debug, Serialize)]
 pub struct MessageResponse {
     pub id: String,
+    pub chat_id: String,
     pub sender_id: String,
     pub sender_username: String,
     pub content: String,
@@ -581,6 +582,7 @@ pub async fn get_messages_handler(
 
         let mut res = MessageResponse {
             id: msg.id.unwrap().to_hex(),
+            chat_id: msg.chat_id.to_hex(),
             sender_id: msg.sender_id.to_hex(),
             sender_username,
             content,
@@ -792,6 +794,7 @@ pub async fn send_message_handler(
         // Prepare response DTO for broadcast
         let res = MessageResponse {
             id: msg_id.to_hex(),
+            chat_id: oid.to_hex(),
             sender_id: sender_id.to_hex(),
             sender_username,
             content: content_clone,

@@ -15,7 +15,6 @@ import PostDetailPage from './pages/PostDetailPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import UploadProgress from './components/UploadProgress.jsx';
-import GlobalBackButton from './components/GlobalBackButton.jsx';
 import { WebsocketProvider } from './context/WebsocketContext.jsx';
 import { AblyProvider } from './context/AblyContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -62,7 +61,6 @@ function App() {
     return (
         <AblyProvider>
             <WebsocketProvider>
-                <GlobalBackButton />
                 <ErrorBoundary>
                 <Suspense
                     fallback={

@@ -21,12 +21,12 @@ export default defineConfig(({ mode }) => ({
 
         // Bundle analyzer (run with `npm run build:analyze`)
         mode === 'analyze' &&
-            visualizer({
-                open: true,
-                gzipSize: true,
-                brotliSize: true,
-                filename: 'dist/stats.html',
-            }),
+        visualizer({
+            open: true,
+            gzipSize: true,
+            brotliSize: true,
+            filename: 'dist/stats.html',
+        }),
 
         // Progressive Web App support
         VitePWA({

@@ -2436,13 +2436,32 @@
 }
 
 @media (max-width: 768px) {
-    .msg-sidebar {
-        width: 100%;
-        border-right: none;
+    .messages-page {
+        position: fixed;
+        top: 60px; /* Account for navbar */
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: auto;
+        padding: 0;
+        z-index: 100;
+        background: rgb(var(--background));
     }
 
+    /* Handle mobile browser safe areas for keyboard inside main */
     .msg-main {
+        height: 100%;
         display: none;
+    }
+
+    .chat-input-area-container {
+        padding-bottom: env(safe-area-inset-bottom, 15px);
+    }
+
+    .msg-sidebar {
+        width: 100%;
+        height: 100%;
+        border-right: none;
     }
 
     /* When a chat is selected, hide sidebar and show main chat */
