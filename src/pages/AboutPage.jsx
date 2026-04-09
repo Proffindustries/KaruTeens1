@@ -46,17 +46,34 @@ const AboutPage = () => {
             </div>
 
             <div className="story-section">
-                <h2>Our Story</h2>
+                <h2>Our Story & Vision</h2>
                 <p>
-                    Started as a small project in a dorm room, KaruTeens was born out of the need
-                    for a better way to find study partners, campust events, and reliable
-                    marketplaces. We realized that existing social media platforms were too broad
-                    and often distracting. KaruTeens focuses on what matters most to your campus
-                    life.
+                    Started as a vision in Karatina University, KaruTeens was born out of the need
+                    for a better way for students to find study partners, campus events, and reliable
+                    academic resources. We realized that existing social media platforms were too broad, 
+                    noisy, and often distracting for serious student engagement.
                 </p>
+                <p>
+                    KaruTeens focuses on what matters most to your campus life: collaboration, 
+                    peer-to-peer support, and safe social interaction. Our goal is to bridge the gap 
+                    between academic excellence and a vibrant social life, ensuring no student feels 
+                    isolated in their journey through higher education.
+                </p>
+                
+                <div className="vision-blocks">
+                    <div className="vision-block">
+                        <h4>Community Growth</h4>
+                        <p>We believe in the power of collective intelligence. By connecting students across departments, we foster a richer learning environment.</p>
+                    </div>
+                    <div className="vision-block">
+                        <h4>Academic Excellence</h4>
+                        <p>From curated study playlists to collaborative revision materials, we provide the tools needed to succeed in a demanding university setting.</p>
+                    </div>
+                </div>
+
                 <div className="team-signature">
                     <Heart size={20} fill="red" color="red" />
-                    <span>The KaruTeens Team</span>
+                    <span>The KaruTeens Development Team</span>
                 </div>
             </div>
         </div>

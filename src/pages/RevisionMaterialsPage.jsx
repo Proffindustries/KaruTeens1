@@ -3,6 +3,7 @@ import MainLayout from '../layouts/MainLayout';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { Book, FileText, Video, Link as LinkIcon, Loader } from 'lucide-react';
+import '../styles/RevisionMaterialsPage.css';
 
 const RevisionMaterialsPage = () => {
     const [materials, setMaterials] = useState([]);
@@ -103,68 +104,60 @@ const RevisionMaterialsPage = () => {
     const subjects = ['all', ...new Set(materials.map((m) => m.subject))];
 
     return (
-        <MainLayout>
-            <div className="p-6 max-w-6xl mx-auto">
-                <h1 className="text-2xl font-bold mb-6">Revision Materials</h1>
+        <div className="container revision-materials-page">
+            <div className="materials-header">
+                <h1>Revision Materials</h1>
+                <p className="text-muted">Access curated study resources and past papers.</p>
+            </div>
 
-                {/* Filter Bar */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                    {subjects.map((subject) => (
-                        <button
-                            key={subject}
-                            onClick={() => setFilter(subject)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                                filter === subject
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
+            {/* Filter Bar */}
+            <div className="filter-bar">
+                {subjects.map((subject) => (
+                    <button
+                        key={subject}
+                        onClick={() => setFilter(subject)}
+                        className={`filter-btn ${filter === subject ? 'active' : ''}`}
+                    >
+                        {subject === 'all' ? 'All Subjects' : subject}
+                    </button>
+                ))}
+            </div>
+
+            {loading ? (
+                <div className="loader-container">
+                    <Loader className="animate-spin" size={48} color="rgb(var(--primary))" />
+                </div>
+            ) : filteredMaterials.length === 0 ? (
+                <div className="empty-state card">
+                    <Book size={48} color="rgba(var(--primary), 0.3)" />
+                    <h3>No materials found</h3>
+                    <p>Try selecting a different filter or subject.</p>
+                </div>
+            ) : (
+                <div className="materials-grid">
+                    {filteredMaterials.map((material) => (
+                        <div
+                            key={material.id}
+                            className="card material-card"
                         >
-                            {subject === 'all' ? 'All Subjects' : subject}
-                        </button>
+                            <div
+                                className="type-icon-box"
+                                style={{ backgroundColor: getTypeColor(material.type) }}
+                            >
+                                {getTypeIcon(material.type)}
+                            </div>
+                            <div className="material-info">
+                                <span className="material-subject">{material.subject}</span>
+                                <h3>{material.title}</h3>
+                                <p className="material-desc">
+                                    {material.description}
+                                </p>
+                            </div>
+                        </div>
                     ))}
                 </div>
-
-                {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                        <Loader className="animate-spin" size={48} />
-                    </div>
-                ) : filteredMaterials.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                        <Book size={48} className="mx-auto mb-4 opacity-50" />
-                        <p>No revision materials found</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredMaterials.map((material) => (
-                            <div
-                                key={material.id}
-                                className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div
-                                        className="p-2 rounded-lg text-white flex-shrink-0"
-                                        style={{ backgroundColor: getTypeColor(material.type) }}
-                                    >
-                                        {getTypeIcon(material.type)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-gray-900 truncate">
-                                            {material.title}
-                                        </h3>
-                                        <p className="text-sm text-gray-500 mb-2">
-                                            {material.subject}
-                                        </p>
-                                        <p className="text-sm text-gray-600 line-clamp-2">
-                                            {material.description}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </MainLayout>
+            )}
+        </div>
     );
 };
 

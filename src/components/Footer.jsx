@@ -22,10 +22,10 @@ const Footer = React.memo(() => {
                 </nav>
 
                 <div className="footer-social-lite">
-                    <a href="#"><Facebook size={16} /></a>
-                    <a href="#"><Twitter size={16} /></a>
-                    <a href="#"><Instagram size={16} /></a>
-                    <a href="mailto:support@karuteens.com"><Mail size={16} /></a>
+                    <a href="https://facebook.com/karuteens" target="_blank" rel="noopener noreferrer"><Facebook size={16} /></a>
+                    <a href="https://twitter.com/karuteens" target="_blank" rel="noopener noreferrer"><Twitter size={16} /></a>
+                    <a href="https://instagram.com/karuteens" target="_blank" rel="noopener noreferrer"><Instagram size={16} /></a>
+                    <a href="mailto:support@karuteens.site"><Mail size={16} /></a>
                 </div>
             </div>
         </footer>
