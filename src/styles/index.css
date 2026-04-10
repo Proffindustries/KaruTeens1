@@ -42,6 +42,12 @@
   padding: 0;
 }
 
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: rgb(var(--background));
@@ -49,6 +55,19 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Prevent zooming on input focus in mobile browsers */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 
 /* Main layout container */
 .app-container {

@@ -350,6 +350,11 @@ pub async fn get_feed_handler(
         "status": "published",
     };
 
+    // --- Safety Filter for Guests/AdSense Crawler ---
+    if user.is_none() {
+        filter.insert("is_nsfw", doc! { "$ne": true });
+    }
+
     if let Some(ref pid) = query.page_id {
         if let Ok(oid) = ObjectId::parse_str(pid) {
             filter.insert("page_id", oid);
@@ -424,6 +429,11 @@ pub async fn get_post_handler(
     
     let p = collection.find_one(doc! { "_id": post_oid }, None).await?
         .ok_or(AppError::NotFound("Post not found".to_string()))?;
+
+    // --- Safety Check for Guests ---
+    if user.is_none() && p.is_nsfw.unwrap_or(false) {
+        return Err(AppError::Forbidden("This content requires login to view".to_string()));
+    }
 
     let post_responses = posts_to_responses(&state, user.as_ref(), vec![p]).await;
     let post_response = post_responses.into_iter().next().ok_or(AppError::InternalServerError("Failed to build response".to_string()))?;
@@ -856,6 +866,11 @@ pub async fn get_trending_posts_handler(
         "status": "published",
         "created_at": { "$gte": mongodb::bson::DateTime::from_millis(seventy_two_hours_ago.timestamp_millis()) }
     };
+
+    // --- Safety Filter for Guests/AdSense Crawler ---
+    if user.is_none() {
+        filter.insert("is_nsfw", doc! { "$ne": true });
+    }
     
     if let Some(ref last_id_str) = query.last_id {
         if let Ok(last_oid) = ObjectId::parse_str(last_id_str) {

@@ -105,59 +105,59 @@ const RevisionMaterialsPage = () => {
 
     return (
         <div className="container revision-materials-page">
-            <div className="materials-header">
-                <h1>Revision Materials</h1>
-                <p className="text-muted">Access curated study resources and past papers.</p>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="filter-bar">
-                {subjects.map((subject) => (
-                    <button
-                        key={subject}
-                        onClick={() => setFilter(subject)}
-                        className={`filter-btn ${filter === subject ? 'active' : ''}`}
-                    >
-                        {subject === 'all' ? 'All Subjects' : subject}
-                    </button>
-                ))}
-            </div>
-
-            {loading ? (
-                <div className="loader-container">
-                    <Loader className="animate-spin" size={48} color="rgb(var(--primary))" />
+                <div className="materials-header">
+                    <h1>Revision Materials</h1>
+                    <p className="text-muted">Access curated study resources and past papers.</p>
                 </div>
-            ) : filteredMaterials.length === 0 ? (
-                <div className="empty-state card">
-                    <Book size={48} color="rgba(var(--primary), 0.3)" />
-                    <h3>No materials found</h3>
-                    <p>Try selecting a different filter or subject.</p>
-                </div>
-            ) : (
-                <div className="materials-grid">
-                    {filteredMaterials.map((material) => (
-                        <div
-                            key={material.id}
-                            className="card material-card"
+
+                {/* Filter Bar */}
+                <div className="filter-bar">
+                    {subjects.map((subject) => (
+                        <button
+                            key={subject}
+                            onClick={() => setFilter(subject)}
+                            className={`filter-btn ${filter === subject ? 'active' : ''}`}
                         >
-                            <div
-                                className="type-icon-box"
-                                style={{ backgroundColor: getTypeColor(material.type) }}
-                            >
-                                {getTypeIcon(material.type)}
-                            </div>
-                            <div className="material-info">
-                                <span className="material-subject">{material.subject}</span>
-                                <h3>{material.title}</h3>
-                                <p className="material-desc">
-                                    {material.description}
-                                </p>
-                            </div>
-                        </div>
+                            {subject === 'all' ? 'All Subjects' : subject}
+                        </button>
                     ))}
                 </div>
-            )}
-        </div>
+
+                {loading ? (
+                    <div className="loader-container">
+                        <Loader className="animate-spin" size={48} color="rgb(var(--primary))" />
+                    </div>
+                ) : filteredMaterials.length === 0 ? (
+                    <div className="empty-state card">
+                        <Book size={48} color="rgba(var(--primary), 0.3)" />
+                        <h3>No materials found</h3>
+                        <p>Try selecting a different filter or subject.</p>
+                    </div>
+                ) : (
+                    <div className="materials-grid">
+                        {filteredMaterials.map((material) => (
+                            <div
+                                key={material.id}
+                                className="card material-card"
+                            >
+                                <div
+                                    className="type-icon-box"
+                                    style={{ backgroundColor: getTypeColor(material.type) }}
+                                >
+                                    {getTypeIcon(material.type)}
+                                </div>
+                                <div className="material-info">
+                                    <span className="material-subject">{material.subject}</span>
+                                    <h3>{material.title}</h3>
+                                    <p className="material-desc">
+                                        {material.description}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
     );
 };
 

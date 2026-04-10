@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
-import '../styles/ContactPage.css'; // Creating next
+import '../styles/ContactPage.css';
 
 const ContactPage = () => {
     const [status, setStatus] = useState('');
@@ -16,7 +16,6 @@ const ContactPage = () => {
                 <h1>Contact Us</h1>
                 <p>Have questions, suggestions, or need support? Reach out to us.</p>
             </div>
-
             <div className="contact-layout">
                 {/* Contact Info */}
                 <div className="contact-info card">
@@ -24,30 +23,29 @@ const ContactPage = () => {
                     <div className="contact-item">
                         <Mail size={20} className="contact-icon" />
                         <div>
-                            <strong>Email</strong>
-                            <p>support@karuteens.com</p>
+                            <strong>Global Support</strong>
+                            <p>support@karuteens.site</p>
+                        </div>
+                    </div>
+                    <div className="contact-item">
+                        <Mail size={20} className="contact-icon" />
+                        <div>
+                            <strong>Admin / Business</strong>
+                            <p>admin@karuteens.site</p>
                         </div>
                     </div>
                     <div className="contact-item">
                         <Phone size={20} className="contact-icon" />
                         <div>
-                            <strong>Phone / WhatsApp</strong>
-                            <p>+254 700 123 456</p>
-                        </div>
-                    </div>
-                    <div className="contact-item">
-                        <MapPin size={20} className="contact-icon" />
-                        <div>
-                            <strong>Office</strong>
-                            <p>Student Center, 2nd Floor, Room 204</p>
+                            <strong>WhatsApp / Call</strong>
+                            <p>+254 113729279</p>
                         </div>
                     </div>
 
                     <div className="admin-contacts">
-                        <h4>Admin Contacts (Emergency)</h4>
+                        <h4>Lead Developer</h4>
                         <ul>
-                            <li>Admin Mark: 0711 000 000</li>
-                            <li>Admin Sarah: 0722 000 000</li>
+                            <li>Harrison: 0113 729 279</li>
                         </ul>
                     </div>
                 </div>

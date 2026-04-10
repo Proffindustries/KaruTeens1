@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Star } from 'lucide-react';
+import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Star, Sparkles } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
@@ -9,6 +9,7 @@ import Avatar from '../components/Avatar.jsx';
 import { useInfiniteFeed, useForYouFeed, useTrendingPosts, useTrendingTopics } from '../hooks/useContent';
 import { useAuth, useLogout } from '../hooks/useAuth.js';
 import { Link } from 'react-router-dom';
+import AdComponent from '../components/AdComponent.jsx';
 
 const FeedPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,23 +55,38 @@ const FeedPage = () => {
                 <div className="card mini-profile-card shadow-sm">
                     <div className="mini-profile-bg"></div>
                     <div className="mini-profile-content">
-                        <Avatar
-                            src={user?.avatar_url}
-                            name={user?.username || 'User'}
-                            className="mini-avatar shadow"
-                        />
-                        <h3>{user?.username || 'Anonymous'}</h3>
-                        <p>{user?.email}</p>
-                        <div className="mini-stats">
-                            <div>
-                                <strong>{user?.follower_count || 0}</strong>
-                                <span>Followers</span>
+                        {user ? (
+                            <>
+                                <Avatar
+                                    src={user?.avatar_url}
+                                    name={user?.username || 'User'}
+                                    className="mini-avatar shadow"
+                                />
+                                <h3>{user?.username || 'Anonymous'}</h3>
+                                <p>{user?.email}</p>
+                                <div className="mini-stats">
+                                    <div>
+                                        <strong>{user?.follower_count || 0}</strong>
+                                        <span>Followers</span>
+                                    </div>
+                                    <div>
+                                        <strong>{user?.following_count || 0}</strong>
+                                        <span>Following</span>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="guest-sidebar-cta">
+                                <h3>Welcome to KaruTeens</h3>
+                                <p>Join our campus community to share posts and connect with students.</p>
+                                <Link to="/register" className="btn btn-primary btn-sm btn-full mt-2">
+                                    Join Now
+                                </Link>
+                                <Link to="/login" className="btn btn-outline btn-sm btn-full mt-2">
+                                    Login
+                                </Link>
                             </div>
-                            <div>
-                                <strong>{user?.following_count || 0}</strong>
-                                <span>Following</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -89,6 +105,11 @@ const FeedPage = () => {
 
             {/* Main Feed Area */}
             <main className="feed-main">
+                {/* Mobile Ad Space */}
+                <div className="mobile-only-ad">
+                    <AdComponent />
+                </div>
+
                 {/* Feed Type Toggle */}
                 <div className="feed-toggle card shadow-sm">
                     <button
@@ -111,65 +132,86 @@ const FeedPage = () => {
                     </button>
                 </div>
 
-                {/* Create Post Widget */}
-                <div className="card create-post-widget shadow-sm">
-                    <div className="create-post-top">
-                        <Avatar
-                            src={user?.avatar_url}
-                            name={user?.username || 'User'}
-                            className="widget-avatar shadow-sm"
-                        />
-                        <div
-                            className="create-post-input"
-                            onClick={() => setIsModalOpen(true)}
-                            style={{ cursor: 'pointer' }}
-                        >
+                {/* Create Post Widget - Only for logged in users */}
+                {user ? (
+                    <div className="card create-post-widget shadow-sm">
+                        <div className="create-post-top">
+                            <Avatar
+                                src={user?.avatar_url}
+                                name={user?.username || 'User'}
+                                className="widget-avatar shadow-sm"
+                            />
                             <div
-                                style={{
-                                    padding: '0.65rem 1rem',
-                                    borderRadius: '20px',
-                                    background: 'rgba(var(--border), 0.15)',
-                                    color: 'rgb(var(--text-muted))',
-                                    fontSize: '0.95rem',
-                                    userSelect: 'none',
-                                }}
+                                className="create-post-input"
+                                onClick={() => setIsModalOpen(true)}
+                                style={{ cursor: 'pointer' }}
                             >
-                                What's happening on campus, {user.username?.split(' ')[0] || 'Student'}?
+                                <div
+                                    style={{
+                                        padding: '0.65rem 1rem',
+                                        borderRadius: '20px',
+                                        background: 'rgba(var(--border), 0.15)',
+                                        color: 'rgb(var(--text-muted))',
+                                        fontSize: '0.95rem',
+                                        userSelect: 'none',
+                                    }}
+                                >
+                                    What's happening on campus, {user.username?.split(' ')[0] || 'Student'}?
+                                </div>
                             </div>
                         </div>
+                        <div className="create-post-actions">
+                            <button
+                                className="cp-action"
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                <ImageIcon size={18} color="#00b894" /> Photo
+                            </button>
+                            <button
+                                className="cp-action"
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                <Video size={18} color="#6c5ce7" /> Video
+                            </button>
+                            <button
+                                className="cp-action"
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                <Plus size={18} color="#0984e3" /> More
+                            </button>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                style={{
+                                    marginLeft: 'auto',
+                                    borderRadius: '20px',
+                                    padding: '0.5rem 1.25rem',
+                                }}
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                Post
+                            </button>
+                        </div>
                     </div>
-                    <div className="create-post-actions">
-                        <button
-                            className="cp-action"
-                            onClick={() => setIsModalOpen(true)}
-                        >
-                            <ImageIcon size={18} color="#00b894" /> Photo
-                        </button>
-                        <button
-                            className="cp-action"
-                            onClick={() => setIsModalOpen(true)}
-                        >
-                            <Video size={18} color="#6c5ce7" /> Video
-                        </button>
-                        <button
-                            className="cp-action"
-                            onClick={() => setIsModalOpen(true)}
-                        >
-                            <Plus size={18} color="#0984e3" /> More
-                        </button>
-                        <button
-                            className="btn btn-primary btn-sm"
-                            style={{
-                                marginLeft: 'auto',
-                                borderRadius: '20px',
-                                padding: '0.5rem 1.25rem',
-                            }}
-                            onClick={() => setIsModalOpen(true)}
-                        >
-                            Post
-                        </button>
+                ) : (
+                    <div className="card guest-feed-card">
+                        <div className="welcome-icon">
+                            <Sparkles size={32} />
+                        </div>
+                        <h2>What's Happening?</h2>
+                        <p>
+                            Discover the latest campus news, events, and student highlights from
+                            KaruTeens. Join our community to start sharing your own stories!
+                        </p>
+                        <div className="guest-actions">
+                            <Link to="/register" className="btn btn-primary">
+                                Get Started
+                            </Link>
+                            <Link to="/login" className="btn btn-outline">
+                                Sign In
+                            </Link>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Posts Feed */}
                 <div className="posts-container">
@@ -235,6 +277,7 @@ const FeedPage = () => {
 
             {/* Right Sidebar */}
             <aside className="feed-sidebar right-sidebar">
+                <AdComponent />
                 {/* User Info & Logout Card */}
                 {user && (
                     <div

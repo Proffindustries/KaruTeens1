@@ -93,9 +93,10 @@ function App() {
                             <Route path="legal" element={<LegalPage />} />
                             <Route path="explore" element={<ExplorePage />} />
 
+                            <Route path="feed" element={<FeedPage />} />
+                            <Route path="post/:postId" element={<PostDetailPage />} />
+
                             <Route element={<ProtectedRoute />}>
-                                <Route path="feed" element={<FeedPage />} />
-                                <Route path="post/:postId" element={<PostDetailPage />} />
                                 <Route path="marketplace" element={<MarketplacePage />} />
                                 <Route
                                     path="marketplace/item/:itemId"
