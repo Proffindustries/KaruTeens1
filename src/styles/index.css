@@ -54,9 +54,6 @@ body {
   width: 100%;
   position: relative;
   overflow-x: hidden;
-}
-
-body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: rgb(var(--background));
   color: rgb(var(--text-main));
@@ -100,9 +97,11 @@ img {
   padding: 0 1rem;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .container {
-    padding: 0 0.75rem;
+    /* Let page sections (feed-layout, etc.) handle their own edge padding.
+       Remove container padding so nothing double-pads on mobile. */
+    padding: 0;
   }
 }
 
@@ -148,6 +147,12 @@ img {
   padding: 1.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(var(--border), 0.5);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
 }
 
 .hidden {

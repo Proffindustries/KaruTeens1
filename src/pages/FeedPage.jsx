@@ -175,9 +175,8 @@ const FeedPage = () => {
                                 <Plus size={18} color="#0984e3" /> More
                             </button>
                             <button
-                                className="btn btn-primary btn-sm"
+                                className="btn btn-primary btn-sm cp-post-btn"
                                 style={{
-                                    marginLeft: 'auto',
                                     borderRadius: '20px',
                                     padding: '0.5rem 1.25rem',
                                 }}
