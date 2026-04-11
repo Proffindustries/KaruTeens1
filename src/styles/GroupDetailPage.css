@@ -52,6 +52,7 @@
 .group-info h1 {
     margin: 0 0 0.5rem 0;
     font-size: 1.75rem;
+    color: rgb(var(--group-color));
 }
 
 .group-info p {
