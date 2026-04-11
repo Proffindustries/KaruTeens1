@@ -268,6 +268,12 @@ pub struct UpdatePostRequest {
     pub content_rating: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct ReportPostRequest {
+    pub reason: String,
+    pub description: Option<String>,
+}
+
 // Common filter types
 #[derive(Deserialize, Debug, Serialize)]
 pub struct PostFilter {
@@ -722,6 +728,7 @@ pub struct UpdateCommentRequest {
 #[derive(Deserialize)]
 pub struct ReportCommentRequest {
     pub reason: String,
+    pub description: Option<String>,
 }
 
 #[derive(Deserialize)]

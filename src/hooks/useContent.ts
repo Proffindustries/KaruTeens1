@@ -420,8 +420,8 @@ export const useReportPost = () => {
     const { showToast } = useToast();
 
     return useMutation({
-        mutationFn: async (postId: string) => {
-            const { data } = await api.post(`/posts/${postId}/report`);
+        mutationFn: async ({ postId, reason, description }: { postId: string, reason: string, description: string | null }) => {
+            const { data } = await api.post(`/posts/${postId}/report`, { reason, description });
             return data;
         },
         onSuccess: () => {

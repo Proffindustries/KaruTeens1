@@ -8,6 +8,10 @@
   --accent: 254, 202, 87;
   /* #feca57 (Yellow - Highlight) */
 
+  /* Semantic Colors for Context */
+  --page-color: 9, 132, 227; /* Blue - Professional & Trustworthy */
+  --group-color: 0, 184, 148; /* Teal/Green - Community & Growth */
+
   /* Neutral Colors */
   --background: 247, 249, 252;
   /* Very light blue-grey */

@@ -397,14 +397,7 @@ const PostCard = React.memo(({ post }) => {
                                     >
                                         ▶
                                     </span>
-                                    <Link
-                                        to={`/groups/${post.group_id}`}
-                                        style={{
-                                            color: 'var(--primary-color)',
-                                            fontWeight: '600',
-                                            textDecoration: 'none',
-                                        }}
-                                    >
+                                    <Link to={`/groups/${post.group_id}`} className="group-link">
                                         {post.group_name}
                                     </Link>
                                 </>
@@ -420,14 +413,7 @@ const PostCard = React.memo(({ post }) => {
                                     >
                                         ▶
                                     </span>
-                                    <Link
-                                        to={`/p/${post.page_id}`}
-                                        style={{
-                                            color: '#e84393',
-                                            fontWeight: '600',
-                                            textDecoration: 'none',
-                                        }}
-                                    >
+                                    <Link to={`/p/${post.page_id}`} className="page-link">
                                         {post.page_name}
                                     </Link>
                                 </>

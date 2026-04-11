@@ -561,10 +561,59 @@ fn determine_priority(spam_score: f64, reported_count: i32) -> String {
 
 pub fn comment_routes() -> Router<Arc<AppState>> {
     Router::new()
+        .route("/:id/report", post(report_comment_handler))
         .route("/", get(list_comments_handler))
         .route("/:id", get(get_comment_handler).put(moderate_comment_handler).delete(delete_comment_handler))
         .route("/:id/moderate", post(moderate_comment_handler))
         .route("/queue", get(get_moderation_queue_handler))
         .route("/stats/:user_id", get(get_user_comment_stats_handler))
         .route("/spam-rules", get(list_spam_rules_handler).post(create_spam_rule_handler))
+}
+
+pub async fn report_comment_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(comment_id): Path<String>,
+    Json(payload): Json<ReportCommentRequest>,
+) -> AppResult<impl IntoResponse> {
+    let comment_oid = ObjectId::parse_str(&comment_id).map_err(|_| AppError::BadRequest("Invalid comment ID".to_string()))?;
+    
+    let comments_coll = state.mongo.collection::<Comment>("comments");
+    let reports_coll = state.mongo.collection::<CommentReport>("comment_reports");
+    let profiles_coll = state.mongo.collection::<Profile>("profiles");
+
+    // Fetch comment
+    let comment = comments_coll.find_one(doc! { "_id": comment_oid }, None).await?
+        .ok_or(AppError::NotFound("Comment not found".to_string()))?;
+
+    // Fetch reporting user profile
+    let profile = profiles_coll.find_one(doc! { "user_id": user.user_id }, None).await?
+        .ok_or(AppError::NotFound("Profile not found".to_string()))?;
+
+    let report = CommentReport {
+        id: None,
+        comment_id: comment_oid,
+        reported_by: user.user_id,
+        reported_by_username: profile.username,
+        reason: payload.reason,
+        description: payload.description,
+        status: "pending".to_string(),
+        reviewed_by: None,
+        reviewed_at: None,
+        review_notes: None,
+        action_taken: None,
+        created_at: DateTime::now(),
+        updated_at: DateTime::now(),
+    };
+
+    reports_coll.insert_one(report, None).await?;
+
+    // Increment reported_count on comment
+    comments_coll.update_one(
+        doc! { "_id": comment_oid },
+        doc! { "$inc": { "reported_count": 1 } },
+        None
+    ).await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "Comment reported successfully"}))))
 }

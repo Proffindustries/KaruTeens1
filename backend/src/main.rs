@@ -155,6 +155,7 @@ async fn main() {
          .route("/ws", get(ws_handler))
          .nest("/api/auth", auth_routes())
          .nest("/api/posts", content_routes())
+         .nest("/api/comments", crate::comments::comment_routes())
          .nest("/api/users", user_routes())
          .nest("/api/media", media_routes())
          .nest("/api/ably", ably::ably_routes())

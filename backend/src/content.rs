@@ -10,8 +10,8 @@ use serde_json::json;
 use std::sync::Arc;
 use futures::stream::StreamExt;
 use crate::db::AppState;
-use crate::models::{Post, Profile, Location};
-use crate::dto::{PostResponse, FeedResponse, CommentResponse};
+use crate::models::{Post, Profile, Location, ContentModeration};
+use crate::dto::{PostResponse, FeedResponse, CommentResponse, ReportPostRequest};
 use crate::error::{AppResult, AppError};
 use crate::auth::AuthUser;
 use mongodb::{bson::doc, options::FindOptions};
@@ -907,6 +907,43 @@ pub async fn get_trending_posts_handler(
     }))))
 }
 
+pub async fn report_post_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(post_id): Path<String>,
+    Json(payload): Json<ReportPostRequest>,
+) -> AppResult<impl IntoResponse> {
+    let post_oid = ObjectId::parse_str(&post_id).map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
+    
+    let posts_collection = state.mongo.collection::<Post>("posts");
+    let moderation_collection = state.mongo.collection::<ContentModeration>("content_moderation");
+
+    // Fetch post to get its content/context
+    let post = posts_collection.find_one(doc! { "_id": post_oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
+
+    let report = ContentModeration {
+        id: None,
+        content_id: post_oid,
+        content_type: "post".to_string(),
+        content_text: post.content.clone(),
+        reported_by: Some(user.user_id),
+        reported_reason: Some(payload.reason),
+        reported_at: Some(mongodb::bson::DateTime::now()),
+        status: "pending".to_string(),
+        reviewed_by: None,
+        reviewed_at: None,
+        review_notes: None,
+        action_taken: None,
+        created_at: mongodb::bson::DateTime::now(),
+        updated_at: mongodb::bson::DateTime::now(),
+    };
+
+    moderation_collection.insert_one(report, None).await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "Post reported successfully"}))))
+}
+
 pub fn content_routes() -> Router<Arc<AppState>> {
     Router::new()
         // Post CRUD – nested at /api/posts -> these become /api/posts/, /api/posts/:id etc.
@@ -914,6 +951,7 @@ pub fn content_routes() -> Router<Arc<AppState>> {
         .route("/:id", get(get_post_handler))
         .route("/:id/like", post(like_post_handler).delete(unlike_post_handler))
         .route("/:id/save", post(save_post_handler))
+        .route("/:id/report", post(report_post_handler))
         .route("/:id/comments", post(add_comment_handler).get(get_comments_handler))
         // Feed routes – frontend calls /api/posts/feed, /api/posts/for-you, /api/posts/trending-posts
         .route("/feed", get(get_feed_handler))

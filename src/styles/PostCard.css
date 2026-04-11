@@ -44,6 +44,30 @@
     color: rgb(var(--text-muted));
 }
 
+.group-link {
+    color: rgb(var(--group-color)) !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity var(--transition-fast);
+}
+
+.group-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.page-link {
+    color: rgb(var(--page-color)) !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity var(--transition-fast);
+}
+
+.page-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
 .post-options-btn {
     background: none;
     border: none;
