@@ -105,11 +105,6 @@ const FeedPage = () => {
 
             {/* Main Feed Area */}
             <main className="feed-main">
-                {/* Mobile Ad Space */}
-                <div className="mobile-only-ad">
-                    <AdComponent />
-                </div>
-
                 {/* Feed Type Toggle */}
                 <div className="feed-toggle card shadow-sm">
                     <button
@@ -255,8 +250,15 @@ const FeedPage = () => {
                         </div>
                     ) : (
                         <>
-                            {allPosts.map((post) => (
-                                <PostCard key={post.id} post={post} />
+                            {allPosts.map((post, index) => (
+                                <React.Fragment key={post.id}>
+                                    <PostCard post={post} />
+                                    {index > 0 && (index + 1) % 10 === 0 && (
+                                        <div className="feed-ad-wrapper">
+                                            <AdComponent />
+                                        </div>
+                                    )}
+                                </React.Fragment>
                             ))}
                             {/* Infinite scroll sentinel */}
                             <div ref={ref} style={{ height: 1 }} />

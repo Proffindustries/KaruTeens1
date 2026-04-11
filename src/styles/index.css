@@ -89,6 +89,12 @@ img {
   padding: 0 1rem;
 }
 
+@media (max-width: 480px) {
+  .container {
+    padding: 0 0.75rem;
+  }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

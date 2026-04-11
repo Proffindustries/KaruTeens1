@@ -225,6 +225,16 @@
         border-left: none;
         border-right: none;
     }
+
+    .create-post-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .cp-action {
+        padding: 0.4rem;
+        font-size: 0.85rem;
+    }
 }
 
 /* Trending Section */
@@ -292,7 +302,7 @@
 
 .feed-toggle .toggle-btn {
     flex: 1;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.5rem;
     border: none;
     background: transparent;
     border-radius: 25px;
@@ -300,6 +310,10 @@
     font-weight: 600;
     color: rgb(var(--text-secondary));
     transition: all 0.2s;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .feed-toggle .toggle-btn:hover {
