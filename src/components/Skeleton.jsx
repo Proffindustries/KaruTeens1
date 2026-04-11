@@ -19,7 +19,7 @@ export const PostSkeleton = React.memo(() => (
     <div className="post-card skeleton-card">
         <div
             className="post-header"
-            style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}
+            style={{ display: 'flex', gap: '1rem' }}
         >
             <Skeleton circle width="42px" height="42px" />
             <div style={{ flex: 1 }}>
@@ -27,7 +27,7 @@ export const PostSkeleton = React.memo(() => (
                 <Skeleton width="20%" height="0.6rem" />
             </div>
         </div>
-        <div className="post-content" style={{ padding: '0 1.5rem 1rem' }}>
+        <div className="post-content">
             <Skeleton width="90%" height="0.9rem" className="skeleton-text" />
             <Skeleton width="95%" height="0.9rem" className="skeleton-text" />
             <Skeleton width="40%" height="0.9rem" />

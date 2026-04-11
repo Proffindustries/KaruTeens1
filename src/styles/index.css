@@ -42,10 +42,18 @@
   padding: 0;
 }
 
-html, body {
+html {
+  margin: 0;
+  padding: 0;
   overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
   width: 100%;
   position: relative;
+  overflow-x: hidden;
 }
 
 body {
@@ -74,6 +82,9 @@ img {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .main-content {
