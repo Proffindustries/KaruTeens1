@@ -24,6 +24,7 @@ import Avatar from '../components/Avatar.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useTrendingTopics } from '../hooks/useContent.js';
 import { Hash, TrendingUp } from 'lucide-react';
+import AdComponent from '../components/AdComponent.jsx';
 
 const ExplorePage = () => {
     const { user, isAuthenticated } = useAuth();
@@ -334,6 +335,10 @@ const ExplorePage = () => {
                         </div>
                     </div>
                 ))}
+
+                <div className="explore-ad-full shadow-sm card" style={{ padding: '0', gridColumn: '1 / -1', overflow: 'hidden' }}>
+                    <AdComponent page="explore" />
+                </div>
 
                 {/* Admin Link Separate */}
                 <div className="explore-section">

@@ -23,11 +23,13 @@ import {
 import { motion } from 'framer-motion';
 import PostCard from '../components/PostCard.jsx';
 import { PostSkeleton } from '../components/Skeleton.jsx';
+import AdComponent from '../components/AdComponent.jsx';
 import '../styles/ProfilePage.css';
 
 import { useParams } from 'react-router-dom';
 import { useProfile, useUpdateProfile, useFollow, useUnfollow } from '../hooks/useUser.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
+import { useUpload } from '../context/UploadContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { useGamification } from '../hooks/useGamification.js';
@@ -43,6 +45,7 @@ const ProfilePage = () => {
     const { mutate: follow, isPending: isFollowingAction } = useFollow();
     const { mutate: unfollow, isPending: isUnfollowingAction } = useUnfollow();
     const { uploadImage, isUploading: isUploadingMedia } = useMediaUpload();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { showToast } = useToast();
     const { data: gamificationData } = useGamification(targetUsername);
     const gamificationRes = gamificationData;
@@ -73,10 +76,20 @@ const ProfilePage = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        const uploadId = addUpload({
+            fileName: file.name,
+            fileSize: file.size,
+            type: 'image',
+        });
+
         try {
-            const url = await uploadImage(file);
+            const url = await uploadImage(file, (p, l) =>
+                updateUploadProgress(uploadId, p, l),
+            );
+            completeUpload(uploadId, { url });
             updateProfile({ avatar_url: url });
         } catch (err) {
+            failUpload(uploadId, err);
             showToast('Avatar upload failed. Please try again.', 'error');
         }
     };
@@ -463,6 +476,10 @@ const ProfilePage = () => {
                                 </div>
                             </>
                         )}
+                    </div>
+
+                    <div className="profile-ad-unit" style={{ marginTop: '1.5rem' }}>
+                        <AdComponent page="profile" />
                     </div>
                 </div>
 

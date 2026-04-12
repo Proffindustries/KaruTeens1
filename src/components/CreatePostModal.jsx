@@ -556,6 +556,17 @@ const CreatePostModal = React.memo(({ isOpen, onClose, groupId = null, pageId = 
                     </div>
 
                     <div className="modal-footer">
+                        {isPosting && (
+                            <div className="upload-progress-inline">
+                                <div className="progress-text">
+                                    <span>Uploading & Processing...</span>
+                                    <Loader2 size={16} className="spinner" />
+                                </div>
+                                <div className="progress-bar-container">
+                                    <div className="progress-bar-fill" />
+                                </div>
+                            </div>
+                        )}
                         {user?.is_verified && (
                             <button
                                 className="btn btn-primary btn-full"

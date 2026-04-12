@@ -19,6 +19,10 @@ pub struct MaterialFilter {
     pub category: Option<String>,
     pub course_code: Option<String>,
     pub search: Option<String>,
+    pub school: Option<String>,
+    pub programme: Option<String>,
+    pub year: Option<i32>,
+    pub material_type: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -27,6 +31,10 @@ pub struct MaterialResponse {
     pub title: String,
     pub course_code: String,
     pub category: String,
+    pub material_type: String,
+    pub school: String,
+    pub programme: String,
+    pub year: i32,
     pub price: f64,
     pub is_locked: bool,
     pub thumbnail_url: Option<String>,
@@ -45,10 +53,28 @@ pub async fn list_materials_handler(
     let mut query = doc! {};
     
     if let Some(cat) = params.category {
-        query.insert("category", cat);
+        if cat != "all" {
+            query.insert("category", cat);
+        }
     }
     if let Some(course) = params.course_code {
         query.insert("course_code", course);
+    }
+    if let Some(school) = params.school {
+        if school != "all" {
+            query.insert("school", school);
+        }
+    }
+    if let Some(prog) = params.programme {
+        if prog != "all" {
+            query.insert("programme", prog);
+        }
+    }
+    if let Some(year) = params.year {
+        query.insert("year", year);
+    }
+    if let Some(m_type) = params.material_type {
+        query.insert("material_type", m_type);
     }
     if let Some(search) = params.search {
         let escaped_search = regex::escape(&search);
@@ -74,6 +100,10 @@ pub async fn list_materials_handler(
                 title: m.title,
                 course_code: m.course_code,
                 category: m.category,
+                material_type: m.material_type,
+                school: m.school,
+                programme: m.programme,
+                year: m.year,
                 price: m.price as f64 / 100.0,
                 is_locked: m.is_locked && !has_purchased,
                 thumbnail_url: m.thumbnail_url,
@@ -109,6 +139,10 @@ pub async fn get_material_handler(
             "title": material.title,
             "course_code": material.course_code,
             "category": material.category,
+            "material_type": material.material_type,
+            "school": material.school,
+            "programme": material.programme,
+            "year": material.year,
             "price": material.price as f64 / 100.0,
             "is_locked": true,
             "thumbnail_url": material.thumbnail_url,
@@ -123,6 +157,10 @@ pub async fn get_material_handler(
         "title": material.title,
         "course_code": material.course_code,
         "category": material.category,
+        "material_type": material.material_type,
+        "school": material.school,
+        "programme": material.programme,
+        "year": material.year,
         "price": material.price as f64 / 100.0,
         "is_locked": false,
         "thumbnail_url": material.thumbnail_url,
@@ -137,6 +175,10 @@ pub struct CreateMaterialRequest {
     pub title: String,
     pub course_code: String,
     pub category: String,
+    pub material_type: String,
+    pub school: String,
+    pub programme: String,
+    pub year: i32,
     pub file_url: String,
     pub price: f64,
     pub is_locked: bool,
@@ -147,9 +189,6 @@ pub async fn create_material_handler(
     user: AuthUser,
     Json(payload): Json<CreateMaterialRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    // Only admin can upload materials for now? Or anyone but subject to moderation.
-    // The requirements say users can also upload but maybe they earn from it.
-    
     let collection = state.mongo.collection::<RevisionMaterial>("revision_materials");
     
     let new_material = RevisionMaterial {
@@ -157,6 +196,10 @@ pub async fn create_material_handler(
         title: payload.title,
         course_code: payload.course_code,
         category: payload.category,
+        material_type: payload.material_type,
+        school: payload.school,
+        programme: payload.programme,
+        year: payload.year,
         file_url: payload.file_url,
         thumbnail_url: None,
         price: (payload.price * 100.0) as i64,

@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Lock, Eye, Download, AlertOctagon, RefreshCw } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import AcademicFilters from '../components/AcademicFilters';
 import '../styles/RecallPage.css';
+
+const RECALL_CATEGORIES = ['Notes', 'Other Resources'];
 
 const RecallPage = () => {
     const [materials, setMaterials] = useState([]);
@@ -11,6 +14,14 @@ const RecallPage = () => {
     const [fullContent, setFullContent] = useState(null);
     const { showToast } = useToast();
 
+    const [filters, setFilters] = useState({
+        search: '',
+        school: 'all',
+        programme: 'all',
+        year: 'all',
+        category: 'all',
+    });
+
     useEffect(() => {
         fetchMaterials();
     }, [showToast]);
@@ -18,8 +29,16 @@ const RecallPage = () => {
     const fetchMaterials = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/revision-materials');
-            setMaterials(data);
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+            if (filters.school !== 'all') params.append('school', filters.school);
+            if (filters.programme !== 'all') params.append('programme', filters.programme);
+            if (filters.year !== 'all') params.append('year', filters.year);
+            if (filters.category !== 'all') params.append('category', filters.category);
+
+            const { data } = await api.get(`/revision-materials?${params.toString()}`);
+            const filteredData = data.filter(item => RECALL_CATEGORIES.includes(item.category) || (!item.category));
+            setMaterials(filteredData);
         } catch (error) {
             console.error('Failed to fetch revision materials:', error);
             showToast('Failed to load revision materials. Please try again later.', 'error');
@@ -61,9 +80,16 @@ const RecallPage = () => {
     return (
         <div className="container recall-page">
             <div className="recall-header">
-                <h1>Revision Materials</h1>
-                <p>Access past papers, CATs, and high-quality notes.</p>
+                <h1>Recall - Notes & Resources</h1>
+                <p>Access high-quality notes and other study resources.</p>
             </div>
+
+            <AcademicFilters
+                filters={filters}
+                setFilters={setFilters}
+                categories={RECALL_CATEGORIES}
+                onSearch={fetchMaterials}
+            />
 
             <div className="materials-grid">
                 {materials.map((item) => (

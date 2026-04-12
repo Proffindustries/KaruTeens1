@@ -146,7 +146,7 @@ const UploadProgress = React.memo(() => {
                                             <div
                                                 className="upload-progress-fill"
                                                 style={{
-                                                    width: `${(upload.uploadedBytes / upload.fileSize) * 100}%`,
+                                                    width: `${upload.progress || 0}%`,
                                                     backgroundColor: getStatusColor(upload.status),
                                                 }}
                                             />

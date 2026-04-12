@@ -61,6 +61,7 @@ import ReelManagementTab from './ReelManagementTab';
 import AdManagementTab from './AdManagementTab';
 import VideoManagementTab from './VideoManagementTab';
 import MediaManagementTab from './MediaManagementTab';
+import RevisionManagementTab from './RevisionManagementTab';
 import { useToast } from '../context/ToastContext';
 
 const AdminDashboard = () => {
@@ -97,13 +98,13 @@ const AdminDashboard = () => {
         { id: 'media', label: 'Media Management', icon: Image },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'reports', label: 'Reports', icon: FileSpreadsheet },
-        { id: 'moderation', label: 'Moderation', icon: Shield },
         { id: 'settings', label: 'Settings', icon: Settings },
         { id: 'logs', label: 'System Logs', icon: Activity },
         { id: 'activity', label: 'User Activity', icon: Activity },
         { id: 'security', label: 'Security', icon: ShieldCheck },
         { id: 'abuse', label: 'Abuse Detection', icon: AlertTriangle },
         { id: 'hashtags', label: 'Hashtag Virality', icon: Hash },
+        { id: 'revision', label: 'Revision Materials', icon: FileText },
     ];
 
     return (
@@ -474,6 +475,8 @@ const renderTabContent = (activeTab, setActiveTab) => {
             return <div className="tab-content">Abuse Detection Interface</div>;
         case 'hashtags':
             return <div className="tab-content">Hashtag Virality Interface</div>;
+        case 'revision':
+            return <RevisionManagementTab />;
         default:
             return <OverviewTab />;
     }

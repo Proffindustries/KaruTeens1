@@ -3,6 +3,7 @@ import { X, Image as ImageIcon, Video, Loader2, Send, Shield } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCreateStory } from '../hooks/useStories';
 import { useMediaUpload } from '../hooks/useMedia';
+import { useUpload } from '../context/UploadContext';
 import { useToast } from '../context/ToastContext';
 import '../styles/CreatePostModal.css'; // Reusing modal styles for consistency
 
@@ -16,6 +17,7 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
     const fileInputRef = useRef(null);
     const { mutate: createStory } = useCreateStory();
     const { uploadImage, uploadFile } = useMediaUpload();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { showToast } = useToast();
 
     const handleFileChange = (e) => {
@@ -37,11 +39,22 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
             let mediaUrl;
             const mediaType = selectedFile.type.startsWith('video/') ? 'video' : 'image';
 
+            const uploadId = addUpload({
+                fileName: selectedFile.name,
+                fileSize: selectedFile.size,
+                type: mediaType,
+            });
+
             if (mediaType === 'image') {
-                mediaUrl = await uploadImage(selectedFile);
+                mediaUrl = await uploadImage(selectedFile, (p, l) =>
+                    updateUploadProgress(uploadId, p, l),
+                );
             } else {
-                mediaUrl = await uploadFile(selectedFile);
+                mediaUrl = await uploadFile(selectedFile, (p, l) =>
+                    updateUploadProgress(uploadId, p, l),
+                );
             }
+            completeUpload(uploadId, { url: mediaUrl });
 
             createStory(
                 {
@@ -203,6 +216,17 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
                     </div>
 
                     <div className="modal-footer">
+                        {isUploading && (
+                            <div className="upload-progress-inline">
+                                <div className="progress-text">
+                                    <span>Uploading Story...</span>
+                                    <Loader2 size={16} className="spinner" />
+                                </div>
+                                <div className="progress-bar-container">
+                                    <div className="progress-bar-fill" />
+                                </div>
+                            </div>
+                        )}
                         <button
                             className="btn btn-primary btn-full flex items-center justify-center gap-2"
                             disabled={!selectedFile || isUploading}

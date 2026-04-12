@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { usePost } from '../hooks/useContent.js';
 import PostCard from '../components/PostCard.jsx';
+import AdComponent from '../components/AdComponent.jsx';
 import '../styles/PostDetailPage.css';
 
 const PostDetailPage = () => {
@@ -50,6 +51,9 @@ const PostDetailPage = () => {
 
             <div className="post-detail-content">
                 <PostCard post={post} />
+                <div className="post-detail-ad" style={{ margin: '2rem 0' }}>
+                    <AdComponent page="post-detail" />
+                </div>
             </div>
         </div>
     );

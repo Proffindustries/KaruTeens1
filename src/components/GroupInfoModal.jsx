@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import Avatar from './Avatar.jsx';
 import { useMediaUpload } from '../hooks/useMedia';
+import { useUpload } from '../context/UploadContext';
 import { useToast } from '../context/ToastContext';
 const GroupInfoModal = ({
     showGroupInfoModal,
@@ -26,6 +27,7 @@ const GroupInfoModal = ({
     const currentUser = JSON.parse(localStorage.getItem('user'));
     const isCurrentUserAdmin = selectedChat.admins?.includes(currentUser?.id);
     const { uploadImage } = useMediaUpload();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const fileInputRef = React.useRef(null);
     const [isUploading, setIsUploading] = React.useState(false);
     const { showToast } = useToast();
@@ -73,11 +75,19 @@ const GroupInfoModal = ({
                                         onChange={async (e) => {
                                             const file = e.target.files[0];
                                             if(!file) return;
-                                            setIsUploading(true);
+                                            const uploadId = addUpload({
+                                                fileName: file.name,
+                                                fileSize: file.size,
+                                                type: 'image',
+                                            });
                                             try {
-                                                const url = await uploadImage(file);
+                                                const url = await uploadImage(file, (p, l) =>
+                                                    updateUploadProgress(uploadId, p, l),
+                                                );
+                                                completeUpload(uploadId, { url });
                                                 setEditGroupAvatar(url);
                                             } catch (err) {
+                                                failUpload(uploadId, err);
                                                 showToast('Image upload failed', 'error');
                                             } finally {
                                                 setIsUploading(false);

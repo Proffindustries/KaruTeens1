@@ -20,7 +20,11 @@ pub struct RevisionMaterial {
     pub id: Option<ObjectId>,
     pub title: String,
     pub course_code: String,
-    pub category: String,
+    pub category: String, // CATs, Exams, Question Papers, Notes, Other
+    pub material_type: String, // "revision" or "recall"
+    pub school: String,
+    pub programme: String,
+    pub year: i32,
     pub file_url: String,
     pub thumbnail_url: Option<String>,
     pub price: i64, // In cents

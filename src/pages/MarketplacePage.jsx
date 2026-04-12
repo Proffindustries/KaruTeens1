@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import '../styles/MarketplacePage.css';
 import CreateItemModal from '../components/CreateItemModal.jsx';
+import AdComponent from '../components/AdComponent.jsx';
 import { useMarketplaceItems } from '../hooks/useMarketplace.js';
 import useDebounce from '../hooks/useDebounce';
 
@@ -66,66 +67,72 @@ const MarketplacePage = () => {
                 {isLoading ? (
                     <div className="loading-state">Loading items...</div>
                 ) : items?.length > 0 ? (
-                    items.map((item) => (
-                        <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            whileHover={{ y: -5 }}
-                            className="market-item-card"
-                        >
-                            <Link
-                                to={`/marketplace/item/${item.id}`}
-                                style={{ textDecoration: 'none', color: 'inherit' }}
+                    items.map((item, index) => (
+                        <React.Fragment key={item.id}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                whileHover={{ y: -5 }}
+                                className="market-item-card"
                             >
-                                <div className="item-image-container">
-                                    <img
-                                        src={
-                                            item.images?.[0] ||
-                                            'https://via.placeholder.com/300?text=No+Image'
-                                        }
-                                        alt={item.title}
-                                        className="item-image"
-                                        loading="lazy"
-                                    />
-                                    <div className="item-price">
-                                        {item.currency} {item.price}
+                                <Link
+                                    to={`/marketplace/item/${item.id}`}
+                                    style={{ textDecoration: 'none', color: 'inherit' }}
+                                >
+                                    <div className="item-image-container">
+                                        <img
+                                            src={
+                                                item.images?.[0] ||
+                                                'https://via.placeholder.com/300?text=No+Image'
+                                            }
+                                            alt={item.title}
+                                            className="item-image"
+                                            loading="lazy"
+                                        />
+                                        <div className="item-price">
+                                            {item.currency} {item.price}
+                                        </div>
+                                        <div className="item-condition-badge">{item.condition}</div>
                                     </div>
-                                    <div className="item-condition-badge">{item.condition}</div>
-                                </div>
-                                <div className="item-details">
-                                    <h3>{item.title}</h3>
-                                    <div className="item-meta">
-                                        <span
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '4px',
-                                            }}
+                                    <div className="item-details">
+                                        <h3>{item.title}</h3>
+                                        <div className="item-meta">
+                                            <span
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                }}
+                                            >
+                                                {item.seller_name}
+                                                {item.seller_is_verified && (
+                                                    <CheckCircle
+                                                        size={14}
+                                                        color="#2ed573"
+                                                        fill="#2ed573"
+                                                        title="Verified Seller"
+                                                    />
+                                                )}
+                                            </span>
+                                            <span>•</span>
+                                            <span>{item.category}</span>
+                                        </div>
+                                        <button
+                                            className="btn btn-outline btn-sm btn-full-width"
+                                            style={{ marginTop: '0.5rem' }}
                                         >
-                                            {item.seller_name}
-                                            {item.seller_is_verified && (
-                                                <CheckCircle
-                                                    size={14}
-                                                    color="#2ed573"
-                                                    fill="#2ed573"
-                                                    title="Verified Seller"
-                                                />
-                                            )}
-                                        </span>
-                                        <span>•</span>
-                                        <span>{item.category}</span>
+                                            View Details
+                                        </button>
                                     </div>
-                                    <button
-                                        className="btn btn-outline btn-sm btn-full-width"
-                                        style={{ marginTop: '0.5rem' }}
-                                    >
-                                        View Details
-                                    </button>
+                                </Link>
+                            </motion.div>
+                            {index > 0 && (index + 1) % 6 === 0 && (
+                                <div className="market-item-card ad-card-market" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <AdComponent page="marketplace" />
                                 </div>
-                            </Link>
-                        </motion.div>
+                            )}
+                        </React.Fragment>
                     ))
                 ) : (
                     <div className="empty-state">

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/CreateItemModal.css';
 import { useCreateItem } from '../hooks/useMarketplace.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
+import { useUpload } from '../context/UploadContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
 const CreateItemModal = React.memo(({ isOpen, onClose }) => {
@@ -22,6 +23,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
 
     const { mutate: createItem, isPending } = useCreateItem();
     const { uploadImage, isUploading } = useMediaUpload();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { showToast } = useToast();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -78,14 +80,29 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
 
         let mediaUrls = [];
         if (selectedFiles.length > 0) {
-            // Upload images one by one (or Promise.all if supported)
             try {
-                const uploadPromises = selectedFiles.map((file) => uploadImage(file));
+                const uploadPromises = selectedFiles.map(async (file) => {
+                    const uploadId = addUpload({
+                        fileName: file.name,
+                        fileSize: file.size,
+                        type: 'image',
+                    });
+                    try {
+                        const url = await uploadImage(file, (p, l) =>
+                            updateUploadProgress(uploadId, p, l),
+                        );
+                        completeUpload(uploadId, { url });
+                        return url;
+                    } catch (err) {
+                        failUpload(uploadId, err);
+                        throw err;
+                    }
+                });
                 mediaUrls = await Promise.all(uploadPromises);
             } catch (error) {
                 console.error('Upload failed', error);
                 showToast('Failed to upload images. Please try again.', 'error');
-                return; // Stop on error
+                return;
             }
         }
 
@@ -289,6 +306,18 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
                                     </div>
                                 )}
                             </div>
+
+                            {(isUploading || isPending) && (
+                                <div className="upload-progress-inline">
+                                    <div className="progress-text">
+                                        <span>{isUploading ? 'Uploading Images...' : 'Listing Item...'}</span>
+                                        <Loader2 size={16} className="spinner" />
+                                    </div>
+                                    <div className="progress-bar-container">
+                                        <div className="progress-bar-fill" />
+                                    </div>
+                                </div>
+                            )}
 
                             <button
                                 type="submit"

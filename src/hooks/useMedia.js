@@ -14,7 +14,7 @@ export const useMediaUpload = () => {
         try {
             // Compress the image before uploading
             const options = {
-                maxSizeMB: 1, // Compress to max 1MB
+                maxSizeMB: 0.7, // Compress to max 0.7MB for better speed
                 maxWidthOrHeight: 1920,
                 useWebWorker: true,
                 onProgress: (progress) => {

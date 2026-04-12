@@ -101,6 +101,10 @@ const FeedPage = () => {
                         </li>
                     </ul>
                 </div>
+
+                <div className="sidebar-ad-box" style={{ marginTop: '1.5rem' }}>
+                    <AdComponent page="feed" />
+                </div>
             </aside>
 
             {/* Main Feed Area */}
@@ -252,9 +256,9 @@ const FeedPage = () => {
                             {allPosts.map((post, index) => (
                                 <React.Fragment key={post.id}>
                                     <PostCard post={post} />
-                                    {index > 0 && (index + 1) % 10 === 0 && (
+                                    {index > 0 && (index + 1) % 5 === 0 && (
                                         <div className="feed-ad-wrapper">
-                                            <AdComponent />
+                                            <AdComponent page="feed" />
                                         </div>
                                     )}
                                 </React.Fragment>
@@ -278,7 +282,7 @@ const FeedPage = () => {
 
             {/* Right Sidebar */}
             <aside className="feed-sidebar right-sidebar">
-                <AdComponent />
+                <AdComponent page="feed" />
                 {/* User Info & Logout Card */}
                 {user && (
                     <div

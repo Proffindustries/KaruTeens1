@@ -3,13 +3,23 @@ import MainLayout from '../layouts/MainLayout';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { Book, FileText, Video, Link as LinkIcon, Loader } from 'lucide-react';
+import AcademicFilters from '../components/AcademicFilters';
 import '../styles/RevisionMaterialsPage.css';
+
+const REVISION_CATEGORIES = ['CAT', 'Exam', 'Past Paper'];
 
 const RevisionMaterialsPage = () => {
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all');
     const { showToast } = useToast();
+
+    const [filters, setFilters] = useState({
+        search: '',
+        school: 'all',
+        programme: 'all',
+        year: 'all',
+        category: 'all',
+    });
 
     useEffect(() => {
         fetchMaterials();
@@ -18,8 +28,16 @@ const RevisionMaterialsPage = () => {
     const fetchMaterials = async () => {
         try {
             setLoading(true);
-            const { data } = await api.get('/revision-materials');
-            setMaterials(data);
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+            if (filters.school !== 'all') params.append('school', filters.school);
+            if (filters.programme !== 'all') params.append('programme', filters.programme);
+            if (filters.year !== 'all') params.append('year', filters.year);
+            if (filters.category !== 'all') params.append('category', filters.category);
+
+            const { data } = await api.get(`/revision-materials?${params.toString()}`);
+            const filteredData = data.filter(item => REVISION_CATEGORIES.includes(item.category) || (!item.category));
+            setMaterials(filteredData);
         } catch (err) {
             console.log('Using local revision materials data');
             // Fallback mock data if API doesn't exist
@@ -70,11 +88,6 @@ const RevisionMaterialsPage = () => {
         }
     };
 
-    const filteredMaterials =
-        filter === 'all'
-            ? materials
-            : materials.filter((m) => m.subject === filter || m.type === filter);
-
     const getTypeIcon = (type) => {
         switch (type) {
             case 'document':
@@ -101,41 +114,33 @@ const RevisionMaterialsPage = () => {
         }
     };
 
-    const subjects = ['all', ...new Set(materials.map((m) => m.subject))];
-
     return (
         <div className="container revision-materials-page">
-                <div className="materials-header">
-                    <h1>Revision Materials</h1>
-                    <p className="text-muted">Access curated study resources and past papers.</p>
-                </div>
+            <div className="materials-header">
+                <h1>Revision Materials</h1>
+                <p className="text-muted">Access curated study resources and past papers.</p>
+            </div>
 
-                {/* Filter Bar */}
-                <div className="filter-bar">
-                    {subjects.map((subject) => (
-                        <button
-                            key={subject}
-                            onClick={() => setFilter(subject)}
-                            className={`filter-btn ${filter === subject ? 'active' : ''}`}
-                        >
-                            {subject === 'all' ? 'All Subjects' : subject}
-                        </button>
-                    ))}
-                </div>
+            <AcademicFilters
+                filters={filters}
+                setFilters={setFilters}
+                categories={REVISION_CATEGORIES}
+                onSearch={fetchMaterials}
+            />
 
-                {loading ? (
-                    <div className="loader-container">
-                        <Loader className="animate-spin" size={48} color="rgb(var(--primary))" />
-                    </div>
-                ) : filteredMaterials.length === 0 ? (
-                    <div className="empty-state card">
-                        <Book size={48} color="rgba(var(--primary), 0.3)" />
-                        <h3>No materials found</h3>
-                        <p>Try selecting a different filter or subject.</p>
-                    </div>
-                ) : (
-                    <div className="materials-grid">
-                        {filteredMaterials.map((material) => (
+            {loading ? (
+                <div className="loader-container">
+                    <Loader className="animate-spin" size={48} color="rgb(var(--primary))" />
+                </div>
+            ) : materials.length === 0 ? (
+                <div className="empty-state card">
+                    <Book size={48} color="rgba(var(--primary), 0.3)" />
+                    <h3>No materials found</h3>
+                    <p>Try refining your search or filter criteria.</p>
+                </div>
+            ) : (
+                <div className="materials-grid">
+                    {materials.map((material) => (
                             <div
                                 key={material.id}
                                 className="card material-card"

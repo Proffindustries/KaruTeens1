@@ -142,11 +142,11 @@ function App() {
                                 <Route path="admin" element={<AdminDashboard />} />
                             </Route>
 
-                            {/* Redirect alias routes so footer/nav links don't 404 */}
-                            <Route path="privacy" element={<Navigate to="/legal" replace />} />
-                            <Route path="terms" element={<Navigate to="/legal" replace />} />
-                            <Route path="cookies" element={<Navigate to="/legal" replace />} />
-                            <Route path="help" element={<Navigate to="/contact" replace />} />
+                            {/* Render directly to avoid SEO redirect flags */}
+                            <Route path="privacy" element={<LegalPage />} />
+                            <Route path="terms" element={<LegalPage />} />
+                            <Route path="cookies" element={<LegalPage />} />
+                            <Route path="help" element={<ContactPage />} />
                         </Route>
 
                         <Route

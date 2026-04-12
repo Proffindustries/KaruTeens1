@@ -3,6 +3,7 @@ import { X, Layout, ImageIcon, ChevronRight, Globe, Shield, Sparkles, Users } fr
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCreatePage } from '../hooks/usePages';
 import { useMediaUpload } from '../hooks/useMedia';
+import { useUpload } from '../context/UploadContext';
 import '../styles/CreatePageModal.css';
 
 const CATEGORIES = [
@@ -24,14 +25,24 @@ const CreatePageModal = ({ isOpen, onClose }) => {
     const coverRef = useRef();
     const { mutate: createPage, isPending } = useCreatePage();
     const { uploadImage, isUploading } = useMediaUpload();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
 
     const handleFileChange = async (e, field) => {
         const file = e.target.files[0];
         if (!file) return;
+        const uploadId = addUpload({
+            fileName: file.name,
+            fileSize: file.size,
+            type: 'image',
+        });
         try {
-            const url = await uploadImage(file);
+            const url = await uploadImage(file, (p, l) =>
+                updateUploadProgress(uploadId, p, l),
+            );
+            completeUpload(uploadId, { url });
             setFormData(prev => ({ ...prev, [field]: url }));
         } catch (err) {
+            failUpload(uploadId, err);
             console.error('Upload failed', err);
         }
     };

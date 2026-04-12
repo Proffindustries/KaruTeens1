@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, PlusCircle, Loader } from 'lucide-react';
+import AdComponent from './AdComponent.jsx';
 import '../styles/ListPage.css';
 
 const ListPage = React.memo(
@@ -71,7 +72,16 @@ const ListPage = React.memo(
                 ) : (
                     <div className="items-grid">
                         {data && data.length > 0
-                            ? data.map((item) => renderItem(item))
+                            ? data.map((item, index) => (
+                                <React.Fragment key={item.id || index}>
+                                    {renderItem(item)}
+                                    {index > 0 && (index + 1) % 6 === 0 && (
+                                        <div className="list-ad-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '150px' }}>
+                                            <AdComponent />
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            ))
                             : renderEmptyState}
                     </div>
                 )}
