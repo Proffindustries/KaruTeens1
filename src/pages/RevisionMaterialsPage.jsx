@@ -4,6 +4,7 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { Book, FileText, Video, Link as LinkIcon, Loader } from 'lucide-react';
 import AcademicFilters from '../components/AcademicFilters';
+import { MaterialSkeleton } from '../components/Skeleton';
 import '../styles/RevisionMaterialsPage.css';
 
 const REVISION_CATEGORIES = ['CAT', 'Exam', 'Past Paper'];
@@ -129,8 +130,8 @@ const RevisionMaterialsPage = () => {
             />
 
             {loading ? (
-                <div className="loader-container">
-                    <Loader className="animate-spin" size={48} color="rgb(var(--primary))" />
+                <div className="materials-grid">
+                    {[1, 2, 3, 4, 5, 6].map(i => <MaterialSkeleton key={i} />)}
                 </div>
             ) : materials.length === 0 ? (
                 <div className="empty-state card">

@@ -12,6 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar.jsx';
 import api from '../api/client';
+import { LeaderboardSkeleton } from '../components/Skeleton.jsx';
 import '../styles/LeaderboardsPage.css';
 
 const LeaderboardsPage = () => {
@@ -40,6 +41,9 @@ const LeaderboardsPage = () => {
     };
 
     const renderLeaderboard = () => {
+        if (isLoading) {
+            return [1, 2, 3, 4, 5].map(i => <LeaderboardSkeleton key={i} />);
+        }
         const data = leaderboards[activeTab];
         return (
             <div className="leaderboard-list">

@@ -11,6 +11,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
     const [duration, setDuration] = useState(0);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showCaptions, setShowCaptions] = useState(false);
+    const [aspectRatioClass, setAspectRatioClass] = useState('');
     const videoRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -57,6 +58,12 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
 
         const handleLoadedMetadata = () => {
             setDuration(video.duration);
+            // Detect orientation
+            if (video.videoHeight > video.videoWidth) {
+                setAspectRatioClass('portrait');
+            } else {
+                setAspectRatioClass('landscape');
+            }
         };
 
         const handleEnded = () => {
@@ -134,41 +141,44 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
     };
 
     return (
-        <div className="custom-video-player" ref={setRefs}>
-            {inView ? ( // Conditionally render video element when in view
+        <div className={`custom-video-player ${aspectRatioClass}`} ref={setRefs}>
+            {/* Blurred background backdrop for premium look (like FB/TikTok) */}
+            {poster && (
+                <div 
+                    className="video-blur-backdrop" 
+                    style={{ backgroundImage: `url(${poster})` }}
+                />
+            )}
+
+            {(!isPlaying || !inView) && poster && (
+                <div 
+                    className="video-poster-overlay" 
+                    style={{ backgroundImage: `url(${poster})` }}
+                    onClick={togglePlayPause}
+                />
+            )}
+
+            {inView && (
                 <video
                     ref={videoRef}
                     src={src}
-                    poster={poster} // Add poster attribute
-                    preload="metadata" // Load metadata but not full video until needed
+                    preload="metadata"
                     className="video-element"
                     onClick={togglePlayPause}
+                    playsInline
+                    muted={!isPlaying}
                 />
-            ) : (
-                // Placeholder when not in view, showing the poster image
-                <div
-                    className="video-placeholder"
-                    style={{ backgroundImage: `url(${poster})` }}
-                    onClick={togglePlayPause}
-                >
-                    <div className="play-overlay">
-                        <div className="play-button">
-                            <Play size={48} fill="white" />
-                        </div>
+            )}
+
+            {!isPlaying && (
+                <div className="play-overlay" onClick={togglePlayPause}>
+                    <div className="play-button">
+                        <Play size={44} fill="currentColor" />
                     </div>
                 </div>
             )}
 
-            {!isPlaying &&
-                (inView || !src) && ( // Show play overlay only if video is loaded or if it's just a placeholder with no src
-                    <div className="play-overlay" onClick={togglePlayPause}>
-                        <div className="play-button">
-                            <Play size={48} fill="white" />
-                        </div>
-                    </div>
-                )}
-
-            {inView && ( // Only show controls if video is loaded
+            {inView && isPlaying && ( // Only show controls if video is playing/interacted with
                 <div className="video-controls">
                     <div className="progress-bar" onClick={handleProgressClick}>
                         <div className="progress-filled" style={{ width: `${progress}%` }} />

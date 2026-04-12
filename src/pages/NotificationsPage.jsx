@@ -6,6 +6,7 @@ import {
     useDeleteNotification,
     useMarkAllRead,
 } from '../hooks/useNotifications.js';
+import { NotificationSkeleton } from '../components/Skeleton.jsx';
 import '../styles/NotificationsPage.css';
 
 const NotificationsPage = () => {
@@ -96,7 +97,10 @@ const NotificationsPage = () => {
     if (isLoading)
         return (
             <div className="container notifications-page">
-                <p>Loading notifications...</p>
+                <div className="page-header">
+                    <h1>Notifications</h1>
+                </div>
+                {[1, 2, 3, 4, 5].map(i => <NotificationSkeleton key={i} />)}
             </div>
         );
     if (error)

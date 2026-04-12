@@ -41,9 +41,6 @@ import MapPreview from './MapPreview.jsx';
 // Helper function for Cloudinary optimization
 const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800') => {
     // Regex to match common Cloudinary URLs, handling the version string correctly
-    // It captures:
-    // 1. Base URL up to 'upload/'
-    // 2. The rest of the URL (version and public_id)
     const cloudinaryRegex =
         /(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)?(.+)/;
     const match = url.match(cloudinaryRegex);
@@ -56,6 +53,31 @@ const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800')
         return `${baseUrl}${transformations}/${version}${publicId}`;
     }
     return url; // Return original URL if not a Cloudinary URL
+};
+
+const getVideoThumbnail = (url) => {
+    if (!url) return null;
+    
+    // Improved Cloudinary thumbnail generation
+    if (url.includes('cloudinary.com') && url.includes('/video/')) {
+        try {
+            // Find where 'upload' or 'authenticated' is
+            const typeMatch = url.match(/\/(upload|authenticated)\//);
+            if (!typeMatch) return null;
+            
+            const partToRepl = typeMatch[0];
+            // Replace the type and append transformations
+            // We use 'so_1' as it's more reliable than 'so_auto' for new uploads
+            let thumbUrl = url.replace(partToRepl, `${partToRepl}f_auto,q_auto,so_1,w_1080/`);
+            // Change extension to .jpg
+            thumbUrl = thumbUrl.replace(/\.[^/.]+$/, '.jpg');
+            return thumbUrl;
+        } catch (e) {
+            return null;
+        }
+    }
+    
+    return null;
 };
 
 const PostCard = React.memo(({ post }) => {
@@ -571,8 +593,11 @@ const PostCard = React.memo(({ post }) => {
                                         style={{ cursor: 'pointer', position: 'relative' }}
                                     >
                                         {isVideo ? (
-                                            <div style={{ position: 'relative' }}>
-                                                <CustomVideoPlayer src={url} />
+                                            <div className="video-wrapper">
+                                                <CustomVideoPlayer 
+                                                    src={url} 
+                                                    poster={getVideoThumbnail(url)} 
+                                                />
                                             </div>
                                         ) : isAudio ? (
                                             <CustomAudioPlayer

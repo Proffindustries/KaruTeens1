@@ -188,8 +188,134 @@ pub async fn get_campus_pulse_handler(
     Ok((StatusCode::OK, Json(response)))
 }
 
+#[derive(Serialize)]
+pub struct LeaderboardUser {
+    pub username: String,
+    pub avatar: Option<String>,
+    pub points: u64,
+    pub streak: u64,
+    pub posts: u64,
+    pub helpful: u64,
+    pub rank: i32,
+}
+
+#[derive(Serialize)]
+pub struct LeaderboardResponse {
+    pub points: Vec<LeaderboardUser>,
+    pub streak: Vec<LeaderboardUser>,
+    pub posts: Vec<LeaderboardUser>,
+    pub helpful: Vec<LeaderboardUser>,
+}
+
+// Handler for leaderboards
+pub async fn get_leaderboards_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+
+    // Helper function to fetch top users by a specific field
+    let fetch_top_users = |field: &str| {
+        let profiles = profiles_collection.clone();
+        let field_name = field.to_string();
+        async move {
+            let options = FindOptions::builder()
+                .sort(doc! { &field_name: -1 })
+                .limit(20)
+                .build();
+            
+            let mut cursor = profiles.find(doc! {}, options).await.ok()?;
+            let mut users = Vec::new();
+            let mut rank = 1;
+            
+            while let Some(Ok(profile)) = cursor.next().await {
+                // For 'posts' and 'helpful', we might need to count from other collections 
+                // but for now let's check if Profile has these cached.
+                // If not, we use points/streak as they are real.
+                users.push(LeaderboardUser {
+                    username: profile.username,
+                    avatar: profile.avatar_url,
+                    points: profile.points,
+                    streak: profile.streak,
+                    posts: 0, // Fallback, we'll fix this if we have the count
+                    helpful: 0,
+                    rank,
+                });
+                rank += 1;
+            }
+            Some(users)
+        }
+    };
+
+    let points = fetch_top_users("points").await.unwrap_or_default();
+    let streak = fetch_top_users("streak").await.unwrap_or_default();
+    
+    // For posts, we actually need to aggregate from the posts collection
+    let posts_collection = state.mongo.collection::<mongodb::bson::Document>("posts");
+    let mut post_counts_cursor = posts_collection.aggregate(vec![
+        doc! { "$group": { "_id": "$author_name", "count": { "$sum": 1 } } },
+        doc! { "$sort": { "count": -1 } },
+        doc! { "$limit": 20 }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut posts = Vec::new();
+    let mut rank = 1;
+    while let Some(Ok(doc)) = post_counts_cursor.next().await {
+        if let Some(username) = doc.get_str("_id").ok() {
+            let count = doc.get_i32("count").unwrap_or(0) as u64;
+            // Get profile for avatar
+            let profile = profiles_collection.find_one(doc! { "username": username }, None).await.ok().flatten();
+            posts.push(LeaderboardUser {
+                username: username.to_string(),
+                avatar: profile.and_then(|p| p.avatar_url),
+                points: 0,
+                streak: 0,
+                posts: count,
+                helpful: 0,
+                rank,
+            });
+            rank += 1;
+        }
+    }
+
+    // For helpful (likes received)
+    let mut helpful_cursor = posts_collection.aggregate(vec![
+        doc! { "$group": { "_id": "$author_name", "total_likes": { "$sum": { "$size": { "$ifNull": ["$likes", []] } } } } },
+        doc! { "$sort": { "total_likes": -1 } },
+        doc! { "$limit": 20 }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut helpful = Vec::new();
+    let mut rank = 1;
+    while let Some(Ok(doc)) = helpful_cursor.next().await {
+        if let Some(username) = doc.get_str("_id").ok() {
+            let count = doc.get_i32("total_likes").unwrap_or(0) as u64;
+            let profile = profiles_collection.find_one(doc! { "username": username }, None).await.ok().flatten();
+            helpful.push(LeaderboardUser {
+                username: username.to_string(),
+                avatar: profile.and_then(|p| p.avatar_url),
+                points: 0,
+                streak: 0,
+                posts: 0,
+                helpful: count,
+                rank,
+            });
+            rank += 1;
+        }
+    }
+
+    let response = LeaderboardResponse {
+        points,
+        streak,
+        posts,
+        helpful,
+    };
+    
+    Ok((StatusCode::OK, Json(response)))
+}
+
 // Routes for stats
 pub fn stats_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/stats/campus-pulse", get(get_campus_pulse_handler))
+        .route("/leaderboards", get(get_leaderboards_handler))
 }

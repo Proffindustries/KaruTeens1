@@ -232,9 +232,20 @@ pub async fn unblock_user_handler(
 
 pub async fn get_user_posts_handler(
     State(state): State<Arc<AppState>>,
-    Path(user_id): Path<String>,
+    Path(user_id_or_username): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    let user_oid = ObjectId::parse_str(&user_id).map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
+    let user_oid = match ObjectId::parse_str(&user_id_or_username) {
+        Ok(oid) => oid,
+        Err(_) => {
+            // If it's not a valid ObjectId, assume it's a username
+            let profiles_collection = state.mongo.collection::<Profile>("profiles");
+            let profile = profiles_collection
+                .find_one(doc! { "username": &user_id_or_username }, None)
+                .await?
+                .ok_or(AppError::NotFound("User not found".to_string()))?;
+            profile.user_id
+        }
+    };
     
     let posts_collection = state.mongo.collection::<Post>("posts");
     
@@ -276,9 +287,20 @@ pub async fn get_user_posts_handler(
 
 pub async fn get_user_comments_handler(
     State(state): State<Arc<AppState>>,
-    Path(user_id): Path<String>,
+    Path(user_id_or_username): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    let user_oid = ObjectId::parse_str(&user_id).map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
+    let user_oid = match ObjectId::parse_str(&user_id_or_username) {
+        Ok(oid) => oid,
+        Err(_) => {
+            // If it's not a valid ObjectId, assume it's a username
+            let profiles_collection = state.mongo.collection::<Profile>("profiles");
+            let profile = profiles_collection
+                .find_one(doc! { "username": &user_id_or_username }, None)
+                .await?
+                .ok_or(AppError::NotFound("User not found".to_string()))?;
+            profile.user_id
+        }
+    };
     
     let comments_collection = state.mongo.collection::<Comment>("comments");
     let posts_collection = state.mongo.collection::<Post>("posts");

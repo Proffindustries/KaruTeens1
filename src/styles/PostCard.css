@@ -280,8 +280,19 @@
     background: #000;
 }
 
-.video-container {
-    min-height: 300px;
+.video-container,
+.video-wrapper {
+    width: 100%;
+    min-height: 200px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.post-media-container.grid .video-wrapper {
+    height: 100%;
 }
 
 .media-overlay {

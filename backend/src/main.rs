@@ -152,6 +152,7 @@ async fn main() {
     let app = Router::new()
          .route("/", get(health_check))
          .route("/api/config", get(admin::get_public_settings_handler))
+         .route("/api/leaderboards", get(stats::get_leaderboards_handler))
          .route("/ws", get(ws_handler))
          .nest("/api/auth", auth_routes())
          .nest("/api/posts", content_routes())

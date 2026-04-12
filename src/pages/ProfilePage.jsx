@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PostCard from '../components/PostCard.jsx';
-import { PostSkeleton } from '../components/Skeleton.jsx';
+import { PostSkeleton, ProfileSkeleton } from '../components/Skeleton.jsx';
 import AdComponent from '../components/AdComponent.jsx';
 import '../styles/ProfilePage.css';
 
@@ -159,8 +159,8 @@ const ProfilePage = () => {
 
     if (isLoading)
         return (
-            <div className="container" style={{ padding: '2rem' }}>
-                Loading profile...
+            <div className="container">
+                <ProfileSkeleton />
             </div>
         );
     if (error)
