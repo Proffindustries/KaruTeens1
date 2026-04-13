@@ -6,16 +6,16 @@ import type { PostResponse, FeedResponse } from '../types';
 /**
  * Generic infinite query hook for paginated endpoints
  */
-export const useInfinitePosts = (
+export const useInfinitePosts = <T = any>(
     endpoint: string,
     queryKey: string[],
     paramsFactory: (pageParam: string | null) => Record<string, any>,
-    dataExtractor: (response: any) => any[] = (response) => response.posts || response.data || [],
+    dataExtractor: (response: any) => T[] = (response) => response.posts || response.data || [],
     options: any = {},
 ) => {
     return useInfiniteQuery({
         queryKey,
-        queryFn: async ({ pageParam = null }) => {
+        queryFn: async ({ pageParam }: { pageParam: string | null }) => {
             const { data } = await api.get(endpoint, {
                 params: {
                     ...paramsFactory(pageParam),
@@ -24,9 +24,9 @@ export const useInfinitePosts = (
             });
             return dataExtractor(data);
         },
-        getNextPageParam: (lastPage) => {
+        getNextPageParam: (lastPage: T[]) => {
             if (!lastPage || lastPage.length === 0) return undefined;
-            const lastItem = lastPage[lastPage.length - 1];
+            const lastItem = lastPage[lastPage.length - 1] as any;
             return lastItem?.id;
         },
         initialPageParam: null as string | null,
@@ -90,7 +90,7 @@ export const useInfiniteUserContent = (
 ) => {
     return useInfiniteQuery({
         queryKey: ['user-content', userId, contentType],
-        queryFn: async ({ pageParam = null }) => {
+        queryFn: async ({ pageParam }: { pageParam: string | null }) => {
             const { data } = await api.get(`/users/${userId}/${contentType}`, {
                 params: {
                     last_id: pageParam,
@@ -99,7 +99,7 @@ export const useInfiniteUserContent = (
             });
             return data[contentType] || data.data || [];
         },
-        getNextPageParam: (lastPage) => {
+        getNextPageParam: (lastPage: any[]) => {
             if (!lastPage || lastPage.length === 0) return undefined;
             const lastItem = lastPage[lastPage.length - 1];
             return lastItem?.id;
@@ -115,8 +115,9 @@ export const useInfiniteUserContent = (
  */
 export const useInfiniteChatMessages = (chatId: string) => {
     return useInfiniteQuery({
+        ...infiniteQueryConfig,
         queryKey: ['messages', chatId, 'infinite'],
-        queryFn: async ({ pageParam = null }) => {
+        queryFn: async ({ pageParam }: { pageParam: string | null }) => {
             const { data } = await api.get(`/messages/${chatId}/messages`, {
                 params: {
                     before: pageParam,
@@ -125,17 +126,16 @@ export const useInfiniteChatMessages = (chatId: string) => {
             });
             return data.messages || data;
         },
-        getNextPageParam: (lastPage) => {
+        getNextPageParam: (lastPage: any[]) => {
             if (!lastPage || lastPage.length === 0) return undefined;
             const lastMessage = lastPage[lastPage.length - 1];
             return lastMessage?.id;
         },
         initialPageParam: null as string | null,
         staleTime: STALE_TIMES.CHAT_MESSAGES,
-        ...infiniteQueryConfig,
     });
 };
-export const useInfinitePagePosts = (pageId) => {
+export const useInfinitePagePosts = (pageId: string) => {
     return useInfinitePosts(
         '/posts/feed',
         ['page-posts', pageId],
