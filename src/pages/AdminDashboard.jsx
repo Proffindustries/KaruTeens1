@@ -177,6 +177,7 @@ const AdminDashboard = () => {
 
 // Overview Tab Component
 const OverviewTab = ({ setActiveTab }) => {
+    const { showToast } = useToast();
     const [statsData, setStatsData] = useState({
         total_users: 0,
         active_users: 0,
