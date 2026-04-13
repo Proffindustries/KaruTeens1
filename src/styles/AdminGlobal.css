@@ -1,0 +1,118 @@
+/* Admin Global Theme Harmony */
+
+/* Harmonize Headers & Actions */
+.tab-header {
+    background: transparent !important;
+    padding: 1.5rem 0 !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--admin-border);
+    margin-bottom: 2rem;
+}
+
+.header-left h2 {
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    color: var(--admin-text-main) !important;
+}
+
+/* Harmonize Buttons */
+.btn-primary, .btn-secondary, .refresh-btn {
+    border-radius: 10px !important;
+    padding: 0.6rem 1.25rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.btn-primary, .refresh-btn {
+    background: var(--admin-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px var(--admin-primary-glow) !important;
+}
+
+.btn-primary:hover, .refresh-btn:hover {
+    transform: translateY(-2px);
+    background: var(--admin-primary-dark) !important;
+    box-shadow: 0 6px 16px var(--admin-primary-glow) !important;
+}
+
+/* Harmonize Filters */
+.filters-section {
+    background: var(--admin-card-bg) !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: var(--admin-radius) !important;
+    padding: 1.25rem !important;
+    box-shadow: var(--admin-shadow) !important;
+    margin-bottom: 2rem;
+}
+
+.search-box input {
+    background: var(--admin-bg) !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 12px !important;
+    padding-left: 2.75rem !important;
+    transition: all 0.2s !important;
+}
+
+.search-box input:focus {
+    border-color: var(--admin-primary) !important;
+    box-shadow: 0 0 0 3px var(--admin-primary-glow) !important;
+}
+
+/* Harmonize Tables */
+.users-table-container, .videos-table-container, .events-table-container, .ad-management-tab .items-table {
+    background: var(--admin-card-bg) !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: var(--admin-radius) !important;
+    box-shadow: var(--admin-shadow) !important;
+    overflow: hidden !important;
+}
+
+.admin-table th {
+    background: var(--admin-bg) !important;
+    color: var(--admin-text-muted) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    padding: 1.25rem 1.5rem !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+}
+
+.admin-table td {
+    padding: 1.25rem 1.5rem !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    color: var(--admin-text-main) !important;
+}
+
+.admin-table tr:hover {
+    background: var(--admin-primary-glow) !important;
+    transition: background 0.2s;
+}
+
+/* Status Badges */
+.status-badge, .role-badge, .tag-pill {
+    padding: 0.35rem 0.75rem !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.01em;
+}
+
+.status-badge.verified, .status-pill.green, .status-active {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #10b981 !important;
+}
+
+.status-badge.banned, .status-pill.red, .status-inactive {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+}
+
+.status-badge.premium, .status-pill.yellow {
+    background: rgba(245, 158, 11, 0.1) !important;
+    color: #f59e0b !important;
+}

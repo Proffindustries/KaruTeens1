@@ -37,6 +37,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import '../styles/AdminDashboard.css';
+import '../styles/AdminGlobal.css';
 import '../styles/UserManagementTab.css';
 import '../styles/ContentModerationTab.css';
 import '../styles/GroupManagementTab.css';
@@ -112,10 +113,12 @@ const AdminDashboard = () => {
             {/* Sidebar */}
             <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                 <div className="admin-brand">
-                    <Shield size={28} />
+                    <div className="logo-icon">
+                        <Shield size={24} color="white" />
+                    </div>
                     <div>
                         <h2>Karu Admin</h2>
-                        <span className="admin-role">
+                        <span className="admin-role-badge">
                             {user.role === 'superadmin' ? 'Super Admin' : 'Admin'}
                         </span>
                     </div>
@@ -153,18 +156,14 @@ const AdminDashboard = () => {
                             className="sidebar-toggle"
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                         >
-                            <Filter size={24} />
+                            <Activity size={20} />
                         </button>
-                        <h1>{tabs.find((t) => t.id === activeTab)?.label}</h1>
+                        <h1>Admin Dashboard</h1>
                     </div>
+
                     <div className="header-actions">
-                        <button className="action-btn">
-                            <RefreshCw size={20} />
-                            Refresh
-                        </button>
-                        <button className="action-btn">
-                            <Download size={20} />
-                            Export
+                        <button className="theme-toggle" onClick={() => document.documentElement.classList.toggle('dark')}>
+                            <Activity size={20} />
                         </button>
                     </div>
                 </header>
@@ -271,23 +270,19 @@ const OverviewTab = ({ setActiveTab }) => {
                 {stats.map((stat, index) => {
                     const Icon = stat.icon;
                     return (
-                        <div
-                            key={index}
-                            className="stat-card"
-                            style={{ borderLeft: `4px solid ${stat.color}` }}
-                        >
-                            <div
-                                className="stat-icon"
-                                style={{ background: `${stat.color}20`, color: stat.color }}
-                            >
-                                <Icon size={24} />
+                        <div key={index} className="stat-card">
+                            <div className="stat-header">
+                                <div className="stat-icon" style={{ background: `${stat.color}20`, color: stat.color }}>
+                                    <Icon size={24} />
+                                </div>
+                                <div className={`stat-trend ${stat.change.startsWith('+') ? 'trend-up' : 'trend-down'}`}>
+                                    <TrendingUp size={14} />
+                                    {stat.change}
+                                </div>
                             </div>
-                            <div className="stat-content">
+                            <div className="stat-info">
                                 <span className="stat-label">{stat.label}</span>
                                 <h3 className="stat-value">{stat.value}</h3>
-                                <span className="stat-change" style={{ color: stat.color }}>
-                                    <TrendingUp size={14} /> {stat.change}
-                                </span>
                             </div>
                         </div>
                     );
@@ -298,19 +293,19 @@ const OverviewTab = ({ setActiveTab }) => {
                 <h3>Quick Actions</h3>
                 <div className="action-grid">
                     <button className="action-card" onClick={() => setActiveTab('users')}>
-                        <Users size={24} />
+                        <div className="action-icon"><Users size={24} /></div>
                         <span>Manage Users</span>
                     </button>
                     <button className="action-card" onClick={() => setActiveTab('content')}>
-                        <FileText size={24} />
+                        <div className="action-icon"><FileText size={24} /></div>
                         <span>Moderate Content</span>
                     </button>
                     <button className="action-card" onClick={() => setActiveTab('analytics')}>
-                        <BarChart3 size={24} />
+                        <div className="action-icon"><BarChart3 size={24} /></div>
                         <span>View Analytics</span>
                     </button>
                     <button className="action-card" onClick={() => setActiveTab('settings')}>
-                        <Settings size={24} />
+                        <div className="action-icon"><Settings size={24} /></div>
                         <span>System Settings</span>
                     </button>
                 </div>
@@ -363,70 +358,62 @@ const SettingsTab = () => {
     if (loading) return <div className="loading">Loading settings...</div>;
 
     return (
-        <div className="settings-tab card" style={{ padding: '2rem' }}>
-            <h2>System Global Settings</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                Control global platform behavior.
-            </p>
+        <div className="settings-tab">
+            <div className="tab-header">
+                <h2>System Global Settings</h2>
+                <p>Control global platform behavior and monetization</p>
+            </div>
 
-            <div className="settings-group" style={{ maxWidth: '600px' }}>
-                <div
-                    className="setting-item"
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
+            <div className="content-card" style={{ padding: '2rem' }}>
+                <div className="settings-group" style={{ maxWidth: '600px' }}>
+                    <div className="setting-item" style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
                         alignItems: 'center',
                         padding: '1.5rem',
-                        background: 'rgba(var(--primary), 0.05)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid rgba(var(--primary), 0.1)',
-                    }}
-                >
-                    <div>
-                        <h4 style={{ margin: 0 }}>Enable Monetization (M-Pesa)</h4>
-                        <p
+                        background: 'var(--admin-bg)',
+                        borderRadius: '12px',
+                        border: '1px solid var(--admin-border)'
+                    }}>
+                        <div>
+                            <h4 style={{ margin: 0, color: 'var(--admin-text-main)' }}>Enable Monetization (M-Pesa)</h4>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
+                                When disabled, verification and other premium features will be free.
+                            </p>
+                        </div>
+                        <button
+                            className={`toggle-btn ${settings.is_payment_enabled ? 'active' : ''}`}
+                            onClick={togglePayment}
                             style={{
-                                margin: '4px 0 0',
-                                fontSize: '0.9rem',
-                                color: 'var(--text-muted)',
+                                width: '64px',
+                                height: '32px',
+                                borderRadius: '16px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                background: settings.is_payment_enabled ? 'var(--admin-primary)' : '#e2e8f0',
+                                boxShadow: settings.is_payment_enabled ? '0 4px 12px var(--admin-primary-glow)' : 'none'
                             }}
                         >
-                            When disabled, verification and other premium features will be free.
-                        </p>
-                    </div>
-                    <button
-                        className={`toggle-btn ${settings.is_payment_enabled ? 'active' : ''}`}
-                        onClick={togglePayment}
-                        style={{
-                            width: '60px',
-                            height: '30px',
-                            borderRadius: '15px',
-                            border: 'none',
-                            background: settings.is_payment_enabled
-                                ? 'var(--primary-color)'
-                                : '#ccc',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                        }}
-                    >
-                        <div
-                            style={{
+                            <div style={{
                                 width: '24px',
                                 height: '24px',
                                 background: 'white',
                                 borderRadius: '50%',
                                 position: 'absolute',
-                                top: '3px',
-                                left: settings.is_payment_enabled ? '33px' : '3px',
-                                transition: 'all 0.3s',
-                            }}
-                        ></div>
-                    </button>
+                                top: '4px',
+                                left: settings.is_payment_enabled ? '36px' : '4px',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     );
+
 };
 
 // Tab content switch
