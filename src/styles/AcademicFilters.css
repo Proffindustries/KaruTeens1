@@ -7,11 +7,43 @@
     border: 1px solid #edf2f7;
 }
 
+.filters-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--primary-color, #ff6b6b);
+}
+
+.filters-header span {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #1e293b;
+}
+
+.search-btn {
+    margin-top: 1.5rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem !important;
+    font-weight: 600;
+    border-radius: 0.75rem !important;
+}
+
 .filters-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.25rem;
     align-items: flex-end;
+}
+
+.full-width {
+    grid-column: 1 / -1;
 }
 
 .filter-group {

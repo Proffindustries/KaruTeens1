@@ -23,8 +23,11 @@ const RecallPage = () => {
     });
 
     useEffect(() => {
-        fetchMaterials();
-    }, [showToast]);
+        const timeoutId = setTimeout(() => {
+            fetchMaterials();
+        }, 500); // Debounce search
+        return () => clearTimeout(timeoutId);
+    }, [filters]);
 
     const fetchMaterials = async () => {
         setLoading(true);
