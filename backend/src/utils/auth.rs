@@ -1,14 +1,9 @@
 //! Authentication and authorization utilities
 
-use axum::{
-    http::StatusCode,
-    response::Json,
-};
 use mongodb::bson::oid::ObjectId;
-use serde_json::json;
 use std::sync::Arc;
-use crate::db::AppState;
-use crate::error::{AppError, AppResult};
+use crate::features::infrastructure::db::AppState;
+use crate::features::infrastructure::error::{AppError, AppResult};
 
 /// Check if user is a system administrator
 pub async fn check_admin(

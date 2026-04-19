@@ -2,18 +2,6 @@ import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout.jsx';
 import AuthLayout from './layouts/AuthLayout.jsx';
-import HomePage from './pages/HomePage.jsx';
-import FeedPage from './pages/FeedPage.jsx';
-import NotFoundPage from './pages/NotFoundPage.jsx';
-import AboutPage from './pages/AboutPage.jsx';
-import ContactPage from './pages/ContactPage.jsx';
-import LegalPage from './pages/LegalPage.jsx';
-import VerificationPage from './pages/VerificationPage.jsx';
-import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
-import GetAccountPage from './pages/GetAccountPage.jsx';
-import PostDetailPage from './pages/PostDetailPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
 import UploadProgress from './components/UploadProgress.jsx';
 import { WebsocketProvider } from './context/WebsocketContext.jsx';
 import { AblyProvider } from './context/AblyContext.jsx';
@@ -21,6 +9,18 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // Dynamically imported components for code splitting
+const HomePage = lazy(() => import('./pages/HomePage.jsx'));
+const FeedPage = lazy(() => import('./pages/FeedPage.jsx'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
+const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
+const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
+const LegalPage = lazy(() => import('./pages/LegalPage.jsx'));
+const VerificationPage = lazy(() => import('./pages/VerificationPage.jsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
+const GetAccountPage = lazy(() => import('./pages/GetAccountPage.jsx'));
+const PostDetailPage = lazy(() => import('./pages/PostDetailPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const ExplorePage = lazy(() => import('./pages/ExplorePage.jsx'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage.jsx'));
 const MarketplaceItemPage = lazy(() => import('./pages/MarketplaceItemPage.jsx'));
@@ -44,8 +44,6 @@ const PremiumPage = lazy(() => import('./pages/PremiumPage.jsx'));
 const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage.jsx'));
 const RevisionMaterialsPage = lazy(() => import('./pages/RevisionMaterialsPage.jsx'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
-
-// Previously missing pages — now connected
 const ActivityFeedPage = lazy(() => import('./pages/ActivityFeedPage.jsx'));
 const LiveStreamPage = lazy(() => import('./pages/LiveStreamPage.jsx'));
 const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage.jsx'));
@@ -62,103 +60,103 @@ function App() {
         <AblyProvider>
             <WebsocketProvider>
                 <ErrorBoundary>
-                <Suspense
-                    fallback={
-                        <div
-                            style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: '100vh',
-                                fontSize: '1.2rem',
-                            }}
-                        >
-                            Loading...
-                        </div>
-                    }
-                >
-                    <Routes>
-                        <Route element={<AuthLayout />}>
-                            <Route path="/login" element={<LoginPage />} />
-                            <Route path="/register" element={<RegisterPage />} />
-                            <Route path="/verification" element={<VerificationPage />} />
-                            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                            <Route path="/get-account" element={<GetAccountPage />} />
-                        </Route>
-
-                        <Route path="/" element={<MainLayout />}>
-                            <Route index element={<HomePage />} />
-                            <Route path="about" element={<AboutPage />} />
-                            <Route path="contact" element={<ContactPage />} />
-                            <Route path="legal" element={<LegalPage />} />
-                            <Route path="explore" element={<ExplorePage />} />
-
-                            <Route path="feed" element={<FeedPage />} />
-                            <Route path="post/:postId" element={<PostDetailPage />} />
-
-                            <Route element={<ProtectedRoute />}>
-                                <Route path="marketplace" element={<MarketplacePage />} />
-                                <Route
-                                    path="marketplace/item/:itemId"
-                                    element={<MarketplaceItemPage />}
-                                />
-                                <Route path="profile/:username?" element={<ProfilePage />} />
-                                <Route path="status" element={<StatusPage />} />
-                                <Route path="messages" element={<MessagesPage />} />
-                                <Route path="groups" element={<GroupsPage />} />
-                                <Route path="groups/:groupId" element={<GroupDetailPage />} />
-                                <Route path="events" element={<EventsPage />} />
-                                <Route path="events/:eventId" element={<EventDetailPage />} />
-                                <Route path="date" element={<HookupPage />} />
-                                <Route path="study-rooms" element={<StudyRoomsPage />} />
-                                <Route path="study-rooms/:roomId" element={<StudyRoomsPage />} />
-                                <Route path="study-playlists" element={<StudyPlaylistsPage />} />
-                                <Route path="recall" element={<RecallPage />} />
-                                <Route path="notifications" element={<NotificationsPage />} />
-                                <Route path="settings" element={<SettingsPage />} />
-                                <Route path="donate" element={<DonatePage />} />
-                                <Route path="premium" element={<PremiumPage />} />
-                                <Route path="search" element={<SearchResultsPage />} />
-                                <Route
-                                    path="revision-materials"
-                                    element={<RevisionMaterialsPage />}
-                                />
-                                <Route path="templates" element={<TemplatesPage />} />
-
-                                {/* Previously unrouted pages — now connected */}
-                                <Route path="activity" element={<ActivityFeedPage />} />
-                                <Route path="live" element={<LiveStreamPage />} />
-                                <Route path="leaderboards" element={<LeaderboardsPage />} />
-                                <Route path="timetable" element={<TimetablePage />} />
-                                <Route path="confessions" element={<ConfessionsPage />} />
-                                <Route path="reels" element={<ReelsPage />} />
-                                <Route path="onboarding" element={<OnboardingPage />} />
-                                <Route path="pages" element={<PagesPage />} />
-                                <Route path="p/:slug" element={<PageDetailPage />} />
+                    <Suspense
+                        fallback={
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100vh',
+                                    fontSize: '1.2rem',
+                                }}
+                            >
+                                Loading...
+                            </div>
+                        }
+                    >
+                        <Routes>
+                            <Route element={<AuthLayout />}>
+                                <Route path="/login" element={<LoginPage />} />
+                                <Route path="/register" element={<RegisterPage />} />
+                                <Route path="/verification" element={<VerificationPage />} />
+                                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                                <Route path="/get-account" element={<GetAccountPage />} />
                             </Route>
 
-                            <Route element={<ProtectedRoute />}>
-                                <Route path="ai-assistant" element={<AiPage />} />
-                                <Route path="admin" element={<AdminDashboard />} />
+                            <Route path="/" element={<MainLayout />}>
+                                <Route index element={<HomePage />} />
+                                <Route path="about" element={<AboutPage />} />
+                                <Route path="contact" element={<ContactPage />} />
+                                <Route path="legal" element={<LegalPage />} />
+                                <Route path="explore" element={<ExplorePage />} />
+
+                                <Route path="feed" element={<FeedPage />} />
+                                <Route path="post/:postId" element={<PostDetailPage />} />
+
+                                <Route element={<ProtectedRoute />}>
+                                    <Route path="marketplace" element={<MarketplacePage />} />
+                                    <Route
+                                        path="marketplace/item/:itemId"
+                                        element={<MarketplaceItemPage />}
+                                    />
+                                    <Route path="profile/:username?" element={<ProfilePage />} />
+                                    <Route path="status" element={<StatusPage />} />
+                                    <Route path="messages" element={<MessagesPage />} />
+                                    <Route path="groups" element={<GroupsPage />} />
+                                    <Route path="groups/:groupId" element={<GroupDetailPage />} />
+                                    <Route path="events" element={<EventsPage />} />
+                                    <Route path="events/:eventId" element={<EventDetailPage />} />
+                                    <Route path="date" element={<HookupPage />} />
+                                    <Route path="study-rooms" element={<StudyRoomsPage />} />
+                                    <Route path="study-rooms/:roomId" element={<StudyRoomsPage />} />
+                                    <Route path="study-playlists" element={<StudyPlaylistsPage />} />
+                                    <Route path="recall" element={<RecallPage />} />
+                                    <Route path="notifications" element={<NotificationsPage />} />
+                                    <Route path="settings" element={<SettingsPage />} />
+                                    <Route path="donate" element={<DonatePage />} />
+                                    <Route path="premium" element={<PremiumPage />} />
+                                    <Route path="search" element={<SearchResultsPage />} />
+                                    <Route
+                                        path="revision-materials"
+                                        element={<RevisionMaterialsPage />}
+                                    />
+                                    <Route path="templates" element={<TemplatesPage />} />
+
+                                    {/* Previously unrouted pages — now connected */}
+                                    <Route path="activity" element={<ActivityFeedPage />} />
+                                    <Route path="live" element={<LiveStreamPage />} />
+                                    <Route path="leaderboards" element={<LeaderboardsPage />} />
+                                    <Route path="timetable" element={<TimetablePage />} />
+                                    <Route path="confessions" element={<ConfessionsPage />} />
+                                    <Route path="reels" element={<ReelsPage />} />
+                                    <Route path="onboarding" element={<OnboardingPage />} />
+                                    <Route path="pages" element={<PagesPage />} />
+                                    <Route path="p/:slug" element={<PageDetailPage />} />
+                                </Route>
+
+                                <Route element={<ProtectedRoute />}>
+                                    <Route path="ai-assistant" element={<AiPage />} />
+                                    <Route path="admin" element={<AdminDashboard />} />
+                                </Route>
+
+                                {/* Render directly to avoid SEO redirect flags */}
+                                <Route path="privacy" element={<LegalPage />} />
+                                <Route path="terms" element={<LegalPage />} />
+                                <Route path="cookies" element={<LegalPage />} />
+                                <Route path="help" element={<ContactPage />} />
                             </Route>
 
-                            {/* Render directly to avoid SEO redirect flags */}
-                            <Route path="privacy" element={<LegalPage />} />
-                            <Route path="terms" element={<LegalPage />} />
-                            <Route path="cookies" element={<LegalPage />} />
-                            <Route path="help" element={<ContactPage />} />
-                        </Route>
-
-                        <Route
-                            path="*"
-                            element={
-                                <MainLayout>
-                                    <NotFoundPage />
-                                </MainLayout>
-                            }
-                        />
-                    </Routes>
-                </Suspense>
+                            <Route
+                                path="*"
+                                element={
+                                    <MainLayout>
+                                        <NotFoundPage />
+                                    </MainLayout>
+                                }
+                            />
+                        </Routes>
+                    </Suspense>
                 </ErrorBoundary>
                 <UploadProgress />
             </WebsocketProvider>

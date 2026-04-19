@@ -1,6 +1,27 @@
 import axios from 'axios';
 import { handleApiError, parseApiError } from '../utils/errorHandling.js';
 
+// Recursively flattens MongoDB $oid objects into strings
+function flattenOid(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    
+    if (obj.$oid && typeof obj.$oid === 'string') {
+        return obj.$oid;
+    }
+    
+    if (Array.isArray(obj)) {
+        return obj.map(flattenOid);
+    }
+    
+    const flattened = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            flattened[key] = flattenOid(obj[key]);
+        }
+    }
+    return flattened;
+}
+
 let baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000/api';
 if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 if (!baseUrl.endsWith('/api')) baseUrl += '/api';
@@ -38,9 +59,14 @@ api.interceptors.request.use(
     },
 );
 
-// Response interceptor with enhanced error handling
+// Response interceptor with enhanced error handling and BSON flattening
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        if (response.data) {
+            response.data = flattenOid(response.data);
+        }
+        return response;
+    },
     (error) => {
         const appError = parseApiError(error);
         

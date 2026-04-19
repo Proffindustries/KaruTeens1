@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import Logo from '../components/Logo';
 import '../styles/Auth.css';
+
+const LoadingFallback = () => (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '20vh' }}>
+        <span style={{ color: '#687b8f' }}>Loading...</span>
+    </div>
+);
 
 const AuthLayout = ({ title, subtitle, children }) => {
     const content = children || <Outlet />;
@@ -23,7 +29,11 @@ const AuthLayout = ({ title, subtitle, children }) => {
                     {title && <h2 className="auth-title">{title}</h2>}
                     {subtitle && <p className="auth-subtitle">{subtitle}</p>}
                 </div>
-                <div className="auth-body">{content}</div>
+                <div className="auth-body">
+                    <Suspense fallback={<LoadingFallback />}>
+                        {content}
+                    </Suspense>
+                </div>
             </div>
         </div>
     );

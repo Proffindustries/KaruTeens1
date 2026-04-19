@@ -93,3 +93,29 @@ pub struct RoomFile {
     pub file_type: String,
     pub timestamp: bson::DateTime,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PhysicalRoom {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub name: String,
+    pub building: String,
+    pub floor: String,
+    pub capacity: i32,
+    pub amenities: Vec<String>, // e.g., "Whiteboard", "Projector", "AC"
+    pub is_available: bool,
+    pub created_at: bson::DateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RoomBooking {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub room_id: ObjectId,
+    pub user_id: ObjectId,
+    pub start_time: bson::DateTime,
+    pub end_time: bson::DateTime,
+    pub purpose: Option<String>,
+    pub status: String, // pending, confirmed, cancelled, completed
+    pub created_at: bson::DateTime,
+}

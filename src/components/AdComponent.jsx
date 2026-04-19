@@ -11,6 +11,18 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
     const isPremium = user?.is_premium || false;
     const [localAd, setLocalAd] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [hasTrackedImpression, setHasTrackedImpression] = useState(false);
+
+    const trackAdEvent = async (creativeId, eventType) => {
+        try {
+            await api.post('/ads/tracker', {
+                creative_id: creativeId,
+                event_type: eventType
+            });
+        } catch (err) {
+            console.error(`Failed to track ${eventType} for creative ${creativeId}:`, err);
+        }
+    };
 
     useEffect(() => {
         // Fetch local ads from backend - Future endpoint based on ad system
@@ -34,6 +46,13 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
 
         fetchLocalAds();
     }, [page]);
+
+    useEffect(() => {
+        if (localAd && !hasTrackedImpression) {
+            trackAdEvent(localAd.id, 'impression');
+            setHasTrackedImpression(true);
+        }
+    }, [localAd, hasTrackedImpression]);
 
     useEffect(() => {
         // Load Adsterra script only for non-premium
@@ -93,7 +112,13 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                     background: 'rgba(var(--surface), 0.5)',
                     textAlign: 'left'
                 }}>
-                    <a href={localAd.final_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <a 
+                        href={localAd.final_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                        onClick={() => trackAdEvent(localAd.id, 'click')}
+                    >
                         {localAd.creative_type === 'image' && (
                             <img 
                                 src={localAd.assets?.[0]?.asset_url} 
@@ -131,8 +156,8 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                                 FUTURE: Insert AdSense code here 
                                 <ins className="adsbygoogle"
                                      style={{display:'block'}}
-                                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                                     data-ad-slot="XXXXXXXXXX"
+                                     data-ad-client={import.meta.env.VITE_ADSENSE_CLIENT_ID || "ca-pub-placeholder"}
+                                     data-ad-slot={import.meta.env.VITE_ADSENSE_SLOT_ID || "placeholder"}
                                      data-ad-format="auto"
                                      data-full-width-responsive="true"></ins>
                             */}

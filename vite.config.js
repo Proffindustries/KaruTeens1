@@ -141,7 +141,6 @@ export default defineConfig(({ mode }) => ({
                 target: process.env.VITE_API_URL || 'http://localhost:3000',
                 changeOrigin: true,
                 secure: false,
-                rewrite: (path) => path.replace(/^\/api/, ''),
             },
             '/ws': {
                 target: process.env.VITE_WS_URL || 'ws://localhost:3000',
