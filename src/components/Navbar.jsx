@@ -114,6 +114,7 @@ const Navbar = React.memo(() => {
                         className="theme-toggle btn btn-outline btn-sm"
                         style={{ border: 'none', padding: '0.5rem' }}
                         title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                     >
                         {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                     </button>
@@ -146,7 +147,12 @@ const Navbar = React.memo(() => {
                 </div>
 
                 {/* Mobile Toggle */}
-                <button className="mobile-toggle" onClick={toggleMenu}>
+                <button 
+                    className="mobile-toggle" 
+                    onClick={toggleMenu}
+                    aria-label={isOpen ? "Close Menu" : "Open Menu"}
+                    aria-expanded={isOpen}
+                >
                     {isOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
             </div>

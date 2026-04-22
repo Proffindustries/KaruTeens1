@@ -114,6 +114,41 @@
     }
 }
 
+.values-section, .guidelines-section {
+    margin-top: 4rem;
+    text-align: left;
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.value-item strong {
+    display: block;
+    font-size: 1.1rem;
+    color: rgb(var(--primary));
+    margin-bottom: 0.5rem;
+}
+
+.value-item p {
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+}
+
+.guidelines-section ul {
+    margin-top: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.guidelines-section li {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+    color: rgb(var(--text-muted));
+}
+
 /* Contact Page */
 .contact-page {
     padding: 3rem 1rem;

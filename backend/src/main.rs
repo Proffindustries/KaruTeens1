@@ -54,6 +54,7 @@ async fn main() {
         mongo: mongo_db, 
         redis: redis_client.clone(),
         cache: CacheService::new(redis_client),
+        redis_url: std::env::var("REDIS_URL").expect("REDIS_URL must be set"),
         jwt_secret,
         ws_connections: Arc::new(dashmap::DashMap::new()),
         mpesa_token: Arc::new(dashmap::DashMap::new()),

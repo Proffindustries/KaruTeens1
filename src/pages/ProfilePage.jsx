@@ -110,6 +110,8 @@ const ProfilePage = () => {
         age: '',
         gender: '',
         is_locked: false,
+        skills: '',
+        interests: '',
         social_links: {
             instagram: '',
             tiktok: '',
@@ -131,6 +133,8 @@ const ProfilePage = () => {
             age: profile?.age?.toString() || '',
             gender: profile?.gender || '',
             is_locked: profile?.is_locked || false,
+            skills: profile?.skills?.join(', ') || '',
+            interests: profile?.interests?.join(', ') || '',
             social_links: {
                 instagram: profile?.social_links?.instagram || '',
                 tiktok: profile?.social_links?.tiktok || '',
@@ -150,6 +154,8 @@ const ProfilePage = () => {
                 ...editForm,
                 year_of_study: editForm.year_of_study ? parseInt(editForm.year_of_study) : null,
                 age: editForm.age ? parseInt(editForm.age) : null,
+                skills: editForm.skills ? editForm.skills.split(',').map(s => s.trim()) : [],
+                interests: editForm.interests ? editForm.interests.split(',').map(i => i.trim()) : [],
             },
             {
                 onSuccess: () => setIsEditing(false),
@@ -427,6 +433,25 @@ const ProfilePage = () => {
                                         <strong>School:</strong> {user.school}
                                     </li>
                                 </ul>
+
+                                {profile.skills?.length > 0 && (
+                                    <div className="profile-tags-section">
+                                        <h4>Skills</h4>
+                                        <div className="tags-flex">
+                                            {profile.skills.map((s, i) => <span key={i} className="skill-tag">{s}</span>)}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {profile.interests?.length > 0 && (
+                                    <div className="profile-tags-section">
+                                        <h4>Interests</h4>
+                                        <div className="tags-flex">
+                                            {profile.interests.map((s, i) => <span key={i} className="interest-tag">{s}</span>)}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="social-links-profile">
                                     {user.socials.instagram && (
                                         <a
@@ -735,6 +760,30 @@ const ProfilePage = () => {
                                     value={editForm.quote}
                                     onChange={(e) =>
                                         setEditForm({ ...editForm, quote: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Skills (comma separated)</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="Coding, Design, Public Speaking..."
+                                    value={editForm.skills}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, skills: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Interests (comma separated)</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="Reading, Photography, Travel..."
+                                    value={editForm.interests}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, interests: e.target.value })
                                     }
                                 />
                             </div>

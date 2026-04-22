@@ -14,6 +14,7 @@ pub struct AppState {
     pub mongo: Database,
     pub redis: ConnectionManager,
     pub cache: CacheService,
+    pub redis_url: String,
     pub jwt_secret: String,
     pub ws_connections: Arc<DashMap<ObjectId, Vec<mpsc::UnboundedSender<Message>>>>,
     pub mpesa_token: Arc<DashMap<String, (String, i64)>>,

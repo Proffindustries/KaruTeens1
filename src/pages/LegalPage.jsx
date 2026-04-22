@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import '../styles/LegalPage.css';
 
+import SEO from '../components/SEO';
+
 const LegalPage = () => {
     const [activeTab, setActiveTab] = useState('terms');
 
     return (
         <div className="container legal-page">
-                <div className="legal-tabs">
+            <SEO 
+                title={activeTab === 'terms' ? 'Terms of Service' : 'Privacy Policy'} 
+                description="Read our Terms of Service and Privacy Policy. We value student privacy and follow AdSense program policies."
+            />
+            <div className="legal-tabs">
                     <button
                         className={`legal-tab ${activeTab === 'terms' ? 'active' : ''}`}
                         onClick={() => setActiveTab('terms')}

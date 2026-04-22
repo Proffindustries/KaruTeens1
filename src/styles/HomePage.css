@@ -505,3 +505,39 @@
     color: white;
     border-color: rgb(var(--primary));
 }
+
+/* FAQ Section */
+.faq-section {
+    padding: 6rem 0;
+    background: #f8f9fa;
+}
+
+.faq-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.faq-item {
+    padding: 2rem;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.faq-item h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: rgb(var(--primary));
+}
+
+.faq-item p {
+    color: rgb(var(--text-muted));
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .faq-grid {
+        grid-template-columns: 1fr;
+    }
+}

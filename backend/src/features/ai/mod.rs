@@ -10,6 +10,7 @@ use serde_json::json;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
 use crate::features::auth::auth_service::AuthUser;
+use mongodb::bson::{doc, oid::ObjectId};
 
 #[derive(Deserialize)]
 pub struct ChatRequest {
@@ -239,9 +240,81 @@ pub async fn chat_handler(
     Err((StatusCode::BAD_GATEWAY, Json(json!({"error": format!("AI Failed after multiple attempts. Last error: {}", last_error)}))))
 }
 
+#[derive(Deserialize)]
+pub struct StudyHelpRequest {
+    pub material_id: String,
+    pub question: String,
+    pub history: Vec<ChatMessage>,
+}
+
+pub async fn study_help_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<StudyHelpRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let api_key = std::env::var("OPENROUTER_API_KEY").map_err(|_| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "AI API Key not configured"})))
+    })?;
+
+    let mid = ObjectId::parse_str(&payload.material_id)
+        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid material ID"}))))?;
+
+    let materials = state.mongo.collection::<crate::models::RevisionMaterial>("revision_materials");
+    let material = materials.find_one(doc! { "_id": mid }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Material not found"}))))?;
+
+    let system_prompt = format!(
+        "You are Venice, a highly advanced AI Academic Intelligence. Your current goal is to help a student with a specific revision material.\n\n\
+        MATERIAL CONTEXT:\n\
+        Title: {}\n\
+        Course Code: {}\n\
+        Category: {}\n\
+        Type: {}\n\n\
+        Your directive is to provide direct, accurate, and comprehensive answers. Use LaTeX for all mathematical expressions ( \\[ ... \\] for blocks, \\( ... \\) for inline). \
+        Prioritize raw information and objective truth. If the student asks about the content of this material, use the context provided to give the best possible academic guidance.",
+        material.title, material.course_code, material.category, material.material_type
+    );
+
+    let mut messages = vec![json!({ "role": "system", "content": system_prompt })];
+    for msg in &payload.history {
+        messages.push(json!({ "role": msg.role, "content": msg.content }));
+    }
+    messages.push(json!({ "role": "user", "content": payload.question }));
+
+    // Use a high-quality free model by default
+    let model = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free";
+
+    match state.http_client.post("https://openrouter.ai/api/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("HTTP-Referer", "https://karuteens.com")
+        .header("X-Title", "Karu Teens AI Revision Buddy")
+        .json(&json!({ "model": model, "messages": messages }))
+        .send()
+        .await 
+    {
+        Ok(res) => {
+            let status = res.status();
+            if status.is_success() {
+                if let Ok(completion) = res.json::<serde_json::Value>().await {
+                    if let Some(ai_message) = completion["choices"][0]["message"]["content"].as_str() {
+                        return Ok(Json(json!({ "reply": ai_message, "model_used": model })));
+                    }
+                }
+                Err((StatusCode::BAD_GATEWAY, Json(json!({"error": "Failed to parse AI response"}))))
+            } else {
+                let err_text = res.text().await.unwrap_or_default();
+                Err((StatusCode::BAD_GATEWAY, Json(json!({"error": format!("AI model error: {}", err_text)}))))
+            }
+        },
+        Err(e) => Err((StatusCode::BAD_GATEWAY, Json(json!({"error": e.to_string()}))))
+    }
+}
+
 pub fn ai_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/chat", post(chat_handler))
+        .route("/study-help", post(study_help_handler))
         .route("/models", get(list_models_handler))
         .route("/models/ping", post(trigger_ping_handler))
 }

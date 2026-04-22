@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Book, Users, Shield, ArrowRight, Instagram, Twitter, Mail } from 'lucide-react';
 import '../styles/HomePage.css';
 import { useAuth } from '../hooks/useAuth';
+import SEO from '../components/SEO';
 
 const HomePage = () => {
     const { isAuthenticated } = useAuth();
@@ -19,6 +20,11 @@ const HomePage = () => {
 
     return (
         <div className="homepage">
+            <SEO 
+                title="Home" 
+                description="KaruTeens is the number one campus social hub for university students. Join study groups, access revision materials, and connect with peers safely."
+                keywords="university social network, campus life, student resources, Karatina University, Kenya students"
+            />
             {/* Hero Section */}
             <section className="hero-section">
                 <div className="container hero-content">
@@ -131,6 +137,34 @@ const HomePage = () => {
                 </div>
             </section>
 
+            {/* FAQ Section */}
+            <section className="faq-section">
+                <div className="container">
+                    <div className="section-header">
+                        <h2>Frequently Asked Questions</h2>
+                        <p>Got questions? We've got answers to help you get started.</p>
+                    </div>
+                    <div className="faq-grid">
+                        <div className="faq-item card">
+                            <h3>Is KaruTeens free to use?</h3>
+                            <p>Yes! KaruTeens is free for all university students. We offer premium features for advanced study tools, but the core community features will always be free.</p>
+                        </div>
+                        <div className="faq-item card">
+                            <h3>How do I verify my account?</h3>
+                            <p>Once you register with your student email, you'll receive a verification link. Verified students get a badge and access to official school groups.</p>
+                        </div>
+                        <div className="faq-item card">
+                            <h3>Is my data safe?</h3>
+                            <p>Absolutely. We use industry-standard encryption and never sell your personal data. Our platform is built with student privacy as a top priority.</p>
+                        </div>
+                        <div className="faq-item card">
+                            <h3>Can I sell items on the marketplace?</h3>
+                            <p>Yes! Any verified student can list items or services on the marketplace. It's a great way to handle campus side-hustles securely.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* CTA Section */}
             <section className="cta-section">
                 <div className="container">
@@ -154,6 +188,7 @@ const HomePage = () => {
                 <div className="container footer-content">
                     <div className="footer-links">
                         <Link to="/about">About Us</Link>
+                        <Link to="/blog">Campus Hub</Link>
                         <Link to="/contact">Contact</Link>
                         <Link to="/legal">Privacy & Terms</Link>
                         <Link to="/help">Help Center</Link>

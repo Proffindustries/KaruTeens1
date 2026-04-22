@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Share2, Shield, Heart, Tag } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Share2, Shield, Heart, Tag, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import '../styles/MarketplacePage.css';
-import { useMarketplaceItem, useMarkSold } from '../hooks/useMarketplace.js';
+import { useMarketplaceItem, useMarkSold, useBoostItem } from '../hooks/useMarketplace.js';
 import Avatar from '../components/Avatar.jsx';
 
 const MarketplaceItemPage = () => {
@@ -13,6 +13,7 @@ const MarketplaceItemPage = () => {
 
     const { data: item, isLoading, error } = useMarketplaceItem(itemId);
     const { mutate: markSold, isPending: isMarkingSold } = useMarkSold();
+    const { mutate: boostItem, isPending: isBoosting } = useBoostItem();
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     if (isLoading) return <div className="container item-detail-page">Loading item details...</div>;
@@ -22,7 +23,8 @@ const MarketplaceItemPage = () => {
         );
     if (!item) return <div className="container item-detail-page">Item not found</div>;
 
-    const isOwner = currentUser.username === item.seller_name; // Rough check, better with IDs if available in local storage
+    const isOwner = currentUser.username === item.seller_name;
+    const isBoosted = item.boosted_until && new Date(item.boosted_until) > new Date();
 
     const handleContactSeller = () => {
         // Navigate to messages with seller context
@@ -33,6 +35,12 @@ const MarketplaceItemPage = () => {
     const handleMarkSold = () => {
         if (window.confirm('Mark this item as sold?')) {
             markSold(item.id);
+        }
+    };
+
+    const handleBoostItem = () => {
+        if (window.confirm('Boost this item for 24 hours? This will move it to the top of the feed.')) {
+            boostItem(item.id);
         }
     };
 
@@ -75,6 +83,7 @@ const MarketplaceItemPage = () => {
                             border: '1px solid #dfe6e9',
                             aspectRatio: '4/3',
                             backgroundColor: '#f5f6fa',
+                            position: 'relative'
                         }}
                     >
                         {item.images && item.images.length > 0 ? (
@@ -94,6 +103,11 @@ const MarketplaceItemPage = () => {
                                 }}
                             >
                                 <Tag size={64} />
+                            </div>
+                        )}
+                        {isBoosted && (
+                            <div className="boosted-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                                <Zap size={12} fill="currentColor" /> FEATURED
                             </div>
                         )}
                     </div>
@@ -223,19 +237,38 @@ const MarketplaceItemPage = () => {
 
                         <div className="action-buttons" style={{ display: 'grid', gap: '0.75rem' }}>
                             {isOwner ? (
-                                <button
-                                    className="btn btn-primary btn-full"
-                                    onClick={handleMarkSold}
-                                    disabled={item.status === 'sold' || isMarkingSold}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem',
-                                    }}
-                                >
-                                    {isMarkingSold ? 'Processing...' : (item.status === 'sold' ? 'Sold' : 'Mark as Sold')}
-                                </button>
+                                <>
+                                    <button
+                                        className="btn btn-primary btn-full"
+                                        onClick={handleMarkSold}
+                                        disabled={item.status === 'sold' || isMarkingSold}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                        }}
+                                    >
+                                        {isMarkingSold ? 'Processing...' : (item.status === 'sold' ? 'Sold' : 'Mark as Sold')}
+                                    </button>
+                                    <button
+                                        className="btn btn-full"
+                                        onClick={handleBoostItem}
+                                        disabled={isBoosting || item.status === 'sold'}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            background: 'linear-gradient(45deg, #f1c40f, #f39c12)',
+                                            color: 'white',
+                                            border: 'none'
+                                        }}
+                                    >
+                                        <Zap size={18} fill="currentColor" /> 
+                                        {isBoosting ? 'Boosting...' : (isBoosted ? 'Extend Boost (24h)' : 'Boost Item (24h)')}
+                                    </button>
+                                </>
                             ) : (
                                 <button
                                     className="btn btn-primary btn-full"

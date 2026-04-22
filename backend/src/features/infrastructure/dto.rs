@@ -395,6 +395,7 @@ pub struct MarketplaceItemResponse {
     pub seller_avatar: Option<String>,
     pub currency: String,
     pub condition: String,
+    pub boosted_until: Option<String>,
     pub created_at: String,
 }
 

@@ -2,42 +2,39 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 
 import {
-    DollarSign,
-    TrendingUp,
-    BarChart3,
-    Users,
-    Calendar,
-    Clock,
-    Eye,
-    EyeOff,
-    Video,
-    Image,
-    Edit,
-    Trash2,
-    Plus,
-    Search,
-    Filter,
-    RefreshCw,
     Download,
     Upload,
-    Shield,
-    AlertTriangle,
-    Globe,
+    BarChart3,
+    TrendingUp,
+    Users,
+    Video,
+    Image,
+    Search,
+    RefreshCw,
+    DollarSign,
     Target,
     Settings,
-    Play,
-    Pause,
-    StopCircle,
+    MoreVertical,
+    CheckCircle2,
+    Clock,
     AlertCircle,
-    ShoppingBag,
-    Smartphone,
-    MessageCircle,
-    Network,
-    Zap as ZapIcon,
-    Music,
-} from 'lucide-react';
-import { useToast } from '../context/ToastContext';
-
+    X,
+    Calendar,
+    ArrowUpRight,
+    ArrowDownRight,
+    Shield,
+    Globe,
+    Zap,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    EyeOff
+} from "lucide-react";
+import { useToast } from "../context/ToastContext";
+import AdPerformanceMetrics from "../features/ads/components/AdPerformanceMetrics";
+import AdFilters from "../features/ads/components/AdFilters";
+import AdCampaignsTable from "../features/ads/components/AdCampaignsTable";
 const AdManagementTab = () => {
     const [campaigns, setCampaigns] = useState([]);
     const [adGroups, setAdGroups] = useState([]);
@@ -406,56 +403,93 @@ const AdManagementTab = () => {
         },
     ];
 
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [campaignsRes, groupsRes, creativesRes, perfRes, reportsRes] =
+                await Promise.all([
+                    api.get('/ad-campaigns'),
+                    api.get('/ad-groups'),
+                    api.get('/ad-creatives'),
+                    api.get('/ad-performance'),
+                    api.get('/ad-reports'),
+                ]);
+
+            setCampaigns(campaignsRes.data);
+            setAdGroups(groupsRes.data);
+            setAdCreatives(creativesRes.data);
+            setPerformanceData(perfRes.data);
+            setReports(reportsRes.data);
+            showToast('Data refreshed successfully', 'success');
+        } catch (error) {
+            console.error('Failed to load initial data:', error);
+            setCampaigns([]);
+            setAdGroups([]);
+            setAdCreatives([]);
+            setPerformanceData([]);
+            setReports([]);
+            showToast('Failed to refresh data', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        let isMounted = true;
-
-        const loadInitialData = async () => {
-            setIsLoading(true);
-            try {
-                // Fetch real data from API
-                const [campaignsRes, groupsRes, creativesRes, perfRes, reportsRes] =
-                    await Promise.all([
-                        api.get('/ad-campaigns'),
-                        api.get('/ad-groups'),
-                        api.get('/ad-creatives'),
-                        api.get('/ad-performance'),
-                        api.get('/ad-reports'),
-                    ]);
-
-                if (isMounted) {
-                    setCampaigns(campaignsRes.data);
-                    setAdGroups(groupsRes.data);
-                    setAdCreatives(creativesRes.data);
-                    setPerformanceData(perfRes.data);
-                    setReports(reportsRes.data);
-                }
-            } catch (error) {
-                console.error('Failed to load initial data:', error);
-                // Set empty states on error
-                if (isMounted) {
-                    setCampaigns([]);
-                    setAdGroups([]);
-                    setAdCreatives([]);
-                    setPerformanceData([]);
-                    setReports([]);
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        loadInitialData();
-
-        return () => {
-            isMounted = false;
-        };
+        fetchData();
     }, []);
+
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(filters.search || '');
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [filters.search]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
+
+    // Memoized Filtering Logic
+    const filteredCampaigns = React.useMemo(() => {
+        return campaigns.filter((c) => {
+            const matchesSearch = !debouncedSearch || 
+                c.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                c.id.toLowerCase().includes(debouncedSearch.toLowerCase());
+            
+            const matchesStatus = filters.status === 'all' || c.status === filters.status;
+            const matchesType = filters.campaign_type === 'all' || c.campaign_type === filters.campaign_type;
+            const matchesObjective = filters.objective === 'all' || c.objective === filters.objective;
+
+            return matchesSearch && matchesStatus && matchesType && matchesObjective;
+        });
+    }, [campaigns, debouncedSearch, filters]);
+
+    const filteredAdGroups = React.useMemo(() => {
+        return adGroups.filter((g) => {
+            const matchesSearch = !debouncedSearch || 
+                g.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                g.campaign_id.toLowerCase().includes(debouncedSearch.toLowerCase());
+            
+            const matchesStatus = filters.status === 'all' || g.status === filters.status;
+            
+            return matchesSearch && matchesStatus;
+        });
+    }, [adGroups, debouncedSearch, filters.status]);
+
+    const filteredCreatives = React.useMemo(() => {
+        return adCreatives.filter((c) => {
+            const matchesSearch = !debouncedSearch || 
+                c.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                c.headline?.toLowerCase().includes(debouncedSearch.toLowerCase());
+            
+            const matchesStatus = filters.status === 'all' || c.status === filters.status;
+            const matchesType = filters.creative_type === 'all' || c.creative_type === filters.creative_type;
+
+            return matchesSearch && matchesStatus && matchesType;
+        });
+    }, [adCreatives, debouncedSearch, filters.status, filters.creative_type]);
 
     const handleBulkAction = () => {
         if (currentTab === 'campaigns' && selectedCampaigns.length === 0) {
@@ -632,6 +666,8 @@ const AdManagementTab = () => {
             ad_group_id: '',
             headline: '',
             description: '',
+            call_to_action: 'Learn More',
+            display_url: '',
             final_url: '',
             assets: [],
         });
@@ -798,11 +834,19 @@ const AdManagementTab = () => {
                     </p>
                 </div>
                 <div className="header-actions">
-                    <button className="btn-secondary">
+                    <button
+                        className="btn-secondary"
+                        onClick={() => showToast('Exporting data as CSV...', 'success')}
+                        aria-label="Export Reports as CSV"
+                    >
                         <Download size={18} />
                         Export Reports
                     </button>
-                    <button className="btn-secondary">
+                    <button
+                        className="btn-secondary"
+                        onClick={() => showToast('Import feature coming soon. Please contact support for bulk uploads.', 'info')}
+                        aria-label="Import Ad Campaigns"
+                    >
                         <Upload size={18} />
                         Import Campaigns
                     </button>
@@ -847,644 +891,67 @@ const AdManagementTab = () => {
                 </div>
             </div>
 
-            {/* Campaigns Tab */}
+            {/* Analytics Overview */}
+            <AdPerformanceMetrics performanceData={campaigns} />
+
+            {/* Campaigns Tab Content */}
             {currentTab === 'campaigns' && (
                 <>
-                    {/* Filters */}
-                    <div className="filters-section">
-                        <div className="search-filters">
-                            <div className="search-box">
-                                <Search size={20} className="search-icon" />
-                                <input
-                                    type="text"
-                                    placeholder="Search campaigns by name, description, or objective..."
-                                    value={filters.search}
-                                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                                />
-                            </div>
-
-                            <div className="filter-group">
-                                <select
-                                    value={filters.status}
-                                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="active">Active</option>
-                                    <option value="paused">Paused</option>
-                                    <option value="draft">Draft</option>
-                                    <option value="archived">Archived</option>
-                                </select>
-
-                                <select
-                                    value={filters.campaign_type}
-                                    onChange={(e) =>
-                                        handleFilterChange('campaign_type', e.target.value)
-                                    }
-                                >
-                                    <option value="all">All Types</option>
-                                    <option value="search">Search</option>
-                                    <option value="display">Display</option>
-                                    <option value="video">Video</option>
-                                    <option value="shopping">Shopping</option>
-                                    <option value="app">App</option>
-                                </select>
-
-                                <select
-                                    value={filters.objective}
-                                    onChange={(e) =>
-                                        handleFilterChange('objective', e.target.value)
-                                    }
-                                >
-                                    <option value="all">All Objectives</option>
-                                    <option value="brand_awareness">Brand Awareness</option>
-                                    <option value="traffic">Traffic</option>
-                                    <option value="engagement">Engagement</option>
-                                    <option value="leads">Leads</option>
-                                    <option value="conversions">Conversions</option>
-                                </select>
-
-                                <input
-                                    type="number"
-                                    placeholder="Min budget"
-                                    value={filters.min_budget}
-                                    onChange={(e) =>
-                                        handleFilterChange('min_budget', e.target.value)
-                                    }
-                                />
-
-                                <input
-                                    type="number"
-                                    placeholder="Max budget"
-                                    value={filters.max_budget}
-                                    onChange={(e) =>
-                                        handleFilterChange('max_budget', e.target.value)
-                                    }
-                                />
-
-                                <input
-                                    type="number"
-                                    placeholder="Min ROAS"
-                                    value={filters.min_roas}
-                                    onChange={(e) => handleFilterChange('min_roas', e.target.value)}
-                                />
-
-                                <input
-                                    type="number"
-                                    placeholder="Min CTR"
-                                    value={filters.min_ctr}
-                                    onChange={(e) => handleFilterChange('min_ctr', e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => {}}>
-                                <RefreshCw size={18} />
-                                Refresh
-                            </button>
-                            <button
-                                className="btn-secondary"
-                                onClick={() => setShowPerformanceModal(true)}
-                            >
-                                <BarChart3 size={18} />
-                                Campaign Analytics
-                            </button>
-                        </div>
-                    </div>
-
+                    <AdFilters 
+                        filters={filters} 
+                        handleFilterChange={handleFilterChange}
+                        isLoading={isLoading}
+                        onRefresh={() => loadInitialData()}
+                        onShowPerformance={() => setShowPerformanceModal(true)}
+                    />
                     {/* Bulk Actions */}
                     {selectedCampaigns.length > 0 && (
-                        <div className="bulk-actions">
+                        <div className="bulk-actions card shadow-sm mt-3 p-3">
                             <div className="selection-info">
-                                {selectedCampaigns.length} campaigns selected
+                                <strong>{selectedCampaigns.length}</strong> campaigns selected
                             </div>
-                            <div className="bulk-actions-controls">
+                            <div className="bulk-actions-controls d-flex gap-2 align-items-center">
                                 <select
+                                    className="form-select w-auto"
                                     value={bulkAction}
                                     onChange={(e) => setBulkAction(e.target.value)}
                                 >
                                     <option value="">Bulk Actions</option>
-                                    <option value="activate">Activate</option>
-                                    <option value="pause">Pause</option>
-                                    <option value="delete">Delete Campaigns</option>
-                                    <option value="duplicate">Duplicate</option>
+                                    <option value="active">Activate</option>
+                                    <option value="paused">Pause</option>
+                                    <option value="deleted">Delete</option>
                                 </select>
                                 <button
-                                    className="btn-primary"
+                                    className="btn btn-primary btn-sm"
                                     onClick={handleBulkAction}
                                     disabled={!bulkAction}
                                 >
-                                    Apply Action
+                                    Apply
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* Campaigns Table */}
-                    <div className="campaigns-table-container">
-                        {isLoading ? (
-                            <div className="loading-state">
-                                <RefreshCw size={32} className="spin-anim" />
-                                <p>Loading campaigns...</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="table-header">
-                                    <div className="select-all">
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                selectedCampaigns.length === campaigns.length &&
-                                                campaigns.length > 0
-                                            }
-                                            onChange={selectAllCampaigns}
-                                        />
-                                        <span>Select All</span>
-                                    </div>
-                                    <div className="table-actions">
-                                        <span className="campaign-count">
-                                            {campaigns.length} campaigns found
-                                        </span>
-                                        <button
-                                            className="btn-primary"
-                                            onClick={handleCreateCampaign}
-                                        >
-                                            <Plus size={18} />
-                                            Create Campaign
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={
-                                                            selectedCampaigns.length ===
-                                                                campaigns.length &&
-                                                            campaigns.length > 0
-                                                        }
-                                                        onChange={selectAllCampaigns}
-                                                    />
-                                                </th>
-                                                <th>Campaign Info</th>
-                                                <th>Status & Type</th>
-                                                <th>Budget & Spend</th>
-                                                <th>Performance Metrics</th>
-                                                <th>Targeting & Optimization</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {campaigns.map((campaign) => (
-                                                <tr
-                                                    key={campaign.id}
-                                                    className={
-                                                        campaign.status === 'paused'
-                                                            ? 'paused-campaign'
-                                                            : campaign.status === 'draft'
-                                                              ? 'draft-campaign'
-                                                              : ''
-                                                    }
-                                                >
-                                                    <td>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedCampaigns.includes(
-                                                                campaign.id,
-                                                            )}
-                                                            onChange={() =>
-                                                                toggleCampaignSelection(campaign.id)
-                                                            }
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <div className="campaign-info">
-                                                            <div className="campaign-header">
-                                                                <strong>{campaign.name}</strong>
-                                                                <span className="campaign-id">
-                                                                    ID: {campaign.id}
-                                                                </span>
-                                                            </div>
-                                                            <div className="campaign-description">
-                                                                <p>{campaign.description}</p>
-                                                            </div>
-                                                            <div className="campaign-meta">
-                                                                <span className="campaign-created">
-                                                                    Created:{' '}
-                                                                    {new Date(
-                                                                        campaign.created_at,
-                                                                    ).toLocaleDateString()}
-                                                                </span>
-                                                                <span className="campaign-updated">
-                                                                    Updated:{' '}
-                                                                    {new Date(
-                                                                        campaign.updated_at,
-                                                                    ).toLocaleDateString()}
-                                                                </span>
-                                                                <span className="campaign-created-by">
-                                                                    By: {campaign.created_by}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="status-info">
-                                                            <div className="status-badge">
-                                                                <span
-                                                                    className={`status-pill ${getStatusBadge(campaign.status).color}`}
-                                                                >
-                                                                    {
-                                                                        getStatusBadge(
-                                                                            campaign.status,
-                                                                        ).icon
-                                                                    }
-                                                                    {
-                                                                        getStatusBadge(
-                                                                            campaign.status,
-                                                                        ).text
-                                                                    }
-                                                                </span>
-                                                                <span
-                                                                    className={`campaign-type-pill ${getCampaignTypeBadge(campaign.campaign_type).color}`}
-                                                                >
-                                                                    {
-                                                                        getCampaignTypeBadge(
-                                                                            campaign.campaign_type,
-                                                                        ).icon
-                                                                    }
-                                                                    {
-                                                                        getCampaignTypeBadge(
-                                                                            campaign.campaign_type,
-                                                                        ).text
-                                                                    }
-                                                                </span>
-                                                                <span
-                                                                    className={`objective-pill ${getObjectiveBadge(campaign.objective).color}`}
-                                                                >
-                                                                    {
-                                                                        getObjectiveBadge(
-                                                                            campaign.objective,
-                                                                        ).icon
-                                                                    }
-                                                                    {
-                                                                        getObjectiveBadge(
-                                                                            campaign.objective,
-                                                                        ).text
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                            <div className="status-dates">
-                                                                <div className="status-date">
-                                                                    <Calendar size={12} />
-                                                                    <span>
-                                                                        Start:{' '}
-                                                                        {new Date(
-                                                                            campaign.start_date,
-                                                                        ).toLocaleDateString()}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="status-date">
-                                                                    <Calendar size={12} />
-                                                                    <span>
-                                                                        End:{' '}
-                                                                        {campaign.end_date
-                                                                            ? new Date(
-                                                                                  campaign.end_date,
-                                                                              ).toLocaleDateString()
-                                                                            : 'Ongoing'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="campaign-stats">
-                                                                <span className="groups-count">
-                                                                    {campaign.groups_count} groups
-                                                                </span>
-                                                                <span className="creatives-count">
-                                                                    {campaign.creatives_count}{' '}
-                                                                    creatives
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="budget-info">
-                                                            <div className="budget-metrics">
-                                                                <div className="metric-item">
-                                                                    <DollarSign size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {formatCurrency(
-                                                                                campaign.daily_budget,
-                                                                                campaign.budget
-                                                                                    .currency,
-                                                                            )}
-                                                                        </strong>
-                                                                        <small>Daily Budget</small>
-                                                                    </div>
-                                                                </div>
-                                                                {campaign.lifetime_budget && (
-                                                                    <div className="metric-item">
-                                                                        <DollarSign size={14} />
-                                                                        <div>
-                                                                            <strong>
-                                                                                {formatCurrency(
-                                                                                    campaign.lifetime_budget,
-                                                                                    campaign.budget
-                                                                                        .currency,
-                                                                                )}
-                                                                            </strong>
-                                                                            <small>
-                                                                                Lifetime Budget
-                                                                            </small>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                <div className="metric-item">
-                                                                    <DollarSign size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {formatCurrency(
-                                                                                campaign.total_spend,
-                                                                                campaign.budget
-                                                                                    .currency,
-                                                                            )}
-                                                                        </strong>
-                                                                        <small>Total Spend</small>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="budget-utilization">
-                                                                <div className="utilization-bar">
-                                                                    <div
-                                                                        className="utilization-fill"
-                                                                        style={{
-                                                                            width: `${campaign.budget.budget_utilization * 100}%`,
-                                                                        }}
-                                                                    ></div>
-                                                                </div>
-                                                                <span className="utilization-text">
-                                                                    {formatPercentage(
-                                                                        campaign.budget
-                                                                            .budget_utilization,
-                                                                    )}{' '}
-                                                                    used
-                                                                </span>
-                                                            </div>
-                                                            <div className="budget-actions">
-                                                                <span className="bidding-strategy">
-                                                                    {campaign.bidding_strategy}
-                                                                </span>
-                                                                {campaign.target_roas && (
-                                                                    <span className="target-roas">
-                                                                        ROAS: {campaign.target_roas}
-                                                                        x
-                                                                    </span>
-                                                                )}
-                                                                {campaign.target_cpa && (
-                                                                    <span className="target-cpa">
-                                                                        CPA:{' '}
-                                                                        {formatCurrency(
-                                                                            campaign.target_cpa,
-                                                                            campaign.budget
-                                                                                .currency,
-                                                                        )}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="performance-info">
-                                                            <div className="performance-metrics">
-                                                                <div className="metric-item">
-                                                                    <Eye size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {campaign.total_impressions.toLocaleString()}
-                                                                        </strong>
-                                                                        <small>Impressions</small>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="metric-item">
-                                                                    <Users size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {campaign.total_clicks.toLocaleString()}
-                                                                        </strong>
-                                                                        <small>Clicks</small>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="metric-item">
-                                                                    <TrendingUp size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {
-                                                                                campaign.total_conversions
-                                                                            }
-                                                                        </strong>
-                                                                        <small>Conversions</small>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="performance-rates">
-                                                                <div className="rate-item">
-                                                                    <span className="rate-label">
-                                                                        CTR:
-                                                                    </span>
-                                                                    <span className="rate-value">
-                                                                        {formatPercentage(
-                                                                            campaign.ctr,
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="rate-item">
-                                                                    <span className="rate-label">
-                                                                        CPM:
-                                                                    </span>
-                                                                    <span className="rate-value">
-                                                                        {formatCurrency(
-                                                                            campaign.cpm,
-                                                                            campaign.budget
-                                                                                .currency,
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="rate-item">
-                                                                    <span className="rate-label">
-                                                                        CPC:
-                                                                    </span>
-                                                                    <span className="rate-value">
-                                                                        {formatCurrency(
-                                                                            campaign.cpc,
-                                                                            campaign.budget
-                                                                                .currency,
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="rate-item">
-                                                                    <span className="rate-label">
-                                                                        ROAS:
-                                                                    </span>
-                                                                    <span className="rate-value">
-                                                                        {campaign.roas.toFixed(1)}x
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="quality-scores">
-                                                                <div className="score-item">
-                                                                    <span className="score-label">
-                                                                        Quality Score:
-                                                                    </span>
-                                                                    <span className="score-value">
-                                                                        {campaign.quality_score.toFixed(
-                                                                            1,
-                                                                        )}
-                                                                        /10
-                                                                    </span>
-                                                                </div>
-                                                                <div className="score-item">
-                                                                    <span className="score-label">
-                                                                        Performance Score:
-                                                                    </span>
-                                                                    <span className="score-value">
-                                                                        {campaign.performance_score.toFixed(
-                                                                            1,
-                                                                        )}
-                                                                        /100
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="targeting-info">
-                                                            <div className="targeting-metrics">
-                                                                <div className="metric-item">
-                                                                    <Target size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {
-                                                                                campaign.optimization_goal
-                                                                            }
-                                                                        </strong>
-                                                                        <small>
-                                                                            Optimization Goal
-                                                                        </small>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="metric-item">
-                                                                    <Shield size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {
-                                                                                campaign.attribution_model
-                                                                            }
-                                                                        </strong>
-                                                                        <small>
-                                                                            Attribution Model
-                                                                        </small>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="metric-item">
-                                                                    <Globe size={14} />
-                                                                    <div>
-                                                                        <strong>
-                                                                            {campaign
-                                                                                .frequency_capping
-                                                                                ?.impressions || 0}
-                                                                        </strong>
-                                                                        <small>Frequency Cap</small>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="targeting-actions">
-                                                                <span className="tracking-pixel">
-                                                                    Pixel:{' '}
-                                                                    {campaign.tracking_pixel_id}
-                                                                </span>
-                                                                <span className="conversion-actions">
-                                                                    Conversions:{' '}
-                                                                    {campaign.conversion_actions?.join(
-                                                                        ', ',
-                                                                    ) || 'None'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="action-buttons">
-                                                            <button
-                                                                className="action-btn view"
-                                                                onClick={() =>
-                                                                    window.open(
-                                                                        `/campaign/${campaign.id}`,
-                                                                        '_blank',
-                                                                    )
-                                                                }
-                                                                title="View Campaign"
-                                                            >
-                                                                <Eye size={16} />
-                                                            </button>
-                                                            <button
-                                                                className="action-btn edit"
-                                                                onClick={() =>
-                                                                    handleEditCampaign(campaign)
-                                                                }
-                                                                title="Edit Campaign"
-                                                            >
-                                                                <Edit size={16} />
-                                                            </button>
-                                                            <button
-                                                                className="action-btn duplicate"
-                                                                onClick={() => {
-                                                                    const newCampaign = {
-                                                                        ...campaign,
-                                                                        id: `campaign_${Date.now()}`,
-                                                                        name: `${campaign.name} - Copy`,
-                                                                        created_at:
-                                                                            new Date().toISOString(),
-                                                                        updated_at:
-                                                                            new Date().toISOString(),
-                                                                        status: 'draft',
-                                                                    };
-                                                                    setCampaigns((prev) => [
-                                                                        ...prev,
-                                                                        newCampaign,
-                                                                    ]);
-                                                                    showToast(
-                                                                        'Campaign duplicated',
-                                                                        'success',
-                                                                    );
-                                                                }}
-                                                                title="Duplicate Campaign"
-                                                            >
-                                                                <Copy size={16} />
-                                                            </button>
-                                                            <button
-                                                                className="action-btn delete"
-                                                                onClick={() =>
-                                                                    handleDeleteCampaign(
-                                                                        campaign.id,
-                                                                    )
-                                                                }
-                                                                title="Delete Campaign"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </>
-                        )}
+                    <div className="d-flex justify-content-between align-items-center mt-4">
+                        <h3 className="mb-0">Campaigns</h3>
+                        <button className="btn btn-primary" onClick={handleCreateCampaign}>
+                            <Plus size={18} /> Create Campaign
+                        </button>
                     </div>
+
+                    <AdCampaignsTable
+                        campaigns={filteredCampaigns}
+                        selectedCampaigns={selectedCampaigns}
+                        onToggleSelection={toggleCampaignSelection}
+                        onSelectAll={selectAllCampaigns}
+                        onEdit={handleEditCampaign}
+                        onDelete={handleDeleteCampaign}
+                        getStatusBadge={getStatusBadge}
+                        getCampaignTypeBadge={getCampaignTypeBadge}
+                        getObjectiveBadge={getObjectiveBadge}
+                        formatCurrency={formatCurrency}
+                        formatPercentage={formatPercentage}
+                    />
                 </>
             )}
 
@@ -1550,7 +1017,11 @@ const AdManagementTab = () => {
                         </div>
 
                         <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => {}}>
+                            <button
+                                className="refresh-btn"
+                                onClick={fetchData}
+                                aria-label="Refresh Ad Groups Data"
+                            >
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
@@ -1608,7 +1079,7 @@ const AdManagementTab = () => {
                                     </div>
                                     <div className="table-actions">
                                         <span className="ad-group-count">
-                                            {adGroups.length} ad groups found
+                                            {filteredAdGroups.length} ad groups found
                                         </span>
                                         <button
                                             className="btn-primary"
@@ -1643,7 +1114,7 @@ const AdManagementTab = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {adGroups.map((group) => (
+                                            {filteredAdGroups.map((group) => (
                                                 <tr
                                                     key={group.id}
                                                     className={
@@ -1979,6 +1450,7 @@ const AdManagementTab = () => {
                                     <option value="all">All Types</option>
                                     <option value="image">Image</option>
                                     <option value="video">Video</option>
+                                    <option value="text">Text</option>
                                     <option value="carousel">Carousel</option>
                                     <option value="collection">Collection</option>
                                 </select>
@@ -2002,7 +1474,11 @@ const AdManagementTab = () => {
                         </div>
 
                         <div className="filter-actions">
-                            <button className="refresh-btn" onClick={() => {}}>
+                            <button
+                                className="refresh-btn"
+                                onClick={fetchData}
+                                aria-label="Refresh Creatives Data"
+                            >
                                 <RefreshCw size={18} />
                                 Refresh
                             </button>
@@ -2060,7 +1536,7 @@ const AdManagementTab = () => {
                                     </div>
                                     <div className="table-actions">
                                         <span className="creative-count">
-                                            {adCreatives.length} creatives found
+                                            {filteredCreatives.length} creatives found
                                         </span>
                                         <button
                                             className="btn-primary"
@@ -2095,7 +1571,7 @@ const AdManagementTab = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {adCreatives.map((creative) => (
+                                            {filteredCreatives.map((creative) => (
                                                 <tr
                                                     key={creative.id}
                                                     className={
@@ -2120,31 +1596,29 @@ const AdManagementTab = () => {
                                                     <td>
                                                         <div className="creative-content">
                                                             <div className="creative-media-preview">
-                                                                {creative.creative_type ===
-                                                                'image' ? (
+                                                                 {creative.creative_type === 'image' ? (
                                                                     <img
-                                                                        src={
-                                                                            creative.assets[0]
-                                                                                ?.asset_url
-                                                                        }
+                                                                        src={creative.assets[0]?.asset_url}
                                                                         alt="Creative Preview"
                                                                         className="creative-thumbnail"
                                                                     />
-                                                                ) : (
+                                                                ) : creative.creative_type === 'video' ? (
                                                                     <video
-                                                                        src={
-                                                                            creative.assets[0]
-                                                                                ?.asset_url
-                                                                        }
+                                                                        src={creative.assets[0]?.asset_url}
                                                                         className="creative-thumbnail"
                                                                     />
+                                                                ) : (
+                                                                    <div className="creative-text-placeholder">
+                                                                        <MessageCircle size={32} />
+                                                                    </div>
                                                                 )}
                                                                 <div className="creative-type-overlay">
-                                                                    {creative.creative_type ===
-                                                                    'image' ? (
+                                                                    {creative.creative_type === 'image' ? (
                                                                         <Image size={16} />
-                                                                    ) : (
+                                                                    ) : creative.creative_type === 'video' ? (
                                                                         <Video size={16} />
+                                                                    ) : (
+                                                                        <MessageCircle size={16} />
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -2195,13 +1669,14 @@ const AdManagementTab = () => {
                                                                     }
                                                                 </span>
                                                                 <span
-                                                                    className={`creative-type-pill ${creative.creative_type === 'image' ? 'green' : 'purple'}`}
+                                                                    className={`creative-type-pill ${creative.creative_type === 'image' ? 'green' : creative.creative_type === 'video' ? 'purple' : 'blue'}`}
                                                                 >
-                                                                    {creative.creative_type ===
-                                                                    'image' ? (
+                                                                    {creative.creative_type === 'image' ? (
                                                                         <Image size={12} />
-                                                                    ) : (
+                                                                    ) : creative.creative_type === 'video' ? (
                                                                         <Video size={12} />
+                                                                    ) : (
+                                                                        <MessageCircle size={12} />
                                                                     )}
                                                                     {creative.creative_type.toUpperCase()}
                                                                 </span>
@@ -2864,6 +2339,467 @@ const AdManagementTab = () => {
                                 }}
                             >
                                 Save Campaign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Ad Group Modal */}
+            {showGroupModal && editingGroup && (
+                <div className="modal-overlay" onClick={() => setShowGroupModal(false)}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '900px' }}
+                    >
+                        <div className="modal-header">
+                            <h3>{editingGroup.id ? 'Edit Ad Group' : 'Create New Ad Group'}</h3>
+                            <button className="close-btn" onClick={() => setShowGroupModal(false)}>
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Ad Group Name</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="e.g. Summer Sale - Electronics"
+                                        value={editingGroup.name}
+                                        onChange={(e) =>
+                                            setEditingGroup({
+                                                ...editingGroup,
+                                                name: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Parent Campaign</label>
+                                    <select
+                                        className="form-input"
+                                        value={editingGroup.campaign_id}
+                                        onChange={(e) =>
+                                            setEditingGroup({
+                                                ...editingGroup,
+                                                campaign_id: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="">Select Campaign</option>
+                                        {campaigns.map((camp) => (
+                                            <option key={camp.id} value={camp.id}>
+                                                {camp.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Status</label>
+                                    <select
+                                        className="form-input"
+                                        value={editingGroup.status}
+                                        onChange={(e) =>
+                                            setEditingGroup({
+                                                ...editingGroup,
+                                                status: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="paused">Paused</option>
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Bid Amount ($)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="form-input"
+                                        value={editingGroup.bid_amount}
+                                        onChange={(e) =>
+                                            setEditingGroup({
+                                                ...editingGroup,
+                                                bid_amount: parseFloat(e.target.value),
+                                            })
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="targeting-section-modal">
+                                <h4>Targeting</h4>
+                                <div className="form-grid">
+                                    <div className="form-group">
+                                        <label>Locations (comma separated)</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Kenya, Nairobi, US..."
+                                            value={editingGroup.targeting.locations?.join(', ') || ''}
+                                            onChange={(e) =>
+                                                setEditingGroup({
+                                                    ...editingGroup,
+                                                    targeting: {
+                                                        ...editingGroup.targeting,
+                                                        locations: e.target.value
+                                                            .split(',')
+                                                            .map((s) => s.trim())
+                                                            .filter(Boolean),
+                                                    },
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Interests (comma separated)</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Technology, Fashion, Education..."
+                                            value={editingGroup.targeting.interests?.join(', ') || ''}
+                                            onChange={(e) =>
+                                                setEditingGroup({
+                                                    ...editingGroup,
+                                                    targeting: {
+                                                        ...editingGroup.targeting,
+                                                        interests: e.target.value
+                                                            .split(',')
+                                                            .map((s) => s.trim())
+                                                            .filter(Boolean),
+                                                    },
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowGroupModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={() => {
+                                    if (!editingGroup.name || !editingGroup.campaign_id) {
+                                        showToast('Please fill required fields', 'error');
+                                        return;
+                                    }
+                                    if (editingGroup.id) {
+                                        setAdGroups((prev) =>
+                                            prev.map((g) =>
+                                                g.id === editingGroup.id ? editingGroup : g,
+                                            ),
+                                        );
+                                    } else {
+                                        const newGroup = {
+                                            ...editingGroup,
+                                            id: `group_${Date.now()}`,
+                                            creatives_count: 0,
+                                            total_spend: 0,
+                                            total_impressions: 0,
+                                            total_clicks: 0,
+                                            ctr: 0,
+                                            cpm: 0,
+                                            cpc: 0,
+                                            bid_strategy: {
+                                                bid_type: 'cpc',
+                                                bid_amount: editingGroup.bid_amount,
+                                                bid_strategy: 'manual',
+                                            },
+                                            ad_rotation: 'optimized',
+                                            created_at: new Date().toISOString(),
+                                            updated_at: new Date().toISOString(),
+                                        };
+                                        setAdGroups((prev) => [...prev, newGroup]);
+                                    }
+                                    setShowGroupModal(false);
+                                    setEditingGroup(null);
+                                    showToast('Ad group saved successfully', 'success');
+                                }}
+                            >
+                                Save Ad Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showCreativeModal && editingCreative && (
+                <div className="modal-overlay" onClick={() => setShowCreativeModal(false)}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '900px' }}
+                    >
+                        <div className="modal-header">
+                            <h3>{editingCreative.id ? 'Edit Creative' : 'Create New Creative'}</h3>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowCreativeModal(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Creative Name</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Internal name for this creative"
+                                        value={editingCreative.name}
+                                        onChange={(e) =>
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                name: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Creative Type</label>
+                                    <select
+                                        className="form-input"
+                                        value={editingCreative.creative_type}
+                                        onChange={(e) =>
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                creative_type: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="image">Image</option>
+                                        <option value="video">Video</option>
+                                        <option value="text">Text Only</option>
+                                        <option value="carousel">Carousel</option>
+                                        <option value="collection">Collection</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Ad Group</label>
+                                    <select
+                                        className="form-input"
+                                        value={editingCreative.ad_group_id}
+                                        onChange={(e) =>
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                ad_group_id: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="">Select Ad Group</option>
+                                        {adGroups.map((group) => (
+                                            <option key={group.id} value={group.id}>
+                                                {group.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Status</label>
+                                    <select
+                                        className="form-input"
+                                        value={editingCreative.status}
+                                        onChange={(e) =>
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                status: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="paused">Paused</option>
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Headline</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Enter ad headline"
+                                    value={editingCreative.headline}
+                                    onChange={(e) =>
+                                        setEditingCreative({
+                                            ...editingCreative,
+                                            headline: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea
+                                    className="form-input"
+                                    rows="3"
+                                    placeholder="Enter ad description"
+                                    value={editingCreative.description}
+                                    onChange={(e) =>
+                                        setEditingCreative({
+                                            ...editingCreative,
+                                            description: e.target.value,
+                                        })
+                                    }
+                                ></textarea>
+                            </div>
+
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Call to Action</label>
+                                    <select
+                                        className="form-input"
+                                        value={editingCreative.call_to_action}
+                                        onChange={(e) =>
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                call_to_action: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="Learn More">Learn More</option>
+                                        <option value="Shop Now">Shop Now</option>
+                                        <option value="Sign Up">Sign Up</option>
+                                        <option value="Book Now">Book Now</option>
+                                        <option value="Download">Download</option>
+                                        <option value="Contact Us">Contact Us</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Display URL</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="e.g. www.example.com"
+                                        value={editingCreative.display_url}
+                                        onChange={(e) =>
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                display_url: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Final URL (Destination)</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="https://www.example.com/landing-page"
+                                    value={editingCreative.final_url}
+                                    onChange={(e) =>
+                                        setEditingCreative({
+                                            ...editingCreative,
+                                            final_url: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            {editingCreative.creative_type !== 'text' && (
+                                <div className="form-group">
+                                    <label>Media Asset URL</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder={
+                                            editingCreative.creative_type === 'video'
+                                                ? 'https://example.com/video.mp4'
+                                                : 'https://example.com/image.jpg'
+                                        }
+                                        value={editingCreative.assets[0]?.asset_url || ''}
+                                        onChange={(e) => {
+                                            const newAssets = [...editingCreative.assets];
+                                            if (newAssets.length === 0) {
+                                                newAssets.push({
+                                                    asset_type: editingCreative.creative_type,
+                                                    asset_url: e.target.value,
+                                                });
+                                            } else {
+                                                newAssets[0] = {
+                                                    ...newAssets[0],
+                                                    asset_url: e.target.value,
+                                                    asset_type: editingCreative.creative_type,
+                                                };
+                                            }
+                                            setEditingCreative({
+                                                ...editingCreative,
+                                                assets: newAssets,
+                                            });
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowCreativeModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={() => {
+                                    if (
+                                        !editingCreative.name ||
+                                        !editingCreative.ad_group_id
+                                    ) {
+                                        showToast('Please fill required fields', 'error');
+                                        return;
+                                    }
+                                    if (editingCreative.id) {
+                                        setAdCreatives((prev) =>
+                                            prev.map((c) =>
+                                                c.id === editingCreative.id
+                                                    ? editingCreative
+                                                    : c,
+                                            ),
+                                        );
+                                    } else {
+                                        const newCreative = {
+                                            ...editingCreative,
+                                            id: `creative_${Date.now()}`,
+                                            impressions: 0,
+                                            clicks: 0,
+                                            conversions: 0,
+                                            ctr: 0,
+                                            cpm: 0,
+                                            cpc: 0,
+                                            quality_score: 5.0,
+                                            relevance_score: 5.0,
+                                            landing_page_score: 5.0,
+                                            created_at: new Date().toISOString(),
+                                            updated_at: new Date().toISOString(),
+                                        };
+                                        setAdCreatives((prev) => [
+                                            ...prev,
+                                            newCreative,
+                                        ]);
+                                    }
+                                    setShowCreativeModal(false);
+                                    setEditingCreative(null);
+                                    showToast('Creative saved successfully', 'success');
+                                }}
+                            >
+                                Save Creative
                             </button>
                         </div>
                     </div>

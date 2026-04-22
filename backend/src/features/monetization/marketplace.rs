@@ -37,6 +37,7 @@ pub async fn create_item_handler(
         category: payload.category,
         images: payload.images.unwrap_or_default(),
         status: "available".to_string(),
+        boosted_until: None,
         created_at: mongodb::bson::DateTime::now(),
     };
 
@@ -71,7 +72,11 @@ pub async fn get_items_handler(
         }
     }
 
-    let find_options = FindOptions::builder().sort(doc! { "created_at": -1 }).limit(50).build();
+    // Sort by boosted_until DESC (boosted items first) and then by created_at DESC
+    let find_options = FindOptions::builder()
+        .sort(doc! { "boosted_until": -1, "created_at": -1 })
+        .limit(50)
+        .build();
     let mut cursor = items_collection.find(query, find_options).await?;
 
     let mut items = Vec::new();
@@ -123,6 +128,7 @@ pub async fn get_items_handler(
             category: item.category,
             images: Some(item.images),
             status: item.status,
+            boosted_until: item.boosted_until.map(|dt| dt.to_chrono().to_rfc3339()),
             created_at: item.created_at.to_chrono().to_rfc3339(),
             seller_is_verified: user.map(|u| u.is_verified).unwrap_or(false),
         }
@@ -167,11 +173,47 @@ pub async fn get_item_details_handler(
         category: item.category,
         images: Some(item.images),
         status: item.status,
+        boosted_until: item.boosted_until.map(|dt| dt.to_chrono().to_rfc3339()),
         created_at: item.created_at.to_chrono().to_rfc3339(),
         seller_is_verified,
     };
 
     Ok((StatusCode::OK, Json(response)))
+}
+
+pub async fn boost_item_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::BadRequest("Invalid ID".to_string()))?;
+    let items_collection = state.mongo.collection::<MarketplaceItem>("marketplace_items");
+
+    // Verify ownership
+    let item = items_collection.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Item not found".to_string()))?;
+
+    if item.seller_id != user.user_id {
+        return Err(AppError::Forbidden("Not authorized to boost this item".to_string()));
+    }
+
+    // In a real scenario, check user balance / charge M-Pesa here
+    // For now, we simulate success with a fixed price of 50 units
+    
+    let current_boost = item.boosted_until.map(|dt| dt.to_chrono()).unwrap_or_else(|| chrono::Utc::now());
+    let new_boost = current_boost + chrono::Duration::hours(24);
+    let new_boost_bson = mongodb::bson::DateTime::from_chrono(new_boost);
+
+    items_collection.update_one(
+        doc! { "_id": oid },
+        doc! { "$set": { "boosted_until": new_boost_bson } },
+        None
+    ).await?;
+
+    Ok((StatusCode::OK, Json(json!({
+        "message": "Item boosted for 24 hours!",
+        "boosted_until": new_boost.to_rfc3339()
+    }))))
 }
 
 pub async fn mark_sold_handler(
@@ -203,5 +245,6 @@ pub fn marketplace_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", post(create_item_handler).get(get_items_handler))
         .route("/:id", get(get_item_details_handler))
+        .route("/:id/boost", post(boost_item_handler))
         .route("/:id/sold", put(mark_sold_handler))
 }

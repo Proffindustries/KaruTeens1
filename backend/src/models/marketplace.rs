@@ -14,5 +14,6 @@ pub struct MarketplaceItem {
     pub category: String,
     pub images: Vec<String>,
     pub status: String,
+    pub boosted_until: Option<bson::DateTime>,
     pub created_at: bson::DateTime,
 }

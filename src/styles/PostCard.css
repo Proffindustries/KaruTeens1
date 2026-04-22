@@ -139,7 +139,7 @@
 }
 
 .menu-item.danger:hover {
-    background: rgba(255, 71, 87, 0.05);
+    background: rgba(255, 71, 87, 0.1);
 }
 
 .post-hidden-overlay {
@@ -230,14 +230,14 @@
 }
 
 .hashtag {
-    color: #00a8ff;
+    color: rgb(var(--primary));
     font-weight: 600;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color var(--transition-fast);
 }
 
 .hashtag:hover {
-    color: #0076b3;
+    color: rgb(var(--primary-dark));
     text-decoration: underline;
 }
 
@@ -424,6 +424,23 @@
 }
 
 .comment-form input:focus {
+    border-color: rgb(var(--primary));
+}
+
+.comment-form textarea {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(var(--border), 0.8);
+    border-radius: 1.5rem;
+    background: rgb(var(--surface));
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color var(--transition-fast);
+    resize: none;
+    font-family: inherit;
+}
+
+.comment-form textarea:focus {
     border-color: rgb(var(--primary));
 }
 

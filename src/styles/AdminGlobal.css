@@ -116,3 +116,90 @@
     background: rgba(245, 158, 11, 0.1) !important;
     color: #f59e0b !important;
 }
+
+/* Global Responsive Base */
+@media (max-width: 768px) {
+    .tab-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 1rem 0 !important;
+        gap: 1rem;
+    }
+
+    .header-left h2 {
+        font-size: 1.5rem !important;
+    }
+
+    .header-actions {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    .header-actions .btn-primary, 
+    .header-actions .btn-secondary,
+    .header-actions .refresh-btn {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    .filters-section {
+        flex-direction: column !important;
+        gap: 1.25rem !important;
+    }
+
+    .search-filters {
+        width: 100% !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+
+    .filter-group {
+        width: 100% !important;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+
+    .filter-group select, 
+    .filter-group input {
+        flex: 1 1 calc(50% - 0.5rem) !important;
+        min-width: 120px !important;
+    }
+
+    .table-responsive, .table-wrapper {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin-bottom: 2rem;
+        border: 1px solid var(--admin-border) !important;
+        border-radius: var(--admin-radius) !important;
+    }
+
+    .admin-table {
+        min-width: 900px !important; /* Ensure enough space for columns */
+    }
+
+    .admin-table th, 
+    .admin-table td {
+        padding: 1rem !important;
+        white-space: nowrap !important;
+    }
+
+    /* Fix stats grid if used globally */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-group select, 
+    .filter-group input {
+        flex: 1 1 100% !important;
+    }
+    
+    .admin-brand h2 {
+        font-size: 1.2rem !important;
+    }
+}

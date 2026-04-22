@@ -15,6 +15,8 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
 const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
 const LegalPage = lazy(() => import('./pages/LegalPage.jsx'));
+const BlogPage = lazy(() => import('./pages/BlogPage.jsx'));
+const BlogDetailPage = lazy(() => import('./pages/BlogDetailPage.jsx'));
 const VerificationPage = lazy(() => import('./pages/VerificationPage.jsx'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
 const GetAccountPage = lazy(() => import('./pages/GetAccountPage.jsx'));
@@ -89,6 +91,8 @@ function App() {
                                 <Route path="about" element={<AboutPage />} />
                                 <Route path="contact" element={<ContactPage />} />
                                 <Route path="legal" element={<LegalPage />} />
+                                <Route path="blog" element={<BlogPage />} />
+                                <Route path="blog/:slug" element={<BlogDetailPage />} />
                                 <Route path="explore" element={<ExplorePage />} />
 
                                 <Route path="feed" element={<FeedPage />} />

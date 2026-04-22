@@ -2,10 +2,15 @@ import React from 'react';
 import { Users, Target, Shield, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../styles/AboutPage.css';
+import SEO from '../components/SEO';
 
 const AboutPage = () => {
     return (
         <div className="container about-page">
+            <SEO 
+                title="About Us" 
+                description="Learn about KaruTeens, our mission to empower university students, and our vision for a better campus digital experience in Kenya."
+            />
             <div className="about-hero">
                 <h1>About KaruTeens</h1>
                 <p>Empowering university students to connect, grow, and thrive.</p>
@@ -65,12 +70,41 @@ const AboutPage = () => {
                     <div className="vision-blocks">
                         <div className="vision-block">
                             <h4>Community Growth</h4>
-                            <p>We believe in the power of collective intelligence. By connecting students across departments, we foster a richer learning environment.</p>
+                            <p>We believe in the power of collective intelligence. By connecting students across departments, we foster a richer learning environment where knowledge flows freely.</p>
                         </div>
                         <div className="vision-block">
                             <h4>Academic Excellence</h4>
-                            <p>From curated study playlists to collaborative revision materials, we provide the tools needed to succeed in a demanding university setting.</p>
+                            <p>From curated study playlists to collaborative revision materials, we provide the tools needed to succeed in a demanding university setting. Excellence is our standard.</p>
                         </div>
+                    </div>
+
+                    <div className="values-section">
+                        <h2>Our Core Values</h2>
+                        <div className="values-grid">
+                            <div className="value-item">
+                                <strong>Inclusivity</strong>
+                                <p>Every student belongs here, regardless of their background or field of study.</p>
+                            </div>
+                            <div className="value-item">
+                                <strong>Integrity</strong>
+                                <p>We uphold the highest standards of academic honesty and personal conduct.</p>
+                            </div>
+                            <div className="value-item">
+                                <strong>Innovation</strong>
+                                <p>We continuously evolve our platform to meet the changing needs of the modern student.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="guidelines-section">
+                        <h2>Community Guidelines</h2>
+                        <p>To maintain a high-value environment, we expect all members to:</p>
+                        <ul>
+                            <li>Respect the opinions and backgrounds of all peers.</li>
+                            <li>Provide constructive feedback in study groups.</li>
+                            <li>Avoid any form of academic dishonesty or plagiarism.</li>
+                            <li>Report any content that violates our safety policies.</li>
+                        </ul>
                     </div>
 
                     <div className="about-cta">

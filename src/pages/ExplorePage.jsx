@@ -238,6 +238,13 @@ const ExplorePage = () => {
             title: 'Information & Support',
             links: [
                 {
+                    name: 'Campus Hub (Blog)',
+                    path: '/blog',
+                    icon: <BookOpen size={24} />,
+                    color: '#ff9f43',
+                    desc: 'Expert guides & study tips',
+                },
+                {
                     name: 'About KaruTeens',
                     path: '/about',
                     icon: <Info size={24} />,

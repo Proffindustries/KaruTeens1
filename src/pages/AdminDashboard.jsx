@@ -67,8 +67,22 @@ import { useToast } from '../context/ToastContext';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Handle responsive sidebar behavior
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth <= 1024) {
+                setSidebarOpen(false);
+            } else {
+                setSidebarOpen(true);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Check admin access
     if (user.role !== 'admin' && user.role !== 'superadmin') {

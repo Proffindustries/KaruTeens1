@@ -24,14 +24,10 @@ pub async fn ws_handler(
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 
-// Utility to broadcast to a specific user
+// Utility to broadcast to a specific user via Redis Pub/Sub
 pub async fn send_to_user(state: &Arc<AppState>, user_id: &ObjectId, payload: &WsPayload) {
-    if let Some(connections) = state.ws_connections.get(user_id) {
-        let msg_text = serde_json::to_string(payload).unwrap();
-        for tx in connections.value() {
-            let _ = tx.send(Message::Text(msg_text.clone()));
-        }
-    }
+    let channel = format!("ws:user:{}", user_id.to_hex());
+    state.cache.publish(&channel, payload).await;
 }
 
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
@@ -39,8 +35,9 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
     let (tx, mut rx) = mpsc::unbounded_channel();
     
     let mut current_user_id: Option<ObjectId> = None;
+    let mut redis_sub_task: Option<tokio::task::JoinHandle<()>> = None;
 
-    // Handle outgoing messages
+    // Handle outgoing messages to the WebSocket
     let send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
             if sender.send(msg).await.is_err() {
@@ -49,7 +46,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         }
     });
 
-    // Handle incoming messages (Authentication first)
+    // Handle incoming messages from the WebSocket (Authentication first)
     while let Some(Ok(msg)) = receiver.next().await {
         if let Message::Text(text) = msg {
             if let Ok(payload) = serde_json::from_str::<serde_json::Value>(&text) {
@@ -58,11 +55,35 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                     if let Some(token) = payload["token"].as_str() {
                         if let Ok(claims_data) = decode_token(token, &state.jwt_secret) {
                             if let Ok(uid) = ObjectId::parse_str(&claims_data.claims.sub) {
+                                // If already authenticated, skip
+                                if current_user_id.is_some() { continue; }
+                                
                                 current_user_id = Some(uid);
                                 
-                                // Register connection
+                                // Register connection locally for cleanup/stats
                                 state.ws_connections.entry(uid).or_default().push(tx.clone());
                                 
+                                // Subscribe to Redis channel for this user
+                                let channel = format!("ws:user:{}", uid.to_hex());
+                                let redis_url = state.redis_url.clone();
+                                let tx_inner = tx.clone();
+                                
+                                redis_sub_task = Some(tokio::spawn(async move {
+                                    if let Ok(client) = redis::Client::open(redis_url) {
+                                        if let Ok(mut pubsub_conn) = client.get_async_pubsub().await {
+                                            if pubsub_conn.subscribe(&channel).await.is_ok() {
+                                                let mut pubsub_stream = pubsub_conn.on_message();
+                                                while let Some(msg) = pubsub_stream.next().await {
+                                                    let payload: String = msg.get_payload().unwrap_or_default();
+                                                    if !payload.is_empty() {
+                                                        let _ = tx_inner.send(Message::Text(payload));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }));
+
                                 let _ = tx.send(Message::Text(serde_json::to_string(&json!({
                                     "type": "auth_success",
                                     "data": { "user_id": uid.to_hex() }
@@ -77,7 +98,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                         "error": "Not authenticated"
                     })).unwrap()));
                 } else {
-                    // Start signaling logic for authenticated users
+                    // Signaling logic for authenticated users
                     let msg_type = payload["type"].as_str().unwrap_or("");
                     if ["call-offer", "call-answer", "ice-candidate", "typing"].contains(&msg_type) {
                         if let Some(sender_uid) = current_user_id {
@@ -115,10 +136,14 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         if let Some(mut connections) = state.ws_connections.get_mut(&uid) {
             connections.retain(|c| !c.same_channel(&tx));
             if connections.is_empty() {
-                drop(connections); // Release lock before remove
+                drop(connections);
                 state.ws_connections.remove(&uid);
             }
         }
+    }
+    
+    if let Some(task) = redis_sub_task {
+        task.abort();
     }
     send_task.abort();
 }

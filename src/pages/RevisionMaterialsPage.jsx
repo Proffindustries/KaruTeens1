@@ -166,6 +166,26 @@ const RevisionMaterialsPage = () => {
                         ))}
                     </div>
                 )}
+
+                <section className="materials-faq card shadow-sm mt-12 p-8">
+                    <div className="section-title mb-6">
+                        <h2 className="text-2xl font-bold">About Our Resources</h2>
+                        <p className="text-muted">High-quality, peer-reviewed academic materials.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                        <div>
+                            <h4 className="font-bold text-primary mb-2">How are these materials curated?</h4>
+                            <p className="text-sm">Our platform leverages a community-driven curation model. Materials are uploaded by verified students and reviewed by student representatives from respective departments to ensure accuracy and relevance to current syllabi at Karatina University.</p>
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-secondary mb-2">Can I contribute my own notes?</h4>
+                            <p className="text-sm">Absolutely! KaruTeens thrives on peer cooperation. You can submit your revision materials through the 'Contribute' button. Once reviewed, your materials will be available to thousands of peers, and you'll earn community points.</p>
+                        </div>
+                    </div>
+                    <div className="mt-8 pt-8 border-t border-gray-100 text-center">
+                        <button className="btn btn-outline">Submit Your Materials</button>
+                    </div>
+                </section>
             </div>
     );
 };

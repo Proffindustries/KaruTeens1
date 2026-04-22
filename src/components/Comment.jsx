@@ -11,6 +11,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const [replyText, setReplyText] = useState('');
     const [replyMedia, setReplyMedia] = useState(null);
     const fileInputRef = useRef(null);
+    const replyInputRef = useRef(null);
 
     const handleReplyClick = useCallback(() => {
         setIsReplying(true);
@@ -28,6 +29,9 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                 await onReply(commentId, replyText, replyMedia);
                 setReplyText('');
                 setReplyMedia(null);
+                if (replyInputRef.current) {
+                    replyInputRef.current.style.height = 'inherit';
+                }
                 setIsReplying(false);
                 setShowReplies(true);
             } catch (error) {
@@ -130,13 +134,32 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                         className="reply-input-container"
                     >
                         <form onSubmit={handleReplySubmit} className="reply-form">
-                            <input
-                                type="text"
+                            <textarea
+                                ref={replyInputRef}
                                 placeholder={`Reply to ${comment.username}...`}
                                 value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                className="reply-input"
+                                onChange={(e) => {
+                                    setReplyText(e.target.value);
+                                    // Auto-expand
+                                    e.target.style.height = 'inherit';
+                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                }}
+                                rows="1"
+                                className="reply-textarea"
                                 autoFocus
+                                style={{
+                                    width: '100%',
+                                    padding: '8px 12px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #dfe4ea',
+                                    outline: 'none',
+                                    resize: 'none',
+                                    lineHeight: '1.4',
+                                    maxHeight: '120px',
+                                    display: 'block',
+                                    fontFamily: 'inherit',
+                                    fontSize: '0.9rem'
+                                }}
                             />
                             <div className="reply-actions">
                                 <input

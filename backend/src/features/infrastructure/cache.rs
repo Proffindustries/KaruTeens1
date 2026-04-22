@@ -89,6 +89,21 @@ impl CacheService {
         }
     }
 
+    pub async fn publish<T: Serialize>(&self, channel: &str, message: &T) -> bool {
+        let mut conn = self.conn.clone();
+        match serde_json::to_string(message) {
+            Ok(json) => {
+                let _: Result<i64, _> = redis::cmd("PUBLISH")
+                    .arg(channel)
+                    .arg(json)
+                    .query_async(&mut conn)
+                    .await;
+                true
+            }
+            Err(_) => false,
+        }
+    }
+
     pub async fn get_with_ttl(&self, key: &str) -> (Option<String>, Option<i64>) {
         let mut conn = self.conn.clone();
         let result: (Option<String>, Option<i64>) = redis::cmd("GETEX")

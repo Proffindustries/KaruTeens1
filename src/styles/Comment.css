@@ -134,8 +134,17 @@
     transition: border-color 0.2s ease;
 }
 
-.reply-input:focus {
+.reply-input:focus,
+.reply-textarea:focus {
     border-color: var(--primary-color, #1877f2);
+}
+
+.reply-textarea {
+    width: 100%;
+    background: rgb(var(--surface));
+    color: rgb(var(--text-main));
+    font-family: inherit;
+    transition: border-color 0.2s ease;
 }
 
 .reply-actions {

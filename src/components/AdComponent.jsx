@@ -24,6 +24,20 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
         }
     };
 
+    // Helper function for Cloudinary optimization
+    const getOptimizedAdUrl = (url, transformations = 'f_auto,q_auto,w_1080') => {
+        if (!url || !url.includes('cloudinary.com')) return url;
+        const cloudinaryRegex = /(https?:\/\/res\.cloudinary\.com\/[^/]+\/(image|video)\/upload\/)(v\d+\/)?(.+)/;
+        const match = url.match(cloudinaryRegex);
+        if (match) {
+            const baseUrl = match[1];
+            const version = match[3] || '';
+            const publicId = match[4];
+            return `${baseUrl}${transformations}/${version}${publicId}`;
+        }
+        return url;
+    };
+
     useEffect(() => {
         // Fetch local ads from backend - Future endpoint based on ad system
         const fetchLocalAds = async () => {
@@ -119,15 +133,52 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                         style={{ textDecoration: 'none', color: 'inherit' }}
                         onClick={() => trackAdEvent(localAd.id, 'click')}
                     >
-                        {localAd.creative_type === 'image' && (
+                        {/* Image Ad */}
+                        {localAd.creative_type === 'image' && localAd.assets?.[0]?.asset_url && (
                             <img 
-                                src={localAd.assets?.[0]?.asset_url} 
-                                alt={localAd.name} 
-                                style={{ width: '100%', borderRadius: 'var(--radius-sm)', marginBottom: '0.5rem' }} 
+                                src={getOptimizedAdUrl(localAd.assets?.[0]?.asset_url, 'f_auto,q_auto,w_800')} 
+                                alt={localAd.name || 'Advertisement'} 
+                                style={{ width: '100%', borderRadius: 'var(--radius-sm)', marginBottom: '0.5rem', display: 'block' }} 
+                                loading="lazy"
                             />
                         )}
-                        <h4 style={{ fontSize: '0.95rem', margin: '0 0 4px 0' }}>{localAd.headline}</h4>
-                        <p style={{ fontSize: '0.8rem', color: 'rgb(var(--text-muted))', margin: 0 }}>{localAd.description}</p>
+
+                        {/* Video Ad */}
+                        {localAd.creative_type === 'video' && localAd.assets?.[0]?.asset_url && (
+                            <video 
+                                autoPlay 
+                                muted 
+                                loop 
+                                playsInline
+                                poster={getOptimizedAdUrl(localAd.assets?.[0]?.asset_url, 'f_auto,q_auto,so_1,w_800').replace(/\.[^/.]+$/, '.jpg')}
+                                style={{ width: '100%', borderRadius: 'var(--radius-sm)', marginBottom: '0.5rem', display: 'block' }}
+                                aria-label={localAd.headline || 'Promotional Video'}
+                            >
+                                <source src={getOptimizedAdUrl(localAd.assets?.[0]?.asset_url, 'f_auto,q_auto,vc_h265')} type="video/mp4" />
+                                Your browser does not support the video tag.
+                            </video>
+                        )}
+
+                        {/* Text Content */}
+                        <h4 style={{ fontSize: '0.95rem', margin: '0 0 4px 0', fontWeight: '700' }}>
+                            {localAd.headline}
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: 'rgb(var(--text-muted))', margin: 0, lineHeight: '1.4' }}>
+                            {localAd.description}
+                        </p>
+                        
+                        {localAd.call_to_action && (
+                            <div style={{ 
+                                marginTop: '0.75rem', 
+                                display: 'inline-block', 
+                                fontSize: '0.75rem', 
+                                fontWeight: '600', 
+                                color: 'rgb(var(--primary))',
+                                borderBottom: '1px solid currentColor'
+                            }}>
+                                {localAd.call_to_action} →
+                            </div>
+                        )}
                     </a>
                 </div>
             ) : (

@@ -93,6 +93,7 @@ const PostCard = React.memo(({ post }) => {
     const { showToast } = useToast();
     const currentUser = JSON.parse(localStorage.getItem('user'));
     const fileInputRef = useRef(null);
+    const commentInputRef = useRef(null);
 
     const isOwner = currentUser?.username === post.user;
     const cardRef = React.useRef(null);
@@ -259,6 +260,9 @@ const PostCard = React.memo(({ post }) => {
             });
             setCommentText('');
             setCommentMedia(null);
+            if (commentInputRef.current) {
+                commentInputRef.current.style.height = 'inherit';
+            }
         } catch (error) {
             setCommentsCount(previousCount);
             showToast('Failed to post comment', 'error');
@@ -472,13 +476,13 @@ const PostCard = React.memo(({ post }) => {
                     </button>
                     {showMenu && (
                         <div className="post-options-menu">
-                            <button className="menu-item" onClick={handleCopyLink}>
+                            <button className="menu-item" onClick={handleCopyLink} aria-label="Copy post link">
                                 <Link2 size={18} />
                                 Copy Link
                             </button>
                             {!isOwner && !post.is_anonymous && (
                                 <>
-                                    <button className="menu-item" onClick={handleHidePost}>
+                                    <button className="menu-item" onClick={handleHidePost} aria-label="Hide this post">
                                         <EyeOff size={18} />
                                         Not Interested
                                     </button>
@@ -774,10 +778,30 @@ const PostCard = React.memo(({ post }) => {
                                 onSubmit={handleCommentSubmit}
                                 style={{ flex: 1, position: 'relative' }}
                             >
-                                <input
+                                <textarea
+                                    ref={commentInputRef}
                                     placeholder="Write a comment..."
                                     value={commentText}
-                                    onChange={(e) => setCommentText(e.target.value)}
+                                    onChange={(e) => {
+                                        setCommentText(e.target.value);
+                                        // Auto-expand
+                                        e.target.style.height = 'inherit';
+                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                                    }}
+                                    rows="1"
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 80px 10px 12px',
+                                        borderRadius: '20px',
+                                        border: '1px solid #dfe4ea',
+                                        outline: 'none',
+                                        resize: 'none',
+                                        lineHeight: '1.5',
+                                        maxHeight: '150px',
+                                        display: 'block',
+                                        fontFamily: 'inherit',
+                                        fontSize: '0.95rem'
+                                    }}
                                 />
                                 <div
                                     className="comment-form-actions"

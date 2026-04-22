@@ -69,3 +69,23 @@ export const useMarkSold = () => {
         },
     });
 };
+
+export const useBoostItem = () => {
+    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+
+    return useMutation({
+        mutationFn: async (itemId) => {
+            const { data } = await api.post(`/marketplace/${itemId}/boost`);
+            return data;
+        },
+        onSuccess: (_, itemId) => {
+            queryClient.invalidateQueries({ queryKey: ['marketplaceItems'] });
+            queryClient.invalidateQueries({ queryKey: ['marketplaceItem', itemId] });
+            showToast('Item boosted for 24 hours! 🔥', 'success');
+        },
+        onError: (err) => {
+            showToast(err.response?.data?.error || 'Failed to boost item', 'error');
+        },
+    });
+};

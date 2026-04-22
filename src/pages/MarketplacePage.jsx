@@ -90,6 +90,11 @@ const MarketplacePage = () => {
                                             className="item-image"
                                             loading="lazy"
                                         />
+                                        {item.boosted_until && new Date(item.boosted_until) > new Date() && (
+                                            <div className="boosted-badge">
+                                                <Zap size={12} fill="currentColor" /> FEATURED
+                                            </div>
+                                        )}
                                         <div className="item-price">
                                             {item.currency} {item.price}
                                         </div>

@@ -14,77 +14,8 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
-import 'katex/dist/katex.min.css';
-import { BlockMath, InlineMath } from 'react-katex';
+import FormattedText from '../components/FormattedText';
 import '../styles/AiPage.css';
-
-// Simple Markdown-like formatter for academic points
-const FormattedText = ({ text }) => {
-    if (!text) return null;
-
-    // Handle math blocks \[ ... \]
-    const segments = text.split(/(\\\[[\s\S]*?\\\])/g);
-
-    return (
-        <div className="formatted-content">
-            {segments.map((segment, i) => {
-                if (segment.startsWith('\\[') && segment.endsWith('\\]')) {
-                    const math = segment.slice(2, -2).trim();
-                    return (
-                        <div key={i} className="math-block-container">
-                            <BlockMath math={math} />
-                        </div>
-                    );
-                }
-
-                // Handle inline math \( ... \)
-                const inlineSegments = segment.split(/(\\\(.*?\\\))/g);
-                return inlineSegments.map((inline, j) => {
-                    if (inline.startsWith('\\(') && inline.endsWith('\\)')) {
-                        const math = inline.slice(2, -2).trim();
-                        return <InlineMath key={`${i}-${j}`} math={math} />;
-                    }
-
-                    // Handle standard formatting for the rest
-                    const lines = inline.split('\n');
-                    return lines.map((line, k) => {
-                        if (line.trim().startsWith('* ') || line.trim().startsWith('- ')) {
-                            const content = line.trim().substring(2);
-                            return <li key={`${i}-${j}-${k}`}>{formatBold(content)}</li>;
-                        }
-
-                        if (line.startsWith('#')) {
-                            const level = (line.match(/^#+/)?.[0] || '#').length;
-                            const content = line.replace(/^#+\s*/, '');
-                            return React.createElement(
-                                `h${Math.min(level + 1, 4)}`,
-                                { key: `${i}-${j}-${k}` },
-                                formatBold(content),
-                            );
-                        }
-
-                        return line.trim() === '' ? (
-                            <br key={`${i}-${j}-${k}`} />
-                        ) : (
-                            <p key={`${i}-${j}-${k}`}>{formatBold(line)}</p>
-                        );
-                    });
-                });
-            })}
-        </div>
-    );
-};
-
-// Helper for bold text **like this**
-const formatBold = (text) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={i}>{part.slice(2, -2)}</strong>;
-        }
-        return part;
-    });
-};
 
 const AiPage = () => {
     const [messages, setMessages] = useState([

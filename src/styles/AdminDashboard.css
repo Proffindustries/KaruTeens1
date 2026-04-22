@@ -451,7 +451,8 @@
     }
     .admin-sidebar.open {
         transform: translateX(0);
-        width: 280px;
+        width: 100%; /* Cover full width on mobile for better usability */
+        max-width: 300px;
     }
     .admin-sidebar.open .admin-brand h2,
     .admin-sidebar.open .admin-nav-item span {
@@ -459,12 +460,41 @@
     }
     .admin-main {
         margin-left: 0;
+        width: 100%;
+        overflow-x: hidden;
     }
     .admin-header {
         padding: 1rem;
+        margin-bottom: 1rem;
     }
     .overview-tab {
         padding: 0 1rem;
+        gap: 1.5rem;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr; /* Stack vertically on small mobile */
+        gap: 1rem;
+    }
+    .stat-card {
+        padding: 1.25rem;
+    }
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    .quick-actions {
+        padding: 1.5rem;
+    }
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-header h1 {
+        font-size: 1.2rem;
+    }
+    .header-left {
+        gap: 0.75rem;
     }
 }
 

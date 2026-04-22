@@ -54,6 +54,9 @@ import { useMediaUpload } from '../hooks/useMedia';
 import PremiumGate from '../components/PremiumGate';
 import Avatar from '../components/Avatar';
 
+import api from '../api/client';
+import FormattedText from '../components/FormattedText';
+
 const StudyRoomsPage = () => {
     const { roomId } = useParams();
     const { user } = useAuth();
@@ -202,7 +205,29 @@ const ActiveRoom = ({ roomId }) => {
     const [isLofiPlaying, setIsLofiPlaying] = useState(false);
     const [lofiVolume, setLofiVolume] = useState(0.5);
 
+    // AI Study Buddy State
+    const [aiQuestion, setAiQuestion] = useState('');
+    const [aiAnswer, setAiAnswer] = useState(null);
+    const [isAiThinking, setIsAiThinking] = useState(false);
+
     const [whiteboardChannel, setWhiteboardChannel] = useState(null);
+
+    const askStudyBuddy = async () => {
+        if (!aiQuestion.trim() || isAiThinking) return;
+        setIsAiThinking(true);
+        setAiAnswer(null);
+        try {
+            const { data } = await api.post('/ai/chat', {
+                message: `As an academic assistant in a study room named "${room?.name}", please answer this student question: ${aiQuestion}`,
+                history: []
+            });
+            setAiAnswer(data.reply);
+        } catch (e) {
+            showToast('AI Study Buddy is busy. Try again later.', 'error');
+        } finally {
+            setIsAiThinking(false);
+        }
+    };
     const [chatChannel, setChatChannel] = useState(null);
     const [filesChannel, setFilesChannel] = useState(null);
 
@@ -454,17 +479,44 @@ const ActiveRoom = ({ roomId }) => {
             </div>
 
             <div className="column-card">
-                <div className="focus-panel">
+                <div className="focus-panel" style={{ paddingBottom: '0.5rem', borderBottom: '1px solid var(--study-glass-border)' }}>
                     <div className="timer-display"><div className="timer-time">{formatTime(pomodoroTime)}</div></div>
                     <div className="timer-controls">
                         <button className="btn btn-primary btn-sm" onClick={()=>setIsPomodoroActive(!isPomodoroActive)}>{isPomodoroActive?'Pause':'Start'}</button>
                         <button className="btn btn-outline btn-sm" onClick={()=>setPomodoroTime(25*60)}>Reset</button>
                     </div>
-                    <div className="lofi-controls">
-                        <div className="lofi-header"><span>Music</span><button onClick={()=>setIsLofiPlaying(!isLofiPlaying)}>{isLofiPlaying?'Mute':'Play'}</button></div>
-                        <input type="range" min="0" max="1" step="0.01" value={lofiVolume} onChange={e=>setLofiVolume(e.target.value)} />
+                </div>
+
+                <div className="ai-buddy-panel" style={{ padding: '1rem', borderBottom: '1px solid var(--study-glass-border)', background: 'rgba(var(--primary), 0.05)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Brain size={18} color="var(--primary)" />
+                        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>AI Study Buddy</h3>
+                    </div>
+                    <div className="ai-buddy-content" style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                        {isAiThinking ? (
+                            <div className="flex items-center gap-2 py-2">
+                                <Loader size={14} className="spin-anim" />
+                                <span>Thinking...</span>
+                            </div>
+                        ) : aiAnswer ? (
+                            <FormattedText text={aiAnswer} />
+                        ) : (
+                            <p style={{ opacity: 0.6 }}>Ask me anything about your studies!</p>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <input 
+                            className="chat-input" 
+                            style={{ fontSize: '0.8rem', padding: '0.4rem' }} 
+                            placeholder="Question..." 
+                            value={aiQuestion}
+                            onChange={(e) => setAiQuestion(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && askStudyBuddy()}
+                        />
+                        <button className="btn-icon-small" onClick={askStudyBuddy} disabled={isAiThinking}><Send size={14} /></button>
                     </div>
                 </div>
+
                 <div className="chat-messages" style={{ flex: 1, overflowY: 'auto' }}>
                     {messages.map((m, i) => (
                         <div key={i} className={`chat-bubble ${m.username===user?.username?'own':''}`}>

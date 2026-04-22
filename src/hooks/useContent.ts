@@ -26,7 +26,7 @@ export const usePost = (postId?: string) => {
         queryKey: ['post', postId],
         queryFn: async () => {
             if (!postId) throw new Error('Post ID is required');
-            const { data } = await api.get<PostResponse>(`/posts/${postId}`);
+            const { data } = await (api as any).get<PostResponse>(`/posts/${postId}`);
             return data;
         },
         enabled: !!postId,
@@ -191,6 +191,7 @@ export const useAddComment = () => {
             queryClient.invalidateQueries({ queryKey: ['post'] });
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             queryClient.invalidateQueries({ queryKey: ['groupPosts'] });
+            queryClient.invalidateQueries({ queryKey: ['comments'] });
             showToast('Comment added!', 'success');
         },
         onError: (err: any) => {
@@ -291,7 +292,7 @@ export const useSaveDraft = () => {
             is_nsfw?: boolean;
             title?: string;
         }) => {
-            const { data } = await api.post<PostResponse>('/posts/drafts', draftData);
+            const { data } = await (api as any).post<PostResponse>('/posts/drafts', draftData);
             return data;
         },
         onSuccess: () => {
@@ -366,8 +367,7 @@ export const useDraftPreview = (draftId?: string) => {
     return useQuery<PostResponse, Error>({
         queryKey: ['draftPreview', draftId],
         queryFn: async () => {
-            if (!draftId) throw new Error('Draft ID is required');
-            const { data } = await api.get<PostResponse>(`/posts/drafts/${draftId}/preview`);
+            const { data } = await (api as any).get<PostResponse>(`/posts/drafts/${draftId}/preview`);
             return data;
         },
         enabled: !!draftId,
