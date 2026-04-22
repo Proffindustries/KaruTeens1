@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MessageCircle, Share2, Music, User, ArrowLeft, Loader, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import '../styles/ReelsPage.css';
@@ -12,48 +12,21 @@ const ReelsPage = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const containerRef = useRef(null);
     const navigate = useNavigate();
+    const location = useLocation();
     const { showToast } = useToast();
 
-    useEffect(() => {
-        fetchReels();
-    }, []);
-
-    const fetchReels = async () => {
-        setLoading(true);
-        try {
-            const { data } = await api.get('/reels/feed');
-            setReels(data);
-        } catch (error) {
-            console.error('Failed to fetch reels:', error);
-            showToast('Failed to load reels', 'error');
-        } finally {
-            setLoading(false);
+    const handleBack = () => {
+        if (location.key !== 'default') {
+            navigate(-1);
+        } else {
+            navigate('/feed');
         }
     };
-
-    const handleScroll = () => {
-        if (!containerRef.current) return;
-        const index = Math.round(
-            containerRef.current.scrollTop / containerRef.current.clientHeight,
-        );
-        if (index !== currentIndex) {
-            setCurrentIndex(index);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="reels-loading">
-                <Loader size={48} className="spin-anim" />
-                <p>Loading Reels...</p>
-            </div>
-        );
-    }
-
+// ...
     return (
         <div className="reels-page">
             <div className="reels-header">
-                <button className="back-btn" onClick={() => navigate(-1)}>
+                <button className="back-btn" onClick={handleBack}>
                     <ArrowLeft size={24} />
                 </button>
                 <h2>Reels</h2>

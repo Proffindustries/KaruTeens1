@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { usePost } from '../hooks/useContent.js';
 import PostCard from '../components/PostCard.jsx';
@@ -11,7 +11,16 @@ import '../styles/PostDetailPage.css';
 const PostDetailPage = () => {
     const { postId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { data: post, isLoading, error } = usePost(postId);
+
+    const handleBack = () => {
+        if (location.key !== 'default') {
+            navigate(-1);
+        } else {
+            navigate('/feed');
+        }
+    };
 
     if (isLoading) {
         return (
@@ -46,13 +55,7 @@ const PostDetailPage = () => {
             />
             <div className="post-detail-header">
                 <button
-                    onClick={() => {
-                        if (window.history.length > 2) {
-                            navigate(-1);
-                        } else {
-                            navigate('/feed');
-                        }
-                    }}
+                    onClick={handleBack}
                     className="back-link"
                 >
                     <ArrowLeft size={24} /> Back
