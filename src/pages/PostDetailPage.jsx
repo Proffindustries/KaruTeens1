@@ -1,10 +1,11 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { usePost } from '../hooks/useContent.js';
 import PostCard from '../components/PostCard.jsx';
 import AdComponent from '../components/AdComponent.jsx';
 import SEO from '../components/SEO.jsx';
+import { PostSkeleton } from '../components/Skeleton.jsx';
 import '../styles/PostDetailPage.css';
 
 const PostDetailPage = () => {
@@ -14,8 +15,8 @@ const PostDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="container post-detail-page-loading">
-                <Loader2 className="animate-spin" size={40} />
+            <div className="container post-detail-page">
+                <PostSkeleton />
             </div>
         );
     }
