@@ -54,20 +54,22 @@ const PerformanceMonitor = ({ children }) => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <AuthProvider>
-            <QueryClientProvider client={queryClient}>
-                <ThemeProvider>
-                    <BrowserRouter>
-                        <ToastProvider>
-                            <UploadProvider>
-                                <PerformanceMonitor>
-                                    <App />
-                                </PerformanceMonitor>
-                            </UploadProvider>
-                        </ToastProvider>
-                    </BrowserRouter>
-                </ThemeProvider>
-            </QueryClientProvider>
-        </AuthProvider>
+        <HelmetProvider>
+            <AuthProvider>
+                <QueryClientProvider client={queryClient}>
+                    <ThemeProvider>
+                        <BrowserRouter>
+                            <ToastProvider>
+                                <UploadProvider>
+                                    <PerformanceMonitor>
+                                        <App />
+                                    </PerformanceMonitor>
+                                </UploadProvider>
+                            </ToastProvider>
+                        </BrowserRouter>
+                    </ThemeProvider>
+                </QueryClientProvider>
+            </AuthProvider>
+        </HelmetProvider>
     </React.StrictMode>,
 );
