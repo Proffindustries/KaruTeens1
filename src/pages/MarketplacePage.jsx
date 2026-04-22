@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, PlusCircle, Tag, CheckCircle } from 'lucide-react';
+import { Search, Filter, PlusCircle, Tag, CheckCircle, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import '../styles/MarketplacePage.css';
