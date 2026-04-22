@@ -25,12 +25,19 @@ import { useToast } from '../context/ToastContext.jsx';
 import Avatar from './Avatar.jsx';
 import { useCreateGroupPost } from '../hooks/useGroups.js';
 
-const CreatePostModal = React.memo(({ isOpen, onClose, groupId = null, pageId = null, pageName = null }) => {
-    const [text, setText] = useState('');
+const CreatePostModal = React.memo(({ isOpen, onClose, groupId = null, pageId = null, pageName = null, initialText = '' }) => {
+    const [text, setText] = useState(initialText);
     const [location, setLocation] = useState(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [showLocationOptions, setShowLocationOptions] = useState(false);
+
+    // Reset text when modal opens if initialText changes
+    useEffect(() => {
+        if (isOpen) {
+            setText(initialText || '');
+        }
+    }, [isOpen, initialText]);
 
     // New fields
     const [audience, setAudience] = useState(['all']);

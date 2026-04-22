@@ -155,10 +155,9 @@ const TemplatesPage = () => {
         return matchesSearch && matchesCategory;
     });
 
-    const copyTemplate = (template) => {
-        navigator.clipboard.writeText(template.content);
-        setCopiedId(template.id);
-        setTimeout(() => setCopiedId(null), 2000);
+    const useTemplate = (template) => {
+        setCurrentTemplate(template.content);
+        setTemplateModalOpen(true);
     };
 
     const getCategoryIcon = (category) => {
@@ -186,6 +185,11 @@ const TemplatesPage = () => {
 
     return (
         <div className="templates-page">
+            <CreatePostModal 
+                isOpen={templateModalOpen} 
+                onClose={() => setTemplateModalOpen(false)} 
+                initialText={currentTemplate} 
+            />
             <div className="templates-header">
                 <h1>📝 Content Templates</h1>
                 <p>Quick templates for common study posts</p>
@@ -235,18 +239,10 @@ const TemplatesPage = () => {
                         </div>
                         <pre className="template-content">{template.content}</pre>
                         <button
-                            className={`copy-btn ${copiedId === template.id ? 'copied' : ''}`}
-                            onClick={() => copyTemplate(template)}
+                            className="copy-btn"
+                            onClick={() => useTemplate(template)}
                         >
-                            {copiedId === template.id ? (
-                                <>
-                                    <Check size={16} /> Copied!
-                                </>
-                            ) : (
-                                <>
-                                    <Copy size={16} /> Copy Template
-                                </>
-                            )}
+                            <Copy size={16} /> Use Template
                         </button>
                     </motion.div>
                 ))}
