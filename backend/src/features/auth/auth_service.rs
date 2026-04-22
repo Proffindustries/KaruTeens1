@@ -264,7 +264,7 @@ pub async fn login_handler(
         }
     }
 
-    let expiration = Utc::now().checked_add_signed(Duration::hours(24)).unwrap().timestamp() as usize;
+    let expiration = Utc::now().checked_add_signed(Duration::days(180)).unwrap().timestamp() as usize;
 
     let claims = Claims {
         sub: user_id.to_hex(),
@@ -450,7 +450,7 @@ pub async fn logout_handler(
 ) -> AppResult<impl IntoResponse> {
     let mut conn = state.redis.clone();
     let token_key = format!("blacklist:{}", user.token);
-    let ttl = 86400;
+    let ttl = 180 * 24 * 3600; // 180 days
     let _ = conn.set_ex::<_, _, ()>(&token_key, "1", ttl).await;
     Ok(Json(json!({"message": "Logged out successfully"})))
 }
