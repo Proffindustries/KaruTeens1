@@ -430,3 +430,54 @@
 .spinner {
     animation: spin 1s linear infinite;
 }
+
+.trending-suggestions-mini {
+    margin: 0.5rem 0 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.trending-suggestions-mini .label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgb(var(--text-muted));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag-suggest-btn {
+    background: rgba(var(--border), 0.2);
+    border: 1px solid rgba(var(--border), 0.5);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgb(var(--text-main));
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tag-suggest-btn:hover {
+    background: rgba(var(--primary), 0.1);
+    border-color: rgba(var(--primary), 0.3);
+    color: rgb(var(--primary));
+    transform: translateY(-1px);
+}
+
+.tag-suggest-btn.premade {
+    background: rgba(var(--secondary), 0.05);
+    border-color: rgba(var(--secondary), 0.2);
+    color: rgb(var(--secondary));
+}
+
+.tag-suggest-btn.premade:hover {
+    background: rgba(var(--secondary), 0.15);
+    border-color: rgba(var(--secondary), 0.4);
+}

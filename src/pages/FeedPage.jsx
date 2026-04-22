@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Star, Sparkles } from 'lucide-react';
+import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Star, Sparkles, Hash } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
@@ -8,10 +8,13 @@ import '../styles/FeedPage.css';
 import Avatar from '../components/Avatar.jsx';
 import { useInfiniteFeed, useForYouFeed, useTrendingPosts, useTrendingTopics } from '../hooks/useContent';
 import { useAuth, useLogout } from '../hooks/useAuth.js';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import AdComponent from '../components/AdComponent.jsx';
 
 const FeedPage = () => {
+    const [searchParams] = useSearchParams();
+    const searchQuery = searchParams.get('search');
+    
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [feedType, setFeedType] = useState('infinite'); // 'infinite', 'for-you', or 'trending'
     const { ref, inView } = useInView({ threshold: 0 });
@@ -22,7 +25,7 @@ const FeedPage = () => {
     const { data: trending, isLoading: isTrendingLoading } = useTrendingTopics();
 
     // Use the correct feed hook based on active tab
-    const homeFeed = useInfiniteFeed();
+    const homeFeed = useInfiniteFeed({ search: searchQuery });
     const forYouFeed = useForYouFeed();
     const trendingFeed = useTrendingPosts();
 
@@ -109,6 +112,15 @@ const FeedPage = () => {
 
             {/* Main Feed Area */}
             <main className="feed-main">
+                {searchQuery && (
+                    <div className="card shadow-sm mb-4" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: 'rgba(var(--primary), 0.1)', border: '1px solid rgba(var(--primary), 0.3)', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                            <Hash size={20} color="rgb(var(--primary))" />
+                            <span style={{ fontSize: '0.95rem' }}>Filtering by: <strong>{searchQuery}</strong></span>
+                        </div>
+                        <Link to="/feed" className="btn btn-sm btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', border: '1px solid rgb(var(--primary))' }}>Clear Filter</Link>
+                    </div>
+                )}
                 {/* Feed Type Toggle */}
                 <div className="feed-toggle card shadow-sm">
                     <button

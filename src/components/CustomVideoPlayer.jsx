@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Settings } from 'lucide-react';
 import { useInView } from 'react-intersection-observer'; // Import useInView
+import { useToast } from '../context/ToastContext';
 import '../styles/CustomVideoPlayer.css';
 
 const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }) => {
@@ -12,6 +13,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showCaptions, setShowCaptions] = useState(false);
     const [aspectRatioClass, setAspectRatioClass] = useState('');
+    const { showToast } = useToast();
     const videoRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -184,8 +186,13 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
                         <div className="progress-filled" style={{ width: `${progress}%` }} />
                     </div>
                     <div className="controls-row">
-                        <div className="time-display">
-                            {formatTime(currentTime)} / {formatTime(duration)}
+                        <div className="left-controls" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                            <button className="control-btn-icon" onClick={togglePlayPause}>
+                                {isPlaying ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" />}
+                            </button>
+                            <div className="time-display">
+                                {formatTime(currentTime)} / {formatTime(duration)}
+                            </div>
                         </div>
                         <div className="right-controls">
                             <button className="control-btn" onClick={changeSpeed}>
@@ -197,6 +204,9 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
                                 title="Auto-captions"
                             >
                                 CC
+                            </button>
+                            <button className="control-btn-icon" onClick={() => showToast('Video quality: Auto (720p)', 'info')}>
+                                <Settings size={18} />
                             </button>
                         </div>
                     </div>

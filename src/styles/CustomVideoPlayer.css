@@ -114,30 +114,38 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-    padding: 12px 16px 8px;
-    opacity: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    padding: 20px 16px 12px; /* Increased padding for better touch */
+    opacity: 1; /* Always visible on mobile, or at least easier to trigger */
     transition: opacity 0.3s ease;
+    z-index: 10;
 }
 
-.custom-video-player:hover .video-controls {
-    opacity: 1;
+/* On desktop, keep the hover effect, but on mobile let it be more persistent or triggered by tap */
+@media (hover: hover) {
+    .video-controls {
+        opacity: 0;
+    }
+    .custom-video-player:hover .video-controls {
+        opacity: 1;
+    }
 }
 
 .progress-bar {
     width: 100%;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
+    height: 12px; /* Thicker for easier touch */
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
     cursor: pointer;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     position: relative;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
 }
 
 .progress-filled {
-    height: 100%;
-    background: var(--primary-color, #1877f2);
+    height: 4px; /* Actual line is thinner */
+    background: var(--primary-color, #ff6b6b);
     border-radius: 2px;
     transition: width 0.1s linear;
     position: relative;
@@ -184,8 +192,25 @@
     background: rgba(255, 255, 255, 0.4);
 }
 
+.control-btn-icon {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.control-btn-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .control-btn.active {
-    background: var(--primary-color, #1877f2);
+    background: var(--primary-color, #ff6b6b);
 }
 
 .captions-overlay {

@@ -80,6 +80,16 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                 script.dataset.cfasync = 'false';
                 document.body.appendChild(script);
             }
+            // Load AdSense script
+            const ADSENSE_ID = 'adsbygoogle-js';
+            if (!document.getElementById(ADSENSE_ID)) {
+                const script = document.createElement('script');
+                script.id = ADSENSE_ID;
+                script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + (import.meta.env.VITE_ADSENSE_CLIENT_ID || "ca-pub-placeholder");
+                script.async = true;
+                script.crossOrigin = 'anonymous';
+                document.body.appendChild(script);
+            }
         }
     }, [isPremium]);
 
@@ -188,30 +198,24 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                         {/* Adsterra Invoke Unit */}
                         <div id="container-3705d905f3bea18853eecd342950b3cb"></div>
                         
-                        {/* Dedicated AdSense Room (Placeholder for manual units) */}
+                        {/* Dedicated AdSense Room */}
                         <div className="adsense-reserve" style={{ 
                             marginTop: '1.5rem', 
                             minHeight: '100px', 
-                            background: 'rgba(var(--text-muted), 0.05)',
-                            border: '1px dashed rgba(var(--border), 0.5)',
-                            borderRadius: 'var(--radius-md)',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '1rem'
+                            justifyContent: 'center'
                         }}>
-                            <span style={{ fontSize: '0.7rem', color: 'rgb(var(--text-muted))', marginBottom: '4px' }}>Google AdSense</span>
-                            <span style={{ fontSize: '0.6rem', color: 'rgb(var(--text-muted))', opacity: 0.6 }}>Placement ID: Manual_Unit_01</span>
-                            {/* 
-                                FUTURE: Insert AdSense code here 
-                                <ins className="adsbygoogle"
-                                     style={{display:'block'}}
-                                     data-ad-client={import.meta.env.VITE_ADSENSE_CLIENT_ID || "ca-pub-placeholder"}
-                                     data-ad-slot={import.meta.env.VITE_ADSENSE_SLOT_ID || "placeholder"}
-                                     data-ad-format="auto"
-                                     data-full-width-responsive="true"></ins>
-                            */}
+                            <ins className="adsbygoogle"
+                                 style={{display:'block'}}
+                                 data-ad-client={import.meta.env.VITE_ADSENSE_CLIENT_ID || "ca-pub-placeholder"}
+                                 data-ad-slot={import.meta.env.VITE_ADSENSE_SLOT_ID || "placeholder"}
+                                 data-ad-format="auto"
+                                 data-full-width-responsive="true"></ins>
+                            <script>
+                                (adsbygoogle = window.adsbygoogle || []).push({});
+                            </script>
                         </div>
                     </div>
                 )

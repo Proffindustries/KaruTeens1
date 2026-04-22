@@ -348,10 +348,9 @@ const PostCard = React.memo(({ post }) => {
                         className="hashtag"
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Future: Navigate to search with this tag
-                            showToast('Hashtag filtering coming soon!', 'info');
-                        }}
-                    >
+                            // Navigate to explore with hashtag filter
+                            navigate(`/explore?search=${encodeURIComponent(part)}`);
+                            }}                    >
                         {part}
                     </span>
                 );

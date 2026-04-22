@@ -20,7 +20,7 @@ use crate::models::{Post, Profile, Location, ContentModeration};
 use crate::features::infrastructure::dto::{PostResponse, FeedResponse, CommentResponse, ReportPostRequest};
 use crate::features::infrastructure::error::{AppResult, AppError};
 use crate::features::auth::auth_service::AuthUser;
-use mongodb::{bson::doc, options::FindOptions};
+use mongodb::{bson::{doc, Bson}, options::FindOptions};
 use chrono::Utc;
 use bson::oid::ObjectId;
 use crate::features::social::notifications::create_notification;
@@ -341,14 +341,17 @@ pub async fn get_feed_handler(
     }
 
     let mut or_parts = vec![
-        // Regular posts (no group, no page)
-        doc! { "group_id": null, "page_id": null },
-        doc! { "group_id": { "$exists": false }, "page_id": { "$exists": false } },
-        // All page posts are public
+        // Regular posts (no group and no page)
+        doc! { 
+            "group_id": { "$in": [null, Bson::Null] }, 
+            "page_id": { "$in": [null, Bson::Null] } 
+        },
+        // Page posts (public by default)
         doc! { "page_id": { "$ne": null, "$exists": true } },
     ];
     
     if !users_group_ids.is_empty() {
+        // Group posts for groups the user belongs to (or public groups)
         or_parts.push(doc! { "group_id": { "$in": &users_group_ids } });
     }
     
@@ -818,13 +821,14 @@ pub async fn get_for_you_feed_handler(
 
         if !followed_ids.is_empty() || !users_group_ids.is_empty() || !followed_page_ids.is_empty() {
             let posts_collection = state.mongo.collection::<Post>("posts");
-            let mut or_parts = vec![doc! { "author_id": { "$in": &followed_ids } }];
+            let mut or_parts = vec![
+                doc! { "author_id": { "$in": &followed_ids } },
+                // Include all page posts (they are public)
+                doc! { "page_id": { "$ne": null, "$exists": true } }
+            ];
             
             if !users_group_ids.is_empty() {
                 or_parts.push(doc! { "group_id": { "$in": &users_group_ids } });
-            }
-            if !followed_page_ids.is_empty() {
-                or_parts.push(doc! { "page_id": { "$in": &followed_page_ids } });
             }
 
             let mut filter = doc! {

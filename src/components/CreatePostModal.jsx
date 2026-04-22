@@ -17,7 +17,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CreatePostModal.css';
-import { useCreatePost } from '../hooks/useContent.js';
+import { useCreatePost, useTrendingTopics } from '../hooks/useContent.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useUpload } from '../context/UploadContext.jsx';
 import { useAuth } from '../hooks/useAuth.js';
@@ -62,6 +62,15 @@ const CreatePostModal = React.memo(({ isOpen, onClose, groupId = null, pageId = 
     const { showToast } = useToast();
     const { mutate: createFeedPost } = useCreatePost();
     const { mutate: createGroupPost } = useCreateGroupPost();
+    const { data: trending } = useTrendingTopics();
+
+    const appendHashtag = (tag) => {
+        setText((prev) => {
+            const trimmed = prev.trim();
+            return trimmed ? `${trimmed} ${tag} ` : `${tag} `;
+        });
+    };
+
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { uploadImage, uploadFile } = useMediaUpload();
 
@@ -401,6 +410,35 @@ const CreatePostModal = React.memo(({ isOpen, onClose, groupId = null, pageId = 
                                     disabled={isPosting}
                                     autoFocus
                                 ></textarea>
+
+                                {trending && trending.length > 0 && (
+                                    <div className="trending-suggestions-mini">
+                                        <span className="label">Trending:</span>
+                                        <div className="tags-list">
+                                            {trending.slice(0, 5).map((tag, idx) => (
+                                                <button 
+                                                    key={idx} 
+                                                    className="tag-suggest-btn"
+                                                    onClick={() => appendHashtag(tag.id)}
+                                                    type="button"
+                                                >
+                                                    {tag.id}
+                                                </button>
+                                            ))}
+                                            {/* Pre-made suggestions */}
+                                            {['#KaruTeens', '#CampusLife', '#KaratinaUniversity'].map((tag, idx) => (
+                                                <button 
+                                                    key={`suggest-${idx}`} 
+                                                    className="tag-suggest-btn premade"
+                                                    onClick={() => appendHashtag(tag)}
+                                                    type="button"
+                                                >
+                                                    {tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {previews.length > 0 && (
                                     <div className="media-preview-grid">

@@ -117,10 +117,11 @@
 
 /* Mobile Styles */
 .mobile-menu {
-    position: absolute;
-    top: 100%;
+    position: fixed;
+    top: 3.5rem; /* Matches mobile navbar height */
     left: 0;
     right: 0;
+    bottom: 0;
     background: rgb(var(--surface));
     padding: 1.5rem;
     display: flex;
@@ -129,6 +130,8 @@
     border-bottom: 1px solid rgba(var(--border), 0.5);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     animation: slideDown 0.3s ease-out;
+    z-index: 1001;
+    overflow-y: auto;
 }
 
 @keyframes slideDown {

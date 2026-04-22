@@ -306,7 +306,7 @@ const ExplorePage = () => {
                         {trending.map((tag, i) => (
                             <Link
                                 key={i}
-                                to={`/search?q=${tag.id.replace('#', '')}`}
+                                to={`/feed?search=${encodeURIComponent(tag.id)}`}
                                 className="trending-tag"
                             >
                                 <span className="hashtag-icon">
