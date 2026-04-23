@@ -15,6 +15,29 @@ pub struct StudyRoom {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TimetableClass {
+    pub id: String,
+    pub title: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub room: String,
+    pub day: String,
+    pub professor: Option<String>,
+    pub course_code: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Timetable {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    pub name: String,
+    pub is_template: bool,
+    pub classes: Vec<TimetableClass>,
+    pub created_at: bson::DateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RevisionMaterial {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
