@@ -247,7 +247,7 @@ const Navbar = React.memo(() => {
                             <button
                                 onClick={() => {
                                     logout();
-                                    toggleMenu();
+                                    setIsOpen(false);
                                 }}
                                 className="btn btn-outline"
                                 style={{ width: '100%' }}
