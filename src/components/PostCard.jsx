@@ -587,6 +587,11 @@ const PostCard = React.memo(({ post }) => {
                                     ) {
                                         return; // Let video player handle it
                                     }
+
+                                    // If it's audio, don't navigate (let the player handle it)
+                                    if (isAudio) {
+                                        return;
+                                    }
                                     
                                     // Only navigate if we're not already on the post detail page
                                     if (window.location.pathname !== `/post/${postId}`) {

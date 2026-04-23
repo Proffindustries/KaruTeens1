@@ -5,6 +5,8 @@ import AuthLayout from './layouts/AuthLayout.jsx';
 import UploadProgress from './components/UploadProgress.jsx';
 import { WebsocketProvider } from './context/WebsocketContext.jsx';
 import { AblyProvider } from './context/AblyContext.jsx';
+import { AudioProvider } from './context/AudioContext.jsx';
+import GlobalAudioPlayer from './components/GlobalAudioPlayer.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
@@ -60,8 +62,9 @@ function App() {
     console.log('App component rendering');
     return (
         <AblyProvider>
-            <WebsocketProvider>
-                <ErrorBoundary>
+            <AudioProvider>
+                <WebsocketProvider>
+                    <ErrorBoundary>
                     <Suspense
                         fallback={
                             <div
@@ -163,8 +166,10 @@ function App() {
                     </Suspense>
                 </ErrorBoundary>
                 <UploadProgress />
+                <GlobalAudioPlayer />
             </WebsocketProvider>
-        </AblyProvider>
+        </AudioProvider>
+    </AblyProvider>
     );
 }
 

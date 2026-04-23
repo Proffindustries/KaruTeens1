@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/TemplatesPage.css';
+import CreatePostModal from '../components/CreatePostModal.jsx';
 
 const TEMPLATES = [
     {
@@ -146,6 +147,8 @@ const TemplatesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [copiedId, setCopiedId] = useState(null);
+    const [templateModalOpen, setTemplateModalOpen] = useState(false);
+    const [currentTemplate, setCurrentTemplate] = useState('');
 
     const filteredTemplates = TEMPLATES.filter((t) => {
         const matchesSearch =
