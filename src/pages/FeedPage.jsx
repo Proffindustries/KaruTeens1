@@ -25,7 +25,7 @@ const FeedPage = () => {
     const { data: trending, isLoading: isTrendingLoading } = useTrendingTopics();
 
     // Use the correct feed hook based on active tab
-    const homeFeed = useInfiniteFeed({ search: searchQuery });
+    const homeFeed = useInfiniteFeed();
     const forYouFeed = useForYouFeed();
     const trendingFeed = useTrendingPosts();
 
