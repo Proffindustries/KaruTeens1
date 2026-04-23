@@ -32,17 +32,20 @@ const Navbar = React.memo(() => {
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
         }
         return () => {
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
         };
     }, [isOpen]);
 
     return (
         <>
-            <nav className="navbar">
+            <nav className={`navbar ${isOpen ? 'menu-open' : ''}`}>
                 <div className="container navbar-content">
                     <Link to="/" className="navbar-logo" state={{ explicitHome: true }}>
                         <Logo width="140px" height="46px" />
