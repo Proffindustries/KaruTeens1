@@ -118,7 +118,7 @@ const FeedPage = () => {
                             <Hash size={20} color="rgb(var(--primary))" />
                             <span style={{ fontSize: '0.95rem' }}>Filtering by: <strong>{searchQuery}</strong></span>
                         </div>
-                        <Link to="/feed" className="btn btn-sm btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', border: '1px solid rgb(var(--primary))' }}>Clear Filter</Link>
+                        <Link to="/feed" replace className="btn btn-sm btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', border: '1px solid rgb(var(--primary))' }}>Clear Filter</Link>
                     </div>
                 )}
                 {/* Feed Type Toggle */}

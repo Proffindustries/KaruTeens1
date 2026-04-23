@@ -135,7 +135,7 @@ const OnboardingPage = () => {
             storedUser.onboarded = true;
             localStorage.setItem('user', JSON.stringify(storedUser));
             showToast('Welcome to KaruTeens! 🎉', 'success');
-            navigate('/feed');
+            navigate('/feed', { replace: true });
             window.location.reload();
         } catch (err) {
             console.error('Onboarding failed:', err);
@@ -178,7 +178,7 @@ const OnboardingPage = () => {
             console.error('Skip onboarding failed:', err);
             return;
         }
-        navigate('/feed');
+        navigate('/feed', { replace: true });
         window.location.reload();
     };
 

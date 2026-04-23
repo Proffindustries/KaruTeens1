@@ -348,9 +348,11 @@ const PostCard = React.memo(({ post }) => {
                         className="hashtag"
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Navigate to explore with hashtag filter
-                            navigate(`/explore?search=${encodeURIComponent(part)}`);
-                            }}                    >
+                            // Use replace: true if already on explore to avoid history bloat
+                            const isExplore = window.location.pathname.startsWith('/explore');
+                            navigate(`/explore?search=${encodeURIComponent(part)}`, { replace: isExplore });
+                        }}
+                    >
                         {part}
                     </span>
                 );
@@ -585,7 +587,11 @@ const PostCard = React.memo(({ post }) => {
                                     ) {
                                         return; // Let video player handle it
                                     }
-                                    navigate(`/post/${postId}`);
+                                    
+                                    // Only navigate if we're not already on the post detail page
+                                    if (window.location.pathname !== `/post/${postId}`) {
+                                        navigate(`/post/${postId}`);
+                                    }
                                 };
 
                                 return (

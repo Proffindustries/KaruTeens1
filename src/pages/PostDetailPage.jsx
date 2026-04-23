@@ -18,7 +18,7 @@ const PostDetailPage = () => {
         if (location.key !== 'default') {
             navigate(-1);
         } else {
-            navigate('/feed');
+            navigate('/feed', { replace: true });
         }
     };
 
