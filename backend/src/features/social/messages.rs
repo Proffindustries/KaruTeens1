@@ -738,6 +738,8 @@ pub async fn send_message_handler(
             avatar_url: c.avatar_url,
         }),
         is_view_once: payload.is_view_once.unwrap_or(false),
+        is_system: false,
+        is_announcement: false,
         viewed_at: None,
         expires_at: chat.disappearing_duration.map(|d| {
             let expires = chrono::Utc::now() + chrono::Duration::seconds(d);
