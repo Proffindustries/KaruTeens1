@@ -64,6 +64,7 @@ pub struct FeedQuery {
     pub feed_type: Option<String>,
     pub group_id: Option<String>,
     pub page_id: Option<String>,
+    pub search: Option<String>,
 }
 
 // --- Helper Functions ---
@@ -374,6 +375,28 @@ pub async fn get_feed_handler(
         }
     } else {
         filter.insert("$or", or_parts);
+    }
+
+    // Add search query if provided
+    if let Some(ref search_query) = query.search {
+        if !search_query.trim().is_empty() {
+            let search_regex = doc! { "$regex": search_query, "$options": "i" };
+            let search_or = vec![
+                doc! { "content": search_regex.clone() },
+                doc! { "title": search_regex },
+            ];
+            
+            if let Ok(existing_or) = filter.get_array("$or") {
+                let existing_or = existing_or.clone();
+                filter.remove("$or");
+                filter.insert("$and", vec![
+                    doc! { "$or": existing_or },
+                    doc! { "$or": search_or }
+                ]);
+            } else {
+                filter.insert("$or", search_or);
+            }
+        }
     }
     
     // Add last_id for pagination

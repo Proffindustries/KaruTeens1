@@ -349,8 +349,8 @@ const PostCard = React.memo(({ post }) => {
                         onClick={(e) => {
                             e.stopPropagation();
                             // Use replace: true if already on explore to avoid history bloat
-                            const isExplore = window.location.pathname.startsWith('/explore');
-                            navigate(`/explore?search=${encodeURIComponent(part)}`, { replace: isExplore });
+                            const isFeed = window.location.pathname.startsWith('/feed');
+                            navigate(`/feed?search=${encodeURIComponent(part)}`, { replace: isFeed });
                         }}
                     >
                         {part}

@@ -38,11 +38,14 @@ export const useInfinitePosts = <T = any>(
 /**
  * Infinite query for standard feed
  */
-export const useInfiniteFeed = () => {
+export const useInfiniteFeed = (search?: string) => {
     return useInfinitePosts(
         '/posts/feed',
-        ['feed', 'infinite'],
-        (pageParam) => ({ last_id: pageParam }),
+        ['feed', 'infinite', search || ''],
+        (pageParam) => ({ 
+            last_id: pageParam,
+            search: search 
+        }),
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.FEED_POSTS,

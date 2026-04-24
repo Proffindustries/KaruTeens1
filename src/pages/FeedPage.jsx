@@ -25,7 +25,7 @@ const FeedPage = () => {
     const { data: trending, isLoading: isTrendingLoading } = useTrendingTopics();
 
     // Use the correct feed hook based on active tab
-    const homeFeed = useInfiniteFeed();
+    const homeFeed = useInfiniteFeed(searchQuery);
     const forYouFeed = useForYouFeed();
     const trendingFeed = useTrendingPosts();
 
@@ -376,12 +376,17 @@ const FeedPage = () => {
                         <div className="trending-list">
                             {trending?.length > 0 ? (
                                 trending.map((item, idx) => (
-                                    <div key={idx} className="trending-item">
-                                        <span className="trending-tag">{item.tag}</span>
-                                        <span className="trending-count">
+                                    <Link 
+                                        key={idx} 
+                                        to={`/feed?search=${encodeURIComponent(item.tag)}`} 
+                                        className="trending-item"
+                                        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                                    >
+                                        <span className="trending-tag" style={{ color: 'var(--primary)', fontWeight: '600' }}>{item.tag}</span>
+                                        <span className="trending-count" style={{ display: 'block' }}>
                                             {item.count} posts today
                                         </span>
-                                    </div>
+                                    </Link>
                                 ))
                             ) : (
                                 <p style={{ fontSize: '0.85rem', color: 'rgb(var(--text-muted))' }}>
