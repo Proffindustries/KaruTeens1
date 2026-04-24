@@ -57,14 +57,14 @@ const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800')
 
 const getVideoThumbnail = (url) => {
     if (!url) return null;
-    
+
     // Improved Cloudinary thumbnail generation
     if (url.includes('cloudinary.com') && url.includes('/video/')) {
         try {
             // Find where 'upload' or 'authenticated' is
             const typeMatch = url.match(/\/(upload|authenticated)\//);
             if (!typeMatch) return null;
-            
+
             const partToRepl = typeMatch[0];
             // Replace the type and append transformations
             // We use 'so_1' as it's more reliable than 'so_auto' for new uploads
@@ -76,7 +76,7 @@ const getVideoThumbnail = (url) => {
             return null;
         }
     }
-    
+
     return null;
 };
 
@@ -350,7 +350,9 @@ const PostCard = React.memo(({ post }) => {
                             e.stopPropagation();
                             // Use replace: true if already on explore to avoid history bloat
                             const isFeed = window.location.pathname.startsWith('/feed');
-                            navigate(`/feed?search=${encodeURIComponent(part)}`, { replace: isFeed });
+                            navigate(`/feed?search=${encodeURIComponent(part)}`, {
+                                replace: isFeed,
+                            });
                         }}
                     >
                         {part}
@@ -477,13 +479,21 @@ const PostCard = React.memo(({ post }) => {
                     </button>
                     {showMenu && (
                         <div className="post-options-menu">
-                            <button className="menu-item" onClick={handleCopyLink} aria-label="Copy post link">
+                            <button
+                                className="menu-item"
+                                onClick={handleCopyLink}
+                                aria-label="Copy post link"
+                            >
                                 <Link2 size={18} />
                                 Copy Link
                             </button>
                             {!isOwner && !post.is_anonymous && (
                                 <>
-                                    <button className="menu-item" onClick={handleHidePost} aria-label="Hide this post">
+                                    <button
+                                        className="menu-item"
+                                        onClick={handleHidePost}
+                                        aria-label="Hide this post"
+                                    >
                                         <EyeOff size={18} />
                                         Not Interested
                                     </button>
@@ -592,7 +602,7 @@ const PostCard = React.memo(({ post }) => {
                                     if (isAudio) {
                                         return;
                                     }
-                                    
+
                                     // Only navigate if we're not already on the post detail page
                                     if (window.location.pathname !== `/post/${postId}`) {
                                         navigate(`/post/${postId}`);
@@ -608,9 +618,9 @@ const PostCard = React.memo(({ post }) => {
                                     >
                                         {isVideo ? (
                                             <div className="video-wrapper">
-                                                <CustomVideoPlayer 
-                                                    src={url} 
-                                                    poster={getVideoThumbnail(url)} 
+                                                <CustomVideoPlayer
+                                                    src={url}
+                                                    poster={getVideoThumbnail(url)}
                                                 />
                                             </div>
                                         ) : isAudio ? (
@@ -810,7 +820,7 @@ const PostCard = React.memo(({ post }) => {
                                         maxHeight: '150px',
                                         display: 'block',
                                         fontFamily: 'inherit',
-                                        fontSize: '0.95rem'
+                                        fontSize: '0.95rem',
                                     }}
                                 />
                                 <div

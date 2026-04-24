@@ -295,6 +295,8 @@ const MediaManagementTab = () => {
     };
 
     useEffect(() => {
+        let mounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsLoading(true);
         // Fetch real data from API
         Promise.all([
@@ -304,20 +306,29 @@ const MediaManagementTab = () => {
             api.get('/cdn-status'),
         ])
             .then(([mediaRes, jobsRes, statsRes, cdnRes]) => {
-                setMediaFiles(mediaRes.data);
-                setOptimizationJobs(jobsRes.data);
-                setStorageStats(statsRes.data);
-                setCDNStatus(cdnRes.data);
+                if (mounted) {
+                    setMediaFiles(mediaRes.data);
+                    setOptimizationJobs(jobsRes.data);
+                    setStorageStats(statsRes.data);
+                    setCDNStatus(cdnRes.data);
+                }
             })
             .catch((error) => {
                 console.error('Failed to load media management data:', error);
-                // Set appropriate empty states
-                setMediaFiles([]);
-                setOptimizationJobs([]);
-                setStorageStats({});
-                setCDNStatus({});
+                if (mounted) {
+                    // Set appropriate empty states
+                    setMediaFiles([]);
+                    setOptimizationJobs([]);
+                    setStorageStats({});
+                    setCDNStatus({});
+                }
             })
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                if (mounted) setIsLoading(false);
+            });
+        return () => {
+            mounted = false;
+        };
     }, [filters]);
 
     const handleFilterChange = (key, value) => {

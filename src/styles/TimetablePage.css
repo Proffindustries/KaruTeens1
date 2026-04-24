@@ -128,7 +128,9 @@
     background: rgb(var(--surface));
     border: 1px solid rgba(var(--border), 0.5);
     border-radius: var(--radius-lg);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
 }
 
 .class-card:hover {

@@ -8,7 +8,7 @@ import '../styles/BlogPage.css';
 
 const BlogDetailPage = () => {
     const { slug } = useParams();
-    const post = BLOG_POSTS.find(p => p.slug === slug);
+    const post = BLOG_POSTS.find((p) => p.slug === slug);
 
     if (!post) {
         return <Navigate to="/blog" replace />;
@@ -16,16 +16,21 @@ const BlogDetailPage = () => {
 
     return (
         <div className="blog-detail-page">
-            <SEO 
-                title={post.title} 
+            <SEO
+                title={post.title}
                 description={post.excerpt}
                 ogImage={post.image}
                 ogType="article"
             />
 
-            <div className="blog-detail-hero" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${post.image})` }}>
+            <div
+                className="blog-detail-hero"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${post.image})`,
+                }}
+            >
                 <div className="container">
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="hero-content"
@@ -50,7 +55,7 @@ const BlogDetailPage = () => {
 
             <div className="container blog-content-wrapper">
                 <div className="content-grid">
-                    <motion.article 
+                    <motion.article
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="post-content card"
@@ -58,7 +63,7 @@ const BlogDetailPage = () => {
                         {post.content.split('\n\n').map((paragraph, i) => (
                             <p key={i}>{paragraph}</p>
                         ))}
-                        
+
                         <div className="post-footer">
                             <div className="tags">
                                 <Tag size={16} />
@@ -75,15 +80,24 @@ const BlogDetailPage = () => {
                     <aside className="blog-sidebar">
                         <div className="sidebar-widget card">
                             <h3>About KaruTeens</h3>
-                            <p>We are the leading social hub for students in Kenya, providing tools for academic success and social growth.</p>
-                            <Link to="/register" className="btn btn-primary btn-block">Join Us</Link>
+                            <p>
+                                We are the leading social hub for students in Kenya, providing tools
+                                for academic success and social growth.
+                            </p>
+                            <Link to="/register" className="btn btn-primary btn-block">
+                                Join Us
+                            </Link>
                         </div>
 
                         <div className="sidebar-widget card">
                             <h3>Latest Posts</h3>
                             <div className="related-posts">
-                                {BLOG_POSTS.filter(p => p.slug !== slug).map(p => (
-                                    <Link to={`/blog/${p.slug}`} key={p.slug} className="related-post-item">
+                                {BLOG_POSTS.filter((p) => p.slug !== slug).map((p) => (
+                                    <Link
+                                        to={`/blog/${p.slug}`}
+                                        key={p.slug}
+                                        className="related-post-item"
+                                    >
                                         <div className="related-img">
                                             <img src={p.image} alt={p.title} />
                                         </div>

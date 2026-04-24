@@ -100,7 +100,7 @@ export const useLikePost = () => {
                                 };
                             }
                             return post;
-                        }),
+                        })
                     ),
                 };
             });
@@ -147,7 +147,7 @@ export const useUnlikePost = () => {
                                 };
                             }
                             return post;
-                        }),
+                        })
                     ),
                 };
             });
@@ -241,7 +241,7 @@ export const useSavePost = () => {
                                 };
                             }
                             return post;
-                        }),
+                        })
                     ),
                 };
             });
@@ -367,7 +367,9 @@ export const useDraftPreview = (draftId?: string) => {
     return useQuery<PostResponse, Error>({
         queryKey: ['draftPreview', draftId],
         queryFn: async () => {
-            const { data } = await (api as any).get<PostResponse>(`/posts/drafts/${draftId}/preview`);
+            const { data } = await (api as any).get<PostResponse>(
+                `/posts/drafts/${draftId}/preview`
+            );
             return data;
         },
         enabled: !!draftId,
@@ -394,8 +396,8 @@ export const useDeletePost = () => {
                     ...old,
                     pages: old.pages.map((page: PostResponse[]) =>
                         page.filter(
-                            (post: PostResponse) => (post.id || (post as any)._id) !== postId,
-                        ),
+                            (post: PostResponse) => (post.id || (post as any)._id) !== postId
+                        )
                     ),
                 };
             });
@@ -415,12 +417,40 @@ export const useDeletePost = () => {
     });
 };
 
+export const useDeleteComment = () => {
+    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+
+    return useMutation({
+        mutationFn: async (commentId: string) => {
+            const { data } = await api.delete(`/comments/${commentId}`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['comments'] });
+            queryClient.invalidateQueries({ queryKey: ['post'] });
+            showToast('Comment deleted!', 'success');
+        },
+        onError: (err: any) => {
+            showToast(err.response?.data?.error || 'Failed to delete comment', 'error');
+        },
+    });
+};
+
 export const useReportPost = () => {
     const queryClient = useQueryClient();
     const { showToast } = useToast();
 
     return useMutation({
-        mutationFn: async ({ postId, reason, description }: { postId: string, reason: string, description: string | null }) => {
+        mutationFn: async ({
+            postId,
+            reason,
+            description,
+        }: {
+            postId: string;
+            reason: string;
+            description: string | null;
+        }) => {
             const { data } = await api.post(`/posts/${postId}/report`, { reason, description });
             return data;
         },

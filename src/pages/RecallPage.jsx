@@ -22,14 +22,7 @@ const RecallPage = () => {
         category: 'all',
     });
 
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            fetchMaterials();
-        }, 500); // Debounce search
-        return () => clearTimeout(timeoutId);
-    }, [filters]);
-
-    const fetchMaterials = async () => {
+    const fetchMaterials = React.useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
@@ -40,7 +33,9 @@ const RecallPage = () => {
             if (filters.category !== 'all') params.append('category', filters.category);
 
             const { data } = await api.get(`/revision-materials?${params.toString()}`);
-            const filteredData = data.filter(item => RECALL_CATEGORIES.includes(item.category) || (!item.category));
+            const filteredData = data.filter(
+                (item) => RECALL_CATEGORIES.includes(item.category) || !item.category,
+            );
             setMaterials(filteredData);
         } catch (error) {
             console.error('Failed to fetch revision materials:', error);
@@ -48,7 +43,11 @@ const RecallPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters, showToast]);
+
+    useEffect(() => {
+        fetchMaterials();
+    }, [fetchMaterials]);
 
     const handleUnlock = (id) => {
         // Logic to trigger payment modal would go here

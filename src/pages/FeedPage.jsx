@@ -1,12 +1,26 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Image as ImageIcon, Video, FileText, TrendingUp, Star, Sparkles, Hash } from 'lucide-react';
+import {
+    Plus,
+    Image as ImageIcon,
+    Video,
+    FileText,
+    TrendingUp,
+    Star,
+    Sparkles,
+    Hash,
+} from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import { PostSkeleton } from '../components/Skeleton.jsx';
 import '../styles/FeedPage.css';
 import Avatar from '../components/Avatar.jsx';
-import { useInfiniteFeed, useForYouFeed, useTrendingPosts, useTrendingTopics } from '../hooks/useContent';
+import {
+    useInfiniteFeed,
+    useForYouFeed,
+    useTrendingPosts,
+    useTrendingTopics,
+} from '../hooks/useContent';
 import { useAuth, useLogout } from '../hooks/useAuth.js';
 import { Link, useSearchParams } from 'react-router-dom';
 import AdComponent from '../components/AdComponent.jsx';
@@ -14,7 +28,7 @@ import AdComponent from '../components/AdComponent.jsx';
 const FeedPage = () => {
     const [searchParams] = useSearchParams();
     const searchQuery = searchParams.get('search');
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [feedType, setFeedType] = useState('infinite'); // 'infinite', 'for-you', or 'trending'
     const { ref, inView } = useInView({ threshold: 0 });
@@ -30,9 +44,7 @@ const FeedPage = () => {
     const trendingFeed = useTrendingPosts();
 
     const activeFeed =
-        feedType === 'for-you' ? forYouFeed :
-        feedType === 'trending' ? trendingFeed :
-        homeFeed;
+        feedType === 'for-you' ? forYouFeed : feedType === 'trending' ? trendingFeed : homeFeed;
 
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = activeFeed;
 
@@ -81,8 +93,14 @@ const FeedPage = () => {
                         ) : (
                             <div className="guest-sidebar-cta">
                                 <h3>Welcome to KaruTeens</h3>
-                                <p>Join our campus community to share posts and connect with students.</p>
-                                <Link to="/register" className="btn btn-primary btn-sm btn-full mt-2">
+                                <p>
+                                    Join our campus community to share posts and connect with
+                                    students.
+                                </p>
+                                <Link
+                                    to="/register"
+                                    className="btn btn-primary btn-sm btn-full mt-2"
+                                >
                                     Join Now
                                 </Link>
                                 <Link to="/login" className="btn btn-outline btn-sm btn-full mt-2">
@@ -113,12 +131,44 @@ const FeedPage = () => {
             {/* Main Feed Area */}
             <main className="feed-main">
                 {searchQuery && (
-                    <div className="card shadow-sm mb-4" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: 'rgba(var(--primary), 0.1)', border: '1px solid rgba(var(--primary), 0.3)', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                    <div
+                        className="card shadow-sm mb-4"
+                        style={{
+                            padding: '0.75rem 1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '1rem',
+                            background: 'rgba(var(--primary), 0.1)',
+                            border: '1px solid rgba(var(--primary), 0.3)',
+                            marginBottom: '1rem',
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                flex: 1,
+                            }}
+                        >
                             <Hash size={20} color="rgb(var(--primary))" />
-                            <span style={{ fontSize: '0.95rem' }}>Filtering by: <strong>{searchQuery}</strong></span>
+                            <span style={{ fontSize: '0.95rem' }}>
+                                Filtering by: <strong>{searchQuery}</strong>
+                            </span>
                         </div>
-                        <Link to="/feed" replace className="btn btn-sm btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', border: '1px solid rgb(var(--primary))' }}>Clear Filter</Link>
+                        <Link
+                            to="/feed"
+                            replace
+                            className="btn btn-sm btn-outline"
+                            style={{
+                                padding: '0.25rem 0.75rem',
+                                fontSize: '0.8rem',
+                                border: '1px solid rgb(var(--primary))',
+                            }}
+                        >
+                            Clear Filter
+                        </Link>
                     </div>
                 )}
                 {/* Feed Type Toggle */}
@@ -167,27 +217,19 @@ const FeedPage = () => {
                                         userSelect: 'none',
                                     }}
                                 >
-                                    What's happening on campus, {user.username?.split(' ')[0] || 'Student'}?
+                                    What's happening on campus,{' '}
+                                    {user.username?.split(' ')[0] || 'Student'}?
                                 </div>
                             </div>
                         </div>
                         <div className="create-post-actions">
-                            <button
-                                className="cp-action"
-                                onClick={() => setIsModalOpen(true)}
-                            >
+                            <button className="cp-action" onClick={() => setIsModalOpen(true)}>
                                 <ImageIcon size={18} color="#00b894" /> Photo
                             </button>
-                            <button
-                                className="cp-action"
-                                onClick={() => setIsModalOpen(true)}
-                            >
+                            <button className="cp-action" onClick={() => setIsModalOpen(true)}>
                                 <Video size={18} color="#6c5ce7" /> Video
                             </button>
-                            <button
-                                className="cp-action"
-                                onClick={() => setIsModalOpen(true)}
-                            >
+                            <button className="cp-action" onClick={() => setIsModalOpen(true)}>
                                 <Plus size={18} color="#0984e3" /> More
                             </button>
                             <button
@@ -283,7 +325,14 @@ const FeedPage = () => {
                                 </div>
                             )}
                             {!hasNextPage && allPosts.length > 0 && (
-                                <p style={{ textAlign: 'center', padding: '2rem', color: 'rgb(var(--text-muted))', fontSize: '0.85rem' }}>
+                                <p
+                                    style={{
+                                        textAlign: 'center',
+                                        padding: '2rem',
+                                        color: 'rgb(var(--text-muted))',
+                                        fontSize: '0.85rem',
+                                    }}
+                                >
                                     You've seen all posts 🎉
                                 </p>
                             )}
@@ -376,14 +425,26 @@ const FeedPage = () => {
                         <div className="trending-list">
                             {trending?.length > 0 ? (
                                 trending.map((item, idx) => (
-                                    <Link 
-                                        key={idx} 
-                                        to={`/feed?search=${encodeURIComponent(item.tag)}`} 
+                                    <Link
+                                        key={idx}
+                                        to={`/feed?search=${encodeURIComponent(item.tag)}`}
                                         className="trending-item"
-                                        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                                        style={{
+                                            textDecoration: 'none',
+                                            color: 'inherit',
+                                            display: 'block',
+                                        }}
                                     >
-                                        <span className="trending-tag" style={{ color: 'var(--primary)', fontWeight: '600' }}>{item.tag}</span>
-                                        <span className="trending-count" style={{ display: 'block' }}>
+                                        <span
+                                            className="trending-tag"
+                                            style={{ color: 'var(--primary)', fontWeight: '600' }}
+                                        >
+                                            {item.tag}
+                                        </span>
+                                        <span
+                                            className="trending-count"
+                                            style={{ display: 'block' }}
+                                        >
                                             {item.count} posts today
                                         </span>
                                     </Link>
@@ -399,7 +460,13 @@ const FeedPage = () => {
 
                 <div className="card suggestions-card shadow-sm" style={{ marginTop: '1.5rem' }}>
                     <h3>Who to follow</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'rgb(var(--text-muted))', padding: '1rem 0' }}>
+                    <p
+                        style={{
+                            fontSize: '0.85rem',
+                            color: 'rgb(var(--text-muted))',
+                            padding: '1rem 0',
+                        }}
+                    >
                         Follow other students to see their posts in your feed!
                     </p>
                 </div>

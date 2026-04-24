@@ -20,7 +20,7 @@ const DonatePage = () => {
             try {
                 const [statsRes, donorsRes] = await Promise.all([
                     api.get('/payments/donations/stats'),
-                    api.get('/payments/donations/recent')
+                    api.get('/payments/donations/recent'),
                 ]);
                 setStats(statsRes.data);
                 setRecentDonors(donorsRes.data);
@@ -80,8 +80,10 @@ const DonatePage = () => {
                         setStep('complete');
                         clearInterval(interval);
                         // Refresh data
-                        api.get('/payments/donations/stats').then(res => setStats(res.data));
-                        api.get('/payments/donations/recent').then(res => setRecentDonors(res.data));
+                        api.get('/payments/donations/stats').then((res) => setStats(res.data));
+                        api.get('/payments/donations/recent').then((res) =>
+                            setRecentDonors(res.data),
+                        );
                     } else if (data.status === 'failed') {
                         setStep('pending');
                         setCheckoutId(null);
@@ -100,7 +102,7 @@ const DonatePage = () => {
         const date = new Date(dateStr);
         const now = new Date();
         const diff = Math.floor((now - date) / 1000);
-        
+
         if (diff < 60) return 'Just now';
         if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -122,8 +124,8 @@ const DonatePage = () => {
                             <h2>Make a Donation</h2>
                             <div className="preset-amounts">
                                 {[50, 100, 500, 1000].map((amt) => (
-                                    <button 
-                                        key={amt} 
+                                    <button
+                                        key={amt}
                                         onClick={() => setAmount(amt.toString())}
                                         className={amount === amt.toString() ? 'selected' : ''}
                                     >
@@ -143,7 +145,9 @@ const DonatePage = () => {
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ fontSize: '0.85rem', opacity: 0.8, fontWeight: '500' }}>
+                                <label
+                                    style={{ fontSize: '0.85rem', opacity: 0.8, fontWeight: '500' }}
+                                >
                                     M-Pesa Phone Number
                                 </label>
                                 <div style={{ position: 'relative', marginTop: '0.5rem' }}>
@@ -168,13 +172,22 @@ const DonatePage = () => {
                                 </div>
                             </div>
 
-                            <button 
-                                className="btn btn-primary btn-lg btn-full" 
+                            <button
+                                className="btn btn-primary btn-lg btn-full"
                                 onClick={handleDonate}
                                 disabled={loading}
                             >
-                                {loading ? 'Processing...' : (
-                                    <>Donate with M-Pesa <Heart size={20} fill="white" style={{ marginLeft: '8px' }} /></>
+                                {loading ? (
+                                    'Processing...'
+                                ) : (
+                                    <>
+                                        Donate with M-Pesa{' '}
+                                        <Heart
+                                            size={20}
+                                            fill="white"
+                                            style={{ marginLeft: '8px' }}
+                                        />
+                                    </>
                                 )}
                             </button>
                             <p className="donate-secure">
@@ -184,39 +197,69 @@ const DonatePage = () => {
                     )}
 
                     {step === 'processing' && (
-                        <div className="payment-waiting" style={{ textAlign: 'center', padding: '2rem 0' }}>
-                            <Loader size={48} className="spin-anim" color="#3742fa" style={{ margin: '0 auto' }} />
+                        <div
+                            className="payment-waiting"
+                            style={{ textAlign: 'center', padding: '2rem 0' }}
+                        >
+                            <Loader
+                                size={48}
+                                className="spin-anim"
+                                color="#3742fa"
+                                style={{ margin: '0 auto' }}
+                            />
                             <h3 style={{ marginTop: '1.5rem' }}>Waiting for PIN...</h3>
-                            <p>Please check your phone and enter your M-Pesa PIN to complete the donation.</p>
-                            <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '1rem' }}>
+                            <p>
+                                Please check your phone and enter your M-Pesa PIN to complete the
+                                donation.
+                            </p>
+                            <p
+                                className="text-muted"
+                                style={{ fontSize: '0.8rem', marginTop: '1rem' }}
+                            >
                                 Reference: {checkoutId}
                             </p>
-                            <button className="btn btn-ghost" onClick={() => setStep('pending')} style={{ marginTop: '1rem' }}>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => setStep('pending')}
+                                style={{ marginTop: '1rem' }}
+                            >
                                 Cancel
                             </button>
                         </div>
                     )}
 
                     {step === 'complete' && (
-                        <div className="success-message" style={{ textAlign: 'center', padding: '2rem 0' }}>
-                            <div style={{ 
-                                background: '#2ed573', 
-                                width: '80px', 
-                                height: '80px', 
-                                borderRadius: '50%', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                margin: '0 auto 1.5rem' 
-                            }}>
+                        <div
+                            className="success-message"
+                            style={{ textAlign: 'center', padding: '2rem 0' }}
+                        >
+                            <div
+                                style={{
+                                    background: '#2ed573',
+                                    width: '80px',
+                                    height: '80px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '0 auto 1.5rem',
+                                }}
+                            >
                                 <Check size={48} color="white" />
                             </div>
                             <h2>Thank You!</h2>
-                            <p>Your donation of Ksh {amount} has been received. We truly appreciate your support!</p>
-                            <button className="btn btn-primary btn-full" onClick={() => {
-                                setStep('pending');
-                                setAmount('');
-                            }} style={{ marginTop: '2rem' }}>
+                            <p>
+                                Your donation of Ksh {amount} has been received. We truly appreciate
+                                your support!
+                            </p>
+                            <button
+                                className="btn btn-primary btn-full"
+                                onClick={() => {
+                                    setStep('pending');
+                                    setAmount('');
+                                }}
+                                style={{ marginTop: '2rem' }}
+                            >
                                 Make Another Donation
                             </button>
                         </div>
@@ -252,12 +295,19 @@ const DonatePage = () => {
                                         <span className="donor-name">{d.name}</span>
                                         <div className="right">
                                             <span className="donor-amount">+{d.amount}</span>
-                                            <span className="donor-time">{formatTime(d.created_at)}</span>
+                                            <span className="donor-time">
+                                                {formatTime(d.created_at)}
+                                            </span>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>No donations yet. Be the first!</p>
+                                <p
+                                    className="text-muted"
+                                    style={{ textAlign: 'center', padding: '1rem' }}
+                                >
+                                    No donations yet. Be the first!
+                                </p>
                             )}
                         </div>
                     </div>

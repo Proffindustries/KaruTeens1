@@ -89,6 +89,9 @@ import { useToast } from '../context/ToastContext';
 
 const ReelManagementTab = () => {
     const [reels, setReels] = useState([]);
+    const [userStats, setUserStats] = useState([]);
+    const [transcodingJobs, setTranscodingJobs] = useState([]);
+    const [trendingReels, setTrendingReels] = useState([]);
     const [filters, setFilters] = useState({
         status: 'all',
         user_id: '',
@@ -286,6 +289,8 @@ const ReelManagementTab = () => {
     ];
 
     useEffect(() => {
+        let mounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsLoading(true);
         // Fetch real data from API
         Promise.all([
@@ -295,20 +300,29 @@ const ReelManagementTab = () => {
             api.get('/reel/trending'),
         ])
             .then(([reelsRes, statsRes, jobsRes, trendingRes]) => {
-                setReels(reelsRes.data);
-                setUserStats(statsRes.data);
-                setTranscodingJobs(jobsRes.data);
-                setTrendingReels(trendingRes.data);
+                if (mounted) {
+                    setReels(reelsRes.data);
+                    setUserStats(statsRes.data);
+                    setTranscodingJobs(jobsRes.data);
+                    setTrendingReels(trendingRes.data);
+                }
             })
             .catch((error) => {
                 console.error('Failed to load reel management data:', error);
-                // Set appropriate empty states
-                setReels([]);
-                setUserStats([]);
-                setTranscodingJobs([]);
-                setTrendingReels([]);
+                if (mounted) {
+                    // Set appropriate empty states
+                    setReels([]);
+                    setUserStats([]);
+                    setTranscodingJobs([]);
+                    setTrendingReels([]);
+                }
             })
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                if (mounted) setIsLoading(false);
+            });
+        return () => {
+            mounted = false;
+        };
     }, [filters]);
 
     const handleFilterChange = (key, value) => {

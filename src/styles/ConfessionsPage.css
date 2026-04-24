@@ -284,7 +284,8 @@
     cursor: not-allowed;
 }
 
-.loading-small, .empty-small {
+.loading-small,
+.empty-small {
     text-align: center;
     padding: 1rem;
     font-size: 0.85rem;

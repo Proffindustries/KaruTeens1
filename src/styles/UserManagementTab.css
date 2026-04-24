@@ -32,7 +32,8 @@
     gap: 1rem;
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -167,7 +168,8 @@
     font-weight: 600;
 }
 
-.filter-item input, .filter-item select {
+.filter-item input,
+.filter-item select {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #dee2e6;
@@ -176,12 +178,14 @@
     background: white;
 }
 
-.date-range, .number-range {
+.date-range,
+.number-range {
     display: flex;
     gap: 0.5rem;
 }
 
-.date-range input, .number-range input {
+.date-range input,
+.number-range input {
     flex: 1;
 }
 
@@ -478,39 +482,40 @@
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .search-filters {
         width: 100%;
     }
-    
+
     .filter-group {
         flex-wrap: wrap;
     }
-    
+
     .admin-table {
         font-size: 0.8rem;
     }
-    
-    .admin-table th, .admin-table td {
+
+    .admin-table th,
+    .admin-table td {
         padding: 0.75rem;
     }
-    
+
     .user-info {
         gap: 0.5rem;
     }
-    
+
     .avatar {
         width: 32px;
         height: 32px;
         font-size: 0.9rem;
     }
-    
+
     .table-header {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
     }
-    
+
     .bulk-actions {
         flex-direction: column;
         gap: 1rem;

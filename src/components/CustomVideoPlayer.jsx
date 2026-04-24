@@ -86,33 +86,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
         };
     }, [inView]); // Re-run effect when inView changes to attach/detach listeners
 
-    // Auto-pause when scrolled out of view (existing functionality, but now depends on inView for setup)
-    useEffect(() => {
-        const video = videoRef.current;
-        const container = containerRef.current;
-        if (!video || !container || !inView) return; // Only if in view
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    // If video is playing and scrolled out of view, pause it
-                    if (!entry.isIntersecting && !video.paused) {
-                        video.pause();
-                        setIsPlaying(false);
-                    }
-                });
-            },
-            {
-                threshold: 0.5, // Trigger when 50% of video is out of view
-            },
-        );
-
-        observer.observe(container);
-
-        return () => {
-            observer.disconnect();
-        };
-    }, [inView]); // Re-run when inView changes
+    // Auto-pause removed as per user request to continue audio when scrolling
 
     const togglePlayPause = (e) => {
         if (e) e.stopPropagation(); // Prevent bubbling to parent navigation handlers
@@ -149,15 +123,15 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
         <div className={`custom-video-player ${aspectRatioClass}`} ref={setRefs}>
             {/* Blurred background backdrop for premium look (like FB/TikTok) */}
             {poster && (
-                <div 
-                    className="video-blur-backdrop" 
+                <div
+                    className="video-blur-backdrop"
                     style={{ backgroundImage: `url(${poster})` }}
                 />
             )}
 
             {(!isPlaying || !inView) && poster && (
-                <div 
-                    className="video-poster-overlay" 
+                <div
+                    className="video-poster-overlay"
                     style={{ backgroundImage: `url(${poster})` }}
                     onClick={togglePlayPause}
                 />
@@ -183,38 +157,49 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
                 </div>
             )}
 
-            {inView && isPlaying && ( // Only show controls if video is playing/interacted with
-                <div className="video-controls">
-                    <div className="progress-bar" onClick={handleProgressClick}>
-                        <div className="progress-filled" style={{ width: `${progress}%` }} />
-                    </div>
-                    <div className="controls-row">
-                        <div className="left-controls" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                            <button className="control-btn-icon" onClick={togglePlayPause}>
-                                {isPlaying ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" />}
-                            </button>
-                            <div className="time-display">
-                                {formatTime(currentTime)} / {formatTime(duration)}
+            {inView &&
+                isPlaying && ( // Only show controls if video is playing/interacted with
+                    <div className="video-controls">
+                        <div className="progress-bar" onClick={handleProgressClick}>
+                            <div className="progress-filled" style={{ width: `${progress}%` }} />
+                        </div>
+                        <div className="controls-row">
+                            <div
+                                className="left-controls"
+                                style={{ display: 'flex', gap: '15px', alignItems: 'center' }}
+                            >
+                                <button className="control-btn-icon" onClick={togglePlayPause}>
+                                    {isPlaying ? (
+                                        <Pause size={18} fill="white" />
+                                    ) : (
+                                        <Play size={18} fill="white" />
+                                    )}
+                                </button>
+                                <div className="time-display">
+                                    {formatTime(currentTime)} / {formatTime(duration)}
+                                </div>
+                            </div>
+                            <div className="right-controls">
+                                <button className="control-btn" onClick={changeSpeed}>
+                                    {playbackRate}x
+                                </button>
+                                <button
+                                    className={`control-btn ${showCaptions ? 'active' : ''}`}
+                                    onClick={toggleCaptions}
+                                    title="Auto-captions"
+                                >
+                                    CC
+                                </button>
+                                <button
+                                    className="control-btn-icon"
+                                    onClick={() => showToast('Video quality: Auto (720p)', 'info')}
+                                >
+                                    <Settings size={18} />
+                                </button>
                             </div>
                         </div>
-                        <div className="right-controls">
-                            <button className="control-btn" onClick={changeSpeed}>
-                                {playbackRate}x
-                            </button>
-                            <button
-                                className={`control-btn ${showCaptions ? 'active' : ''}`}
-                                onClick={toggleCaptions}
-                                title="Auto-captions"
-                            >
-                                CC
-                            </button>
-                            <button className="control-btn-icon" onClick={() => showToast('Video quality: Auto (720p)', 'info')}>
-                                <Settings size={18} />
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
+                )}
             {showCaptions && isPlaying && (
                 <div className="captions-overlay">
                     <p>[Auto-generated captions...]</p>

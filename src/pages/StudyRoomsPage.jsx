@@ -49,6 +49,7 @@ import {
     useRoomHistory,
     useSaveRoomMessage,
     useSaveRoomFile,
+    useDeleteRoom,
 } from '../hooks/useStudyRooms';
 import { useAbly } from '../context/AblyContext';
 import { useToast } from '../context/ToastContext';
@@ -78,12 +79,13 @@ const StudyRoomsPage = () => {
 const RoomLobby = () => {
     const { data: rooms, isLoading } = useStudyRooms();
     const { mutate: createRoom } = useCreateRoom();
-    const { mutate: joinRoom } = useJoinRoom();
+    const { mutate: deleteRoom } = useDeleteRoom();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [roomName, setRoomName] = useState('');
     const [roomSubject, setRoomSubject] = useState('');
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { user } = useAuth();
 
     const handleCreateRoom = () => {
         if (!roomName.trim()) {
@@ -101,6 +103,19 @@ const RoomLobby = () => {
                     showToast(err.response?.data?.error || 'Failed to create room', 'error'),
             },
         );
+    };
+
+    const handleDeleteRoom = (roomId) => {
+        if (window.confirm('Are you sure you want to delete this room?')) {
+            deleteRoom(roomId, {
+                onSuccess: () => {
+                    showToast('Room deleted', 'success');
+                },
+                onError: (err) => {
+                    showToast('Failed to delete room', 'error');
+                },
+            });
+        }
     };
 
     return (
@@ -141,7 +156,27 @@ const RoomLobby = () => {
                             <div key={room.id} className="room-card card">
                                 <div className="room-card-header">
                                     <h3>{room.name}</h3>
-                                    <span className="live-badge">LIVE</span>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: '8px',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        {room.creator_id === user?.id && (
+                                            <button
+                                                className="icon-btn danger"
+                                                style={{ padding: '4px' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteRoom(room.id);
+                                                }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                        <span className="live-badge">LIVE</span>
+                                    </div>
                                 </div>
                                 {room.subject && (
                                     <div

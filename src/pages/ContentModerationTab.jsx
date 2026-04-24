@@ -398,10 +398,7 @@ const ContentModerationTab = () => {
                             {moderationQueue.map((item) => {
                                 const Icon = getTypeIcon(item.type);
                                 return (
-                                    <div
-                                        key={item.id}
-                                        className={`moderation-item ${item.status}`}
-                                    >
+                                    <div key={item.id} className={`moderation-item ${item.status}`}>
                                         <div className="item-header">
                                             <div className="item-type">
                                                 <Icon

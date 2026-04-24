@@ -4,7 +4,9 @@ import Logo from '../components/Logo';
 import '../styles/Auth.css';
 
 const LoadingFallback = () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '20vh' }}>
+    <div
+        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '20vh' }}
+    >
         <span style={{ color: '#687b8f' }}>Loading...</span>
     </div>
 );
@@ -30,9 +32,7 @@ const AuthLayout = ({ title, subtitle, children }) => {
                     {subtitle && <p className="auth-subtitle">{subtitle}</p>}
                 </div>
                 <div className="auth-body">
-                    <Suspense fallback={<LoadingFallback />}>
-                        {content}
-                    </Suspense>
+                    <Suspense fallback={<LoadingFallback />}>{content}</Suspense>
                 </div>
             </div>
         </div>

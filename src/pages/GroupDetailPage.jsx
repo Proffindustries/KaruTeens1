@@ -94,6 +94,18 @@ const GroupDetailPage = () => {
         }
     };
 
+    const handleDeleteGroup = async () => {
+        if (confirm('Are you sure you want to DELETE this group? This action cannot be undone.')) {
+            try {
+                await api.delete(`/groups/${groupId}`);
+                showToast('Group deleted', 'success');
+                navigate('/groups');
+            } catch (err) {
+                showToast('Failed to delete group', 'error');
+            }
+        }
+    };
+
     const handleEditBtnClick = () => {
         setEditGroupData({
             name: group.name || '',
@@ -217,6 +229,17 @@ const GroupDetailPage = () => {
                                             }}
                                         >
                                             <Settings size={18} /> Edit Settings
+                                        </button>
+                                    )}
+                                    {canEdit && (
+                                        <button
+                                            className="menu-item danger"
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                handleDeleteGroup();
+                                            }}
+                                        >
+                                            <X size={18} /> Delete Group
                                         </button>
                                     )}
                                     <button

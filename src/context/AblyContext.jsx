@@ -43,9 +43,12 @@ export const AblyProvider = ({ children }) => {
                         return;
                     } catch (err) {
                         lastErr = err;
-                        console.warn(`Ably Auth attempt ${attempt + 1} failed:`, err?.response?.status);
+                        console.warn(
+                            `Ably Auth attempt ${attempt + 1} failed:`,
+                            err?.response?.status,
+                        );
                         if (attempt < 2) {
-                            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
                         }
                     }
                 }

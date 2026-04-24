@@ -544,6 +544,8 @@ const MessagesPage = () => {
         }
     }, [chats, selectedChatId, location.state]);
 
+    const memoizedMarkRead = useCallback((id) => markRead(id), [markRead]);
+
     // Scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -552,10 +554,10 @@ const MessagesPage = () => {
         if (messages?.length > 0) {
             const lastMsg = messages[messages.length - 1];
             if (!lastMsg.is_me && !lastMsg.read_at) {
-                markRead(lastMsg.id);
+                memoizedMarkRead(lastMsg.id);
             }
         }
-    }, [messages, selectedChatId]);
+    }, [messages, selectedChatId, memoizedMarkRead]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter' && searchQuery.trim()) {
@@ -686,10 +688,16 @@ const MessagesPage = () => {
                 );
             } else {
                 // Fallback to plain if encryption fails for some reason
-                sendMessage({ content: messageInput, reply_to_id: replyingTo?.id }, { onSettled: cleanup });
+                sendMessage(
+                    { content: messageInput, reply_to_id: replyingTo?.id },
+                    { onSettled: cleanup },
+                );
             }
         } else {
-            sendMessage({ content: messageInput, reply_to_id: replyingTo?.id }, { onSettled: cleanup });
+            sendMessage(
+                { content: messageInput, reply_to_id: replyingTo?.id },
+                { onSettled: cleanup },
+            );
         }
     };
 
@@ -1276,7 +1284,7 @@ const MessagesPage = () => {
                                                 className={`message-row ${msg.is_me ? 'sent' : 'received'} ${msg.is_deleted ? 'is-deleted' : ''}`}
                                             >
                                                 <div className="message-bubble">
-                                                    {!msg.is_deleted && (
+                                                    {!msg.is_deleted && !msg.is_system && (
                                                         <div
                                                             className={`message-actions-hover ${activeEmojiPicker === msg.id || activeDeleteMenu === msg.id ? 'force-visible' : ''}`}
                                                         >
@@ -1383,6 +1391,12 @@ const MessagesPage = () => {
                                                                     )}
                                                                 </div>
                                                             )}
+                                                        </div>
+                                                    )}
+
+                                                    {msg.is_system && (
+                                                        <div className="system-msg-badge">
+                                                            <Shield size={10} /> SYSTEM MESSAGE
                                                         </div>
                                                     )}
 
@@ -1502,161 +1516,190 @@ const MessagesPage = () => {
                             </div>
 
                             <div className="chat-input-area-container">
-                                {replyingTo && (
-                                    <div className="reply-preview">
-                                        <div className="reply-info">
-                                            <strong>{replyingTo.username}</strong>
-                                            <p>{replyingTo.content || 'Media'}</p>
-                                        </div>
-                                        <button
-                                            className="icon-btn"
-                                            onClick={() => setReplyingTo(null)}
-                                            style={{ padding: '2px' }}
-                                        >
-                                            <X size={12} />
-                                        </button>
+                                {selectedChat?.name === 'System' ? (
+                                    <div className="system-no-reply">
+                                        <Lock size={14} /> This is a system chat. You cannot reply
+                                        to these messages.
                                     </div>
-                                )}
-
-                                <div className="chat-input-area">
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        style={{ display: 'none' }}
-                                        onChange={handleFileUpload}
-                                    />
-
-                                    {isRecording ? (
-                                        <div className="voice-recording-overlay">
-                                            <div className="recording-pulse"></div>
-                                            <span>
-                                                Recording... {formatDuration(recordingDuration)}
-                                            </span>
-                                            <button
-                                                className="icon-btn"
-                                                style={{ marginLeft: 'auto', color: 'red' }}
-                                                onClick={stopRecording}
-                                            >
-                                                <Square size={20} fill="red" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div
-                                                className="input-left-controls"
-                                                style={{
-                                                    display: 'flex',
-                                                    gap: '0.5rem',
-                                                    alignItems: 'center',
-                                                }}
-                                            >
-                                                <div
-                                                    className="input-more-menu-wrapper"
-                                                    style={{ position: 'relative' }}
-                                                >
-                                                    <button
-                                                        className={`icon-btn ${showInputMenu ? 'active' : ''}`}
-                                                        onClick={() =>
-                                                            setShowInputMenu(!showInputMenu)
-                                                        }
-                                                        disabled={isUploading}
-                                                    >
-                                                        <MoreVertical size={20} />
-                                                    </button>
-                                                    {showInputMenu && (
-                                                        <div className="input-more-menu">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setShowGifPicker(
-                                                                        !showGifPicker,
-                                                                    );
-                                                                    setShowStickerPicker(false);
-                                                                    setShowInputMenu(false);
-                                                                }}
-                                                            >
-                                                                <div className="menu-icon-label-mini">
-                                                                    GIF
-                                                                </div>{' '}
-                                                                <span>GIF</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setShowStickerPicker(
-                                                                        !showStickerPicker,
-                                                                    );
-                                                                    setShowGifPicker(false);
-                                                                    setShowInputMenu(false);
-                                                                }}
-                                                            >
-                                                                <Smile size={18} />{' '}
-                                                                <span>Stickers</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    fileInputRef.current?.click();
-                                                                    setShowInputMenu(false);
-                                                                }}
-                                                            >
-                                                                <Paperclip size={18} />{' '}
-                                                                <span>File</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setShowPollModal(true);
-                                                                    setShowInputMenu(false);
-                                                                }}
-                                                            >
-                                                                <BarChart2 size={18} />{' '}
-                                                                <span>Poll</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleShareLocation();
-                                                                    setShowInputMenu(false);
-                                                                }}
-                                                            >
-                                                                <MapPin size={18} />{' '}
-                                                                <span>Location</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setShowContactModal(true);
-                                                                    setShowInputMenu(false);
-                                                                }}
-                                                            >
-                                                                <Users size={18} />{' '}
-                                                                <span>Contact</span>
-                                                            </button>
-                                                        </div>
-                                                    )}
+                                ) : (
+                                    <>
+                                        {replyingTo && (
+                                            <div className="reply-preview">
+                                                <div className="reply-info">
+                                                    <strong>{replyingTo.username}</strong>
+                                                    <p>{replyingTo.content || 'Media'}</p>
                                                 </div>
                                                 <button
-                                                    className={`icon-btn ${isRecording ? 'recording-active' : ''}`}
-                                                    onClick={startRecording}
-                                                    disabled={isUploading}
-                                                    title="Record Voice"
+                                                    className="icon-btn"
+                                                    onClick={() => setReplyingTo(null)}
+                                                    style={{ padding: '2px' }}
                                                 >
-                                                    <Mic size={20} />
+                                                    <X size={12} />
                                                 </button>
                                             </div>
+                                        )}
+
+                                        <div className="chat-input-area">
                                             <input
-                                                type="text"
-                                                placeholder="Type message..."
-                                                value={messageInput}
-                                                onChange={(e) => setMessageInput(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                                disabled={isUploading}
+                                                type="file"
+                                                ref={fileInputRef}
+                                                style={{ display: 'none' }}
+                                                onChange={handleFileUpload}
                                             />
-                                            <button
-                                                className="send-btn"
-                                                onClick={handleSend}
-                                                disabled={isUploading || isSending || !messageInput.trim()}
-                                            >
-                                                {isSending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+
+                                            {isRecording ? (
+                                                <div className="voice-recording-overlay">
+                                                    <div className="recording-pulse"></div>
+                                                    <span>
+                                                        Recording...{' '}
+                                                        {formatDuration(recordingDuration)}
+                                                    </span>
+                                                    <button
+                                                        className="icon-btn"
+                                                        style={{ marginLeft: 'auto', color: 'red' }}
+                                                        onClick={stopRecording}
+                                                    >
+                                                        <Square size={20} fill="red" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div
+                                                        className="input-left-controls"
+                                                        style={{
+                                                            display: 'flex',
+                                                            gap: '0.5rem',
+                                                            alignItems: 'center',
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className="input-more-menu-wrapper"
+                                                            style={{ position: 'relative' }}
+                                                        >
+                                                            <button
+                                                                className={`icon-btn ${showInputMenu ? 'active' : ''}`}
+                                                                onClick={() =>
+                                                                    setShowInputMenu(!showInputMenu)
+                                                                }
+                                                                disabled={isUploading}
+                                                            >
+                                                                <MoreVertical size={20} />
+                                                            </button>
+                                                            {showInputMenu && (
+                                                                <div className="input-more-menu">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setShowGifPicker(
+                                                                                !showGifPicker,
+                                                                            );
+                                                                            setShowStickerPicker(
+                                                                                false,
+                                                                            );
+                                                                            setShowInputMenu(false);
+                                                                        }}
+                                                                    >
+                                                                        <div className="menu-icon-label-mini">
+                                                                            GIF
+                                                                        </div>{' '}
+                                                                        <span>GIF</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setShowStickerPicker(
+                                                                                !showStickerPicker,
+                                                                            );
+                                                                            setShowGifPicker(false);
+                                                                            setShowInputMenu(false);
+                                                                        }}
+                                                                    >
+                                                                        <Smile size={18} />{' '}
+                                                                        <span>Stickers</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            fileInputRef.current?.click();
+                                                                            setShowInputMenu(false);
+                                                                        }}
+                                                                    >
+                                                                        <Paperclip size={18} />{' '}
+                                                                        <span>File</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setShowPollModal(true);
+                                                                            setShowInputMenu(false);
+                                                                        }}
+                                                                    >
+                                                                        <BarChart2 size={18} />{' '}
+                                                                        <span>Poll</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleShareLocation();
+                                                                            setShowInputMenu(false);
+                                                                        }}
+                                                                    >
+                                                                        <MapPin size={18} />{' '}
+                                                                        <span>Location</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setShowContactModal(
+                                                                                true,
+                                                                            );
+                                                                            setShowInputMenu(false);
+                                                                        }}
+                                                                    >
+                                                                        <Users size={18} />{' '}
+                                                                        <span>Contact</span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            className={`icon-btn ${isRecording ? 'recording-active' : ''}`}
+                                                            onClick={startRecording}
+                                                            disabled={isUploading}
+                                                            title="Record Voice"
+                                                        >
+                                                            <Mic size={20} />
+                                                        </button>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Type message..."
+                                                        value={messageInput}
+                                                        onChange={(e) =>
+                                                            setMessageInput(e.target.value)
+                                                        }
+                                                        onKeyDown={(e) =>
+                                                            e.key === 'Enter' && handleSend()
+                                                        }
+                                                        disabled={isUploading}
+                                                    />
+                                                    <button
+                                                        className="send-btn"
+                                                        onClick={handleSend}
+                                                        disabled={
+                                                            isUploading ||
+                                                            isSending ||
+                                                            !messageInput.trim()
+                                                        }
+                                                    >
+                                                        {isSending ? (
+                                                            <Loader2
+                                                                className="animate-spin"
+                                                                size={20}
+                                                            />
+                                                        ) : (
+                                                            <Send size={20} />
+                                                        )}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             {showGifPicker && (
                                 <GifPicker

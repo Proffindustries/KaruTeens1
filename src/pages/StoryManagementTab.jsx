@@ -59,6 +59,9 @@ import { useToast } from '../context/ToastContext';
 
 const StoryManagementTab = () => {
     const [stories, setStories] = useState([]);
+    const [userStats, setUserStats] = useState([]);
+    const [highlights, setHighlights] = useState([]);
+    const [templates, setTemplates] = useState([]);
     const [filters, setFilters] = useState({
         status: 'all',
         user_id: '',
@@ -90,6 +93,8 @@ const StoryManagementTab = () => {
     const { showToast } = useToast();
 
     useEffect(() => {
+        let mounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsLoading(true);
         // Fetch real data from API
         Promise.all([
@@ -99,21 +104,35 @@ const StoryManagementTab = () => {
             api.get('/templates'),
         ])
             .then(([storiesRes, statsRes, highlightsRes, templatesRes]) => {
-                setStories(storiesRes.data);
-                setUserStats(statsRes.data);
-                setHighlights(highlightsRes.data);
-                setTemplates(templatesRes.data);
+                if (mounted) {
+                    setStories(storiesRes.data);
+                    setUserStats(statsRes.data);
+                    setHighlights(highlightsRes.data);
+                    setTemplates(templatesRes.data);
+                }
             })
             .catch((error) => {
                 console.error('Failed to load story management data:', error);
-                // Set appropriate empty states
-                setStories([]);
-                setUserStats([]);
-                setHighlights([]);
-                setTemplates([]);
+                if (mounted) {
+                    // Set appropriate empty states
+                    setStories([]);
+                    setUserStats([]);
+                    setHighlights([]);
+                    setTemplates([]);
+                }
             })
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                if (mounted) setIsLoading(false);
+            });
+        return () => {
+            mounted = false;
+        };
     }, [filters]);
+
+    const mockUserStats = [{ label: 'Total Stories', value: 0 }];
+    const mockHighlights = [];
+    const mockStories = [];
+    const mockTemplates = [];
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));

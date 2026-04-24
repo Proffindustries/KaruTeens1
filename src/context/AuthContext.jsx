@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import api from '../api/client';
 
@@ -32,6 +32,28 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user]);
 
+    const logout = React.useCallback(async () => {
+        // Prevent concurrent logout calls
+        if (logout.inProgress) return;
+        logout.inProgress = true;
+
+        try {
+            // Only attempt logout if we have a token
+            if (token) {
+                await api.post('/auth/logout');
+            }
+        } catch (err) {
+            console.error('Logout failed:', err);
+        } finally {
+            setToken(null);
+            setUser(null);
+            // Explicitly clear to avoid edge cases
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            logout.inProgress = false;
+        }
+    }, [token]);
+
     // Check token expiration and logout if expired
     useEffect(() => {
         if (token) {
@@ -49,7 +71,7 @@ export const AuthProvider = ({ children }) => {
                 logout();
             }
         }
-    }, [token]);
+    }, [token, logout]);
 
     // Listen for 401 events fired by the API interceptor
     useEffect(() => {
@@ -58,7 +80,16 @@ export const AuthProvider = ({ children }) => {
         };
         window.addEventListener('auth:unauthorized', handleUnauthorized);
         return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
-    }, []);
+    }, [logout]);
+
+    const updateUser = (updatedUser) => {
+        // Standardize user object from backend to ensure 'id' is always present
+        const normalizedUser = {
+            ...updatedUser,
+            id: updatedUser.id || updatedUser.user_id,
+        };
+        setUser(normalizedUser);
+    };
 
     const login = (newToken, newUser) => {
         // Standardize user object from backend to ensure 'id' is always present
@@ -67,37 +98,6 @@ export const AuthProvider = ({ children }) => {
             id: newUser.id || newUser.user_id,
         };
         setToken(newToken);
-        setUser(normalizedUser);
-    };
-
-    const logout = async () => {
-        // Prevent concurrent logout calls
-        if (logout.inProgress) return;
-        logout.inProgress = true;
-        
-        try {
-            // Only attempt logout if we have a token
-            if (token) {
-                await api.post('/auth/logout');
-            }
-        } catch (err) {
-            console.error('Logout failed:', err);
-        } finally {
-            setToken(null);
-            setUser(null);
-            // Explicitly clear to avoid edge cases
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            logout.inProgress = false;
-        }
-    };
-
-    const updateUser = (updatedUser) => {
-        // Standardize user object from backend to ensure 'id' is always present
-        const normalizedUser = {
-            ...updatedUser,
-            id: updatedUser.id || updatedUser.user_id,
-        };
         setUser(normalizedUser);
     };
 

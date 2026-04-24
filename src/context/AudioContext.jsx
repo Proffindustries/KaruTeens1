@@ -18,24 +18,27 @@ export const AudioProvider = ({ children }) => {
     const [duration, setDuration] = useState(0);
     const audioRef = useRef(new Audio());
 
-    const playAudio = useCallback((audioData) => {
-        // audioData: { src, filename, id }
-        if (currentAudio?.id === audioData.id) {
-            if (audioRef.current.paused) {
-                audioRef.current.play();
-                setIsPlaying(true);
-            } else {
-                audioRef.current.pause();
-                setIsPlaying(false);
+    const playAudio = useCallback(
+        (audioData) => {
+            // audioData: { src, filename, id }
+            if (currentAudio?.id === audioData.id) {
+                if (audioRef.current.paused) {
+                    audioRef.current.play();
+                    setIsPlaying(true);
+                } else {
+                    audioRef.current.pause();
+                    setIsPlaying(false);
+                }
+                return;
             }
-            return;
-        }
 
-        audioRef.current.src = audioData.src;
-        audioRef.current.play();
-        setCurrentAudio(audioData);
-        setIsPlaying(true);
-    }, [currentAudio]);
+            audioRef.current.src = audioData.src;
+            audioRef.current.play();
+            setCurrentAudio(audioData);
+            setIsPlaying(true);
+        },
+        [currentAudio],
+    );
 
     const pauseAudio = useCallback(() => {
         audioRef.current.pause();

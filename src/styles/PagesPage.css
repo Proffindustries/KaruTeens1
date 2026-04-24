@@ -28,7 +28,7 @@
     border: 1px solid var(--border-card);
     border-radius: 12px;
     padding: 0.75rem 1.25rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .search-bar input {
@@ -144,7 +144,8 @@
     font-size: 0.8rem;
 }
 
-.pages-loading, .empty-pages {
+.pages-loading,
+.empty-pages {
     padding: 5rem 0;
     text-align: center;
     color: var(--text-muted);

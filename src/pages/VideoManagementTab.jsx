@@ -88,20 +88,38 @@ const VideoManagementTab = () => {
     // Transcoding jobs data will be fetched from API
 
     useEffect(() => {
+        let mounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsLoading(true);
         // Fetch real data from API
         Promise.all([api.get('/videos'), api.get('/transcoding-jobs'), api.get('/storage-stats')])
             .then(([videosRes, jobsRes, statsRes]) => {
-                setVideos(videosRes.data);
-                setTranscodingJobs(jobsRes.data);
-                setStorageStats(statsRes.data);
+                if (mounted) {
+                    setVideos(videosRes.data);
+                    setTranscodingJobs(jobsRes.data);
+                    setStorageStats(statsRes.data);
+                }
             })
             .catch((error) => {
                 console.error('Failed to load video management data:', error);
                 // Keep empty states, UI will show loading/error states appropriately
             })
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                if (mounted) setIsLoading(false);
+            });
+        return () => {
+            mounted = false;
+        };
     }, [filters]);
+
+    const mockStorageStats = {
+        transcoding_stats: {
+            completed: 0,
+            in_progress: 0,
+            failed: 0,
+            success_rate: 0,
+        },
+    };
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));

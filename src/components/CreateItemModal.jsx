@@ -310,7 +310,11 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
                             {(isUploading || isPending) && (
                                 <div className="upload-progress-inline">
                                     <div className="progress-text">
-                                        <span>{isUploading ? 'Uploading Images...' : 'Listing Item...'}</span>
+                                        <span>
+                                            {isUploading
+                                                ? 'Uploading Images...'
+                                                : 'Listing Item...'}
+                                        </span>
                                         <Loader2 size={16} className="spinner" />
                                     </div>
                                     <div className="progress-bar-container">

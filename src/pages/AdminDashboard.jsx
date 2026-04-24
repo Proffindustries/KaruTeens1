@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 import {
     Users,
@@ -7,157 +7,123 @@ import {
     Activity,
     Settings,
     LogOut,
-    TrendingUp,
     Shield,
     Calendar,
-    MessageSquare,
-    Eye,
-    EyeOff,
-    Video,
+    MessageCircle,
     Image,
+    AlertTriangle,
     BarChart3,
     FileSpreadsheet,
-    AlertTriangle,
-    Globe,
-    Hash,
-    Filter,
+    Video,
     Search,
+    Bell,
+    Menu,
     RefreshCw,
-    Download,
-    Upload,
-    Plus,
-    Edit,
-    Trash2,
-    Clock,
-    CheckCircle,
-    XCircle,
+    Sun,
+    Moon,
     UserCheck,
-    UserX,
-    ShieldCheck,
-    AlertCircle,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../context/ToastContext';
 import '../styles/AdminDashboard.css';
-import '../styles/AdminGlobal.css';
-import '../styles/UserManagementTab.css';
-import '../styles/ContentModerationTab.css';
-import '../styles/GroupManagementTab.css';
-import '../styles/PageManagementTab.css';
-import '../styles/EventManagementTab.css';
-import '../styles/PostManagementTab.css';
-import '../styles/CommentManagementTab.css';
-import '../styles/StoryManagementTab.css';
-import '../styles/ReelManagementTab.css';
-import '../styles/AdManagementTab.css';
-import '../styles/VideoManagementTab.css';
-import '../styles/MediaManagementTab.css';
+
+// Import management tabs
 import UserManagementTab from './UserManagementTab';
-import ContentModerationTab from './ContentModerationTab';
-import GroupManagementTab from './GroupManagementTab';
-import PageManagementTab from './PageManagementTab';
-import EventManagementTab from './EventManagementTab';
 import PostManagementTab from './PostManagementTab';
 import CommentManagementTab from './CommentManagementTab';
-import StoryManagementTab from './StoryManagementTab';
-import ReelManagementTab from './ReelManagementTab';
+import EventManagementTab from './EventManagementTab';
+import GroupManagementTab from './GroupManagementTab';
 import AdManagementTab from './AdManagementTab';
-import VideoManagementTab from './VideoManagementTab';
-import MediaManagementTab from './MediaManagementTab';
+import ReelManagementTab from './ReelManagementTab';
 import RevisionManagementTab from './RevisionManagementTab';
-import { useToast } from '../context/ToastContext';
+import ContentModerationTab from './ContentModerationTab';
+import MediaManagementTab from './MediaManagementTab';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
-    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { showToast } = useToast();
+    const [stats, setStats] = useState({
+        total_users: 0,
+        active_today: 0,
+        total_posts: 0,
+        pending_reports: 0,
+        revenue: 0,
+        growth: 12.5,
+    });
 
-    // Handle responsive sidebar behavior
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth <= 1024) {
-                setSidebarOpen(false);
-            } else {
-                setSidebarOpen(true);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+    const fetchStats = useCallback(async () => {
+        try {
+            const { data } = await api.get('/admin/stats');
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch stats');
+            return null;
+        }
     }, []);
 
-    // Check admin access
-    if (user.role !== 'admin' && user.role !== 'superadmin') {
-        return (
-            <div className="admin-container unauthorized">
-                <div className="unauthorized-content">
-                    <Shield size={64} color="#ff6348" />
-                    <h2>Access Denied</h2>
-                    <p>You do not have permission to access this page.</p>
-                </div>
-            </div>
-        );
-    }
+    useEffect(() => {
+        let mounted = true;
+        const load = async () => {
+            const stats = await fetchStats();
+            if (mounted && stats) setStats((prev) => ({ ...prev, ...stats }));
+        };
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [fetchStats]);
 
     const tabs = [
-        { id: 'overview', label: 'Overview', icon: TrendingUp },
+        { id: 'overview', label: 'Overview', icon: Activity },
         { id: 'users', label: 'User Management', icon: Users },
-        { id: 'content', label: 'Content Moderation', icon: FileText },
-        { id: 'groups', label: 'Group Management', icon: Users },
-        { id: 'pages', label: 'Page Management', icon: FileText },
-        { id: 'events', label: 'Event Management', icon: Calendar },
         { id: 'posts', label: 'Post Management', icon: FileText },
-        { id: 'comments', label: 'Comment Management', icon: MessageSquare },
-        { id: 'stories', label: 'Story Management', icon: Eye },
-        { id: 'reels', label: 'Reel Management', icon: Video },
+        { id: 'comments', label: 'Comment Management', icon: MessageCircle },
+        { id: 'moderation', label: 'Moderation', icon: Shield },
+        { id: 'groups', label: 'Groups', icon: Users },
+        { id: 'events', label: 'Events', icon: Calendar },
         { id: 'ads', label: 'Ad Management', icon: DollarSign },
-        { id: 'videos', label: 'Video Management', icon: Video },
-        { id: 'media', label: 'Media Management', icon: Image },
+        { id: 'broadcast', label: 'System Broadcast', icon: Bell },
+        { id: 'videos', label: 'Videos & Reels', icon: Video },
+        { id: 'media', label: 'Media Library', icon: Image },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'reports', label: 'Reports', icon: FileSpreadsheet },
-        { id: 'settings', label: 'Settings', icon: Settings },
-        { id: 'logs', label: 'System Logs', icon: Activity },
-        { id: 'activity', label: 'User Activity', icon: Activity },
-        { id: 'security', label: 'Security', icon: ShieldCheck },
-        { id: 'abuse', label: 'Abuse Detection', icon: AlertTriangle },
-        { id: 'hashtags', label: 'Hashtag Virality', icon: Hash },
-        { id: 'revision', label: 'Revision Materials', icon: FileText },
+        { id: 'settings', label: 'System Settings', icon: Settings },
     ];
 
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+    const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
     return (
-        <div className="admin-container">
+        <div className={`admin-container ${isDarkMode ? 'dark' : ''}`}>
             {/* Sidebar */}
-            <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+            <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
                 <div className="admin-brand">
                     <div className="logo-icon">
-                        <Shield size={24} color="white" />
+                        <Shield size={20} color="white" />
                     </div>
-                    <div>
-                        <h2>Karu Admin</h2>
-                        <span className="admin-role-badge">
-                            {user.role === 'superadmin' ? 'Super Admin' : 'Admin'}
-                        </span>
-                    </div>
+                    <h2>KaruTeens Admin</h2>
+                    <span className="admin-role-badge">Admin</span>
                 </div>
 
                 <nav className="admin-nav">
-                    {tabs.map((tab) => {
-                        const Icon = tab.icon;
-                        return (
-                            <button
-                                key={tab.id}
-                                className={`admin-nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                                onClick={() => setActiveTab(tab.id)}
-                            >
-                                <Icon size={20} />
-                                <span>{tab.label}</span>
-                            </button>
-                        );
-                    })}
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            className={`admin-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                        >
+                            <tab.icon size={20} />
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
                 </nav>
 
                 <div className="admin-logout">
-                    <button className="logout-btn">
+                    <button className="logout-btn" onClick={() => (window.location.href = '/')}>
                         <LogOut size={20} />
-                        <span>Logout</span>
+                        <span>Exit Dashboard</span>
                     </button>
                 </div>
             </aside>
@@ -166,161 +132,250 @@ const AdminDashboard = () => {
             <main className="admin-main">
                 <header className="admin-header">
                     <div className="header-left">
-                        <button
-                            className="sidebar-toggle"
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                        >
-                            <Activity size={20} />
+                        <button className="sidebar-toggle" onClick={toggleSidebar}>
+                            <Menu size={20} />
                         </button>
-                        <h1>Admin Dashboard</h1>
+                        <h1>{tabs.find((t) => t.id === activeTab)?.label}</h1>
                     </div>
 
                     <div className="header-actions">
-                        <button className="theme-toggle" onClick={() => document.documentElement.classList.toggle('dark')}>
-                            <Activity size={20} />
+                        <div className="admin-search">
+                            <Search size={16} />
+                            <input
+                                type="text"
+                                placeholder="Search everything..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <button className="theme-toggle" onClick={toggleTheme}>
+                            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
+                        <div className="admin-profile-mini">
+                            <div className="avatar-placeholder">A</div>
+                        </div>
                     </div>
                 </header>
 
-                <div className="admin-content">{renderTabContent(activeTab, setActiveTab)}</div>
+                <div className="admin-content">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <TabContent activeTab={activeTab} stats={stats} />
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
             </main>
         </div>
     );
 };
 
-// Overview Tab Component
-const OverviewTab = ({ setActiveTab }) => {
+const TabContent = ({ activeTab, stats }) => {
+    switch (activeTab) {
+        case 'overview':
+            return <OverviewTab stats={stats} />;
+        case 'users':
+            return <UserManagementTab />;
+        case 'posts':
+            return <PostManagementTab />;
+        case 'comments':
+            return <CommentManagementTab />;
+        case 'moderation':
+            return <ContentModerationTab />;
+        case 'groups':
+            return <GroupManagementTab />;
+        case 'events':
+            return <EventManagementTab />;
+        case 'ads':
+            return <AdManagementTab />;
+        case 'broadcast':
+            return <BroadcastTab />;
+        case 'videos':
+            return <ReelManagementTab />;
+        case 'media':
+            return <MediaManagementTab />;
+        case 'revision':
+            return <RevisionManagementTab />;
+        case 'settings':
+            return <SettingsTab />;
+        default:
+            return <OverviewTab stats={stats} />;
+    }
+};
+
+const OverviewTab = ({ stats }) => (
+    <div className="overview-tab">
+        <div className="stats-grid">
+            <StatCard
+                label="Total Users"
+                value={stats.total_users.toLocaleString()}
+                icon={Users}
+                trend="+12%"
+                color="#4f46e5"
+            />
+            <StatCard
+                label="Active Today"
+                value={stats.active_today.toLocaleString()}
+                icon={Activity}
+                trend="+5%"
+                color="#10b981"
+            />
+            <StatCard
+                label="Total Posts"
+                value={stats.total_posts.toLocaleString()}
+                icon={FileText}
+                trend="+18%"
+                color="#f59e0b"
+            />
+            <StatCard
+                label="Pending Reports"
+                value={stats.pending_reports}
+                icon={Shield}
+                trend="-2%"
+                color="#ef4444"
+            />
+        </div>
+
+        <div className="quick-actions">
+            <h3>Quick Actions</h3>
+            <div className="action-grid">
+                <button className="action-card">
+                    <div className="action-icon">
+                        <UserCheck size={24} />
+                    </div>
+                    <span>Verify Users</span>
+                </button>
+                <button className="action-card">
+                    <div className="action-icon">
+                        <AlertTriangle size={24} />
+                    </div>
+                    <span>Review Reports</span>
+                </button>
+                <button className="action-card">
+                    <div className="action-icon">
+                        <Bell size={24} />
+                    </div>
+                    <span>Send Broadcast</span>
+                </button>
+                <button className="action-card">
+                    <div className="action-icon">
+                        <DollarSign size={24} />
+                    </div>
+                    <span>Manage Ads</span>
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
+const StatCard = ({ label, value, icon: Icon, trend, color }) => (
+    <div className="stat-card">
+        <div className="stat-header">
+            <div className="stat-icon" style={{ background: `${color}15`, color: color }}>
+                <Icon size={20} />
+            </div>
+            <span className={`stat-trend ${trend.startsWith('+') ? 'trend-up' : 'trend-down'}`}>
+                {trend}
+            </span>
+        </div>
+        <div className="stat-info">
+            <span className="stat-label">{label}</span>
+            <span className="stat-value">{value}</span>
+        </div>
+    </div>
+);
+
+const BroadcastTab = () => {
+    const [message, setMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
     const { showToast } = useToast();
-    const [statsData, setStatsData] = useState({
-        total_users: 0,
-        active_users: 0,
-        total_posts: 0,
-        total_revenue: 0,
-        total_groups: 0,
-        total_events: 0,
-        total_stories: 0,
-        total_reports: 0,
-    });
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const { data } = await api.get('/admin/stats');
-                setStatsData(data);
-            } catch (error) {
-                console.error('Failed to fetch admin stats:', error);
-                showToast('Failed to load admin statistics', 'error');
-            } finally {
-                setLoading(false);
-            }
-        };
+    const handleBroadcast = async () => {
+        if (!message.trim()) {
+            showToast('Please enter a message', 'error');
+            return;
+        }
 
-        fetchStats();
-    }, [showToast]);
+        if (!window.confirm('Are you sure you want to send this message to ALL users?')) {
+            return;
+        }
 
-    const stats = [
-        {
-            label: 'Total Users',
-            value: statsData.total_users?.toLocaleString() || '0',
-            icon: Users,
-            change: '+0%',
-            color: '#3498db',
-        },
-        {
-            label: 'Active Users',
-            value: statsData.active_users?.toLocaleString() || '0',
-            icon: Activity,
-            change: '+0%',
-            color: '#2ecc71',
-        },
-        {
-            label: 'Total Posts',
-            value: statsData.total_posts?.toLocaleString() || '0',
-            icon: FileText,
-            change: '+0%',
-            color: '#9b59b6',
-        },
-        {
-            label: 'Revenue',
-            value: `Ksh ${statsData.total_revenue?.toLocaleString() || '0'}`,
-            icon: DollarSign,
-            change: '+0%',
-            color: '#f1c40f',
-        },
-        {
-            label: 'Groups',
-            value: statsData.total_groups?.toLocaleString() || '0',
-            icon: Users,
-            change: '+0%',
-            color: '#e74c3c',
-        },
-        {
-            label: 'Events',
-            value: statsData.total_events?.toLocaleString() || '0',
-            icon: Calendar,
-            change: '+0%',
-            color: '#34495e',
-        },
-        {
-            label: 'Stories',
-            value: statsData.total_stories?.toLocaleString() || '0',
-            icon: Eye,
-            change: '+0%',
-            color: '#95a5a6',
-        },
-        {
-            label: 'Reports',
-            value: statsData.total_reports?.toLocaleString() || '0',
-            icon: FileSpreadsheet,
-            change: '+0%',
-            color: '#f39c12',
-        },
-    ];
+        setIsSending(true);
+        try {
+            await api.post('/admin/broadcast', { content: message });
+            showToast('Broadcast sent successfully!', 'success');
+            setMessage('');
+        } catch (error) {
+            showToast('Failed to send broadcast', 'error');
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     return (
-        <div className="overview-tab">
-            <div className="stats-grid">
-                {stats.map((stat, index) => {
-                    const Icon = stat.icon;
-                    return (
-                        <div key={index} className="stat-card">
-                            <div className="stat-header">
-                                <div className="stat-icon" style={{ background: `${stat.color}20`, color: stat.color }}>
-                                    <Icon size={24} />
-                                </div>
-                                <div className={`stat-trend ${stat.change.startsWith('+') ? 'trend-up' : 'trend-down'}`}>
-                                    <TrendingUp size={14} />
-                                    {stat.change}
-                                </div>
-                            </div>
-                            <div className="stat-info">
-                                <span className="stat-label">{stat.label}</span>
-                                <h3 className="stat-value">{stat.value}</h3>
-                            </div>
-                        </div>
-                    );
-                })}
+        <div className="broadcast-tab">
+            <div className="tab-header">
+                <h2>System Broadcast</h2>
+                <p>Send a global announcement to all users' inboxes</p>
             </div>
 
-            <div className="quick-actions">
-                <h3>Quick Actions</h3>
-                <div className="action-grid">
-                    <button className="action-card" onClick={() => setActiveTab('users')}>
-                        <div className="action-icon"><Users size={24} /></div>
-                        <span>Manage Users</span>
-                    </button>
-                    <button className="action-card" onClick={() => setActiveTab('content')}>
-                        <div className="action-icon"><FileText size={24} /></div>
-                        <span>Moderate Content</span>
-                    </button>
-                    <button className="action-card" onClick={() => setActiveTab('analytics')}>
-                        <div className="action-icon"><BarChart3 size={24} /></div>
-                        <span>View Analytics</span>
-                    </button>
-                    <button className="action-card" onClick={() => setActiveTab('settings')}>
-                        <div className="action-icon"><Settings size={24} /></div>
-                        <span>System Settings</span>
+            <div
+                className="content-card"
+                style={{
+                    background: 'var(--admin-card-bg)',
+                    padding: '2rem',
+                    borderRadius: 'var(--admin-radius)',
+                    border: '1px solid var(--admin-border)',
+                    maxWidth: '800px',
+                }}
+            >
+                <div className="form-group">
+                    <label style={{ display: 'block', marginBottom: '1rem', fontWeight: '600' }}>
+                        Message Content
+                    </label>
+                    <textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Type your system announcement here..."
+                        rows="8"
+                        style={{
+                            width: '100%',
+                            padding: '1rem',
+                            borderRadius: '12px',
+                            border: '1px solid var(--admin-border)',
+                            background: 'var(--admin-bg)',
+                            color: 'var(--admin-text-main)',
+                            fontSize: '1rem',
+                            resize: 'vertical',
+                        }}
+                    />
+                </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                        className="btn-primary"
+                        onClick={handleBroadcast}
+                        disabled={isSending}
+                        style={{
+                            background: 'var(--admin-primary)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {isSending ? <RefreshCw className="spin-anim" /> : <Bell size={18} />}
+                        {isSending ? 'Sending...' : 'Broadcast to All Users'}
                     </button>
                 </div>
             </div>
@@ -328,160 +383,56 @@ const OverviewTab = ({ setActiveTab }) => {
     );
 };
 
-// Placeholder components for other tabs
-// UserManagementTab is now imported from './UserManagementTab'
-// ContentModerationTab is now imported from './ContentModerationTab'
-// GroupManagementTab is now imported from './GroupManagementTab'
-// PageManagementTab is now imported from './PageManagementTab'
-// EventManagementTab is now imported from './EventManagementTab'
-// PostManagementTab is now imported from './PostManagementTab'
-// CommentManagementTab is now imported from './CommentManagementTab'
-// StoryManagementTab is now imported from './StoryManagementTab'
-// ReelManagementTab is now imported from './ReelManagementTab'
-// Settings Tab Component
 const SettingsTab = () => {
     const [settings, setSettings] = useState({ is_payment_enabled: true });
-    const [loading, setLoading] = useState(true);
     const { showToast } = useToast();
-
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const { data } = await api.get('/admin/settings');
-                setSettings(data);
-            } catch (error) {
-                console.error('Failed to fetch settings:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSettings();
-    }, []);
-
-    const togglePayment = async () => {
-        try {
-            const nextValue = !settings.is_payment_enabled;
-            await api.put('/admin/settings', { is_payment_enabled: nextValue });
-            setSettings({ ...settings, is_payment_enabled: nextValue });
-            showToast(`Payments ${nextValue ? 'Enabled' : 'Disabled'} successfuly!`, 'success');
-        } catch (error) {
-            showToast('Failed to update settings', 'error');
-        }
-    };
-
-    if (loading) return <div className="loading">Loading settings...</div>;
 
     return (
         <div className="settings-tab">
             <div className="tab-header">
-                <h2>System Global Settings</h2>
-                <p>Control global platform behavior and monetization</p>
+                <h2>System Settings</h2>
             </div>
-
-            <div className="content-card" style={{ padding: '2rem' }}>
-                <div className="settings-group" style={{ maxWidth: '600px' }}>
-                    <div className="setting-item" style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
+            <div
+                className="card-grid"
+                style={{
+                    display: 'grid',
+                    gap: '1.5rem',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                }}
+            >
+                <div
+                    className="settings-card"
+                    style={{
+                        background: 'var(--admin-card-bg)',
                         padding: '1.5rem',
-                        background: 'var(--admin-bg)',
                         borderRadius: '12px',
-                        border: '1px solid var(--admin-border)'
-                    }}>
-                        <div>
-                            <h4 style={{ margin: 0, color: 'var(--admin-text-main)' }}>Enable Monetization (M-Pesa)</h4>
-                            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
-                                When disabled, verification and other premium features will be free.
-                            </p>
-                        </div>
-                        <button
-                            className={`toggle-btn ${settings.is_payment_enabled ? 'active' : ''}`}
-                            onClick={togglePayment}
-                            style={{
-                                width: '64px',
-                                height: '32px',
-                                borderRadius: '16px',
-                                border: 'none',
-                                cursor: 'pointer',
-                                position: 'relative',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                background: settings.is_payment_enabled ? 'var(--admin-primary)' : '#e2e8f0',
-                                boxShadow: settings.is_payment_enabled ? '0 4px 12px var(--admin-primary-glow)' : 'none'
-                            }}
-                        >
-                            <div style={{
-                                width: '24px',
-                                height: '24px',
-                                background: 'white',
-                                borderRadius: '50%',
-                                position: 'absolute',
-                                top: '4px',
-                                left: settings.is_payment_enabled ? '36px' : '4px',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }} />
-                        </button>
+                        border: '1px solid var(--admin-border)',
+                    }}
+                >
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Platform Features</h3>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <span>Enable Payments</span>
+                        <input
+                            type="checkbox"
+                            checked={settings.is_payment_enabled}
+                            onChange={() =>
+                                setSettings({
+                                    ...settings,
+                                    is_payment_enabled: !settings.is_payment_enabled,
+                                })
+                            }
+                        />
                     </div>
                 </div>
             </div>
         </div>
     );
-
-};
-
-// Tab content switch
-const renderTabContent = (activeTab, setActiveTab) => {
-    switch (activeTab) {
-        case 'overview':
-            return <OverviewTab setActiveTab={setActiveTab} />;
-        case 'users':
-            return <UserManagementTab />;
-        case 'content':
-            return <ContentModerationTab />;
-        case 'groups':
-            return <GroupManagementTab />;
-        case 'pages':
-            return <PageManagementTab />;
-        case 'events':
-            return <EventManagementTab />;
-        case 'posts':
-            return <PostManagementTab />;
-        case 'comments':
-            return <CommentManagementTab />;
-        case 'stories':
-            return <StoryManagementTab />;
-        case 'reels':
-            return <ReelManagementTab />;
-        case 'ads':
-            return <AdManagementTab />;
-        case 'videos':
-            return <VideoManagementTab />;
-        case 'media':
-            return <MediaManagementTab />;
-        case 'analytics':
-            return <div className="tab-content">Analytics Dashboard</div>;
-        case 'reports':
-            return <div className="tab-content">Reports Interface</div>;
-        case 'moderation':
-            return <div className="tab-content">Moderation Tools</div>;
-        case 'settings':
-            return <SettingsTab />;
-        case 'logs':
-            return <div className="tab-content">System Logs Interface</div>;
-        case 'activity':
-            return <div className="tab-content">User Activity Interface</div>;
-        case 'security':
-            return <div className="tab-content">Security Interface</div>;
-        case 'abuse':
-            return <div className="tab-content">Abuse Detection Interface</div>;
-        case 'hashtags':
-            return <div className="tab-content">Hashtag Virality Interface</div>;
-        case 'revision':
-            return <RevisionManagementTab />;
-        default:
-            return <OverviewTab />;
-    }
 };
 
 export default AdminDashboard;

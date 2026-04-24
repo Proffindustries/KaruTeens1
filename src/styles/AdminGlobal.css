@@ -17,7 +17,9 @@
 }
 
 /* Harmonize Buttons */
-.btn-primary, .btn-secondary, .refresh-btn {
+.btn-primary,
+.btn-secondary,
+.refresh-btn {
     border-radius: 10px !important;
     padding: 0.6rem 1.25rem !important;
     font-weight: 600 !important;
@@ -27,13 +29,15 @@
     gap: 0.5rem !important;
 }
 
-.btn-primary, .refresh-btn {
+.btn-primary,
+.refresh-btn {
     background: var(--admin-primary) !important;
     color: white !important;
     box-shadow: 0 4px 12px var(--admin-primary-glow) !important;
 }
 
-.btn-primary:hover, .refresh-btn:hover {
+.btn-primary:hover,
+.refresh-btn:hover {
     transform: translateY(-2px);
     background: var(--admin-primary-dark) !important;
     box-shadow: 0 6px 16px var(--admin-primary-glow) !important;
@@ -63,7 +67,10 @@
 }
 
 /* Harmonize Tables */
-.users-table-container, .videos-table-container, .events-table-container, .ad-management-tab .items-table {
+.users-table-container,
+.videos-table-container,
+.events-table-container,
+.ad-management-tab .items-table {
     background: var(--admin-card-bg) !important;
     border: 1px solid var(--admin-border) !important;
     border-radius: var(--admin-radius) !important;
@@ -94,7 +101,9 @@
 }
 
 /* Status Badges */
-.status-badge, .role-badge, .tag-pill {
+.status-badge,
+.role-badge,
+.tag-pill {
     padding: 0.35rem 0.75rem !important;
     border-radius: 8px !important;
     font-weight: 700 !important;
@@ -102,17 +111,22 @@
     letter-spacing: 0.01em;
 }
 
-.status-badge.verified, .status-pill.green, .status-active {
+.status-badge.verified,
+.status-pill.green,
+.status-active {
     background: rgba(16, 185, 129, 0.1) !important;
     color: #10b981 !important;
 }
 
-.status-badge.banned, .status-pill.red, .status-inactive {
+.status-badge.banned,
+.status-pill.red,
+.status-inactive {
     background: rgba(239, 68, 68, 0.1) !important;
     color: #ef4444 !important;
 }
 
-.status-badge.premium, .status-pill.yellow {
+.status-badge.premium,
+.status-pill.yellow {
     background: rgba(245, 158, 11, 0.1) !important;
     color: #f59e0b !important;
 }
@@ -137,7 +151,7 @@
         gap: 0.75rem !important;
     }
 
-    .header-actions .btn-primary, 
+    .header-actions .btn-primary,
     .header-actions .btn-secondary,
     .header-actions .refresh-btn {
         width: 100% !important;
@@ -161,13 +175,14 @@
         gap: 0.5rem !important;
     }
 
-    .filter-group select, 
+    .filter-group select,
     .filter-group input {
         flex: 1 1 calc(50% - 0.5rem) !important;
         min-width: 120px !important;
     }
 
-    .table-responsive, .table-wrapper {
+    .table-responsive,
+    .table-wrapper {
         display: block !important;
         width: 100% !important;
         overflow-x: auto !important;
@@ -181,7 +196,7 @@
         min-width: 900px !important; /* Ensure enough space for columns */
     }
 
-    .admin-table th, 
+    .admin-table th,
     .admin-table td {
         padding: 1rem !important;
         white-space: nowrap !important;
@@ -194,11 +209,11 @@
 }
 
 @media (max-width: 480px) {
-    .filter-group select, 
+    .filter-group select,
     .filter-group input {
         flex: 1 1 100% !important;
     }
-    
+
     .admin-brand h2 {
         font-size: 1.2rem !important;
     }

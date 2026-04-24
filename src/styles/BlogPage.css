@@ -1,4 +1,5 @@
-.blog-page, .blog-detail-page {
+.blog-page,
+.blog-detail-page {
     --blog-primary: #3742fa;
     --blog-accent: #2ed573;
     padding-bottom: 4rem;
@@ -45,7 +46,9 @@
 
 .blog-card {
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease !important;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -53,7 +56,7 @@
 
 .blog-card:hover {
     transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
 }
 
 .blog-card-image {
@@ -135,7 +138,7 @@
     background: linear-gradient(135deg, white 0%, #f1f2f6 100%);
     padding: 3rem;
     text-align: center;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .newsletter-box .icon {
@@ -176,7 +179,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: rgba(255,255,255,0.8);
+    color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     margin-bottom: 2rem;
 }
@@ -292,7 +295,7 @@
     .content-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .blog-detail-hero h1 {
         font-size: 2.5rem;
     }

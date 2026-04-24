@@ -24,7 +24,7 @@ const ConfessionsPage = () => {
     const [newConfession, setNewConfession] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
-    
+
     // Comments State
     const [activeConfessionId, setActiveConfessionId] = useState(null);
     const [newComment, setNewComment] = useState('');
@@ -69,7 +69,7 @@ const ConfessionsPage = () => {
         onSuccess: (_, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['confession_comments', id] });
             queryClient.setQueryData(['confessions'], (old) =>
-                old?.map((c) => (c.id === id ? { ...c, comments: (c.comments || 0) + 1 } : c))
+                old?.map((c) => (c.id === id ? { ...c, comments: (c.comments || 0) + 1 } : c)),
             );
             setNewComment('');
             showToast('Comment added!', 'success');
@@ -96,7 +96,7 @@ const ConfessionsPage = () => {
         try {
             await api.post(`/confessions/${id}/like`);
             queryClient.setQueryData(['confessions'], (old) =>
-                old?.map((c) => (c.id === id ? { ...c, likes: (c.likes || 0) + 1 } : c))
+                old?.map((c) => (c.id === id ? { ...c, likes: (c.likes || 0) + 1 } : c)),
             );
         } catch (err) {
             showToast('Failed to like confession', 'error');
@@ -120,12 +120,15 @@ const ConfessionsPage = () => {
     };
 
     const handleReport = async (id) => {
-        const reason = window.prompt("Why are you reporting this confession?");
+        const reason = window.prompt('Why are you reporting this confession?');
         if (!reason || !reason.trim()) return;
 
         try {
             await api.post(`/confessions/${id}/report`, { reason });
-            showToast('Report submitted to admins. Thank you for keeping KaruTeens safe.', 'success');
+            showToast(
+                'Report submitted to admins. Thank you for keeping KaruTeens safe.',
+                'success',
+            );
         } catch (err) {
             showToast('Failed to submit report', 'error');
         }
@@ -133,11 +136,13 @@ const ConfessionsPage = () => {
 
     const handleShare = (confession) => {
         if (navigator.share) {
-            navigator.share({
-                title: 'Campus Confession',
-                text: confession.content,
-                url: window.location.href,
-            }).catch(() => {});
+            navigator
+                .share({
+                    title: 'Campus Confession',
+                    text: confession.content,
+                    url: window.location.href,
+                })
+                .catch(() => {});
         } else {
             navigator.clipboard.writeText(confession.content);
             showToast('Confession copied to clipboard!', 'success');
@@ -206,13 +211,15 @@ const ConfessionsPage = () => {
                                     <Avatar
                                         src={null}
                                         name={
-                                            (confession.is_anonymous || confession.isAnonymous) ? 'Anonymous' : confession.author_name
+                                            confession.is_anonymous || confession.isAnonymous
+                                                ? 'Anonymous'
+                                                : confession.author_name
                                         }
                                         size="sm"
                                     />
                                     <div className="author-info">
                                         <span className="author-name">
-                                            {(confession.is_anonymous || confession.isAnonymous)
+                                            {confession.is_anonymous || confession.isAnonymous
                                                 ? 'Anonymous'
                                                 : `@${confession.author_name || confession.username}`}
                                         </span>
@@ -223,7 +230,9 @@ const ConfessionsPage = () => {
                                         </span>
                                     </div>
                                 </div>
-                                {(confession.is_anonymous || confession.isAnonymous) && <span className="anon-badge">🔮</span>}
+                                {(confession.is_anonymous || confession.isAnonymous) && (
+                                    <span className="anon-badge">🔮</span>
+                                )}
                             </div>
 
                             <p className="confession-content">{confession.content}</p>
@@ -233,21 +242,30 @@ const ConfessionsPage = () => {
                                     className={`action-btn ${confession.likes > 0 ? 'active' : ''}`}
                                     onClick={() => handleLike(confession.id)}
                                 >
-                                    <Heart size={18} fill={confession.likes > 0 ? "currentColor" : "none"} />
+                                    <Heart
+                                        size={18}
+                                        fill={confession.likes > 0 ? 'currentColor' : 'none'}
+                                    />
                                     <span>{confession.likes || 0}</span>
                                 </button>
-                                <button 
-                                    className={`action-btn ${activeConfessionId === confession.id ? 'active' : ''}`} 
+                                <button
+                                    className={`action-btn ${activeConfessionId === confession.id ? 'active' : ''}`}
                                     onClick={() => handleToggleComments(confession.id)}
                                 >
                                     <MessageCircle size={18} />
                                     <span>{confession.comments || 0}</span>
                                 </button>
-                                <button className="action-btn" onClick={() => handleShare(confession)}>
+                                <button
+                                    className="action-btn"
+                                    onClick={() => handleShare(confession)}
+                                >
                                     <Share2 size={18} />
                                     <span>Share</span>
                                 </button>
-                                <button className="action-btn report" onClick={() => handleReport(confession.id)}>
+                                <button
+                                    className="action-btn report"
+                                    onClick={() => handleReport(confession.id)}
+                                >
                                     <Flag size={18} />
                                     <span>Report</span>
                                 </button>
@@ -264,11 +282,20 @@ const ConfessionsPage = () => {
                                         ) : (
                                             activeComments.map((comment, idx) => (
                                                 <div key={idx} className="comment-item">
-                                                    <Avatar name={comment.author_username} size="xs" />
+                                                    <Avatar
+                                                        name={comment.author_username}
+                                                        size="xs"
+                                                    />
                                                     <div className="comment-content-box">
                                                         <div className="comment-meta">
-                                                            <strong>@{comment.author_username}</strong>
-                                                            <span>{new Date(comment.created_at).toLocaleTimeString()}</span>
+                                                            <strong>
+                                                                @{comment.author_username}
+                                                            </strong>
+                                                            <span>
+                                                                {new Date(
+                                                                    comment.created_at,
+                                                                ).toLocaleTimeString()}
+                                                            </span>
                                                         </div>
                                                         <p>{comment.content}</p>
                                                     </div>
@@ -276,15 +303,21 @@ const ConfessionsPage = () => {
                                             ))
                                         )}
                                     </div>
-                                    <form className="comment-input-area" onSubmit={handleAddComment}>
-                                        <input 
-                                            type="text" 
-                                            placeholder="Write a comment..." 
+                                    <form
+                                        className="comment-input-area"
+                                        onSubmit={handleAddComment}
+                                    >
+                                        <input
+                                            type="text"
+                                            placeholder="Write a comment..."
                                             value={newComment}
                                             onChange={(e) => setNewComment(e.target.value)}
                                             disabled={isCommenting}
                                         />
-                                        <button type="submit" disabled={!newComment.trim() || isCommenting}>
+                                        <button
+                                            type="submit"
+                                            disabled={!newComment.trim() || isCommenting}
+                                        >
                                             <Send size={18} />
                                         </button>
                                     </form>

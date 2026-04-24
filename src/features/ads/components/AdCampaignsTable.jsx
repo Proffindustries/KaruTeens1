@@ -1,18 +1,28 @@
 import React from 'react';
-import { Edit, Trash2, Calendar, Target, Eye, Users, TrendingUp, DollarSign, AlertCircle } from 'lucide-react';
+import {
+    Edit,
+    Trash2,
+    Calendar,
+    Target,
+    Eye,
+    Users,
+    TrendingUp,
+    DollarSign,
+    AlertCircle,
+} from 'lucide-react';
 
-const AdCampaignsTable = ({ 
-    campaigns, 
-    selectedCampaigns, 
-    onToggleSelection, 
-    onSelectAll, 
-    onEdit, 
+const AdCampaignsTable = ({
+    campaigns,
+    selectedCampaigns,
+    onToggleSelection,
+    onSelectAll,
+    onEdit,
     onDelete,
     getStatusBadge,
     getCampaignTypeBadge,
     getObjectiveBadge,
     formatCurrency,
-    formatPercentage
+    formatPercentage,
 }) => {
     if (!campaigns || campaigns.length === 0) {
         return (
@@ -29,10 +39,13 @@ const AdCampaignsTable = ({
                 <thead>
                     <tr>
                         <th>
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 onChange={onSelectAll}
-                                checked={selectedCampaigns.length === campaigns.length && campaigns.length > 0}
+                                checked={
+                                    selectedCampaigns.length === campaigns.length &&
+                                    campaigns.length > 0
+                                }
                                 aria-label="Select all campaigns"
                             />
                         </th>
@@ -48,12 +61,15 @@ const AdCampaignsTable = ({
                         const status = getStatusBadge(campaign.status);
                         const type = getCampaignTypeBadge(campaign.campaign_type);
                         const obj = getObjectiveBadge(campaign.objective);
-                        
+
                         return (
-                            <tr key={campaign.id} className={campaign.status === 'paused' ? 'paused-row' : ''}>
+                            <tr
+                                key={campaign.id}
+                                className={campaign.status === 'paused' ? 'paused-row' : ''}
+                            >
                                 <td>
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         checked={selectedCampaigns.includes(campaign.id)}
                                         onChange={() => onToggleSelection(campaign.id)}
                                         aria-label={`Select campaign ${campaign.name}`}
@@ -66,15 +82,26 @@ const AdCampaignsTable = ({
                                             <span className="id-badge">{campaign.id}</span>
                                         </div>
                                         <div className="badge-row">
-                                            <span className={`pill ${status.color}`}>{status.icon} {status.text}</span>
-                                            <span className={`pill ${type.color}`}>{type.icon} {type.text}</span>
-                                            <span className={`pill ${obj.color}`}>{obj.icon} {obj.text}</span>
+                                            <span className={`pill ${status.color}`}>
+                                                {status.icon} {status.text}
+                                            </span>
+                                            <span className={`pill ${type.color}`}>
+                                                {type.icon} {type.text}
+                                            </span>
+                                            <span className={`pill ${obj.color}`}>
+                                                {obj.icon} {obj.text}
+                                            </span>
                                         </div>
                                         <div className="date-info">
                                             <Calendar size={12} />
                                             <span>
-                                                {new Date(campaign.start_date).toLocaleDateString()} - 
-                                                {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : ' Ongoing'}
+                                                {new Date(campaign.start_date).toLocaleDateString()}{' '}
+                                                -
+                                                {campaign.end_date
+                                                    ? new Date(
+                                                          campaign.end_date,
+                                                      ).toLocaleDateString()
+                                                    : ' Ongoing'}
                                             </span>
                                         </div>
                                     </div>
@@ -82,19 +109,33 @@ const AdCampaignsTable = ({
                                 <td>
                                     <div className="budget-cell">
                                         <div className="budget-main">
-                                            <strong>{formatCurrency(campaign.daily_budget, campaign.budget.currency)}</strong>
+                                            <strong>
+                                                {formatCurrency(
+                                                    campaign.daily_budget,
+                                                    campaign.budget.currency,
+                                                )}
+                                            </strong>
                                             <small>/day</small>
                                         </div>
                                         <div className="spend-progress">
                                             <div className="progress-bar">
-                                                <div 
-                                                    className="progress-fill" 
-                                                    style={{ width: `${(campaign.budget.budget_utilization * 100).toFixed(0)}%` }}
+                                                <div
+                                                    className="progress-fill"
+                                                    style={{
+                                                        width: `${(campaign.budget.budget_utilization * 100).toFixed(0)}%`,
+                                                    }}
                                                 ></div>
                                             </div>
                                             <div className="spend-text">
-                                                {formatCurrency(campaign.total_spend, campaign.budget.currency)} spent 
-                                                ({(campaign.budget.budget_utilization * 100).toFixed(1)}%)
+                                                {formatCurrency(
+                                                    campaign.total_spend,
+                                                    campaign.budget.currency,
+                                                )}{' '}
+                                                spent (
+                                                {(campaign.budget.budget_utilization * 100).toFixed(
+                                                    1,
+                                                )}
+                                                %)
                                             </div>
                                         </div>
                                     </div>
@@ -103,15 +144,23 @@ const AdCampaignsTable = ({
                                     <div className="performance-cell">
                                         <div className="perf-grid">
                                             <div className="perf-item">
-                                                <Eye size={12} /> {campaign.total_impressions.toLocaleString()}
+                                                <Eye size={12} />{' '}
+                                                {campaign.total_impressions.toLocaleString()}
                                             </div>
                                             <div className="perf-item">
-                                                <Users size={12} /> {campaign.total_clicks.toLocaleString()}
+                                                <Users size={12} />{' '}
+                                                {campaign.total_clicks.toLocaleString()}
                                             </div>
-                                            <div className="perf-item title" title="Click-Through Rate">
+                                            <div
+                                                className="perf-item title"
+                                                title="Click-Through Rate"
+                                            >
                                                 CTR: {formatPercentage(campaign.ctr)}
                                             </div>
-                                            <div className="perf-item title" title="Return on Ad Spend">
+                                            <div
+                                                className="perf-item title"
+                                                title="Return on Ad Spend"
+                                            >
                                                 ROAS: {campaign.roas.toFixed(1)}x
                                             </div>
                                         </div>
@@ -123,16 +172,26 @@ const AdCampaignsTable = ({
                                             <Target size={12} /> {campaign.optimization_goal}
                                         </div>
                                         <div className="score-row">
-                                            <small>Quality: {campaign.quality_score.toFixed(1)}/10</small>
+                                            <small>
+                                                Quality: {campaign.quality_score.toFixed(1)}/10
+                                            </small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
                                     <div className="actions-cell">
-                                        <button className="btn-icon edit" onClick={() => onEdit(campaign)} aria-label="Edit campaign">
+                                        <button
+                                            className="btn-icon edit"
+                                            onClick={() => onEdit(campaign)}
+                                            aria-label="Edit campaign"
+                                        >
                                             <Edit size={16} />
                                         </button>
-                                        <button className="btn-icon delete" onClick={() => onDelete(campaign.id)} aria-label="Delete campaign">
+                                        <button
+                                            className="btn-icon delete"
+                                            onClick={() => onDelete(campaign.id)}
+                                            aria-label="Delete campaign"
+                                        >
                                             <Trash2 size={16} />
                                         </button>
                                     </div>

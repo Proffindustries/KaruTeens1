@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, MessageCircle, Share2, Music, User, ArrowLeft, Loader, Shield } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/client';
@@ -15,6 +15,14 @@ const ReelsPage = () => {
     const location = useLocation();
     const { showToast } = useToast();
 
+    const handleScroll = useCallback(() => {
+        const container = containerRef.current;
+        if (container) {
+            const index = Math.round(container.scrollTop / container.clientHeight);
+            setCurrentIndex(index);
+        }
+    }, []);
+
     const handleBack = () => {
         if (location.key !== 'default') {
             navigate(-1);
@@ -22,7 +30,7 @@ const ReelsPage = () => {
             navigate('/feed');
         }
     };
-// ...
+
     return (
         <div className="reels-page">
             <div className="reels-header">

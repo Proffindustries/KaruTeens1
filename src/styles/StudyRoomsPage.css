@@ -110,9 +110,18 @@
 }
 
 @keyframes livePulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
-    70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(244, 63, 94, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+    }
 }
 
 .room-info {
@@ -221,7 +230,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 /* Whiteboard & Media (Center Column) */
@@ -278,7 +287,7 @@
     position: absolute;
     bottom: 1rem;
     left: 1rem;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
     color: white;
     padding: 0.35rem 0.75rem;
@@ -292,7 +301,7 @@
     background: white;
     border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     min-height: 600px;
 }
 
@@ -354,8 +363,8 @@
     pointer-events: none;
     z-index: 1000;
     /* Offset so the tip of the pen icon (usually bottom-left/center-ish) matches cursor */
-    transform: translate(-10%, -90%); 
-    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+    transform: translate(-10%, -90%);
+    filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.3));
     transition: transform 0.1s ease-out;
 }
 
@@ -381,7 +390,7 @@
 }
 
 .file-card {
-    background: rgba(255,255,255,0.03);
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 16px;
     padding: 0.75rem;
     border: 1px solid var(--study-glass-border);
@@ -510,7 +519,7 @@
 }
 
 .chat-bubble.own .chat-name {
-    color: rgba(255,255,255,0.8);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .chat-text {
@@ -526,7 +535,7 @@
     align-items: center;
     gap: 1rem;
     transition: background 0.2s;
-    border-bottom: 1px solid rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
 }
 
 .list-item:hover {

@@ -65,111 +65,132 @@ function App() {
             <AudioProvider>
                 <WebsocketProvider>
                     <ErrorBoundary>
-                    <Suspense
-                        fallback={
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    height: '100vh',
-                                    fontSize: '1.2rem',
-                                }}
-                            >
-                                Loading...
-                            </div>
-                        }
-                    >
-                        <Routes>
-                            <Route element={<AuthLayout />}>
-                                <Route path="/login" element={<LoginPage />} />
-                                <Route path="/register" element={<RegisterPage />} />
-                                <Route path="/verification" element={<VerificationPage />} />
-                                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                                <Route path="/get-account" element={<GetAccountPage />} />
-                            </Route>
-
-                            <Route path="/" element={<MainLayout />}>
-                                <Route index element={<HomePage />} />
-                                <Route path="about" element={<AboutPage />} />
-                                <Route path="contact" element={<ContactPage />} />
-                                <Route path="legal" element={<LegalPage />} />
-                                <Route path="blog" element={<BlogPage />} />
-                                <Route path="blog/:slug" element={<BlogDetailPage />} />
-                                <Route path="explore" element={<ExplorePage />} />
-
-                                <Route path="feed" element={<FeedPage />} />
-                                <Route path="post/:postId" element={<PostDetailPage />} />
-
-                                <Route element={<ProtectedRoute />}>
-                                    <Route path="marketplace" element={<MarketplacePage />} />
+                        <Suspense
+                            fallback={
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        height: '100vh',
+                                        fontSize: '1.2rem',
+                                    }}
+                                >
+                                    Loading...
+                                </div>
+                            }
+                        >
+                            <Routes>
+                                <Route element={<AuthLayout />}>
+                                    <Route path="/login" element={<LoginPage />} />
+                                    <Route path="/register" element={<RegisterPage />} />
+                                    <Route path="/verification" element={<VerificationPage />} />
                                     <Route
-                                        path="marketplace/item/:itemId"
-                                        element={<MarketplaceItemPage />}
+                                        path="/forgot-password"
+                                        element={<ForgotPasswordPage />}
                                     />
-                                    <Route path="profile/:username?" element={<ProfilePage />} />
-                                    <Route path="status" element={<StatusPage />} />
-                                    <Route path="messages" element={<MessagesPage />} />
-                                    <Route path="groups" element={<GroupsPage />} />
-                                    <Route path="groups/:groupId" element={<GroupDetailPage />} />
-                                    <Route path="events" element={<EventsPage />} />
-                                    <Route path="events/:eventId" element={<EventDetailPage />} />
-                                    <Route path="date" element={<HookupPage />} />
-                                    <Route path="study-rooms" element={<StudyRoomsPage />} />
-                                    <Route path="study-rooms/:roomId" element={<StudyRoomsPage />} />
-                                    <Route path="study-playlists" element={<StudyPlaylistsPage />} />
-                                    <Route path="recall" element={<RecallPage />} />
-                                    <Route path="notifications" element={<NotificationsPage />} />
-                                    <Route path="settings" element={<SettingsPage />} />
-                                    <Route path="donate" element={<DonatePage />} />
-                                    <Route path="premium" element={<PremiumPage />} />
-                                    <Route path="search" element={<SearchResultsPage />} />
-                                    <Route
-                                        path="revision-materials"
-                                        element={<RevisionMaterialsPage />}
-                                    />
-                                    <Route path="templates" element={<TemplatesPage />} />
-
-                                    {/* Previously unrouted pages — now connected */}
-                                    <Route path="activity" element={<ActivityFeedPage />} />
-                                    <Route path="live" element={<LiveStreamPage />} />
-                                    <Route path="leaderboards" element={<LeaderboardsPage />} />
-                                    <Route path="timetable" element={<TimetablePage />} />
-                                    <Route path="confessions" element={<ConfessionsPage />} />
-                                    <Route path="reels" element={<ReelsPage />} />
-                                    <Route path="onboarding" element={<OnboardingPage />} />
-                                    <Route path="pages" element={<PagesPage />} />
-                                    <Route path="p/:slug" element={<PageDetailPage />} />
+                                    <Route path="/get-account" element={<GetAccountPage />} />
                                 </Route>
 
-                                <Route element={<ProtectedRoute />}>
-                                    <Route path="ai-assistant" element={<AiPage />} />
-                                    <Route path="admin" element={<AdminDashboard />} />
+                                <Route path="/" element={<MainLayout />}>
+                                    <Route index element={<HomePage />} />
+                                    <Route path="about" element={<AboutPage />} />
+                                    <Route path="contact" element={<ContactPage />} />
+                                    <Route path="legal" element={<LegalPage />} />
+                                    <Route path="blog" element={<BlogPage />} />
+                                    <Route path="blog/:slug" element={<BlogDetailPage />} />
+                                    <Route path="explore" element={<ExplorePage />} />
+
+                                    <Route path="feed" element={<FeedPage />} />
+                                    <Route path="post/:postId" element={<PostDetailPage />} />
+
+                                    <Route element={<ProtectedRoute />}>
+                                        <Route path="marketplace" element={<MarketplacePage />} />
+                                        <Route
+                                            path="marketplace/item/:itemId"
+                                            element={<MarketplaceItemPage />}
+                                        />
+                                        <Route
+                                            path="profile/:username?"
+                                            element={<ProfilePage />}
+                                        />
+                                        <Route path="status" element={<StatusPage />} />
+                                        <Route path="messages" element={<MessagesPage />} />
+                                        <Route path="groups" element={<GroupsPage />} />
+                                        <Route
+                                            path="groups/:groupId"
+                                            element={<GroupDetailPage />}
+                                        />
+                                        <Route path="events" element={<EventsPage />} />
+                                        <Route
+                                            path="events/:eventId"
+                                            element={<EventDetailPage />}
+                                        />
+                                        <Route path="date" element={<HookupPage />} />
+                                        <Route path="study-rooms" element={<StudyRoomsPage />} />
+                                        <Route
+                                            path="study-rooms/:roomId"
+                                            element={<StudyRoomsPage />}
+                                        />
+                                        <Route
+                                            path="study-playlists"
+                                            element={<StudyPlaylistsPage />}
+                                        />
+                                        <Route path="recall" element={<RecallPage />} />
+                                        <Route
+                                            path="notifications"
+                                            element={<NotificationsPage />}
+                                        />
+                                        <Route path="settings" element={<SettingsPage />} />
+                                        <Route path="donate" element={<DonatePage />} />
+                                        <Route path="premium" element={<PremiumPage />} />
+                                        <Route path="search" element={<SearchResultsPage />} />
+                                        <Route
+                                            path="revision-materials"
+                                            element={<RevisionMaterialsPage />}
+                                        />
+                                        <Route path="templates" element={<TemplatesPage />} />
+
+                                        {/* Previously unrouted pages — now connected */}
+                                        <Route path="activity" element={<ActivityFeedPage />} />
+                                        <Route path="live" element={<LiveStreamPage />} />
+                                        <Route path="leaderboards" element={<LeaderboardsPage />} />
+                                        <Route path="timetable" element={<TimetablePage />} />
+                                        <Route path="confessions" element={<ConfessionsPage />} />
+                                        <Route path="reels" element={<ReelsPage />} />
+                                        <Route path="onboarding" element={<OnboardingPage />} />
+                                        <Route path="pages" element={<PagesPage />} />
+                                        <Route path="p/:slug" element={<PageDetailPage />} />
+                                    </Route>
+
+                                    <Route element={<ProtectedRoute />}>
+                                        <Route path="ai-assistant" element={<AiPage />} />
+                                        <Route path="admin" element={<AdminDashboard />} />
+                                    </Route>
+
+                                    {/* Render directly to avoid SEO redirect flags */}
+                                    <Route path="privacy" element={<LegalPage />} />
+                                    <Route path="terms" element={<LegalPage />} />
+                                    <Route path="cookies" element={<LegalPage />} />
+                                    <Route path="help" element={<ContactPage />} />
                                 </Route>
 
-                                {/* Render directly to avoid SEO redirect flags */}
-                                <Route path="privacy" element={<LegalPage />} />
-                                <Route path="terms" element={<LegalPage />} />
-                                <Route path="cookies" element={<LegalPage />} />
-                                <Route path="help" element={<ContactPage />} />
-                            </Route>
-
-                            <Route
-                                path="*"
-                                element={
-                                    <MainLayout>
-                                        <NotFoundPage />
-                                    </MainLayout>
-                                }
-                            />
-                        </Routes>
-                    </Suspense>
-                </ErrorBoundary>
-                <UploadProgress />
-                <GlobalAudioPlayer />
-            </WebsocketProvider>
-        </AudioProvider>
-    </AblyProvider>
+                                <Route
+                                    path="*"
+                                    element={
+                                        <MainLayout>
+                                            <NotFoundPage />
+                                        </MainLayout>
+                                    }
+                                />
+                            </Routes>
+                        </Suspense>
+                    </ErrorBoundary>
+                    <UploadProgress />
+                    <GlobalAudioPlayer />
+                </WebsocketProvider>
+            </AudioProvider>
+        </AblyProvider>
     );
 }
 

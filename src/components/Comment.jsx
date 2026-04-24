@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Reply, ChevronDown, ChevronUp, Image, X, File } from 'lucide-react';
+import { Reply, ChevronDown, ChevronUp, Image, X, File, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from './Avatar.jsx';
+import { useDeleteComment } from '../hooks/useContent';
 import '../styles/Comment.css';
 
 const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
@@ -13,11 +14,23 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const fileInputRef = useRef(null);
     const replyInputRef = useRef(null);
 
+    const { mutate: deleteComment, isPending: isDeleting } = useDeleteComment();
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
     const handleReplyClick = useCallback(() => {
         setIsReplying(true);
     }, []);
 
     const commentId = comment.id;
+
+    const handleDelete = useCallback(() => {
+        if (window.confirm('Are you sure you want to delete this comment?')) {
+            deleteComment(commentId);
+        }
+    }, [commentId, deleteComment]);
+
+    const isOwner = currentUser?.username === comment.username;
+    const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
 
     const handleReplySubmit = useCallback(
         async (e) => {
@@ -110,6 +123,18 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                             Reply
                         </button>
 
+                        {(isOwner || isAdmin) && (
+                            <button
+                                className="comment-action-btn delete-btn"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                style={{ color: '#ff4757' }}
+                            >
+                                <Trash2 size={14} />
+                                Delete
+                            </button>
+                        )}
+
                         {hasReplies && (
                             <button
                                 className="comment-action-btn toggle-replies-btn"
@@ -158,7 +183,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                     maxHeight: '120px',
                                     display: 'block',
                                     fontFamily: 'inherit',
-                                    fontSize: '0.9rem'
+                                    fontSize: '0.9rem',
                                 }}
                             />
                             <div className="reply-actions">
@@ -200,7 +225,9 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                 <button
                                     type="submit"
                                     className="btn-reply"
-                                    disabled={(!replyText.trim() && !replyMedia) || isSubmittingReply}
+                                    disabled={
+                                        (!replyText.trim() && !replyMedia) || isSubmittingReply
+                                    }
                                 >
                                     {isSubmittingReply ? '...' : 'Reply'}
                                 </button>

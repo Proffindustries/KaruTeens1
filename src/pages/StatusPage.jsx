@@ -27,11 +27,11 @@ const StatusPage = () => {
             (u) => u.user_id !== currentUser?.id && u.user_id !== currentUser?.user_id,
         ) || [];
 
-    const closeViewer = () => {
+    const closeViewer = useCallback(() => {
         setViewingUserIndex(null);
         setCurrentStoryIndex(0);
         setProgress(0);
-    };
+    }, []);
 
     const openViewer = (userId) => {
         const index = usersWithStories.findIndex((u) => u.user_id === userId);

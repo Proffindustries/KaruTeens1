@@ -7,12 +7,10 @@ import '../styles/UploadProgress.css';
 const UploadProgress = React.memo(() => {
     const { uploads, cancelUpload, activeUploadsCount } = useUpload();
     const [isMinimized, setIsMinimized] = useState(false);
-    const [now, setNow] = useState(0);
+    const [now, setNow] = useState(() => Date.now());
 
-    // Set initial time and update every second for ETA calculations
+    // Update every second for ETA calculations
     useEffect(() => {
-        const now = Date.now();
-        setNow(now);
         const interval = setInterval(() => {
             setNow(Date.now());
         }, 1000);

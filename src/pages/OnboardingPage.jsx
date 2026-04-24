@@ -106,6 +106,7 @@ const OnboardingPage = () => {
         bio: '',
         school: '',
         year_of_study: 1,
+        reg: '',
         age: 18,
         gender: '',
         avatar_url: '',
@@ -345,6 +346,24 @@ const OnboardingPage = () => {
                                     setProfileData({ ...profileData, school: e.target.value })
                                 }
                             />
+                        </div>
+                        <div className="form-group">
+                            <label>Reg No. (e.g. e101)</label>
+                            <input
+                                type="text"
+                                maxLength={4}
+                                placeholder="e.g. e101"
+                                value={profileData.reg}
+                                onChange={(e) => {
+                                    const val = e.target.value.toLowerCase();
+                                    if (val.length <= 4) {
+                                        setProfileData({ ...profileData, reg: val });
+                                    }
+                                }}
+                            />
+                            <small style={{ fontSize: '0.7rem', color: 'rgb(var(--text-muted))' }}>
+                                1 letter + 3 digits (e.g., e101)
+                            </small>
                         </div>
                         <div className="form-group">
                             <label>Year of Study</label>

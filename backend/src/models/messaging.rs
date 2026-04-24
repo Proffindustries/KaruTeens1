@@ -51,6 +51,8 @@ pub struct Message {
     pub location: Option<Location>,
     pub contact: Option<Contact>,
     pub is_view_once: bool,
+    pub is_system: bool,
+    pub is_announcement: bool,
     pub viewed_at: Option<bson::DateTime>,
     pub expires_at: Option<bson::DateTime>,
     pub created_at: bson::DateTime,

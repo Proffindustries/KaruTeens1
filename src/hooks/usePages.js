@@ -8,7 +8,7 @@ export const usePages = (filters = {}) => {
         queryFn: async () => {
             const { data } = await api.get('/pages', { params: filters });
             return data;
-        }
+        },
     });
 };
 
@@ -19,7 +19,7 @@ export const usePage = (idOrSlug) => {
             const { data } = await api.get(`/pages/${idOrSlug}`);
             return data;
         },
-        enabled: !!idOrSlug
+        enabled: !!idOrSlug,
     });
 };
 
@@ -38,7 +38,7 @@ export const useCreatePage = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to create page', 'error');
-        }
+        },
     });
 };
 
@@ -56,7 +56,7 @@ export const useFollowPage = () => {
             queryClient.invalidateQueries({ queryKey: ['pages'] });
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             showToast('Followed successfully!', 'success');
-        }
+        },
     });
 };
 
@@ -74,6 +74,6 @@ export const useUnfollowPage = () => {
             queryClient.invalidateQueries({ queryKey: ['pages'] });
             queryClient.invalidateQueries({ queryKey: ['feed'] });
             showToast('Unfollowed successfully!', 'success');
-        }
+        },
     });
 };

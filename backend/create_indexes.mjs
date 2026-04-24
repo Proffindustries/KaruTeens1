@@ -5,11 +5,11 @@ const DB_NAME = 'karuteens_db';
 
 async function createIndexes() {
     const client = new MongoClient(MONGO_URI);
-    
+
     try {
         await client.connect();
         console.log('Connected to MongoDB');
-        
+
         const db = client.db(DB_NAME);
 
         // Users Collection
@@ -71,7 +71,9 @@ async function createIndexes() {
         await db.collection('marketplace_items').createIndex({ category: 1 });
 
         // Transactions Collection
-        await db.collection('transactions').createIndex({ checkout_request_id: 1 }, { unique: true });
+        await db
+            .collection('transactions')
+            .createIndex({ checkout_request_id: 1 }, { unique: true });
         await db.collection('transactions').createIndex({ user_id: 1, created_at: -1 });
         await db.collection('transactions').createIndex({ status: 1 });
 

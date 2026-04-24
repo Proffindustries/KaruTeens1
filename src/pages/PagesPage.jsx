@@ -15,11 +15,7 @@ const PagesPage = () => {
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const { showToast } = useToast();
 
-    useEffect(() => {
-        fetchPages();
-    }, []);
-
-    const fetchPages = async () => {
+    const fetchPages = React.useCallback(async () => {
         try {
             const { data } = await api.get('/pages');
             setPages(data);
@@ -29,14 +25,19 @@ const PagesPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchPages();
+    }, [fetchPages]);
 
     const filteredPages =
         debouncedSearchQuery === ''
             ? pages
             : pages.filter(
                   (page) =>
-                      (page.name && page.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
+                      (page.name &&
+                          page.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
                       (page.description &&
                           page.description
                               .toLowerCase()
@@ -46,10 +47,19 @@ const PagesPage = () => {
     return (
         <div className="container pages-page py-8">
             <div className="pages-header mb-8">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
                     <div>
                         <h1>Discover Pages</h1>
-                        <p>Explore channels from student leaders, organizations, and official campus bodies.</p>
+                        <p>
+                            Explore channels from student leaders, organizations, and official
+                            campus bodies.
+                        </p>
                     </div>
                     <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
                         <Plus size={18} /> Create Page
@@ -67,7 +77,15 @@ const PagesPage = () => {
                 </div>
             </div>
 
-            {isCreateModalOpen && <CreatePageModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); fetchPages(); }} />}
+            {isCreateModalOpen && (
+                <CreatePageModal
+                    isOpen={isCreateModalOpen}
+                    onClose={() => {
+                        setIsCreateModalOpen(false);
+                        fetchPages();
+                    }}
+                />
+            )}
 
             {loading ? (
                 <div className="pages-loading">Loading pages...</div>

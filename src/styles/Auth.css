@@ -30,24 +30,24 @@
         padding-top: 1rem;
         align-items: flex-start;
     }
-    
+
     .auth-card {
         padding: 1.5rem;
         max-width: 100%;
         margin-top: 0;
     }
-    
+
     .auth-card * {
         opacity: 1 !important;
         visibility: visible !important;
     }
-    
+
     .form-group {
         opacity: 1 !important;
         visibility: visible !important;
         display: block !important;
     }
-    
+
     .form-input {
         opacity: 1 !important;
         visibility: visible !important;

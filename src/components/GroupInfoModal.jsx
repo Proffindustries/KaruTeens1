@@ -22,15 +22,16 @@ const GroupInfoModal = ({
     handleAddParticipants,
     handleLeaveGroup,
 }) => {
-    if (!showGroupInfoModal || !selectedChat) return null;
-
-    const currentUser = JSON.parse(localStorage.getItem('user'));
-    const isCurrentUserAdmin = selectedChat.admins?.includes(currentUser?.id);
     const { uploadImage } = useMediaUpload();
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const fileInputRef = React.useRef(null);
     const [isUploading, setIsUploading] = React.useState(false);
     const { showToast } = useToast();
+
+    if (!showGroupInfoModal || !selectedChat) return null;
+
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const isCurrentUserAdmin = selectedChat.admins?.includes(currentUser?.id);
 
     return (
         <div className="modal-overlay">
@@ -57,7 +58,9 @@ const GroupInfoModal = ({
                                     value={editGroupName}
                                     onChange={(e) => setEditGroupName(e.target.value)}
                                 />
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <div
+                                    style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+                                >
                                     <button
                                         type="button"
                                         className="btn btn-outline"
@@ -66,15 +69,19 @@ const GroupInfoModal = ({
                                     >
                                         {isUploading ? 'Uploading...' : 'Upload Avatar'}
                                     </button>
-                                    {editGroupAvatar && <span style={{ color: '#00b894', fontSize: '0.9rem' }}>Image Attached</span>}
-                                    <input 
+                                    {editGroupAvatar && (
+                                        <span style={{ color: '#00b894', fontSize: '0.9rem' }}>
+                                            Image Attached
+                                        </span>
+                                    )}
+                                    <input
                                         type="file"
                                         ref={fileInputRef}
                                         hidden
                                         accept="image/*"
                                         onChange={async (e) => {
                                             const file = e.target.files[0];
-                                            if(!file) return;
+                                            if (!file) return;
                                             const uploadId = addUpload({
                                                 fileName: file.name,
                                                 fileSize: file.size,

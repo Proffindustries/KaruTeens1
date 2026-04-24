@@ -11,10 +11,12 @@ import {
     MessageCircle,
     Lightbulb,
     GraduationCap,
+    Trash2,
+    X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../context/ToastContext';
 import '../styles/TemplatesPage.css';
-import CreatePostModal from '../components/CreatePostModal.jsx';
 
 const TEMPLATES = [
     {
@@ -146,11 +148,21 @@ const CATEGORIES = [
 const TemplatesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [copiedId, setCopiedId] = useState(null);
-    const [templateModalOpen, setTemplateModalOpen] = useState(false);
-    const [currentTemplate, setCurrentTemplate] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newTemplate, setNewTemplate] = useState({
+        title: '',
+        content: '',
+        category: 'Study Tips',
+    });
+    const [personalTemplates, setPersonalTemplates] = useState(() => {
+        const saved = localStorage.getItem('personal_templates');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const { showToast } = useToast();
 
-    const filteredTemplates = TEMPLATES.filter((t) => {
+    const allTemplates = [...TEMPLATES, ...personalTemplates];
+
+    const filteredTemplates = allTemplates.filter((t) => {
         const matchesSearch =
             t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             t.content.toLowerCase().includes(searchTerm.toLowerCase());
@@ -158,9 +170,35 @@ const TemplatesPage = () => {
         return matchesSearch && matchesCategory;
     });
 
-    const useTemplate = (template) => {
-        setCurrentTemplate(template.content);
-        setTemplateModalOpen(true);
+    const copyTemplate = (content) => {
+        navigator.clipboard.writeText(content);
+        showToast('Template copied to clipboard!', 'success');
+    };
+
+    const handleCreateTemplate = () => {
+        if (!newTemplate.title || !newTemplate.content) {
+            showToast('Please fill in all fields', 'error');
+            return;
+        }
+        const template = {
+            ...newTemplate,
+            id: Date.now(),
+            icon: '📝',
+            is_personal: true,
+        };
+        const updated = [template, ...personalTemplates];
+        setPersonalTemplates(updated);
+        localStorage.setItem('personal_templates', JSON.stringify(updated));
+        setShowCreateModal(false);
+        setNewTemplate({ title: '', content: '', category: 'Study Tips' });
+        showToast('Template created!', 'success');
+    };
+
+    const deleteTemplate = (id) => {
+        const updated = personalTemplates.filter((t) => t.id !== id);
+        setPersonalTemplates(updated);
+        localStorage.setItem('personal_templates', JSON.stringify(updated));
+        showToast('Template deleted', 'info');
     };
 
     const getCategoryIcon = (category) => {
@@ -188,14 +226,14 @@ const TemplatesPage = () => {
 
     return (
         <div className="templates-page">
-            <CreatePostModal 
-                isOpen={templateModalOpen} 
-                onClose={() => setTemplateModalOpen(false)} 
-                initialText={currentTemplate} 
-            />
             <div className="templates-header">
-                <h1>📝 Content Templates</h1>
-                <p>Quick templates for common study posts</p>
+                <div className="title-section">
+                    <h1>📝 Content Templates</h1>
+                    <p>Quick templates for common study posts</p>
+                </div>
+                <button className="create-template-btn" onClick={() => setShowCreateModal(true)}>
+                    <Plus size={20} /> Create Template
+                </button>
             </div>
 
             <div className="templates-toolbar">
@@ -225,7 +263,7 @@ const TemplatesPage = () => {
                 {filteredTemplates.map((template) => (
                     <motion.div
                         key={template.id}
-                        className="template-card"
+                        className={`template-card ${template.is_personal ? 'personal' : ''}`}
                         whileHover={{ scale: 1.02 }}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -233,7 +271,26 @@ const TemplatesPage = () => {
                         <div className="template-header">
                             <span className="template-icon">{template.icon}</span>
                             <div className="template-meta">
-                                <h3>{template.title}</h3>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-start',
+                                    }}
+                                >
+                                    <h3>{template.title}</h3>
+                                    {template.is_personal && (
+                                        <button
+                                            className="delete-template-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteTemplate(template.id);
+                                            }}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
                                 <span className="template-category">
                                     {getCategoryIcon(template.category)}
                                     {template.category}
@@ -241,11 +298,8 @@ const TemplatesPage = () => {
                             </div>
                         </div>
                         <pre className="template-content">{template.content}</pre>
-                        <button
-                            className="copy-btn"
-                            onClick={() => useTemplate(template)}
-                        >
-                            <Copy size={16} /> Use Template
+                        <button className="copy-btn" onClick={() => copyTemplate(template.content)}>
+                            <Copy size={16} /> Copy Template
                         </button>
                     </motion.div>
                 ))}
@@ -258,6 +312,87 @@ const TemplatesPage = () => {
                     <p>Try a different search term or category</p>
                 </div>
             )}
+
+            <AnimatePresence>
+                {showCreateModal && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowCreateModal(false)}
+                    >
+                        <motion.div
+                            className="template-modal"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="modal-header">
+                                <h3>Create New Template</h3>
+                                <button onClick={() => setShowCreateModal(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label>Template Title</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Weekly Goals"
+                                        value={newTemplate.title}
+                                        onChange={(e) =>
+                                            setNewTemplate({
+                                                ...newTemplate,
+                                                title: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Category</label>
+                                    <select
+                                        value={newTemplate.category}
+                                        onChange={(e) =>
+                                            setNewTemplate({
+                                                ...newTemplate,
+                                                category: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        {CATEGORIES.slice(1).map((cat) => (
+                                            <option key={cat} value={cat}>
+                                                {cat}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Content</label>
+                                    <textarea
+                                        rows="6"
+                                        placeholder="Write your template content here..."
+                                        value={newTemplate.content}
+                                        onChange={(e) =>
+                                            setNewTemplate({
+                                                ...newTemplate,
+                                                content: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <button
+                                    className="btn btn-primary btn-full"
+                                    onClick={handleCreateTemplate}
+                                >
+                                    Create Template
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

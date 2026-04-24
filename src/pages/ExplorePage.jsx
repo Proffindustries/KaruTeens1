@@ -343,7 +343,10 @@ const ExplorePage = () => {
                     </div>
                 ))}
 
-                <div className="explore-ad-full shadow-sm card" style={{ padding: '0', gridColumn: '1 / -1', overflow: 'hidden' }}>
+                <div
+                    className="explore-ad-full shadow-sm card"
+                    style={{ padding: '0', gridColumn: '1 / -1', overflow: 'hidden' }}
+                >
                     <AdComponent page="explore" />
                 </div>
 
@@ -352,7 +355,10 @@ const ExplorePage = () => {
                     <h2>Admin Area</h2>
                     <div className="links-grid">
                         <Link to="/admin" className="explore-card admin-card">
-                            <div className="explore-icon" style={{ background: '#e74c3c15', color: '#e74c3c' }}>
+                            <div
+                                className="explore-icon"
+                                style={{ background: '#e74c3c15', color: '#e74c3c' }}
+                            >
                                 <Shield size={24} />
                             </div>
                             <div className="explore-info">

@@ -105,7 +105,7 @@ const VerificationPage = () => {
             }, 10000);
         }
         return () => clearInterval(interval);
-    }, [step, checkoutId]);
+    }, [step, checkoutId, showToast]);
 
     return (
         <div className="auth-container">

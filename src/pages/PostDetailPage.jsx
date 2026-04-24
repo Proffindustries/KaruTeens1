@@ -43,21 +43,25 @@ const PostDetailPage = () => {
     }
 
     const postUrl = window.location.href;
-    const postImage = (post.media_urls && post.media_urls.length > 0) ? post.media_urls[0] : 'https://karuteens.site/logo512.png';
+    const postImage =
+        post.media_urls && post.media_urls.length > 0
+            ? post.media_urls[0]
+            : 'https://karuteens.site/logo512.png';
 
     return (
         <div className="container post-detail-page">
-            <SEO 
-                title={post.user ? `Post by ${post.user}` : "KaruTeens Post"}
-                description={post.content ? post.content.substring(0, 150) : "Check out this update on KaruTeens."}
+            <SEO
+                title={post.user ? `Post by ${post.user}` : 'KaruTeens Post'}
+                description={
+                    post.content
+                        ? post.content.substring(0, 150)
+                        : 'Check out this update on KaruTeens.'
+                }
                 image={postImage}
                 url={postUrl}
             />
             <div className="post-detail-header">
-                <button
-                    onClick={handleBack}
-                    className="back-link"
-                >
+                <button onClick={handleBack} className="back-link">
                     <ArrowLeft size={24} /> Back
                 </button>
                 <h1>Post</h1>

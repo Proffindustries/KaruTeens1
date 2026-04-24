@@ -61,9 +61,9 @@ const AdFilters = ({ filters, handleFilterChange, isLoading, onRefresh, onShowPe
             </div>
 
             <div className="filter-actions">
-                <button 
-                    className="refresh-btn" 
-                    onClick={onRefresh} 
+                <button
+                    className="refresh-btn"
+                    onClick={onRefresh}
                     disabled={isLoading}
                     aria-label="Refresh data"
                 >

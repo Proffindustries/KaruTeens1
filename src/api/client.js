@@ -4,15 +4,15 @@ import { handleApiError, parseApiError } from '../utils/errorHandling.js';
 // Recursively flattens MongoDB $oid objects into strings
 function flattenOid(obj) {
     if (!obj || typeof obj !== 'object') return obj;
-    
+
     if (obj.$oid && typeof obj.$oid === 'string') {
         return obj.$oid;
     }
-    
+
     if (Array.isArray(obj)) {
         return obj.map(flattenOid);
     }
-    
+
     const flattened = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -51,7 +51,7 @@ api.interceptors.request.use(
 
         // Add request ID for tracking
         config.headers['X-Request-ID'] = generateRequestId();
-        
+
         return config;
     },
     (error) => {
@@ -69,21 +69,23 @@ api.interceptors.response.use(
     },
     (error) => {
         const appError = parseApiError(error);
-        
+
         // Handle authentication errors
         if (appError.requiresAuth()) {
             // Don't fire the event if we're already trying to logout or if it's the Ably auth endpoint
             // (Ably auth might fail if user is not logged in, but shouldn't trigger a logout loop)
-            const isLogoutCall = error.config?.url?.endsWith('/auth/logout') || error.config?.url?.endsWith('/logout');
+            const isLogoutCall =
+                error.config?.url?.endsWith('/auth/logout') ||
+                error.config?.url?.endsWith('/logout');
             const isAblyAuthCall = error.config?.url?.endsWith('/ably/auth');
             const isMediaCall = error.config?.url?.includes('/media/signature/');
-            
+
             if (!isLogoutCall && !isAblyAuthCall && !isMediaCall) {
                 // Fire an event so AuthContext can clear state + React Router navigates cleanly
                 window.dispatchEvent(new CustomEvent('auth:unauthorized'));
             }
         }
-        
+
         // Log detailed error information for debugging
         if (appError.isServerError()) {
             console.error('Server Error:', {
@@ -93,10 +95,10 @@ api.interceptors.response.use(
                 config: {
                     url: error.config?.url,
                     method: error.config?.method,
-                }
+                },
             });
         }
-        
+
         return Promise.reject(appError);
     },
 );
@@ -109,50 +111,56 @@ function generateRequestId() {
 // Enhanced API methods with error handling
 const apiMethods = {
     get: (url, config = {}) => {
-        return api.get(url, config).catch(error => {
+        return api.get(url, config).catch((error) => {
             throw handleApiError(error, { showToast: false }); // Let calling component handle toast
         });
     },
-    
+
     post: (url, data = {}, config = {}) => {
-        return api.post(url, data, config).catch(error => {
+        return api.post(url, data, config).catch((error) => {
             throw handleApiError(error, { showToast: false });
         });
     },
-    
+
     put: (url, data = {}, config = {}) => {
-        return api.put(url, data, config).catch(error => {
+        return api.put(url, data, config).catch((error) => {
             throw handleApiError(error, { showToast: false });
         });
     },
-    
+
     patch: (url, data = {}, config = {}) => {
-        return api.patch(url, data, config).catch(error => {
+        return api.patch(url, data, config).catch((error) => {
             throw handleApiError(error, { showToast: false });
         });
     },
-    
+
     delete: (url, config = {}) => {
-        return api.delete(url, config).catch(error => {
+        return api.delete(url, config).catch((error) => {
             throw handleApiError(error, { showToast: false });
         });
     },
-    
+
     // Method for file uploads with progress tracking
     upload: (url, formData, onProgress = null, config = {}) => {
-        return api.post(url, formData, {
-            ...config,
-            headers: {
-                ...config.headers,
-                'Content-Type': 'multipart/form-data',
-            },
-            onUploadProgress: onProgress ? (progressEvent) => {
-                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                onProgress(progress, progressEvent);
-            } : undefined,
-        }).catch(error => {
-            throw handleApiError(error, { showToast: false });
-        });
+        return api
+            .post(url, formData, {
+                ...config,
+                headers: {
+                    ...config.headers,
+                    'Content-Type': 'multipart/form-data',
+                },
+                onUploadProgress: onProgress
+                    ? (progressEvent) => {
+                          const progress = Math.round(
+                              (progressEvent.loaded * 100) / progressEvent.total,
+                          );
+                          onProgress(progress, progressEvent);
+                      }
+                    : undefined,
+            })
+            .catch((error) => {
+                throw handleApiError(error, { showToast: false });
+            });
     },
 };
 

@@ -289,7 +289,8 @@
     gap: 0.5rem;
 }
 
-.status-pill, .post-type-pill {
+.status-pill,
+.post-type-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -413,7 +414,8 @@
     gap: 0.25rem;
 }
 
-.created-date, .days-since {
+.created-date,
+.days-since {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -427,7 +429,9 @@
     gap: 0.5rem;
 }
 
-.reading-time, .language, .plagiarism-score {
+.reading-time,
+.language,
+.plagiarism-score {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -488,7 +492,8 @@
     gap: 0.25rem;
 }
 
-.comments-control, .sharing-control {
+.comments-control,
+.sharing-control {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -890,11 +895,11 @@
     .form-row {
         grid-template-columns: 1fr;
     }
-    
+
     .analytics-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .content-details-grid {
         grid-template-columns: 1fr;
     }
@@ -905,52 +910,53 @@
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .search-filters {
         width: 100%;
     }
-    
+
     .filter-group {
         flex-wrap: wrap;
     }
-    
+
     .admin-table {
         font-size: 0.8rem;
     }
-    
-    .admin-table th, .admin-table td {
+
+    .admin-table th,
+    .admin-table td {
         padding: 0.75rem;
     }
-    
+
     .post-info {
         gap: 0.25rem;
     }
-    
+
     .post-title h4 {
         font-size: 0.9rem;
     }
-    
+
     .table-header {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
     }
-    
+
     .bulk-actions {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
     }
-    
+
     .modal-content {
         width: 95%;
         margin: 1rem;
     }
-    
+
     .analytics-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .metric-row {
         flex-direction: column;
     }

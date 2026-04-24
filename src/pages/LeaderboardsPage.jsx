@@ -42,7 +42,7 @@ const LeaderboardsPage = () => {
 
     const renderLeaderboard = () => {
         if (isLoading) {
-            return [1, 2, 3, 4, 5].map(i => <LeaderboardSkeleton key={i} />);
+            return [1, 2, 3, 4, 5].map((i) => <LeaderboardSkeleton key={i} />);
         }
         const data = leaderboards[activeTab];
         return (

@@ -54,7 +54,8 @@ const EventCard = ({ event, navigate }) => (
                                 <Check size={14} color="#2ed573" /> {event.rsvp_stats.going} going
                             </span>
                             <span>
-                                <Heart size={14} color="#ff4757" /> {event.rsvp_stats.interested} interested
+                                <Heart size={14} color="#ff4757" /> {event.rsvp_stats.interested}{' '}
+                                interested
                             </span>
                         </>
                     ) : (
@@ -194,75 +195,81 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="form-row schedule-row">
-                    <div className="form-group">
-                        <label>Start Date & Time</label>
-                        <div className="datetime-input-group">
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={formData.start_date}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, start_date: e.target.value })
-                                }
-                                required
-                            />
-                            <div className="time-picker-container">
+                        <div className="form-group">
+                            <label>Start Date & Time</label>
+                            <div className="datetime-input-group">
                                 <input
-                                    type="time"
+                                    type="date"
                                     className="form-input"
-                                    id="start_time_input"
-                                    value={formData.start_time}
+                                    value={formData.start_date}
                                     onChange={(e) =>
-                                        setFormData({ ...formData, start_time: e.target.value })
+                                        setFormData({ ...formData, start_date: e.target.value })
                                     }
                                     required
                                 />
-                                <button
-                                    type="button"
-                                    className="time-picker-btn"
-                                    onClick={() => document.getElementById('start_time_input').showPicker?.()}
-                                    title="Set Time"
-                                >
-                                    <Clock size={16} />
-                                </button>
+                                <div className="time-picker-container">
+                                    <input
+                                        type="time"
+                                        className="form-input"
+                                        id="start_time_input"
+                                        value={formData.start_time}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, start_time: e.target.value })
+                                        }
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="time-picker-btn"
+                                        onClick={() =>
+                                            document
+                                                .getElementById('start_time_input')
+                                                .showPicker?.()
+                                        }
+                                        title="Set Time"
+                                    >
+                                        <Clock size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="form-group">
-                        <label>End Date & Time</label>
-                        <div className="datetime-input-group">
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={formData.end_date}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, end_date: e.target.value })
-                                }
-                                required
-                            />
-                            <div className="time-picker-container">
+                        <div className="form-group">
+                            <label>End Date & Time</label>
+                            <div className="datetime-input-group">
                                 <input
-                                    type="time"
+                                    type="date"
                                     className="form-input"
-                                    id="end_time_input"
-                                    value={formData.end_time}
+                                    value={formData.end_date}
                                     onChange={(e) =>
-                                        setFormData({ ...formData, end_time: e.target.value })
+                                        setFormData({ ...formData, end_date: e.target.value })
                                     }
                                     required
                                 />
-                                <button
-                                    type="button"
-                                    className="time-picker-btn"
-                                    onClick={() => document.getElementById('end_time_input').showPicker?.()}
-                                    title="Set Time"
-                                >
-                                    <Clock size={16} />
-                                </button>
+                                <div className="time-picker-container">
+                                    <input
+                                        type="time"
+                                        className="form-input"
+                                        id="end_time_input"
+                                        value={formData.end_time}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, end_time: e.target.value })
+                                        }
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="time-picker-btn"
+                                        onClick={() =>
+                                            document.getElementById('end_time_input').showPicker?.()
+                                        }
+                                        title="Set Time"
+                                    >
+                                        <Clock size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </div>
 
                     <div className="form-group">
@@ -316,23 +323,27 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                     <div className="form-group">
                         <label>Event Image (Optional)</label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className="btn btn-outline"
                                 onClick={() => imageInputRef.current?.click()}
                                 disabled={isUploading}
                             >
                                 {isUploading ? 'Uploading...' : 'Upload Image'}
                             </button>
-                            {formData.image_url && <span style={{ color: '#00b894', fontSize: '0.9rem' }}>Image Attached</span>}
-                            <input 
+                            {formData.image_url && (
+                                <span style={{ color: '#00b894', fontSize: '0.9rem' }}>
+                                    Image Attached
+                                </span>
+                            )}
+                            <input
                                 type="file"
                                 ref={imageInputRef}
                                 hidden
                                 accept="image/*"
                                 onChange={async (e) => {
                                     const file = e.target.files[0];
-                                    if(!file) return;
+                                    if (!file) return;
                                     setIsUploading(true);
                                     try {
                                         const url = await uploadImage(file);

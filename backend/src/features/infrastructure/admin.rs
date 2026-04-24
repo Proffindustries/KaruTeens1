@@ -442,9 +442,109 @@ pub async fn get_public_settings_handler(
     }))))
 }
 
+#[derive(Deserialize)]
+pub struct BroadcastRequest {
+    pub content: String,
+}
+
+pub async fn broadcast_system_message_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<BroadcastRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    let users_collection = state.mongo.collection::<User>("users");
+    let chats_collection = state.mongo.collection::<crate::models::Chat>("chats");
+    let messages_collection = state.mongo.collection::<crate::models::Message>("messages");
+    let notifications_collection = state.mongo.collection::<crate::models::Notification>("notifications");
+
+    let mut cursor = users_collection.find(doc! { "is_banned": false }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let system_user_id = user.user_id; // Admin is the sender, but marked as system
+
+    while let Some(Ok(target_user)) = cursor.next().await {
+        let target_user_id = target_user.id.unwrap();
+        if target_user_id == system_user_id { continue; }
+
+        // Find or create a 1-to-1 chat between admin and user marked as system
+        let chat_query = doc! {
+            "participants": { "$all": [system_user_id, target_user_id] },
+            "is_group": false
+        };
+
+        let chat = chats_collection.find_one(chat_query.clone(), None).await.unwrap_or(None);
+        
+        let chat_id = if let Some(c) = chat {
+            c.id.unwrap()
+        } else {
+            let new_chat = crate::models::Chat {
+                id: None,
+                participants: vec![system_user_id, target_user_id],
+                is_group: false,
+                name: Some("System".to_string()),
+                avatar_url: None,
+                admins: vec![system_user_id],
+                last_message: Some(payload.content.clone()),
+                last_message_time: DateTime::now(),
+                disappearing_duration: None,
+                created_at: DateTime::now(),
+            };
+            let res = chats_collection.insert_one(new_chat, None).await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            res.inserted_id.as_object_id().unwrap()
+        };
+
+        // Create message
+        let new_msg = crate::models::Message {
+            id: None,
+            chat_id,
+            sender_id: system_user_id,
+            content: payload.content.clone(),
+            encrypted_content: None,
+            encryption_iv: None,
+            attachment_url: None,
+            attachment_type: None,
+            reply_to_id: None,
+            reactions: vec![],
+            is_deleted: false,
+            deleted_at: None,
+            read_at: None,
+            poll: None,
+            location: None,
+            contact: None,
+            is_view_once: false,
+            is_system: true,
+            is_announcement: true,
+            viewed_at: None,
+            expires_at: None,
+            created_at: DateTime::now(),
+        };
+
+        messages_collection.insert_one(new_msg, None).await.ok();
+
+        // Notification
+        let notif = crate::models::Notification {
+            id: None,
+            user_id: target_user_id,
+            actor_id: system_user_id,
+            notification_type: "system_broadcast".to_string(),
+            target_id: Some(chat_id),
+            content: format!("System Message: {}", if payload.content.len() > 50 { &payload.content[..47] } else { &payload.content }),
+            is_read: false,
+            created_at: DateTime::now(),
+        };
+        notifications_collection.insert_one(notif, None).await.ok();
+    }
+
+    Ok((StatusCode::OK, Json(json!({"message": "Broadcast sent to all active users"}))))
+}
+
 pub fn admin_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/stats", get(get_platform_stats_handler))
+        .route("/broadcast", axum::routing::post(broadcast_system_message_handler))
         .route("/users", get(list_users_handler))
         .route("/users/:id/role", put(update_user_role_handler))
         .route("/users/:id/ban", put(ban_user_handler))

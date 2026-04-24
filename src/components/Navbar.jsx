@@ -55,74 +55,100 @@ const Navbar = React.memo(() => {
                     <div className="nav-links desktop-only">
                         <NavLink
                             to="/feed"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Feed
                         </NavLink>
                         <NavLink
                             to="/explore"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Explore
                         </NavLink>
                         <NavLink
                             to="/activity"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Activity
                         </NavLink>
                         <NavLink
                             to="/marketplace"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Market
                         </NavLink>
                         <NavLink
                             to="/study-rooms"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Study
                         </NavLink>
                         <NavLink
                             to="/study-playlists"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Playlists
                         </NavLink>
                         <NavLink
                             to="/live"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Live
                         </NavLink>
                         <NavLink
                             to="/templates"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             Templates
                         </NavLink>
                         <NavLink
                             to="/leaderboards"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             🏆
                         </NavLink>
                         <NavLink
                             to="/timetable"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             📅
                         </NavLink>
                         <NavLink
                             to="/confessions"
-                            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                            className={({ isActive }) =>
+                                isActive ? 'nav-link active' : 'nav-link'
+                            }
                         >
                             🔮
                         </NavLink>
                     </div>
 
                     <div className="nav-actions desktop-only">
-                        <NavLink to="/notifications" className="notification-btn" title="Notifications">
+                        <NavLink
+                            to="/notifications"
+                            className="notification-btn"
+                            title="Notifications"
+                        >
                             <Bell size={20} />
                         </NavLink>
                         <button
@@ -163,10 +189,10 @@ const Navbar = React.memo(() => {
                     </div>
 
                     {/* Mobile Toggle */}
-                    <button 
-                        className="mobile-toggle" 
+                    <button
+                        className="mobile-toggle"
                         onClick={toggleMenu}
-                        aria-label={isOpen ? "Close Menu" : "Open Menu"}
+                        aria-label={isOpen ? 'Close Menu' : 'Open Menu'}
                         aria-expanded={isOpen}
                     >
                         {isOpen ? <X size={24} /> : <Menu size={24} />}

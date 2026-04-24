@@ -11,7 +11,7 @@ export const useInfinitePosts = <T = any>(
     queryKey: string[],
     paramsFactory: (pageParam: string | null) => Record<string, any>,
     dataExtractor: (response: any) => T[] = (response) => response.posts || response.data || [],
-    options: any = {},
+    options: any = {}
 ) => {
     return useInfiniteQuery({
         queryKey,
@@ -42,14 +42,14 @@ export const useInfiniteFeed = (search?: string) => {
     return useInfinitePosts(
         '/posts/feed',
         ['feed', 'infinite', search || ''],
-        (pageParam) => ({ 
+        (pageParam) => ({
             last_id: pageParam,
-            search: search 
+            search: search,
         }),
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.FEED_POSTS,
-        },
+        }
     );
 };
 
@@ -64,7 +64,7 @@ export const useInfiniteForYouFeed = () => {
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.FEED_POSTS,
-        },
+        }
     );
 };
 
@@ -79,7 +79,7 @@ export const useInfiniteTrendingPosts = () => {
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.TRENDING_POSTS,
-        },
+        }
     );
 };
 
@@ -89,7 +89,7 @@ export const useInfiniteTrendingPosts = () => {
 export const useInfiniteUserContent = (
     userId: string,
     contentType: 'posts' | 'comments' | 'reactions',
-    options: any = {},
+    options: any = {}
 ) => {
     return useInfiniteQuery({
         queryKey: ['user-content', userId, contentType],
@@ -144,8 +144,8 @@ export const useInfinitePagePosts = (pageId: string) => {
         ['page-posts', pageId],
         (pageParam) => ({
             last_id: pageParam,
-            page_id: pageId
+            page_id: pageId,
         }),
-        (response) => response.posts,
+        (response) => response.posts
     );
 };

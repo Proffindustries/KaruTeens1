@@ -83,9 +83,7 @@ const ProfilePage = () => {
         });
 
         try {
-            const url = await uploadImage(file, (p, l) =>
-                updateUploadProgress(uploadId, p, l),
-            );
+            const url = await uploadImage(file, (p, l) => updateUploadProgress(uploadId, p, l));
             completeUpload(uploadId, { url });
             updateProfile({ avatar_url: url });
         } catch (err) {
@@ -121,6 +119,7 @@ const ProfilePage = () => {
         },
         quote: '',
         location: '',
+        reg: '',
     });
 
     // We'll set the form initial values when opening modal
@@ -144,6 +143,7 @@ const ProfilePage = () => {
             },
             quote: profile?.quote || '',
             location: profile?.location || '',
+            reg: profile?.reg || '',
         });
         setIsEditing(true);
     };
@@ -154,8 +154,10 @@ const ProfilePage = () => {
                 ...editForm,
                 year_of_study: editForm.year_of_study ? parseInt(editForm.year_of_study) : null,
                 age: editForm.age ? parseInt(editForm.age) : null,
-                skills: editForm.skills ? editForm.skills.split(',').map(s => s.trim()) : [],
-                interests: editForm.interests ? editForm.interests.split(',').map(i => i.trim()) : [],
+                skills: editForm.skills ? editForm.skills.split(',').map((s) => s.trim()) : [],
+                interests: editForm.interests
+                    ? editForm.interests.split(',').map((i) => i.trim())
+                    : [],
             },
             {
                 onSuccess: () => setIsEditing(false),
@@ -196,6 +198,7 @@ const ProfilePage = () => {
         year: profile.year_of_study ? `Year ${profile.year_of_study}` : 'N/A',
         age: profile.age || 'N/A',
         gender: profile.gender || 'Unspecified',
+        reg: profile.reg || 'N/A',
         joined: profile.created_at
             ? new Date(profile.created_at).toLocaleDateString(undefined, {
                   month: 'long',
@@ -303,7 +306,7 @@ const ProfilePage = () => {
                             </span>
                         )}
                         <span>
-                            🎓 {user.school} • {user.year}
+                            🎓 {user.school} • {user.year} {user.reg !== 'N/A' && `(${user.reg})`}
                         </span>
                         <span>
                             <Calendar size={16} /> Member
@@ -319,7 +322,8 @@ const ProfilePage = () => {
                         </div>
                         {isOwnProfile && (
                             <div>
-                                <strong>{gamificationRes?.profile_views || 0}</strong> <span>Views</span>
+                                <strong>{gamificationRes?.profile_views || 0}</strong>{' '}
+                                <span>Views</span>
                             </div>
                         )}
                     </div>
@@ -390,7 +394,8 @@ const ProfilePage = () => {
                     <div className="level-info">
                         <span>Level {gamificationRes?.level || 0}</span>
                         <span>
-                            {gamificationRes?.points || 0}/{gamificationRes?.next_level_points || 1000} pts
+                            {gamificationRes?.points || 0}/
+                            {gamificationRes?.next_level_points || 1000} pts
                         </span>
                     </div>
                     <div className="progress-bar">
@@ -438,7 +443,11 @@ const ProfilePage = () => {
                                     <div className="profile-tags-section">
                                         <h4>Skills</h4>
                                         <div className="tags-flex">
-                                            {profile.skills.map((s, i) => <span key={i} className="skill-tag">{s}</span>)}
+                                            {profile.skills.map((s, i) => (
+                                                <span key={i} className="skill-tag">
+                                                    {s}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -447,7 +456,11 @@ const ProfilePage = () => {
                                     <div className="profile-tags-section">
                                         <h4>Interests</h4>
                                         <div className="tags-flex">
-                                            {profile.interests.map((s, i) => <span key={i} className="interest-tag">{s}</span>)}
+                                            {profile.interests.map((s, i) => (
+                                                <span key={i} className="interest-tag">
+                                                    {s}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -663,6 +676,29 @@ const ProfilePage = () => {
                                         <option value="Female">Female</option>
                                         <option value="Other">Other</option>
                                     </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Reg No. (e.g. e101)</label>
+                                    <input
+                                        className="form-input"
+                                        maxLength={4}
+                                        value={editForm.reg}
+                                        onChange={(e) => {
+                                            const val = e.target.value.toLowerCase();
+                                            if (val.length <= 4) {
+                                                setEditForm({ ...editForm, reg: val });
+                                            }
+                                        }}
+                                        placeholder="e.g. e101"
+                                    />
+                                    <small
+                                        style={{
+                                            fontSize: '0.7rem',
+                                            color: 'rgb(var(--text-muted))',
+                                        }}
+                                    >
+                                        Format: 1 letter + 3 digits (e.g., e101, b202)
+                                    </small>
                                 </div>
                             </div>
 

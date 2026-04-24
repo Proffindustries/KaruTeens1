@@ -83,7 +83,8 @@
     gap: 0.5rem;
 }
 
-.filter-group select, .filter-group input {
+.filter-group select,
+.filter-group input {
     padding: 0.75rem;
     border: 1px solid #dee2e6;
     border-radius: 8px;
@@ -243,7 +244,9 @@
     gap: 0.5rem;
 }
 
-.content-id, .parent-id, .replies-count {
+.content-id,
+.parent-id,
+.replies-count {
     background: #e9ecef;
     color: #495057;
     padding: 0.125rem 0.5rem;
@@ -265,7 +268,8 @@
     gap: 0.5rem;
 }
 
-.status-pill, .content-type-pill {
+.status-pill,
+.content-type-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -374,7 +378,8 @@
     gap: 0.25rem;
 }
 
-.created-date, .days-since {
+.created-date,
+.days-since {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -692,7 +697,8 @@
     color: #636e72;
 }
 
-.spam-score-preview, .reports-count-preview {
+.spam-score-preview,
+.reports-count-preview {
     background: #e9ecef;
     padding: 0.25rem 0.5rem;
     border-radius: 999px;
@@ -1002,7 +1008,7 @@
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .metric-row {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1013,48 +1019,49 @@
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .search-filters {
         width: 100%;
     }
-    
+
     .filter-group {
         flex-wrap: wrap;
     }
-    
+
     .admin-table {
         font-size: 0.8rem;
     }
-    
-    .admin-table th, .admin-table td {
+
+    .admin-table th,
+    .admin-table td {
         padding: 0.75rem;
     }
-    
+
     .comment-content p {
         max-width: 100%;
     }
-    
+
     .table-header {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
     }
-    
+
     .bulk-actions {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
     }
-    
+
     .modal-content {
         width: 95%;
         margin: 1rem;
     }
-    
+
     .metric-row {
         grid-template-columns: 1fr;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }

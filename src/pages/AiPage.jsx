@@ -51,7 +51,6 @@ const AiPage = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-
     const handleCopy = (text, index) => {
         navigator.clipboard.writeText(text);
         setCopiedId(index);

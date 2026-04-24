@@ -14,12 +14,12 @@ async function runTests() {
         await axios.post(`${BACKEND_URL}/auth/register`, {
             email: TEST_EMAIL,
             password: TEST_PASS,
-            username: `tester${Math.floor(Math.random() * 1000)}`
+            username: `tester${Math.floor(Math.random() * 1000)}`,
         });
 
         const loginRes = await axios.post(`${BACKEND_URL}/auth/login`, {
             email: TEST_EMAIL,
-            password: TEST_PASS
+            password: TEST_PASS,
         });
         token = loginRes.data.token;
         console.log('✅ Auth successful.');
@@ -46,11 +46,15 @@ async function runTests() {
                 const startTime = Date.now();
                 const modelId = model.id || model;
                 try {
-                    const chatRes = await axios.post(`${BACKEND_URL}/ai/chat`, {
-                        message: "Say 'OK'",
-                        model: modelId,
-                        history: []
-                    }, { headers: authHeaders, timeout: 30000 });
+                    const chatRes = await axios.post(
+                        `${BACKEND_URL}/ai/chat`,
+                        {
+                            message: "Say 'OK'",
+                            model: modelId,
+                            history: [],
+                        },
+                        { headers: authHeaders, timeout: 30000 }
+                    );
 
                     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                     console.log(`✔️  ${modelId.padEnd(60)} | SUCCESS | ${duration}s`);
@@ -58,7 +62,9 @@ async function runTests() {
                 } catch (err) {
                     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                     const errMsg = err.response?.data?.error || err.message;
-                    console.error(`❌ ${modelId.padEnd(60)} | FAILED  | ${duration}s | ${errMsg.substring(0, 50)}`);
+                    console.error(
+                        `❌ ${modelId.padEnd(60)} | FAILED  | ${duration}s | ${errMsg.substring(0, 50)}`
+                    );
                     return { id: modelId, status: 'FAILED', error: errMsg };
                 }
             });
@@ -66,8 +72,8 @@ async function runTests() {
             results.push(...(await Promise.all(promises)));
         }
 
-        const working = results.filter(r => r.status === 'WORKING').length;
-        const failed = results.filter(r => r.status === 'FAILED').length;
+        const working = results.filter((r) => r.status === 'WORKING').length;
+        const failed = results.filter((r) => r.status === 'FAILED').length;
 
         console.log('\n' + '='.repeat(80));
         console.log(`📊 FINAL REPORT:`);
@@ -75,7 +81,6 @@ async function runTests() {
         console.log(`❌ Failed:  ${failed}`);
         console.log(`Total:     ${results.length}`);
         console.log('='.repeat(80));
-
     } catch (err) {
         console.error('❌ Diagnostic error:', err.message);
     }

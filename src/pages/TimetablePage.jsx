@@ -56,7 +56,7 @@ const TimetablePage = () => {
         setIsLoading(true);
         try {
             const { data } = await api.get('/timetable');
-            setTimetables(data);
+            setTimetables(Array.isArray(data) ? data : []);
             if (data.length > 0) {
                 // Prefer personal timetable over template if available
                 const personal = data.find((t) => !t.is_template);
@@ -159,11 +159,30 @@ const TimetablePage = () => {
         }
     };
 
+    const handleDeleteTimetable = async (timetableId) => {
+        if (!window.confirm('Are you sure you want to delete this timetable?')) return;
+
+        setIsSubmitting(true);
+        try {
+            await api.delete(`/timetable/${timetableId}`);
+            showToast('Timetable deleted!', 'success');
+            await fetchTimetables();
+            if (selectedTimetable?._id === timetableId) {
+                setSelectedTimetable(null);
+            }
+        } catch (error) {
+            showToast('Failed to delete timetable', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const today = days[new Date().getDay() - 1] || 'Monday';
 
     const getClassesForDay = (day) => {
         if (!selectedTimetable) return [];
-        return (selectedTimetable.classes || [])
+        const classes = Array.isArray(selectedTimetable.classes) ? selectedTimetable.classes : [];
+        return classes
             .filter((c) => c.day === day)
             .sort((a, b) => a.start_time.localeCompare(b.start_time));
     };
@@ -202,7 +221,7 @@ const TimetablePage = () => {
             <div className="timetables-bar">
                 <h3>Select Timetable:</h3>
                 <div className="timetables-list-horizontal">
-                    {timetables.map((t) => (
+                    {(Array.isArray(timetables) ? timetables : []).map((t) => (
                         <div
                             key={t._id}
                             className={`timetable-item-small ${selectedTimetable?._id === t._id ? 'active' : ''}`}
@@ -210,17 +229,33 @@ const TimetablePage = () => {
                         >
                             {t.is_template ? <Copy size={14} /> : <Calendar size={14} />}
                             <span>{t.name}</span>
-                            {t.is_template && (
-                                <button
-                                    className="copy-btn-hint"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCopyTemplate(t._id);
-                                    }}
-                                >
-                                    <Plus size={12} /> Use
-                                </button>
-                            )}
+                            <div
+                                className="timetable-item-actions"
+                                style={{ display: 'flex', gap: '4px' }}
+                            >
+                                {t.is_template ? (
+                                    <button
+                                        className="copy-btn-hint"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleCopyTemplate(t._id);
+                                        }}
+                                    >
+                                        <Plus size={12} /> Use
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="icon-btn danger btn-xs"
+                                        style={{ padding: '2px', color: '#ff4757' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteTimetable(t._id);
+                                        }}
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

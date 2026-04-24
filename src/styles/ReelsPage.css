@@ -17,7 +17,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
 }
 
 .reels-header h2 {
@@ -117,7 +117,7 @@
     left: 0;
     right: 0;
     padding: 1.5rem 1rem 2rem;
-    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -231,8 +231,12 @@
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .empty-reels {

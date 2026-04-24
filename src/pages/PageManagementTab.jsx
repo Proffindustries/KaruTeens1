@@ -59,17 +59,28 @@ const PageManagementTab = () => {
     const { showToast } = useToast();
 
     useEffect(() => {
+        let mounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsLoading(true);
         // Fetch real data from API
         api.get('/pages')
             .then((res) => {
-                setPages(res.data);
+                if (mounted) {
+                    setPages(res.data);
+                }
             })
             .catch((error) => {
                 console.error('Failed to load pages:', error);
-                setPages([]); // Empty state on error
+                if (mounted) {
+                    setPages([]); // Empty state on error
+                }
             })
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                if (mounted) setIsLoading(false);
+            });
+        return () => {
+            mounted = false;
+        };
     }, [filters]);
 
     const handleFilterChange = (key, value) => {

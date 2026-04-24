@@ -90,11 +90,12 @@ const MarketplacePage = () => {
                                             className="item-image"
                                             loading="lazy"
                                         />
-                                        {item.boosted_until && new Date(item.boosted_until) > new Date() && (
-                                            <div className="boosted-badge">
-                                                <Zap size={12} fill="currentColor" /> FEATURED
-                                            </div>
-                                        )}
+                                        {item.boosted_until &&
+                                            new Date(item.boosted_until) > new Date() && (
+                                                <div className="boosted-badge">
+                                                    <Zap size={12} fill="currentColor" /> FEATURED
+                                                </div>
+                                            )}
                                         <div className="item-price">
                                             {item.currency} {item.price}
                                         </div>
@@ -133,7 +134,14 @@ const MarketplacePage = () => {
                                 </Link>
                             </motion.div>
                             {index > 0 && (index + 1) % 6 === 0 && (
-                                <div className="market-item-card ad-card-market" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div
+                                    className="market-item-card ad-card-market"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
                                     <AdComponent page="marketplace" />
                                 </div>
                             )}

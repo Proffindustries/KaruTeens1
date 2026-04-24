@@ -66,27 +66,34 @@ const EventManagementTab = () => {
     const { showToast } = useToast();
 
     const filteredEvents = useMemo(() => {
-        return events.filter((event) => {
-            if (filters.status !== 'all' && event.status !== filters.status) return false;
-            if (filters.category !== 'all' && event.category !== filters.category) return false;
-            if (filters.location_type !== 'all' && event.location_type !== filters.location_type) return false;
-            if (filters.event_type !== 'all' && event.event_type !== filters.event_type) return false;
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
-                const titleMatch = event.title?.toLowerCase().includes(searchLower);
-                const descMatch = event.description?.toLowerCase().includes(searchLower);
-                const locMatch = event.location?.toLowerCase().includes(searchLower);
-                if (!titleMatch && !descMatch && !locMatch) return false;
-            }
-            return true;
-        }).sort((a, b) => {
-            const dateA = new Date(a[filters.sortBy] || 0);
-            const dateB = new Date(b[filters.sortBy] || 0);
-            return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-        });
+        return events
+            .filter((event) => {
+                if (filters.status !== 'all' && event.status !== filters.status) return false;
+                if (filters.category !== 'all' && event.category !== filters.category) return false;
+                if (
+                    filters.location_type !== 'all' &&
+                    event.location_type !== filters.location_type
+                )
+                    return false;
+                if (filters.event_type !== 'all' && event.event_type !== filters.event_type)
+                    return false;
+                if (filters.search) {
+                    const searchLower = filters.search.toLowerCase();
+                    const titleMatch = event.title?.toLowerCase().includes(searchLower);
+                    const descMatch = event.description?.toLowerCase().includes(searchLower);
+                    const locMatch = event.location?.toLowerCase().includes(searchLower);
+                    if (!titleMatch && !descMatch && !locMatch) return false;
+                }
+                return true;
+            })
+            .sort((a, b) => {
+                const dateA = new Date(a[filters.sortBy] || 0);
+                const dateB = new Date(b[filters.sortBy] || 0);
+                return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+            });
     }, [events, filters]);
 
-    const loadEvents = async () => {
+    const loadEvents = React.useCallback(async () => {
         setIsLoading(true);
         try {
             const { data } = await api.get('/events');
@@ -97,17 +104,17 @@ const EventManagementTab = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [showToast]);
 
     useEffect(() => {
         loadEvents();
-    }, []);
+    }, [loadEvents]);
 
     const handleAddEvent = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
-        
+
         // Combine date and time
         if (data.start_date && data.start_time) {
             data.start_datetime = `${data.start_date}T${data.start_time}:00Z`;
@@ -121,7 +128,7 @@ const EventManagementTab = () => {
         if (data.reg_end_date && data.reg_end_time) {
             data.registration_end = `${data.reg_end_date}T${data.reg_end_time}:00Z`;
         }
-        
+
         delete data.start_date;
         delete data.start_time;
         delete data.end_date;
@@ -137,11 +144,14 @@ const EventManagementTab = () => {
 
         if (data.max_attendees) data.max_attendees = parseInt(data.max_attendees);
         if (data.ticket_price) data.ticket_price = parseFloat(data.ticket_price);
-        
+
         if (data.tags && typeof data.tags === 'string') {
-            data.tags = data.tags.split(',').map(t => t.trim()).filter(Boolean);
+            data.tags = data.tags
+                .split(',')
+                .map((t) => t.trim())
+                .filter(Boolean);
         }
-        
+
         try {
             await api.post('/events', data);
             showToast('Event created successfully', 'success');
@@ -157,7 +167,7 @@ const EventManagementTab = () => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
-        
+
         // Combine date and time
         if (data.start_date && data.start_time) {
             data.start_datetime = `${data.start_date}T${data.start_time}:00Z`;
@@ -171,7 +181,7 @@ const EventManagementTab = () => {
         if (data.reg_end_date && data.reg_end_time) {
             data.registration_end = `${data.reg_end_date}T${data.reg_end_time}:00Z`;
         }
-        
+
         delete data.start_date;
         delete data.start_time;
         delete data.end_date;
@@ -187,11 +197,14 @@ const EventManagementTab = () => {
 
         if (data.max_attendees) data.max_attendees = parseInt(data.max_attendees);
         if (data.ticket_price) data.ticket_price = parseFloat(data.ticket_price);
-        
+
         if (data.tags && typeof data.tags === 'string') {
-            data.tags = data.tags.split(',').map(t => t.trim()).filter(Boolean);
+            data.tags = data.tags
+                .split(',')
+                .map((t) => t.trim())
+                .filter(Boolean);
         }
-        
+
         try {
             await api.put(`/events/${editingEvent.id}`, data);
             showToast('Event updated successfully', 'success');
@@ -215,32 +228,42 @@ const EventManagementTab = () => {
 
         try {
             if (bulkAction === 'publish') {
-                await Promise.all(selectedEvents.map(id => {
-                    const evt = events.find(e => e.id === id);
-                    return api.put(`/events/${id}`, { ...evt, status: 'published' });
-                }));
+                await Promise.all(
+                    selectedEvents.map((id) => {
+                        const evt = events.find((e) => e.id === id);
+                        return api.put(`/events/${id}`, { ...evt, status: 'published' });
+                    }),
+                );
                 showToast('Events published', 'success');
             } else if (bulkAction === 'cancel') {
-                await Promise.all(selectedEvents.map(id => {
-                    const evt = events.find(e => e.id === id);
-                    return api.put(`/events/${id}`, { ...evt, status: 'cancelled' });
-                }));
+                await Promise.all(
+                    selectedEvents.map((id) => {
+                        const evt = events.find((e) => e.id === id);
+                        return api.put(`/events/${id}`, { ...evt, status: 'cancelled' });
+                    }),
+                );
                 showToast('Events cancelled', 'info');
             } else if (bulkAction === 'make_public') {
-                await Promise.all(selectedEvents.map(id => {
-                    const evt = events.find(e => e.id === id);
-                    return api.put(`/events/${id}`, { ...evt, event_type: 'public' });
-                }));
+                await Promise.all(
+                    selectedEvents.map((id) => {
+                        const evt = events.find((e) => e.id === id);
+                        return api.put(`/events/${id}`, { ...evt, event_type: 'public' });
+                    }),
+                );
                 showToast('Events made public', 'success');
             } else if (bulkAction === 'make_private') {
-                await Promise.all(selectedEvents.map(id => {
-                    const evt = events.find(e => e.id === id);
-                    return api.put(`/events/${id}`, { ...evt, event_type: 'private' });
-                }));
+                await Promise.all(
+                    selectedEvents.map((id) => {
+                        const evt = events.find((e) => e.id === id);
+                        return api.put(`/events/${id}`, { ...evt, event_type: 'private' });
+                    }),
+                );
                 showToast('Events made private', 'success');
             } else if (bulkAction === 'delete') {
-                if (confirm(`Delete ${selectedEvents.length} events? This action cannot be undone.`)) {
-                    await Promise.all(selectedEvents.map(id => api.delete(`/events/${id}`)));
+                if (
+                    confirm(`Delete ${selectedEvents.length} events? This action cannot be undone.`)
+                ) {
+                    await Promise.all(selectedEvents.map((id) => api.delete(`/events/${id}`)));
                     showToast('Events deleted', 'success');
                 } else {
                     return;
@@ -257,7 +280,7 @@ const EventManagementTab = () => {
 
     const handlePublishEvent = async (eventId) => {
         try {
-            const evt = events.find(e => e.id === eventId);
+            const evt = events.find((e) => e.id === eventId);
             await api.put(`/events/${eventId}`, { ...evt, status: 'published' });
             showToast('Event published', 'success');
             loadEvents();
@@ -268,7 +291,7 @@ const EventManagementTab = () => {
 
     const handleCancelEvent = async (eventId) => {
         try {
-            const evt = events.find(e => e.id === eventId);
+            const evt = events.find((e) => e.id === eventId);
             await api.put(`/events/${eventId}`, { ...evt, status: 'cancelled' });
             showToast('Event cancelled', 'info');
             loadEvents();
@@ -544,14 +567,17 @@ const EventManagementTab = () => {
                                 <input
                                     type="checkbox"
                                     checked={
-                                        selectedEvents.length === filteredEvents.length && filteredEvents.length > 0
+                                        selectedEvents.length === filteredEvents.length &&
+                                        filteredEvents.length > 0
                                     }
                                     onChange={selectAllEvents}
                                 />
                                 <span>Select All</span>
                             </div>
                             <div className="table-actions">
-                                <span className="event-count">{filteredEvents.length} events found</span>
+                                <span className="event-count">
+                                    {filteredEvents.length} events found
+                                </span>
                                 <button className="refresh-btn" onClick={loadEvents}>
                                     <RefreshCw size={18} />
                                     Refresh
@@ -567,7 +593,8 @@ const EventManagementTab = () => {
                                             <input
                                                 type="checkbox"
                                                 checked={
-                                                    selectedEvents.length === filteredEvents.length &&
+                                                    selectedEvents.length ===
+                                                        filteredEvents.length &&
                                                     filteredEvents.length > 0
                                                 }
                                                 onChange={selectAllEvents}
@@ -810,7 +837,8 @@ const EventManagementTab = () => {
                                                                 Checked In:
                                                             </span>
                                                             <span className="stat-value checked-in">
-                                                                {event.attendance_stats?.checked_in || 0}
+                                                                {event.attendance_stats
+                                                                    ?.checked_in || 0}
                                                             </span>
                                                         </div>
                                                         <div className="stat-item">
@@ -820,7 +848,7 @@ const EventManagementTab = () => {
                                                             <span className="stat-value rate">
                                                                 {event.attendance_stats?.attendance_rate?.toFixed(
                                                                     1,
-                                                                ) || "0.0"}
+                                                                ) || '0.0'}
                                                                 %
                                                             </span>
                                                         </div>
@@ -960,7 +988,11 @@ const EventManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Location Type *</label>
-                                        <select name="location_type" className="form-input" required>
+                                        <select
+                                            name="location_type"
+                                            className="form-input"
+                                            required
+                                        >
                                             <option value="physical">Physical</option>
                                             <option value="virtual">Virtual</option>
                                             <option value="hybrid">Hybrid</option>
@@ -1011,22 +1043,40 @@ const EventManagementTab = () => {
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Start Date & Time *</label>
-                                        <input type="datetime-local" name="start_datetime" className="form-input" required />
+                                        <input
+                                            type="datetime-local"
+                                            name="start_datetime"
+                                            className="form-input"
+                                            required
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>End Date & Time *</label>
-                                        <input type="datetime-local" name="end_datetime" className="form-input" required />
+                                        <input
+                                            type="datetime-local"
+                                            name="end_datetime"
+                                            className="form-input"
+                                            required
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Registration Start (Optional)</label>
-                                        <input type="datetime-local" name="registration_start" className="form-input" />
+                                        <input
+                                            type="datetime-local"
+                                            name="registration_start"
+                                            className="form-input"
+                                        />
                                     </div>
                                     <div className="form-group">
                                         <label>Registration End (Optional)</label>
-                                        <input type="datetime-local" name="registration_end" className="form-input" />
+                                        <input
+                                            type="datetime-local"
+                                            name="registration_end"
+                                            className="form-input"
+                                        />
                                     </div>
                                 </div>
 
@@ -1087,19 +1137,31 @@ const EventManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" name="featured" value="true" />
+                                                <input
+                                                    type="checkbox"
+                                                    name="featured"
+                                                    value="true"
+                                                />
                                                 Featured Event
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" name="rsvp_required" value="true" />
+                                                <input
+                                                    type="checkbox"
+                                                    name="rsvp_required"
+                                                    value="true"
+                                                />
                                                 RSVP Required
                                             </label>
                                         </div>
                                         <div className="form-group">
                                             <label className="checkbox-label">
-                                                <input type="checkbox" name="waitlist_enabled" value="true" />
+                                                <input
+                                                    type="checkbox"
+                                                    name="waitlist_enabled"
+                                                    value="true"
+                                                />
                                                 Enable Waitlist
                                             </label>
                                         </div>
@@ -1246,7 +1308,13 @@ const EventManagementTab = () => {
                                             type="datetime-local"
                                             name="start_datetime"
                                             className="form-input"
-                                            defaultValue={editingEvent.start_datetime ? new Date(editingEvent.start_datetime).toISOString().slice(0,16) : ''}
+                                            defaultValue={
+                                                editingEvent.start_datetime
+                                                    ? new Date(editingEvent.start_datetime)
+                                                          .toISOString()
+                                                          .slice(0, 16)
+                                                    : ''
+                                            }
                                             required
                                         />
                                     </div>
@@ -1256,7 +1324,13 @@ const EventManagementTab = () => {
                                             type="datetime-local"
                                             name="end_datetime"
                                             className="form-input"
-                                            defaultValue={editingEvent.end_datetime ? new Date(editingEvent.end_datetime).toISOString().slice(0,16) : ''}
+                                            defaultValue={
+                                                editingEvent.end_datetime
+                                                    ? new Date(editingEvent.end_datetime)
+                                                          .toISOString()
+                                                          .slice(0, 16)
+                                                    : ''
+                                            }
                                             required
                                         />
                                     </div>
@@ -1269,7 +1343,13 @@ const EventManagementTab = () => {
                                             type="datetime-local"
                                             name="registration_start"
                                             className="form-input"
-                                            defaultValue={editingEvent.registration_start ? new Date(editingEvent.registration_start).toISOString().slice(0,16) : ''}
+                                            defaultValue={
+                                                editingEvent.registration_start
+                                                    ? new Date(editingEvent.registration_start)
+                                                          .toISOString()
+                                                          .slice(0, 16)
+                                                    : ''
+                                            }
                                         />
                                     </div>
                                     <div className="form-group">
@@ -1278,7 +1358,13 @@ const EventManagementTab = () => {
                                             type="datetime-local"
                                             name="registration_end"
                                             className="form-input"
-                                            defaultValue={editingEvent.registration_end ? new Date(editingEvent.registration_end).toISOString().slice(0,16) : ''}
+                                            defaultValue={
+                                                editingEvent.registration_end
+                                                    ? new Date(editingEvent.registration_end)
+                                                          .toISOString()
+                                                          .slice(0, 16)
+                                                    : ''
+                                            }
                                         />
                                     </div>
                                 </div>

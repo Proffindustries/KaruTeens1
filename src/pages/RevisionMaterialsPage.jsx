@@ -22,14 +22,7 @@ const RevisionMaterialsPage = () => {
         category: 'all',
     });
 
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            fetchMaterials();
-        }, 500); // Debounce search
-        return () => clearTimeout(timeoutId);
-    }, [filters]);
-
-    const fetchMaterials = async () => {
+    const fetchMaterials = React.useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -40,11 +33,12 @@ const RevisionMaterialsPage = () => {
             if (filters.category !== 'all') params.append('category', filters.category);
 
             const { data } = await api.get(`/revision-materials?${params.toString()}`);
-            const filteredData = data.filter(item => REVISION_CATEGORIES.includes(item.category) || (!item.category));
+            const filteredData = data.filter(
+                (item) => REVISION_CATEGORIES.includes(item.category) || !item.category,
+            );
             setMaterials(filteredData);
         } catch (err) {
             console.log('Using local revision materials data');
-            // Fallback mock data if API doesn't exist
             setMaterials([
                 {
                     id: '1',
@@ -90,7 +84,11 @@ const RevisionMaterialsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters]);
+
+    useEffect(() => {
+        fetchMaterials();
+    }, [fetchMaterials]);
 
     const getTypeIcon = (type) => {
         switch (type) {
@@ -134,7 +132,9 @@ const RevisionMaterialsPage = () => {
 
             {loading ? (
                 <div className="materials-grid">
-                    {[1, 2, 3, 4, 5, 6].map(i => <MaterialSkeleton key={i} />)}
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <MaterialSkeleton key={i} />
+                    ))}
                 </div>
             ) : materials.length === 0 ? (
                 <div className="empty-state card">
@@ -145,48 +145,57 @@ const RevisionMaterialsPage = () => {
             ) : (
                 <div className="materials-grid">
                     {materials.map((material) => (
+                        <div key={material.id} className="card material-card">
                             <div
-                                key={material.id}
-                                className="card material-card"
+                                className="type-icon-box"
+                                style={{ backgroundColor: getTypeColor(material.type) }}
                             >
-                                <div
-                                    className="type-icon-box"
-                                    style={{ backgroundColor: getTypeColor(material.type) }}
-                                >
-                                    {getTypeIcon(material.type)}
-                                </div>
-                                <div className="material-info">
-                                    <span className="material-subject">{material.subject}</span>
-                                    <h3>{material.title}</h3>
-                                    <p className="material-desc">
-                                        {material.description}
-                                    </p>
-                                </div>
+                                {getTypeIcon(material.type)}
                             </div>
-                        ))}
-                    </div>
-                )}
+                            <div className="material-info">
+                                <span className="material-subject">{material.subject}</span>
+                                <h3>{material.title}</h3>
+                                <p className="material-desc">{material.description}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
-                <section className="materials-faq card shadow-sm mt-12 p-8">
-                    <div className="section-title mb-6">
-                        <h2 className="text-2xl font-bold">About Our Resources</h2>
-                        <p className="text-muted">High-quality, peer-reviewed academic materials.</p>
+            <section className="materials-faq card shadow-sm mt-12 p-8">
+                <div className="section-title mb-6">
+                    <h2 className="text-2xl font-bold">About Our Resources</h2>
+                    <p className="text-muted">High-quality, peer-reviewed academic materials.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                    <div>
+                        <h4 className="font-bold text-primary mb-2">
+                            How are these materials curated?
+                        </h4>
+                        <p className="text-sm">
+                            Our platform leverages a community-driven curation model. Materials are
+                            uploaded by verified students and reviewed by student representatives
+                            from respective departments to ensure accuracy and relevance to current
+                            syllabi at Karatina University.
+                        </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                        <div>
-                            <h4 className="font-bold text-primary mb-2">How are these materials curated?</h4>
-                            <p className="text-sm">Our platform leverages a community-driven curation model. Materials are uploaded by verified students and reviewed by student representatives from respective departments to ensure accuracy and relevance to current syllabi at Karatina University.</p>
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-secondary mb-2">Can I contribute my own notes?</h4>
-                            <p className="text-sm">Absolutely! KaruTeens thrives on peer cooperation. You can submit your revision materials through the 'Contribute' button. Once reviewed, your materials will be available to thousands of peers, and you'll earn community points.</p>
-                        </div>
+                    <div>
+                        <h4 className="font-bold text-secondary mb-2">
+                            Can I contribute my own notes?
+                        </h4>
+                        <p className="text-sm">
+                            Absolutely! KaruTeens thrives on peer cooperation. You can submit your
+                            revision materials through the 'Contribute' button. Once reviewed, your
+                            materials will be available to thousands of peers, and you'll earn
+                            community points.
+                        </p>
                     </div>
-                    <div className="mt-8 pt-8 border-t border-gray-100 text-center">
-                        <button className="btn btn-outline">Submit Your Materials</button>
-                    </div>
-                </section>
-            </div>
+                </div>
+                <div className="mt-8 pt-8 border-t border-gray-100 text-center">
+                    <button className="btn btn-outline">Submit Your Materials</button>
+                </div>
+            </section>
+        </div>
     );
 };
 

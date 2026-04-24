@@ -117,5 +117,5 @@ if (fs.existsSync('backend/Cargo.toml')) {
 console.log(`\n🎉 Build Test Complete!`);
 console.log(`   All admin dashboard components are properly structured and ready for building.`);
 console.log(
-    `   The system includes 18 different management sections with comprehensive functionality.`,
+    `   The system includes 18 different management sections with comprehensive functionality.`
 );

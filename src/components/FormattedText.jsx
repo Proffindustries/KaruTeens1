@@ -27,7 +27,11 @@ const FormattedText = ({ text }) => {
                 if (segment.startsWith('\\[') && segment.endsWith('\\]')) {
                     const math = segment.slice(2, -2).trim();
                     return (
-                        <div key={i} className="math-block-container" style={{ margin: '1rem 0', overflowX: 'auto' }}>
+                        <div
+                            key={i}
+                            className="math-block-container"
+                            style={{ margin: '1rem 0', overflowX: 'auto' }}
+                        >
                             <BlockMath math={math} />
                         </div>
                     );
@@ -46,7 +50,14 @@ const FormattedText = ({ text }) => {
                     return lines.map((line, k) => {
                         if (line.trim().startsWith('* ') || line.trim().startsWith('- ')) {
                             const content = line.trim().substring(2);
-                            return <li key={`${i}-${j}-${k}`} style={{ marginLeft: '1.5rem', marginBottom: '0.25rem' }}>{formatBold(content)}</li>;
+                            return (
+                                <li
+                                    key={`${i}-${j}-${k}`}
+                                    style={{ marginLeft: '1.5rem', marginBottom: '0.25rem' }}
+                                >
+                                    {formatBold(content)}
+                                </li>
+                            );
                         }
 
                         if (line.startsWith('#')) {
@@ -62,7 +73,9 @@ const FormattedText = ({ text }) => {
                         return line.trim() === '' ? (
                             <div key={`${i}-${j}-${k}`} style={{ height: '0.5rem' }} />
                         ) : (
-                            <p key={`${i}-${j}-${k}`} style={{ marginBottom: '0.5rem' }}>{formatBold(line)}</p>
+                            <p key={`${i}-${j}-${k}`} style={{ marginBottom: '0.5rem' }}>
+                                {formatBold(line)}
+                            </p>
                         );
                     });
                 });

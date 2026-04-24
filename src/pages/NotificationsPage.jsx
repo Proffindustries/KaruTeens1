@@ -100,7 +100,9 @@ const NotificationsPage = () => {
                 <div className="page-header">
                     <h1>Notifications</h1>
                 </div>
-                {[1, 2, 3, 4, 5].map(i => <NotificationSkeleton key={i} />)}
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <NotificationSkeleton key={i} />
+                ))}
             </div>
         );
     if (error)

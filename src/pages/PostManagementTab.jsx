@@ -75,20 +75,23 @@ const PostManagementTab = () => {
     const { showToast } = useToast();
     const [isProcessing, setIsProcessing] = useState(null); // Track post ID being processed
 
-    useEffect(() => {
+    const fetchData = React.useCallback(async () => {
         setIsLoading(true);
-        // Fetch real data from API
-        api.get('/posts', { params: { ...filters } })
-            .then((res) => {
-                setPosts(res.data.posts || res.data || []);
-            })
-            .catch((error) => {
-                console.error('Failed to load posts:', error);
-                setPosts([]); // Empty state on error
-                showToast('Failed to load posts', 'error');
-            })
-            .finally(() => setIsLoading(false));
-    }, [filters]);
+        try {
+            const res = await api.get('/posts', { params: { ...filters } });
+            setPosts(res.data.posts || res.data || []);
+        } catch (error) {
+            console.error('Failed to load posts:', error);
+            setPosts([]);
+            showToast('Failed to load posts', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [filters, showToast]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -103,26 +106,45 @@ const PostManagementTab = () => {
         setIsLoading(true);
         try {
             if (bulkAction === 'approve') {
-                await Promise.all(selectedPosts.map(id => api.post(`/posts/${id}/approve`, { status: 'approved' })));
+                await Promise.all(
+                    selectedPosts.map((id) =>
+                        api.post(`/posts/${id}/approve`, { status: 'approved' }),
+                    ),
+                );
                 setPosts((prev) =>
-                    prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'approved' } : p)),
+                    prev.map((p) =>
+                        selectedPosts.includes(p.id) ? { ...p, status: 'approved' } : p,
+                    ),
                 );
                 showToast('Posts approved', 'success');
             } else if (bulkAction === 'reject') {
-                await Promise.all(selectedPosts.map(id => api.post(`/posts/${id}/approve`, { status: 'rejected', rejection_reason: 'Bulk rejection' })));
+                await Promise.all(
+                    selectedPosts.map((id) =>
+                        api.post(`/posts/${id}/approve`, {
+                            status: 'rejected',
+                            rejection_reason: 'Bulk rejection',
+                        }),
+                    ),
+                );
                 setPosts((prev) =>
-                    prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'rejected' } : p)),
+                    prev.map((p) =>
+                        selectedPosts.includes(p.id) ? { ...p, status: 'rejected' } : p,
+                    ),
                 );
                 showToast('Posts rejected', 'info');
             } else if (bulkAction === 'publish') {
-                await Promise.all(selectedPosts.map(id => api.post(`/posts/${id}/publish`)));
+                await Promise.all(selectedPosts.map((id) => api.post(`/posts/${id}/publish`)));
                 setPosts((prev) =>
-                    prev.map((p) => (selectedPosts.includes(p.id) ? { ...p, status: 'published' } : p)),
+                    prev.map((p) =>
+                        selectedPosts.includes(p.id) ? { ...p, status: 'published' } : p,
+                    ),
                 );
                 showToast('Posts published', 'success');
             } else if (bulkAction === 'delete') {
-                if (confirm(`Delete ${selectedPosts.length} posts? This action cannot be undone.`)) {
-                    await Promise.all(selectedPosts.map(id => api.delete(`/posts/${id}`)));
+                if (
+                    confirm(`Delete ${selectedPosts.length} posts? This action cannot be undone.`)
+                ) {
+                    await Promise.all(selectedPosts.map((id) => api.delete(`/posts/${id}`)));
                     setPosts((prev) => prev.filter((p) => !selectedPosts.includes(p.id)));
                     showToast('Posts deleted', 'success');
                 } else {
@@ -161,14 +183,22 @@ const PostManagementTab = () => {
     const handleRejectPost = async (postId) => {
         const reason = prompt('Please enter rejection reason:');
         if (reason === null) return;
-        
+
         setIsProcessing(postId);
         try {
-            await api.post(`/posts/${postId}/approve`, { status: 'rejected', rejection_reason: reason });
+            await api.post(`/posts/${postId}/approve`, {
+                status: 'rejected',
+                rejection_reason: reason,
+            });
             setPosts((prev) =>
                 prev.map((p) =>
                     p.id === postId
-                        ? { ...p, status: 'rejected', rejected_at: new Date().toISOString(), rejection_reason: reason }
+                        ? {
+                              ...p,
+                              status: 'rejected',
+                              rejected_at: new Date().toISOString(),
+                              rejection_reason: reason,
+                          }
                         : p,
                 ),
             );
@@ -1016,9 +1046,24 @@ const PostManagementTab = () => {
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label>Scheduled Date (Optional)</label>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                                <input type="date" className="form-input" name="scheduled_date" />
-                                                <input type="time" className="form-input" name="scheduled_time" defaultValue="12:00" />
+                                            <div
+                                                style={{
+                                                    display: 'grid',
+                                                    gridTemplateColumns: '1fr 1fr',
+                                                    gap: '0.5rem',
+                                                }}
+                                            >
+                                                <input
+                                                    type="date"
+                                                    className="form-input"
+                                                    name="scheduled_date"
+                                                />
+                                                <input
+                                                    type="time"
+                                                    className="form-input"
+                                                    name="scheduled_time"
+                                                    defaultValue="12:00"
+                                                />
                                             </div>
                                         </div>
                                         <div className="form-group">
@@ -1278,19 +1323,33 @@ const PostManagementTab = () => {
                                                 <input
                                                     type="date"
                                                     className="form-input"
-                                                    defaultValue={editingPost.scheduled_publish_date?.split('T')[0] || ''}
+                                                    defaultValue={
+                                                        editingPost.scheduled_publish_date?.split(
+                                                            'T',
+                                                        )[0] || ''
+                                                    }
                                                 />
                                                 <div className="time-picker-container">
                                                     <input
                                                         type="time"
                                                         id={`schedule_time_${editingPost.id}`}
                                                         className="form-input"
-                                                        defaultValue={editingPost.scheduled_publish_date?.split('T')[1]?.slice(0, 5) || '12:00'}
+                                                        defaultValue={
+                                                            editingPost.scheduled_publish_date
+                                                                ?.split('T')[1]
+                                                                ?.slice(0, 5) || '12:00'
+                                                        }
                                                     />
                                                     <button
                                                         type="button"
                                                         className="time-picker-btn"
-                                                        onClick={() => document.getElementById(`schedule_time_${editingPost.id}`).showPicker?.()}
+                                                        onClick={() =>
+                                                            document
+                                                                .getElementById(
+                                                                    `schedule_time_${editingPost.id}`,
+                                                                )
+                                                                .showPicker?.()
+                                                        }
                                                     >
                                                         <Clock size={16} />
                                                     </button>

@@ -89,3 +89,22 @@ export const useBoostItem = () => {
         },
     });
 };
+
+export const useDeleteItem = () => {
+    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+
+    return useMutation({
+        mutationFn: async (itemId) => {
+            const { data } = await api.delete(`/marketplace/${itemId}`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['marketplaceItems'] });
+            showToast('Item deleted successfully', 'success');
+        },
+        onError: (err) => {
+            showToast(err.response?.data?.error || 'Failed to delete item', 'error');
+        },
+    });
+};

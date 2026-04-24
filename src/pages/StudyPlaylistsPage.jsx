@@ -32,9 +32,9 @@ const StudyPlaylistsPage = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showAddItemModal, setShowAddItemModal] = useState(false);
     const [viewingItem, setViewingItem] = useState(null);
-    
+
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
-    
+
     // Add Item states
     const { uploadFile, uploadImage, isUploading } = useMediaUpload();
     const fileInputRef = React.useRef(null);
@@ -68,14 +68,17 @@ const StudyPlaylistsPage = () => {
         }
     }, [subjectFilter, showToast]);
 
-    const fetchPlaylistDetails = useCallback(async (playlistId) => {
-        try {
-            const { data } = await api.get(`/playlists/${playlistId}`);
-            setSelectedPlaylist(data);
-        } catch (err) {
-            showToast('Failed to load playlist details', 'error');
-        }
-    }, [showToast]);
+    const fetchPlaylistDetails = useCallback(
+        async (playlistId) => {
+            try {
+                const { data } = await api.get(`/playlists/${playlistId}`);
+                setSelectedPlaylist(data);
+            } catch (err) {
+                showToast('Failed to load playlist details', 'error');
+            }
+        },
+        [showToast],
+    );
 
     useEffect(() => {
         fetchPlaylists();
@@ -117,10 +120,12 @@ const StudyPlaylistsPage = () => {
     const handleAddItem = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-        
+
         let finalUrl = itemUrl;
         const title = formData.get('title');
-        const duration = formData.get('duration_minutes') ? parseInt(formData.get('duration_minutes')) : null;
+        const duration = formData.get('duration_minutes')
+            ? parseInt(formData.get('duration_minutes'))
+            : null;
         const playlistId = selectedPlaylist.id;
 
         // Close modal immediately for background processing
@@ -128,25 +133,29 @@ const StudyPlaylistsPage = () => {
         setItemUrl('');
         setSelectedFiles([]);
         setUploadMode('url');
-        
+
         if (uploadMode === 'file' && selectedFiles.length > 0) {
             selectedFiles.forEach(async (file) => {
                 const itemType = getFileType(file);
                 const uploadId = addUpload({
                     fileName: file.name,
                     fileSize: file.size,
-                    type: itemType
+                    type: itemType,
                 });
-                
+
                 try {
                     let uploadedUrl;
-                    if(itemType === 'image') {
-                        uploadedUrl = await uploadImage(file, (p, l) => updateUploadProgress(uploadId, p, l));
+                    if (itemType === 'image') {
+                        uploadedUrl = await uploadImage(file, (p, l) =>
+                            updateUploadProgress(uploadId, p, l),
+                        );
                     } else {
-                        uploadedUrl = await uploadFile(file, (p, l) => updateUploadProgress(uploadId, p, l));
+                        uploadedUrl = await uploadFile(file, (p, l) =>
+                            updateUploadProgress(uploadId, p, l),
+                        );
                     }
                     completeUpload(uploadId, { url: uploadedUrl });
-                    
+
                     const effectiveTitle = selectedFiles.length === 1 && title ? title : file.name;
 
                     await api.post(`/playlists/${playlistId}/items`, {
@@ -373,21 +382,91 @@ const StudyPlaylistsPage = () => {
                                         No items yet. Add some study materials!
                                     </p>
                                 ) : selectedPlaylist.items?.length > 4 ? (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                                    <div
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns:
+                                                'repeat(auto-fill, minmax(150px, 1fr))',
+                                            gap: '1rem',
+                                        }}
+                                    >
                                         {selectedPlaylist.items.map((item, idx) => (
-                                            <div key={idx} onClick={() => setViewingItem(item)} style={{ cursor: 'pointer', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-                                                <div style={{ width: '100%', height: '100px', background: '#f0f2f5', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            <div
+                                                key={idx}
+                                                onClick={() => setViewingItem(item)}
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: '8px',
+                                                    overflow: 'hidden',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100px',
+                                                        background: '#f0f2f5',
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        alignItems: 'center',
+                                                    }}
+                                                >
                                                     {item.item_type === 'image' ? (
-                                                        <img src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" loading="lazy" />
+                                                        <img
+                                                            src={item.url}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'cover',
+                                                            }}
+                                                            alt="Preview"
+                                                            loading="lazy"
+                                                        />
                                                     ) : item.item_type === 'video' ? (
-                                                        <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                                                        <video
+                                                            src={item.url}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'cover',
+                                                            }}
+                                                            muted
+                                                        />
                                                     ) : (
-                                                        <div style={{ color: '#65676b', transform: 'scale(1.5)' }}>{getItemIcon(item.item_type)}</div>
+                                                        <div
+                                                            style={{
+                                                                color: '#65676b',
+                                                                transform: 'scale(1.5)',
+                                                            }}
+                                                        >
+                                                            {getItemIcon(item.item_type)}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div style={{ padding: '0.5rem' }}>
-                                                    <p style={{ margin: 0, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '500' }}>{item.title}</p>
-                                                    {item.duration_minutes && <p style={{ margin: 0, fontSize: '0.75rem', color: '#65676b' }}>{item.duration_minutes} min</p>}
+                                                    <p
+                                                        style={{
+                                                            margin: 0,
+                                                            fontSize: '0.85rem',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            fontWeight: '500',
+                                                        }}
+                                                    >
+                                                        {item.title}
+                                                    </p>
+                                                    {item.duration_minutes && (
+                                                        <p
+                                                            style={{
+                                                                margin: 0,
+                                                                fontSize: '0.75rem',
+                                                                color: '#65676b',
+                                                            }}
+                                                        >
+                                                            {item.duration_minutes} min
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -477,12 +556,14 @@ const StudyPlaylistsPage = () => {
                         >
                             <div className="modal-header">
                                 <h3>Add Study Material</h3>
-                                <button onClick={() => {
-                                    setShowAddItemModal(false);
-                                    setItemUrl('');
-                                    setSelectedFiles([]);
-                                    setUploadMode('url');
-                                }}>
+                                <button
+                                    onClick={() => {
+                                        setShowAddItemModal(false);
+                                        setItemUrl('');
+                                        setSelectedFiles([]);
+                                        setUploadMode('url');
+                                    }}
+                                >
                                     <X size={24} />
                                 </button>
                             </div>
@@ -498,23 +579,31 @@ const StudyPlaylistsPage = () => {
                                 </div>
                                 <div className="form-group">
                                     <label>Source</label>
-                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.8rem' }}>
-                                        <button 
-                                            type="button" 
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: '1rem',
+                                            marginBottom: '0.8rem',
+                                        }}
+                                    >
+                                        <button
+                                            type="button"
                                             className={`btn btn-sm ${uploadMode === 'url' ? 'btn-primary' : 'btn-outline'}`}
                                             onClick={() => setUploadMode('url')}
                                         >
-                                            <LinkIcon size={14} style={{ marginRight: '4px' }}/> URL Link
+                                            <LinkIcon size={14} style={{ marginRight: '4px' }} />{' '}
+                                            URL Link
                                         </button>
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             className={`btn btn-sm ${uploadMode === 'file' ? 'btn-primary' : 'btn-outline'}`}
                                             onClick={() => setUploadMode('file')}
                                         >
-                                            <Upload size={14} style={{ marginRight: '4px' }}/> Upload File
+                                            <Upload size={14} style={{ marginRight: '4px' }} />{' '}
+                                            Upload File
                                         </button>
                                     </div>
-                                    
+
                                     {uploadMode === 'url' ? (
                                         <input
                                             type="url"
@@ -525,27 +614,47 @@ const StudyPlaylistsPage = () => {
                                             onChange={(e) => setItemUrl(e.target.value)}
                                         />
                                     ) : (
-                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'rgba(0,0,0,0.05)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
-                                            <button 
-                                                type="button" 
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                gap: '0.5rem',
+                                                alignItems: 'center',
+                                                background: 'rgba(0,0,0,0.05)',
+                                                padding: '0.5rem',
+                                                borderRadius: '8px',
+                                                border: '1px solid rgba(0,0,0,0.1)',
+                                            }}
+                                        >
+                                            <button
+                                                type="button"
                                                 className="btn btn-outline btn-sm"
                                                 onClick={() => fileInputRef.current?.click()}
                                             >
                                                 Choose File
                                             </button>
-                                            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                                {selectedFiles.length > 0 ? `${selectedFiles.length} file(s) selected` : 'No files chosen'}
+                                            <span
+                                                style={{
+                                                    fontSize: '0.9rem',
+                                                    color: 'var(--text-muted)',
+                                                }}
+                                            >
+                                                {selectedFiles.length > 0
+                                                    ? `${selectedFiles.length} file(s) selected`
+                                                    : 'No files chosen'}
                                             </span>
-                                            <input 
+                                            <input
                                                 type="file"
                                                 name="file"
                                                 multiple
                                                 ref={fileInputRef}
                                                 hidden
-                                                required={uploadMode === 'file' && selectedFiles.length === 0}
+                                                required={
+                                                    uploadMode === 'file' &&
+                                                    selectedFiles.length === 0
+                                                }
                                                 onChange={(e) => {
                                                     const files = Array.from(e.target.files);
-                                                    if(files.length > 0) setSelectedFiles(files);
+                                                    if (files.length > 0) setSelectedFiles(files);
                                                 }}
                                             />
                                         </div>
@@ -560,7 +669,11 @@ const StudyPlaylistsPage = () => {
                                         placeholder="e.g., 45"
                                     />
                                 </div>
-                                <button type="submit" className="btn btn-primary btn-full" disabled={uploadMode === 'file' && selectedFiles.length === 0}>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary btn-full"
+                                    disabled={uploadMode === 'file' && selectedFiles.length === 0}
+                                >
                                     Add Item
                                 </button>
                             </form>
@@ -579,27 +692,118 @@ const StudyPlaylistsPage = () => {
                         onClick={() => setViewingItem(null)}
                         style={{ zIndex: 1100 }}
                     >
-                        <div className="viewer-content" onClick={e => e.stopPropagation()} style={{ background: '#000', padding: '1rem', borderRadius: '12px', width: '90%', maxWidth: '1000px', height: '85vh', display: 'flex', flexDirection: 'column' }}>
-                            <div className="viewer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', color: '#fff' }}>
-                                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem' }}>{viewingItem.title}</h3>
+                        <div
+                            className="viewer-content"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                background: '#000',
+                                padding: '1rem',
+                                borderRadius: '12px',
+                                width: '90%',
+                                maxWidth: '1000px',
+                                height: '85vh',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                        >
+                            <div
+                                className="viewer-header"
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '1rem',
+                                    color: '#fff',
+                                }}
+                            >
+                                <h3
+                                    style={{
+                                        margin: 0,
+                                        color: '#fff',
+                                        fontSize: '1.2rem',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        paddingRight: '1rem',
+                                    }}
+                                >
+                                    {viewingItem.title}
+                                </h3>
                                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <a href={viewingItem.url} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'underline', fontSize: '0.9rem' }}>
+                                    <a
+                                        href={viewingItem.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            color: '#fff',
+                                            textDecoration: 'underline',
+                                            fontSize: '0.9rem',
+                                        }}
+                                    >
                                         Open Original
                                     </a>
-                                    <button onClick={() => setViewingItem(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}>
+                                    <button
+                                        onClick={() => setViewingItem(null)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#fff',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                        }}
+                                    >
                                         <X size={24} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="viewer-body" style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#111', borderRadius: '8px', overflow: 'hidden' }}>
+                            <div
+                                className="viewer-body"
+                                style={{
+                                    flex: 1,
+                                    minHeight: 0,
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    background: '#111',
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                }}
+                            >
                                 {viewingItem.item_type === 'image' ? (
-                                    <img src={viewingItem.url} alt={viewingItem.title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                    <img
+                                        src={viewingItem.url}
+                                        alt={viewingItem.title}
+                                        style={{
+                                            maxWidth: '100%',
+                                            maxHeight: '100%',
+                                            objectFit: 'contain',
+                                        }}
+                                    />
                                 ) : viewingItem.item_type === 'video' ? (
-                                    <video src={viewingItem.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                                    <video
+                                        src={viewingItem.url}
+                                        controls
+                                        autoPlay
+                                        style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                    />
                                 ) : viewingItem.item_type === 'audio' ? (
-                                    <audio src={viewingItem.url} controls autoPlay style={{ width: '100%', maxWidth: '600px' }} />
+                                    <audio
+                                        src={viewingItem.url}
+                                        controls
+                                        autoPlay
+                                        style={{ width: '100%', maxWidth: '600px' }}
+                                    />
                                 ) : (
-                                    <iframe src={viewingItem.url} title={viewingItem.title} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+                                    <iframe
+                                        src={viewingItem.url}
+                                        title={viewingItem.title}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            border: 'none',
+                                            background: '#fff',
+                                        }}
+                                    />
                                 )}
                             </div>
                         </div>

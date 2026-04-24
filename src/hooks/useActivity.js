@@ -7,17 +7,17 @@ export const useActivityFeed = () => {
         queryKey: ['activity'],
         queryFn: async () => {
             const { data } = await api.get('/notifications');
-            return data.map(n => ({
+            return data.map((n) => ({
                 id: n.id,
                 actor: {
                     username: n.actor_username,
-                    avatar_url: n.actor_avatar_url
+                    avatar_url: n.actor_avatar_url,
                 },
                 type: n.notification_type,
                 target: { id: n.target_id },
                 content: n.content,
                 read: n.is_read,
-                created_at: n.created_at
+                created_at: n.created_at,
             }));
         },
         staleTime: 30 * 1000,

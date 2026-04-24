@@ -20,8 +20,8 @@ const HomePage = () => {
 
     return (
         <div className="homepage">
-            <SEO 
-                title="Home" 
+            <SEO
+                title="Home"
                 description="KaruTeens is the number one campus social hub for university students. Join study groups, access revision materials, and connect with peers safely."
                 keywords="university social network, campus life, student resources, Karatina University, Kenya students"
             />
@@ -147,19 +147,35 @@ const HomePage = () => {
                     <div className="faq-grid">
                         <div className="faq-item card">
                             <h3>Is KaruTeens free to use?</h3>
-                            <p>Yes! KaruTeens is free for all university students. We offer premium features for advanced study tools, but the core community features will always be free.</p>
+                            <p>
+                                Yes! KaruTeens is free for all university students. We offer premium
+                                features for advanced study tools, but the core community features
+                                will always be free.
+                            </p>
                         </div>
                         <div className="faq-item card">
                             <h3>How do I verify my account?</h3>
-                            <p>Once you register with your student email, you'll receive a verification link. Verified students get a badge and access to official school groups.</p>
+                            <p>
+                                Once you register with your student email, you'll receive a
+                                verification link. Verified students get a badge and access to
+                                official school groups.
+                            </p>
                         </div>
                         <div className="faq-item card">
                             <h3>Is my data safe?</h3>
-                            <p>Absolutely. We use industry-standard encryption and never sell your personal data. Our platform is built with student privacy as a top priority.</p>
+                            <p>
+                                Absolutely. We use industry-standard encryption and never sell your
+                                personal data. Our platform is built with student privacy as a top
+                                priority.
+                            </p>
                         </div>
                         <div className="faq-item card">
                             <h3>Can I sell items on the marketplace?</h3>
-                            <p>Yes! Any verified student can list items or services on the marketplace. It's a great way to handle campus side-hustles securely.</p>
+                            <p>
+                                Yes! Any verified student can list items or services on the
+                                marketplace. It's a great way to handle campus side-hustles
+                                securely.
+                            </p>
                         </div>
                     </div>
                 </div>

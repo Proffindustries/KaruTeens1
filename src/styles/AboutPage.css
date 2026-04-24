@@ -114,7 +114,8 @@
     }
 }
 
-.values-section, .guidelines-section {
+.values-section,
+.guidelines-section {
     margin-top: 4rem;
     text-align: left;
 }

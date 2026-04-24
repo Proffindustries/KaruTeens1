@@ -76,7 +76,9 @@ export const useMediaUpload = () => {
         setIsUploading(true);
         try {
             // 1. Get presigned URL from backend
-            const { data: { url, public_url } } = await api.post('/media/signature/r2', {
+            const {
+                data: { url, public_url },
+            } = await api.post('/media/signature/r2', {
                 file_name: file.name,
                 content_type: file.type,
             });

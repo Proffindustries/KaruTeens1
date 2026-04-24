@@ -3,7 +3,12 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Share2, Shield, Heart, Tag, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import '../styles/MarketplacePage.css';
-import { useMarketplaceItem, useMarkSold, useBoostItem } from '../hooks/useMarketplace.js';
+import {
+    useMarketplaceItem,
+    useMarkSold,
+    useBoostItem,
+    useDeleteItem,
+} from '../hooks/useMarketplace.js';
 import Avatar from '../components/Avatar.jsx';
 
 const MarketplaceItemPage = () => {
@@ -14,6 +19,7 @@ const MarketplaceItemPage = () => {
     const { data: item, isLoading, error } = useMarketplaceItem(itemId);
     const { mutate: markSold, isPending: isMarkingSold } = useMarkSold();
     const { mutate: boostItem, isPending: isBoosting } = useBoostItem();
+    const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     if (isLoading) return <div className="container item-detail-page">Loading item details...</div>;
@@ -39,8 +45,20 @@ const MarketplaceItemPage = () => {
     };
 
     const handleBoostItem = () => {
-        if (window.confirm('Boost this item for 24 hours? This will move it to the top of the feed.')) {
+        if (
+            window.confirm(
+                'Boost this item for 24 hours? This will move it to the top of the feed.',
+            )
+        ) {
             boostItem(item.id);
+        }
+    };
+
+    const handleDeleteItem = () => {
+        if (window.confirm('Are you sure you want to delete this item?')) {
+            deleteItem(item.id, {
+                onSuccess: () => navigate('/marketplace'),
+            });
         }
     };
 
@@ -83,7 +101,7 @@ const MarketplaceItemPage = () => {
                             border: '1px solid #dfe6e9',
                             aspectRatio: '4/3',
                             backgroundColor: '#f5f6fa',
-                            position: 'relative'
+                            position: 'relative',
                         }}
                     >
                         {item.images && item.images.length > 0 ? (
@@ -106,7 +124,10 @@ const MarketplaceItemPage = () => {
                             </div>
                         )}
                         {isBoosted && (
-                            <div className="boosted-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                            <div
+                                className="boosted-badge"
+                                style={{ position: 'absolute', top: '10px', right: '10px' }}
+                            >
                                 <Zap size={12} fill="currentColor" /> FEATURED
                             </div>
                         )}
@@ -249,7 +270,11 @@ const MarketplaceItemPage = () => {
                                             gap: '0.5rem',
                                         }}
                                     >
-                                        {isMarkingSold ? 'Processing...' : (item.status === 'sold' ? 'Sold' : 'Mark as Sold')}
+                                        {isMarkingSold
+                                            ? 'Processing...'
+                                            : item.status === 'sold'
+                                              ? 'Sold'
+                                              : 'Mark as Sold'}
                                     </button>
                                     <button
                                         className="btn btn-full"
@@ -262,11 +287,23 @@ const MarketplaceItemPage = () => {
                                             gap: '0.5rem',
                                             background: 'linear-gradient(45deg, #f1c40f, #f39c12)',
                                             color: 'white',
-                                            border: 'none'
+                                            border: 'none',
                                         }}
                                     >
-                                        <Zap size={18} fill="currentColor" /> 
-                                        {isBoosting ? 'Boosting...' : (isBoosted ? 'Extend Boost (24h)' : 'Boost Item (24h)')}
+                                        <Zap size={18} fill="currentColor" />
+                                        {isBoosting
+                                            ? 'Boosting...'
+                                            : isBoosted
+                                              ? 'Extend Boost (24h)'
+                                              : 'Boost Item (24h)'}
+                                    </button>
+                                    <button
+                                        className="btn btn-outline danger btn-full"
+                                        onClick={handleDeleteItem}
+                                        disabled={isDeleting}
+                                        style={{ marginTop: '0.5rem' }}
+                                    >
+                                        {isDeleting ? 'Deleting...' : 'Delete Listing'}
                                     </button>
                                 </>
                             ) : (

@@ -5,19 +5,19 @@ import { useAudio } from '../context/AudioContext';
 import '../styles/CustomAudioPlayer.css';
 
 const CustomAudioPlayer = React.memo(({ src, filename, id }) => {
-    const { 
-        playAudio, 
-        currentAudio, 
-        isPlaying: isGlobalPlaying, 
-        progress: globalProgress, 
-        currentTime: globalCurrentTime, 
+    const {
+        playAudio,
+        currentAudio,
+        isPlaying: isGlobalPlaying,
+        progress: globalProgress,
+        currentTime: globalCurrentTime,
         duration: globalDuration,
-        seekAudio
+        seekAudio,
     } = useAudio();
 
     const isThisAudioCurrent = currentAudio?.id === (id || src);
     const isPlaying = isThisAudioCurrent && isGlobalPlaying;
-    
+
     const [progress, setProgress] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -40,6 +40,7 @@ const CustomAudioPlayer = React.memo(({ src, filename, id }) => {
 
     useEffect(() => {
         if (isThisAudioCurrent) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setProgress(globalProgress);
             setCurrentTime(globalCurrentTime);
             setDuration(globalDuration);
@@ -47,23 +48,29 @@ const CustomAudioPlayer = React.memo(({ src, filename, id }) => {
     }, [isThisAudioCurrent, globalProgress, globalCurrentTime, globalDuration]);
 
     useEffect(() => {
+        let mounted = true;
         const audio = audioRef.current;
         if (!audio || !inView || isThisAudioCurrent) return;
 
         const updateProgress = () => {
-            const p = (audio.currentTime / audio.duration) * 100;
-            setProgress(p || 0);
-            setCurrentTime(audio.currentTime);
+            if (mounted) {
+                const p = (audio.currentTime / audio.duration) * 100;
+                setProgress(p || 0);
+                setCurrentTime(audio.currentTime);
+            }
         };
 
         const handleLoadedMetadata = () => {
-            setDuration(audio.duration);
+            if (mounted) {
+                setDuration(audio.duration);
+            }
         };
 
         audio.addEventListener('timeupdate', updateProgress);
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
         return () => {
+            mounted = false;
             audio.removeEventListener('timeupdate', updateProgress);
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
         };
@@ -109,7 +116,7 @@ const CustomAudioPlayer = React.memo(({ src, filename, id }) => {
         e.stopPropagation();
         const rect = e.currentTarget.getBoundingClientRect();
         const pos = (e.clientX - rect.left) / rect.width;
-        
+
         if (isThisAudioCurrent) {
             seekAudio(pos * globalDuration);
         } else if (audioRef.current && audioRef.current.duration) {
