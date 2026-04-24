@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Settings } from 'lucide-react';
 import { useInView } from 'react-intersection-observer'; // Import useInView
+import { useAudio } from '../context/AudioContext';
 import { useToast } from '../context/ToastContext';
 import '../styles/CustomVideoPlayer.css';
 
@@ -13,6 +14,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showCaptions, setShowCaptions] = useState(false);
     const [aspectRatioClass, setAspectRatioClass] = useState('');
+    const { stopAudio } = useAudio();
     const { showToast } = useToast();
     const videoRef = useRef(null);
     const containerRef = useRef(null);
@@ -120,6 +122,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
         if (isPlaying) {
             video.pause();
         } else {
+            stopAudio(); // Stop audio if we are starting a video
             video.play().catch((err) => {
                 console.error('Video play failed:', err);
             });
