@@ -72,6 +72,7 @@ pub async fn get_profile_handler(
         year_of_study: profile.year_of_study,
         age: profile.age,
         gender: profile.gender,
+        reg: profile.reg,
         quote: profile.quote,
         location: profile.location,
         social_links: profile.social_links,
@@ -130,6 +131,7 @@ pub async fn update_profile_handler(
     if let Some(y) = payload.year_of_study { update_doc.insert("year_of_study", y); }
     if let Some(age) = payload.age { update_doc.insert("age", age); }
     if let Some(g) = payload.gender { update_doc.insert("gender", g); }
+    if let Some(reg) = payload.reg { update_doc.insert("reg", reg); }
     if let Some(q) = payload.quote { update_doc.insert("quote", q); }
     if let Some(loc) = payload.location { update_doc.insert("location", loc); }
     if let Some(l) = payload.is_locked { update_doc.insert("is_locked", l); }

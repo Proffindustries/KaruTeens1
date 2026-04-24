@@ -188,6 +188,7 @@ pub async fn register_handler(
           year_of_study: payload.year_of_study,
           age: payload.age,
           gender: payload.gender,
+          reg: None,
           quote: None,
           location: None,
           is_locked: false,

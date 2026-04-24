@@ -48,7 +48,7 @@ pub async fn list_timetables_handler(
             ]
         }, 
         None
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    ).await.map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     let mut timetables = Vec::new();
     while let Some(result) = cursor.next().await {
@@ -68,7 +68,7 @@ pub async fn get_timetable_handler(
     let collection = state.mongo.collection::<Timetable>("timetables");
 
     let timetable = collection.find_one(doc! { "_id": oid }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Timetable not found"}))))?;
 
     Ok(Json(timetable))
@@ -91,7 +91,7 @@ pub async fn create_timetable_handler(
     };
 
     let result = collection.insert_one(new_timetable, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     Ok((StatusCode::CREATED, Json(json!({
         "message": "Timetable created",
@@ -108,7 +108,7 @@ pub async fn copy_template_handler(
     let collection = state.mongo.collection::<Timetable>("timetables");
 
     let template = collection.find_one(doc! { "_id": template_oid, "is_template": true }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Template not found"}))))?;
 
     // Create a copy for the user
@@ -141,7 +141,7 @@ pub async fn update_timetable_handler(
 
     // Only owner can update
     let existing = collection.find_one(doc! { "_id": oid, "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Timetable not found or unauthorized"}))))?;
 
     let mut update_doc = doc! {};
@@ -153,7 +153,7 @@ pub async fn update_timetable_handler(
     }
 
     collection.update_one(doc! { "_id": oid }, doc! { "$set": update_doc }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     Ok(StatusCode::OK)
 }
@@ -167,7 +167,7 @@ pub async fn delete_timetable_handler(
     let collection = state.mongo.collection::<Timetable>("timetables");
 
     collection.delete_one(doc! { "_id": oid, "user_id": user.user_id }, None).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
     Ok(StatusCode::OK)
 }

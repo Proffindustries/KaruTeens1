@@ -40,6 +40,7 @@ pub struct Profile {
     pub year_of_study: Option<i32>,
     pub age: Option<i32>,
     pub gender: Option<String>,
+    pub reg: Option<String>,
     pub quote: Option<String>,
     pub location: Option<String>,
     pub social_links: Option<SocialLinks>,
