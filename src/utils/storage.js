@@ -36,7 +36,7 @@ const safeLocalStorage = {
             console.warn('Error clearing localStorage:', e);
             return false;
         }
-    }
+    },
 };
 
 export default safeLocalStorage;

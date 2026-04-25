@@ -175,7 +175,3 @@ export const useUpdateProfile = () => {
         },
     });
 };
-pdate profile', 'error');
-        },
-    });
-};
