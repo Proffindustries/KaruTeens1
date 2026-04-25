@@ -1,13 +1,21 @@
 // Web Crypto API based Encryption Service (E2EE)
 // Using ECDH for key exchange and AES-GCM for message encryption
 
+import { isIndexedDBAvailable } from './featureDetection.js';
+
 class EncryptionService {
     constructor() {
         this.dbName = 'KaruTeensCrypto';
         this.storeName = 'keys';
+        this.db = null;
     }
 
     async init() {
+        if (!isIndexedDBAvailable()) {
+            console.warn('IndexedDB unavailable: Encryption disabled.');
+            return;
+        }
+
         return new Promise((resolve, reject) => {
             try {
                 const request = indexedDB.open(this.dbName, 1);
@@ -23,7 +31,7 @@ class EncryptionService {
                     reject(request.error);
                 };
             } catch (err) {
-                console.warn('IndexedDB is not available in this environment:', err);
+                console.warn('IndexedDB access blocked:', err);
                 reject(err);
             }
         });
