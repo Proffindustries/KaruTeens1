@@ -1,0 +1,162 @@
+.timetable-grid-container {
+    background: rgb(var(--surface));
+    border: 1px solid rgba(var(--border), 0.5);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 800px;
+    position: relative;
+}
+
+.timetable-grid-header {
+    display: flex;
+    border-bottom: 1px solid rgba(var(--border), 0.5);
+    background: rgba(var(--surface-rgb), 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+}
+
+.time-column-header {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.day-column-header {
+    flex: 1;
+    text-align: center;
+    padding: 0.75rem 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: rgb(var(--text-secondary));
+    border-left: 1px solid rgba(var(--border), 0.2);
+}
+
+.timetable-grid-body {
+    display: flex;
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+}
+
+.time-column {
+    width: 60px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(var(--border), 0.5);
+    background: rgba(var(--surface-rgb), 0.5);
+}
+
+.time-slot-label {
+    height: 60px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 4px;
+    font-size: 0.7rem;
+    color: rgb(var(--text-secondary));
+    border-bottom: 1px solid rgba(var(--border), 0.1);
+}
+
+.grid-content {
+    flex: 1;
+    position: relative;
+    display: flex;
+    height: 840px; /* 14 hours * 60px */
+}
+
+.grid-row-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(var(--border), 0.1);
+    pointer-events: none;
+}
+
+.day-column {
+    flex: 1;
+    position: relative;
+    border-left: 1px solid rgba(var(--border), 0.1);
+}
+
+.grid-class-card {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    background: rgba(var(--primary-rgb), 0.1);
+    border-left: 4px solid rgb(var(--primary));
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s;
+    z-index: 2;
+}
+
+.grid-class-card:hover {
+    background: rgba(var(--primary-rgb), 0.2);
+    z-index: 5;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.grid-class-title {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.grid-class-info {
+    display: flex;
+    gap: 4px;
+    font-size: 0.65rem;
+    color: rgb(var(--text-secondary));
+}
+
+.grid-class-actions {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    display: none;
+    gap: 2px;
+}
+
+.grid-class-card:hover .grid-class-actions {
+    display: flex;
+}
+
+.grid-class-actions button {
+    background: white;
+    border: 1px solid rgba(var(--border), 0.5);
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgb(var(--text-main));
+}
+
+.grid-class-actions button:hover {
+    background: rgb(var(--primary));
+    color: white;
+    border-color: rgb(var(--primary));
+}
+
+.grid-class-status {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #e74c3c;
+    background: rgba(255,255,255,0.8);
+    padding: 1px 3px;
+    border-radius: 2px;
+}

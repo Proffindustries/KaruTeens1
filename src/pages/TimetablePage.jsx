@@ -16,14 +16,22 @@ import {
     AlertCircle,
     Save,
     ArrowRight,
+    Grid,
+    List,
+    ShieldAlert,
+    Search as SearchIcon,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../hooks/useAuth';
+import TimetableGrid from '../components/Timetable/TimetableGrid';
+import AttendanceCheckIn from '../components/Timetable/AttendanceCheckIn';
+import ExamModeView from '../components/Timetable/ExamModeView';
+import LibrarySearch from '../components/Timetable/LibrarySearch';
 import '../styles/TimetablePage.css';
 
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const TimetablePage = () => {
     const { showToast } = useToast();
@@ -34,14 +42,18 @@ const TimetablePage = () => {
     const [selectedTimetable, setSelectedTimetable] = useState(null);
     const [selectedDay, setSelectedDay] = useState('Monday');
     const [isLoading, setIsLoading] = useState(true);
+    const [viewMode, setViewMode] = useState('list'); // list, grid, exam, library
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const [activeClass, setActiveClass] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form states
     const [newTimetableName, setNewTimetableName] = useState('');
     const [isTemplate, setIsTemplate] = useState(false);
+    const [isPublic, setIsPublic] = useState(false);
     const [newClass, setNewClass] = useState({
         title: '',
         course_code: '',
@@ -50,6 +62,8 @@ const TimetablePage = () => {
         end_time: '10:00',
         room: '',
         professor: '',
+        is_exam: false,
+        date: '',
     });
 
     const fetchTimetables = useCallback(async () => {
@@ -83,16 +97,56 @@ const TimetablePage = () => {
             const { data } = await api.post('/timetable', {
                 name: newTimetableName,
                 is_template: isTemplate,
+                is_public: isPublic,
                 classes: [],
             });
             showToast('Timetable created!', 'success');
             await fetchTimetables();
             setShowCreateModal(false);
             setNewTimetableName('');
+            setIsPublic(false);
         } catch (error) {
             showToast('Failed to create timetable', 'error');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleLogAttendance = async (status, notes) => {
+        if (!activeClass || !selectedTimetable) return;
+        try {
+            await api.post('/timetable/attendance', {
+                timetable_id: selectedTimetable._id,
+                class_id: activeClass.id,
+                date: new Date().toISOString().split('T')[0],
+                status,
+                notes,
+            });
+            showToast('Attendance logged!', 'success');
+            setShowAttendanceModal(false);
+        } catch (error) {
+            showToast('Failed to log attendance', 'error');
+        }
+    };
+
+    const handleReportIssue = async (classItem) => {
+        const report_type = window.prompt(
+            'What is wrong? (cancelled, room_changed, other)',
+            'cancelled',
+        );
+        if (!report_type) return;
+
+        try {
+            await api.post('/timetable/report', {
+                timetable_id: selectedTimetable._id,
+                class_id: classItem.id,
+                report_type,
+            });
+            showToast('Report submitted!', 'success');
+            // Refresh to see update reliability score
+            await fetchTimetables();
+        } catch (error) {
+            showToast('Failed to submit report', 'error');
         }
     };
 
@@ -293,78 +347,143 @@ const TimetablePage = () => {
                 </div>
             </div>
 
-            {/* Day Tabs */}
-            <div className="day-tabs">
-                {days.map((day) => {
-                    const count = getClassesForDay(day).length;
-                    return (
-                        <button
-                            key={day}
-                            className={`day-tab ${selectedDay === day ? 'active' : ''} ${day === today ? 'today' : ''}`}
-                            onClick={() => setSelectedDay(day)}
-                        >
-                            <span className="day-name">{day.slice(0, 3)}</span>
-                            <span className="day-classes">
-                                {count} {count === 1 ? 'class' : 'classes'}
-                            </span>
-                        </button>
-                    );
-                })}
+            {/* View Mode Switcher */}
+            <div className="view-mode-tabs">
+                <button
+                    className={`view-tab ${viewMode === 'list' ? 'active' : ''}`}
+                    onClick={() => setViewMode('list')}
+                >
+                    <List size={18} /> List
+                </button>
+                <button
+                    className={`view-tab ${viewMode === 'grid' ? 'active' : ''}`}
+                    onClick={() => setViewMode('grid')}
+                >
+                    <Grid size={18} /> Grid
+                </button>
+                <button
+                    className={`view-tab ${viewMode === 'exam' ? 'active' : ''}`}
+                    onClick={() => setViewMode('exam')}
+                >
+                    <ShieldAlert size={18} /> Exam Mode
+                </button>
+                <button
+                    className={`view-tab ${viewMode === 'library' ? 'active' : ''}`}
+                    onClick={() => setViewMode('library')}
+                >
+                    <SearchIcon size={18} /> Library
+                </button>
             </div>
 
-            {/* Classes List */}
-            <div className="classes-list">
-                {currentDayClasses.length === 0 ? (
-                    <div className="empty-day">
-                        <BookOpen size={48} />
-                        <p>No classes scheduled for {selectedDay}</p>
-                        {selectedTimetable && !selectedTimetable.is_template && (
-                            <button
-                                className="btn btn-outline"
-                                onClick={() => setShowAddModal(true)}
-                            >
-                                Add a class
-                            </button>
+            {viewMode === 'library' ? (
+                <LibrarySearch onFork={handleCopyTemplate} />
+            ) : viewMode === 'exam' ? (
+                <ExamModeView exams={(selectedTimetable?.classes || []).filter((c) => c.is_exam)} />
+            ) : viewMode === 'grid' ? (
+                <TimetableGrid
+                    classes={selectedTimetable?.classes || []}
+                    onClassClick={(cls) => {
+                        setActiveClass(cls);
+                    }}
+                    onAttendanceClick={(cls) => {
+                        setActiveClass(cls);
+                        setShowAttendanceModal(true);
+                    }}
+                    onReportClick={handleReportIssue}
+                />
+            ) : (
+                <>
+                    {/* Day Tabs */}
+                    <div className="day-tabs">
+                        {days.map((day) => {
+                            const count = getClassesForDay(day).length;
+                            return (
+                                <button
+                                    key={day}
+                                    className={`day-tab ${selectedDay === day ? 'active' : ''} ${day === today ? 'today' : ''}`}
+                                    onClick={() => setSelectedDay(day)}
+                                >
+                                    <span className="day-name">{day.slice(0, 3)}</span>
+                                    <span className="day-classes">
+                                        {count} {count === 1 ? 'class' : 'classes'}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Classes List */}
+                    <div className="classes-list">
+                        {currentDayClasses.length === 0 ? (
+                            <div className="empty-day">
+                                <BookOpen size={48} />
+                                <p>No classes scheduled for {selectedDay}</p>
+                                {selectedTimetable && !selectedTimetable.is_template && (
+                                    <button
+                                        className="btn btn-outline"
+                                        onClick={() => setShowAddModal(true)}
+                                    >
+                                        Add a class
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            currentDayClasses.map((cls) => (
+                                <div key={cls.id} className="class-card">
+                                    <div className="class-time">
+                                        <Clock size={16} />
+                                        <span>
+                                            {cls.start_time} - {cls.end_time}
+                                        </span>
+                                    </div>
+                                    <div className="class-info">
+                                        <h3>{cls.title}</h3>
+                                        {cls.course_code && (
+                                            <span className="class-code">{cls.course_code}</span>
+                                        )}
+                                        <div className="class-details">
+                                            {cls.room && (
+                                                <span>
+                                                    <MapPin size={14} /> {cls.room}
+                                                </span>
+                                            )}
+                                            {cls.professor && <span>👨‍🏫 {cls.professor}</span>}
+                                        </div>
+                                    </div>
+                                    {!selectedTimetable.is_template && (
+                                        <div className="class-actions">
+                                            <button
+                                                className="icon-btn"
+                                                title="Check-in"
+                                                onClick={() => {
+                                                    setActiveClass(cls);
+                                                    setShowAttendanceModal(true);
+                                                }}
+                                            >
+                                                <Check size={18} />
+                                            </button>
+                                            <button
+                                                className="icon-btn warning"
+                                                title="Report Issue"
+                                                onClick={() => handleReportIssue(cls)}
+                                            >
+                                                <AlertCircle size={18} />
+                                            </button>
+                                            <button
+                                                className="icon-btn danger"
+                                                title="Delete"
+                                                onClick={() => handleDeleteClass(cls.id)}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
                         )}
                     </div>
-                ) : (
-                    currentDayClasses.map((cls) => (
-                        <div key={cls.id} className="class-card">
-                            <div className="class-time">
-                                <Clock size={16} />
-                                <span>
-                                    {cls.start_time} - {cls.end_time}
-                                </span>
-                            </div>
-                            <div className="class-info">
-                                <h3>{cls.title}</h3>
-                                {cls.course_code && (
-                                    <span className="class-code">{cls.course_code}</span>
-                                )}
-                                <div className="class-details">
-                                    {cls.room && (
-                                        <span>
-                                            <MapPin size={14} /> {cls.room}
-                                        </span>
-                                    )}
-                                    {cls.professor && <span>👨‍🏫 {cls.professor}</span>}
-                                </div>
-                            </div>
-                            {!selectedTimetable.is_template && (
-                                <div className="class-actions">
-                                    <button
-                                        className="icon-btn danger"
-                                        title="Delete"
-                                        onClick={() => handleDeleteClass(cls.id)}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))
-                )}
-            </div>
+                </>
+            )}
 
             {/* Create Timetable Modal */}
             {showCreateModal && (
@@ -385,6 +504,17 @@ const TimetablePage = () => {
                                     value={newTimetableName}
                                     onChange={(e) => setNewTimetableName(e.target.value)}
                                 />
+                            </div>
+                            <div className="form-group flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="isPublic"
+                                    checked={isPublic}
+                                    onChange={(e) => setIsPublic(e.target.checked)}
+                                />
+                                <label htmlFor="isPublic">
+                                    Make Public (Other students can find and use this)
+                                </label>
                             </div>
                             {user?.role === 'admin' && (
                                 <div className="form-group flex items-center gap-2">
@@ -420,35 +550,50 @@ const TimetablePage = () => {
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
                     <div className="modal add-class-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Add Class to {selectedTimetable?.name}</h3>
+                            <h3>Add to {selectedTimetable?.name}</h3>
                             <button className="icon-btn" onClick={() => setShowAddModal(false)}>
                                 <X />
                             </button>
                         </div>
                         <div className="modal-body">
+                            <div className="form-group flex items-center gap-2 mb-4">
+                                <input
+                                    type="checkbox"
+                                    id="is_exam"
+                                    checked={newClass.is_exam}
+                                    onChange={(e) =>
+                                        setNewClass({ ...newClass, is_exam: e.target.checked })
+                                    }
+                                />
+                                <label htmlFor="is_exam">This is an Exam</label>
+                            </div>
                             <div className="form-group">
-                                <label>Course Title*</label>
+                                <label>{newClass.is_exam ? 'Exam Title*' : 'Course Title*'}</label>
                                 <input
                                     type="text"
-                                    placeholder="e.g. Calculus II"
+                                    placeholder={
+                                        newClass.is_exam
+                                            ? 'e.g. Calculus II Final'
+                                            : 'e.g. Calculus II'
+                                    }
                                     value={newClass.title}
                                     onChange={(e) =>
                                         setNewClass({ ...newClass, title: e.target.value })
                                     }
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Course Code</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. MATH102"
-                                    value={newClass.course_code}
-                                    onChange={(e) =>
-                                        setNewClass({ ...newClass, course_code: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="form-row">
+                            {newClass.is_exam ? (
+                                <div className="form-group">
+                                    <label>Exam Date*</label>
+                                    <input
+                                        type="date"
+                                        value={newClass.date}
+                                        onChange={(e) =>
+                                            setNewClass({ ...newClass, date: e.target.value })
+                                        }
+                                    />
+                                </div>
+                            ) : (
                                 <div className="form-group">
                                     <label>Day</label>
                                     <select
@@ -464,6 +609,8 @@ const TimetablePage = () => {
                                         ))}
                                     </select>
                                 </div>
+                            )}
+                            <div className="form-row">
                                 <div className="form-group">
                                     <label>Start Time</label>
                                     <input
@@ -523,6 +670,19 @@ const TimetablePage = () => {
                                 )}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Attendance Modal */}
+            {showAttendanceModal && activeClass && (
+                <div className="modal-overlay" onClick={() => setShowAttendanceModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <AttendanceCheckIn
+                            classItem={activeClass}
+                            onLog={handleLogAttendance}
+                            onCancel={() => setShowAttendanceModal(false)}
+                        />
                     </div>
                 </div>
             )}

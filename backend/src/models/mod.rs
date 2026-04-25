@@ -56,6 +56,6 @@ pub use social::{
     Group, GroupPost, HookupAlias, HookupMatch, Follow
 };
 
-pub use academic::{StudyRoom, Timetable, TimetableClass, RevisionMaterial, RevisionMaterialPurchase, StudyPlaylist, PlaylistItem, RoomMessage, RoomFile, PhysicalRoom, RoomBooking};
+pub use academic::{StudyRoom, Timetable, TimetableClass, RevisionMaterial, RevisionMaterialPurchase, StudyPlaylist, PlaylistItem, RoomMessage, RoomFile, PhysicalRoom, RoomBooking, AttendanceLog, CrowdReport};
 
 // Re-export commonly used types

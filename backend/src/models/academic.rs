@@ -24,6 +24,12 @@ pub struct TimetableClass {
     pub day: String,
     pub professor: Option<String>,
     pub course_code: Option<String>,
+    #[serde(default)]
+    pub is_exam: bool,
+    pub date: Option<String>, // ISO date for exams
+    #[serde(default)]
+    pub reliability_score: f64, // 0.0 to 1.0
+    pub last_report: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -33,8 +39,39 @@ pub struct Timetable {
     pub user_id: ObjectId,
     pub name: String,
     pub is_template: bool,
+    #[serde(default)]
+    pub is_public: bool,
+    #[serde(default)]
+    pub fork_count: i32,
+    pub school: Option<String>,
+    pub programme: Option<String>,
     pub classes: Vec<TimetableClass>,
     pub created_at: bson::DateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AttendanceLog {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    pub timetable_id: ObjectId,
+    pub class_id: String,
+    pub date: String, // ISO date
+    pub status: String, // attended, missed, partial
+    pub notes: Option<String>,
+    pub created_at: bson::DateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CrowdReport {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub timetable_id: ObjectId, // The original template/public timetable
+    pub class_id: String,
+    pub reporter_id: ObjectId,
+    pub report_type: String, // cancelled, room_changed, professor_changed, other
+    pub description: Option<String>,
+    pub timestamp: bson::DateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
