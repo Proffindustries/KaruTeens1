@@ -107,18 +107,9 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
     }, [localAd, hasTrackedImpression]);
 
     useEffect(() => {
-        // Load Adsterra script only for non-premium
+        // Load AdSense script (Adsterra was disabled because its invoke.js uses document.write 
+        // which wipes the DOM causing a white screen in React apps)
         if (!isPremium) {
-            const SCRIPT_ID = 'adsterra-invoke-js';
-            if (!document.getElementById(SCRIPT_ID)) {
-                const script = document.createElement('script');
-                script.id = SCRIPT_ID;
-                script.src =
-                    'https://pl29110148.profitablecpmratenetwork.com/3705d905f3bea18853eecd342950b3cb/invoke.js';
-                script.async = true;
-                script.dataset.cfasync = 'false';
-                document.body.appendChild(script);
-            }
             // Load AdSense script
             const ADSENSE_ID = 'adsbygoogle-js';
             if (!document.getElementById(ADSENSE_ID)) {
