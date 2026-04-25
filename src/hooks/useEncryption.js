@@ -8,33 +8,36 @@ export const useEncryption = () => {
     const [keys, setKeys] = useState(null);
     const { showToast } = useToast();
 
-    const initialize = useCallback(async () => {
-        try {
-            await encryptionService.init();
-            let localKeys = await encryptionService.getLocalKeys();
-
-            if (!localKeys) {
-                const publicKeyJwk = await encryptionService.generateAndStoreKeys();
-                await api.put('/users/update', { public_key: JSON.stringify(publicKeyJwk) });
-                localKeys = await encryptionService.getLocalKeys();
-            }
-
-            // Update state outside of the effect to avoid cascading renders
-            setKeys(localKeys);
-            setIsReady(true);
-        } catch (err) {
-            showToast('Encryption setup failed. Messages may not be secure.', 'error');
-            console.error('Encryption init failed:', err);
-            // Still update state on error so UI reflects the error state
-            setIsReady(false);
-        }
-    }, [showToast]);
-
     // Run initialization effect
     useEffect(() => {
-        initialize();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Empty deps to run once on mount
+        let mounted = true;
+        const runInit = async () => {
+            try {
+                await encryptionService.init();
+                let localKeys = await encryptionService.getLocalKeys();
+
+                if (!localKeys && encryptionService.db) {
+                    const publicKeyJwk = await encryptionService.generateAndStoreKeys();
+                    await api.put('/users/update', { public_key: JSON.stringify(publicKeyJwk) });
+                    localKeys = await encryptionService.getLocalKeys();
+                }
+
+                if (mounted && localKeys) {
+                    setKeys(localKeys);
+                    setIsReady(true);
+                }
+            } catch (err) {
+                console.error('Encryption init failed:', err);
+                if (mounted) {
+                    setIsReady(false);
+                }
+            }
+        };
+        runInit();
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const encryptForRecipient = useCallback(
         async (text, theirPublicKeyJson) => {

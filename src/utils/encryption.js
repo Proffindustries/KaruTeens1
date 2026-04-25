@@ -9,28 +9,43 @@ class EncryptionService {
 
     async init() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 1);
-            request.onupgradeneeded = (e) => {
-                e.target.result.createObjectStore(this.storeName);
-            };
-            request.onsuccess = () => {
-                this.db = request.result;
-                resolve();
-            };
-            request.onerror = () => reject(request.error);
+            try {
+                const request = indexedDB.open(this.dbName, 1);
+                request.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(this.storeName);
+                };
+                request.onsuccess = () => {
+                    this.db = request.result;
+                    resolve();
+                };
+                request.onerror = () => {
+                    console.warn('IndexedDB error:', request.error);
+                    reject(request.error);
+                };
+            } catch (err) {
+                console.warn('IndexedDB is not available in this environment:', err);
+                reject(err);
+            }
         });
     }
 
     async getLocalKeys() {
+        if (!this.db) return null;
         return new Promise((resolve) => {
-            const transaction = this.db.transaction(this.storeName, 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.get('main_keypair');
-            request.onsuccess = () => resolve(request.result);
+            try {
+                const transaction = this.db.transaction(this.storeName, 'readonly');
+                const store = transaction.objectStore(this.storeName);
+                const request = store.get('main_keypair');
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(null);
+            } catch (err) {
+                resolve(null);
+            }
         });
     }
 
     async generateAndStoreKeys() {
+        if (!this.db) return null;
         const keyPair = await window.crypto.subtle.generateKey(
             { name: 'ECDH', namedCurve: 'P-256' },
             true,
@@ -40,9 +55,13 @@ class EncryptionService {
         const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
         const privateKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.privateKey);
 
-        const transaction = this.db.transaction(this.storeName, 'readwrite');
-        const store = transaction.objectStore(this.storeName);
-        store.put({ publicKeyJwk, privateKeyJwk }, 'main_keypair');
+        try {
+            const transaction = this.db.transaction(this.storeName, 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            store.put({ publicKeyJwk, privateKeyJwk }, 'main_keypair');
+        } catch (err) {
+            console.warn('Failed to store keys in IndexedDB:', err);
+        }
 
         return publicKeyJwk;
     }
