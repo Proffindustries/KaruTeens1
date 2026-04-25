@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../context/ToastContext';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/TemplatesPage.css';
 
 const TEMPLATES = [
@@ -155,7 +156,7 @@ const TemplatesPage = () => {
         category: 'Study Tips',
     });
     const [personalTemplates, setPersonalTemplates] = useState(() => {
-        const saved = localStorage.getItem('personal_templates');
+        const saved = safeLocalStorage.getItem('personal_templates');
         return saved ? JSON.parse(saved) : [];
     });
     const { showToast } = useToast();
@@ -188,7 +189,7 @@ const TemplatesPage = () => {
         };
         const updated = [template, ...personalTemplates];
         setPersonalTemplates(updated);
-        localStorage.setItem('personal_templates', JSON.stringify(updated));
+        safeLocalStorage.setItem('personal_templates', JSON.stringify(updated));
         setShowCreateModal(false);
         setNewTemplate({ title: '', content: '', category: 'Study Tips' });
         showToast('Template created!', 'success');
@@ -197,7 +198,7 @@ const TemplatesPage = () => {
     const deleteTemplate = (id) => {
         const updated = personalTemplates.filter((t) => t.id !== id);
         setPersonalTemplates(updated);
-        localStorage.setItem('personal_templates', JSON.stringify(updated));
+        safeLocalStorage.setItem('personal_templates', JSON.stringify(updated));
         showToast('Template deleted', 'info');
     };
 

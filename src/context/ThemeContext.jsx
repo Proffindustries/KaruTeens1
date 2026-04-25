@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import safeLocalStorage from '../utils/storage';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
         // Check localStorage first
-        const saved = localStorage.getItem('theme');
+        const saved = safeLocalStorage.getItem('theme');
         if (saved) return saved;
 
         // Check system preference
@@ -20,7 +21,7 @@ export const ThemeProvider = ({ children }) => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
 
         // Save to localStorage
-        localStorage.setItem('theme', theme);
+        safeLocalStorage.setItem('theme', theme);
     }, [theme]);
 
     const toggleTheme = () => {

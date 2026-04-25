@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import safeLocalStorage from '../utils/storage.js';
 import {
     User,
     Users,
@@ -132,9 +133,9 @@ const OnboardingPage = () => {
                 interests: selectedInterests,
                 notification_settings: notifications,
             });
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const storedUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
             storedUser.onboarded = true;
-            localStorage.setItem('user', JSON.stringify(storedUser));
+            safeLocalStorage.setItem('user', JSON.stringify(storedUser));
             showToast('Welcome to KaruTeens! 🎉', 'success');
             navigate('/feed', { replace: true });
             window.location.reload();
@@ -172,9 +173,9 @@ const OnboardingPage = () => {
     const handleSkip = async () => {
         try {
             await updateProfile.mutateAsync({ onboarded: true });
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const storedUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
             storedUser.onboarded = true;
-            localStorage.setItem('user', JSON.stringify(storedUser));
+            safeLocalStorage.setItem('user', JSON.stringify(storedUser));
         } catch (err) {
             console.error('Skip onboarding failed:', err);
             return;
@@ -564,6 +565,11 @@ const OnboardingPage = () => {
                 </div>
             </div>
         </div>
+    );
+};
+
+export default OnboardingPage;
+>
     );
 };
 

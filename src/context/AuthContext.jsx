@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import api from '../api/client';
+import safeLocalStorage from '../utils/storage';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(() => localStorage.getItem('token'));
+    const [token, setToken] = useState(() => safeLocalStorage.getItem('token'));
     const [user, setUser] = useState(() => {
-        const userJson = localStorage.getItem('user');
+        const userJson = safeLocalStorage.getItem('user');
         return userJson ? JSON.parse(userJson) : null;
     });
 
@@ -17,18 +18,18 @@ export const AuthProvider = ({ children }) => {
     // Update localStorage when token changes
     useEffect(() => {
         if (token) {
-            localStorage.setItem('token', token);
+            safeLocalStorage.setItem('token', token);
         } else {
-            localStorage.removeItem('token');
+            safeLocalStorage.removeItem('token');
         }
     }, [token]);
 
     // Update localStorage when user changes
     useEffect(() => {
         if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
+            safeLocalStorage.setItem('user', JSON.stringify(user));
         } else {
-            localStorage.removeItem('user');
+            safeLocalStorage.removeItem('user');
         }
     }, [user]);
 
@@ -48,8 +49,8 @@ export const AuthProvider = ({ children }) => {
             setToken(null);
             setUser(null);
             // Explicitly clear to avoid edge cases
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            safeLocalStorage.removeItem('token');
+            safeLocalStorage.removeItem('user');
             logout.inProgress = false;
         }
     }, [token]);

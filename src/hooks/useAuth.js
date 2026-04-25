@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../context/ToastContext.jsx';
 import { useAuthContext } from '../context/AuthContext.jsx';
 import { STALE_TIMES } from '../utils/queryConfig';
+import safeLocalStorage from '../utils/storage.js';
 
 export const useAuth = () => {
     return useAuthContext();
@@ -94,7 +95,7 @@ export const useToggle2FA = () => {
         onSuccess: (data) => {
             showToast(data.message, 'success');
             queryClient.invalidateQueries(['profile']);
-            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
             currentUser.is_2fa_enabled = data.is_2fa_enabled;
             updateUser(currentUser);
         },
@@ -171,6 +172,10 @@ export const useUpdateProfile = () => {
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to update profile', 'error');
+        },
+    });
+};
+pdate profile', 'error');
         },
     });
 };

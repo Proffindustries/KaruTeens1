@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Avatar from '../components/Avatar.jsx';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/ConfessionsPage.css';
 
 const ConfessionsPage = () => {
@@ -82,7 +83,7 @@ const ConfessionsPage = () => {
 
     const handlePost = () => {
         if (!newConfession.trim()) return;
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
         setIsPosting(true);
         postMutation.mutate({
             content: newConfession,

@@ -3,6 +3,7 @@ import { Reply, ChevronDown, ChevronUp, Image, X, File, Trash2 } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from './Avatar.jsx';
 import { useDeleteComment } from '../hooks/useContent';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/Comment.css';
 
 const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
@@ -15,7 +16,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const replyInputRef = useRef(null);
 
     const { mutate: deleteComment, isPending: isDeleting } = useDeleteComment();
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
 
     const handleReplyClick = useCallback(() => {
         setIsReplying(true);

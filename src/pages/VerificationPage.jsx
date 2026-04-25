@@ -3,6 +3,7 @@ import { CheckCircle, Shield, Loader, Smartphone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/Auth.css';
 
 const VerificationPage = () => {
@@ -64,9 +65,9 @@ const VerificationPage = () => {
             showToast(data.message, 'success');
 
             // Update local storage user object
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(safeLocalStorage.getItem('user'));
             if (user) {
-                localStorage.setItem('user', JSON.stringify({ ...user, is_verified: true }));
+                safeLocalStorage.setItem('user', JSON.stringify({ ...user, is_verified: true }));
             }
         } catch (err) {
             showToast(err.response?.data?.error || 'Failed to verify account', 'error');
@@ -86,9 +87,9 @@ const VerificationPage = () => {
                         setStep('complete');
                         clearInterval(interval);
                         // Refresh user data if needed?
-                        const user = JSON.parse(localStorage.getItem('user'));
+                        const user = JSON.parse(safeLocalStorage.getItem('user'));
                         if (user) {
-                            localStorage.setItem(
+                            safeLocalStorage.setItem(
                                 'user',
                                 JSON.stringify({ ...user, is_verified: true }),
                             );

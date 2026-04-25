@@ -19,10 +19,11 @@ import {
     useUpdateUserRole,
 } from '../../hooks/useAdmin';
 import { useToast } from '../../context/ToastContext';
+import safeLocalStorage from '../../utils/storage.js';
 
 const AdminPage = () => {
     const [activeTab, setActiveTab] = useState('overview');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
 
     // Check admin access
     if (user.role !== 'admin' && user.role !== 'superadmin') {

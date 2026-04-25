@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, Star, Zap, Crown, Loader, Smartphone } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/DonatePage.css';
 
 const PremiumPage = () => {
@@ -55,9 +56,9 @@ const PremiumPage = () => {
                         setStep('complete');
                         clearInterval(interval);
                         // Update local user state
-                        const user = JSON.parse(localStorage.getItem('user'));
+                        const user = JSON.parse(safeLocalStorage.getItem('user'));
                         if (user) {
-                            localStorage.setItem(
+                            safeLocalStorage.setItem(
                                 'user',
                                 JSON.stringify({ ...user, is_premium: true, role: 'premium' }),
                             );

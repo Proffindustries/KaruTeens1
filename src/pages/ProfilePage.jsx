@@ -24,6 +24,7 @@ import { motion } from 'framer-motion';
 import PostCard from '../components/PostCard.jsx';
 import { PostSkeleton, ProfileSkeleton } from '../components/Skeleton.jsx';
 import AdComponent from '../components/AdComponent.jsx';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/ProfilePage.css';
 
 import { useParams } from 'react-router-dom';
@@ -37,7 +38,7 @@ import { useInfiniteUserContent } from '../hooks/useInfiniteQueries.ts';
 
 const ProfilePage = () => {
     const { username: urlUsername } = useParams();
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
     const targetUsername = urlUsername || currentUser.username;
 
     const { data: profileRes, isLoading, error } = useProfile(targetUsername);

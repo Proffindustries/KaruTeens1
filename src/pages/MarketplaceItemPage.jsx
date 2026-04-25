@@ -10,6 +10,7 @@ import {
     useDeleteItem,
 } from '../hooks/useMarketplace.js';
 import Avatar from '../components/Avatar.jsx';
+import safeLocalStorage from '../utils/storage.js';
 
 const MarketplaceItemPage = () => {
     const { itemId } = useParams();
@@ -20,7 +21,7 @@ const MarketplaceItemPage = () => {
     const { mutate: markSold, isPending: isMarkingSold } = useMarkSold();
     const { mutate: boostItem, isPending: isBoosting } = useBoostItem();
     const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
 
     if (isLoading) return <div className="container item-detail-page">Loading item details...</div>;
     if (error)

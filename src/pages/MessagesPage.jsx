@@ -71,6 +71,7 @@ import { useEncryption } from '../hooks/useEncryption.js';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
+import safeLocalStorage from '../utils/storage.js';
 
 const COMMON_EMOJIS = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -324,7 +325,7 @@ const MessagesPage = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [showLocationMenu, setShowLocationMenu] = useState(false);
     const [containerHeight, setContainerHeight] = useState(window.innerHeight - 250);
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -384,7 +385,7 @@ const MessagesPage = () => {
     const { isReady: isEncryptionReady, encryptForRecipient, decryptFromSender } = useEncryption();
 
     // WebRTC Integration
-    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user'));
     const handleWebRTCMessage = useCallback(
         (type, data) => {
             // Ignore messages not intended for this user (multi-tab safety)

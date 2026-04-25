@@ -7,6 +7,7 @@ import { useCreateItem } from '../hooks/useMarketplace.js';
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useUpload } from '../context/UploadContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import safeLocalStorage from '../utils/storage.js';
 
 const CreateItemModal = React.memo(({ isOpen, onClose }) => {
     const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
     const { uploadImage, isUploading } = useMediaUpload();
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { showToast } = useToast();
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
 
     // Reset when closed
     React.useEffect(() => {

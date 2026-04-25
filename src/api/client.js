@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { handleApiError, parseApiError } from '../utils/errorHandling.js';
+import safeLocalStorage from '../utils/storage.js';
 
 // Recursively flattens MongoDB $oid objects into strings
 function flattenOid(obj) {
@@ -44,7 +45,7 @@ api.interceptors.request.use(
             if (config.url.startsWith('//')) config.url = config.url.substring(1);
         }
 
-        const token = localStorage.getItem('token');
+        const token = safeLocalStorage.getItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }

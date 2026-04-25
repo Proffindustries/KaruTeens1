@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar.jsx';
 import api from '../api/client';
 import { LeaderboardSkeleton } from '../components/Skeleton.jsx';
+import safeLocalStorage from '../utils/storage.js';
 import '../styles/LeaderboardsPage.css';
 
 const LeaderboardsPage = () => {
@@ -24,7 +25,7 @@ const LeaderboardsPage = () => {
         helpful: [],
     });
     const [isLoading, setIsLoading] = useState(false);
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
 
     const tabs = [
         { id: 'points', label: 'Top Points', icon: <Star size={18} /> },

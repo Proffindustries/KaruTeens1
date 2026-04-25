@@ -4,6 +4,8 @@ import Avatar from './Avatar.jsx';
 import { useMediaUpload } from '../hooks/useMedia';
 import { useUpload } from '../context/UploadContext';
 import { useToast } from '../context/ToastContext';
+import safeLocalStorage from '../utils/storage.js';
+
 const GroupInfoModal = ({
     showGroupInfoModal,
     selectedChat,
@@ -30,7 +32,7 @@ const GroupInfoModal = ({
 
     if (!showGroupInfoModal || !selectedChat) return null;
 
-    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user'));
     const isCurrentUserAdmin = selectedChat.admins?.includes(currentUser?.id);
 
     return (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth.js';
 import api from '../api/client';
+import safeLocalStorage from '../utils/storage.js';
 
 /**
  * AdComponent for Adsterra, AdSense, and Local Ad Integration.
@@ -19,7 +20,7 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
         const checkFrequency = () => {
             if (!localAd) return;
 
-            const lastShown = localStorage.getItem(`ad_last_shown_${localAd.id}`);
+            const lastShown = safeLocalStorage.getItem(`ad_last_shown_${localAd.id}`);
             if (lastShown) {
                 const lastDate = new Date(parseInt(lastShown));
                 const now = new Date();
@@ -49,7 +50,7 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
     const trackAdEvent = async (creativeId, eventType) => {
         try {
             if (eventType === 'impression') {
-                localStorage.setItem(`ad_last_shown_${creativeId}`, Date.now().toString());
+                safeLocalStorage.setItem(`ad_last_shown_${creativeId}`, Date.now().toString());
             }
             await api.post('/ads/tracker', {
                 creative_id: creativeId,
@@ -132,6 +133,17 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
             }
         }
     }, [isPremium]);
+
+    // Dedicated useEffect for pushing to adsbygoogle
+    useEffect(() => {
+        if (!isPremium && !localAd && shouldShow) {
+            try {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (err) {
+                // AdSense might fail to push if script is blocked, ignore silently
+            }
+        }
+    }, [isPremium, localAd, shouldShow]);
 
     // If premium and no local ads, hide the component entirely to provide a clean experience
     if (isPremium && (!localAd || !shouldShow)) return null;
@@ -304,7 +316,6 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                                 data-ad-format="auto"
                                 data-full-width-responsive="true"
                             ></ins>
-                            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
                         </div>
                     </div>
                 )

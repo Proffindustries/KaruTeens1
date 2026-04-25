@@ -37,6 +37,7 @@ import CustomAudioPlayer from './CustomAudioPlayer.jsx';
 import Comment from './Comment.jsx';
 import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
+import safeLocalStorage from '../utils/storage.js';
 
 // Helper function for Cloudinary optimization
 const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800') => {
@@ -91,7 +92,7 @@ const PostCard = React.memo(({ post }) => {
     const [isHidden, setIsHidden] = useState(false);
     const [isNsfwRevealed, setIsNsfwRevealed] = useState(false);
     const { showToast } = useToast();
-    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
     const fileInputRef = useRef(null);
     const commentInputRef = useRef(null);
 
