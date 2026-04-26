@@ -21,6 +21,7 @@ import {
     List,
     ShieldAlert,
     Search as SearchIcon,
+    FileText,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
