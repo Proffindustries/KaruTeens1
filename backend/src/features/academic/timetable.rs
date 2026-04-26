@@ -337,6 +337,49 @@ pub async fn delete_timetable_handler(
     Ok(StatusCode::OK)
 }
 
+pub async fn add_lesson_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(id): Path<String>,
+    Json(payload): Json<TimetableClass>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+    let collection = state.mongo.collection::<Timetable>("timetables");
+
+    let result = collection.update_one(
+        doc! { "_id": oid, "user_id": user.user_id },
+        doc! { "$push": { "classes": mongodb::bson::to_bson(&payload).unwrap() } },
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    if result.matched_count == 0 {
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Timetable not found"}))));
+    }
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn remove_lesson_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path((id, class_id)): Path<(String, String)>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+    let collection = state.mongo.collection::<Timetable>("timetables");
+
+    let result = collection.update_one(
+        doc! { "_id": oid, "user_id": user.user_id },
+        doc! { "$pull": { "classes": { "id": class_id } } },
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    if result.matched_count == 0 {
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Timetable not found"}))));
+    }
+
+    Ok(StatusCode::OK)
+}
+
 pub fn timetable_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(list_timetables_handler).post(create_timetable_handler))
@@ -345,4 +388,6 @@ pub fn timetable_routes() -> Router<Arc<AppState>> {
         .route("/report", post(submit_report_handler))
         .route("/:id", get(get_timetable_handler).put(update_timetable_handler).delete(delete_timetable_handler))
         .route("/:id/copy", post(copy_template_handler))
+        .route("/:id/classes", post(add_lesson_handler))
+        .route("/:id/classes/:class_id", delete(remove_lesson_handler))
 }

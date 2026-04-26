@@ -107,7 +107,7 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
     }, [localAd, hasTrackedImpression]);
 
     useEffect(() => {
-        // Load AdSense script (Adsterra was disabled because its invoke.js uses document.write 
+        // Load AdSense script (Adsterra was disabled because its invoke.js uses document.write
         // which wipes the DOM causing a white screen in React apps)
         if (!isPremium) {
             // Load AdSense script

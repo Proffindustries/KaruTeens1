@@ -1,3 +1,4 @@
+import { parseICS } from '../utils/icsParser';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Calendar,
@@ -164,24 +165,15 @@ const TimetablePage = () => {
     };
 
     const handleAddClass = async () => {
-        if (!newClass.title || !newClass.start_time) {
-            showToast('Please fill required fields', 'error');
-            return;
-        }
         if (!selectedTimetable) return;
-
         setIsSubmitting(true);
-        const updatedClasses = [
-            ...(selectedTimetable.classes || []),
-            { ...newClass, id: Math.random().toString(36).substr(2, 9) },
-        ];
-
         try {
-            await api.put(`/timetable/${selectedTimetable._id}`, {
-                classes: updatedClasses,
+            await api.post(`/timetable/${selectedTimetable._id}/classes`, {
+                ...newClass,
+                id: Date.now().toString(),
             });
-            showToast('Class added!', 'success');
-            setSelectedTimetable({ ...selectedTimetable, classes: updatedClasses });
+            showToast('Lesson added!', 'success');
+            await fetchTimetables();
             setShowAddModal(false);
             setNewClass({
                 title: '',
@@ -191,9 +183,11 @@ const TimetablePage = () => {
                 end_time: '10:00',
                 room: '',
                 professor: '',
+                is_exam: false,
+                date: '',
             });
-        } catch (error) {
-            showToast('Failed to add class', 'error');
+        } catch (e) {
+            showToast('Failed to add lesson', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -201,16 +195,28 @@ const TimetablePage = () => {
 
     const handleDeleteClass = async (classId) => {
         if (!selectedTimetable) return;
-        const updatedClasses = selectedTimetable.classes.filter((c) => c.id !== classId);
         try {
-            await api.put(`/timetable/${selectedTimetable._id}`, {
-                classes: updatedClasses,
-            });
-            setSelectedTimetable({ ...selectedTimetable, classes: updatedClasses });
-            showToast('Class removed', 'success');
-        } catch (error) {
-            showToast('Failed to remove class', 'error');
+            await api.delete(`/timetable/${selectedTimetable._id}/classes/${classId}`);
+            showToast('Lesson removed', 'success');
+            await fetchTimetables();
+        } catch (e) {
+            showToast('Failed to remove lesson', 'error');
         }
+    };
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file || !selectedTimetable) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const events = parseICS(event.target.result);
+            for (const cls of events) {
+                await api.post(`/timetable/${selectedTimetable._id}/classes`, cls);
+            }
+            await fetchTimetables();
+            showToast('Timetable imported!', 'success');
+        };
+        reader.readAsText(file);
     };
 
     const handleDeleteTimetable = async (timetableId) => {
@@ -264,9 +270,23 @@ const TimetablePage = () => {
                         <Layout size={18} /> New Timetable
                     </button>
                     {selectedTimetable && !selectedTimetable.is_template && (
-                        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                            <Plus size={18} /> Add Class
-                        </button>
+                        <>
+                            <label className="btn btn-outline" style={{ cursor: 'pointer' }}>
+                                <FileText size={18} /> Import ICS
+                                <input
+                                    type="file"
+                                    accept=".ics"
+                                    onChange={handleFileUpload}
+                                    hidden
+                                />
+                            </label>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => setShowAddModal(true)}
+                            >
+                                <Plus size={18} /> Add Class
+                            </button>
+                        </>
                     )}
                 </div>
             </div>

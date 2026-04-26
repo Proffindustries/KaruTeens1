@@ -57,12 +57,13 @@ export const WebsocketProvider = ({ children }) => {
         const host = window.location.hostname;
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         // In production, you likely don't want port 3000 appended if using standard SSL port
-        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isProd =
+            window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
         const wsPort = isProd ? '' : ':3000';
         const wsUrl = `${protocol}//${host}${wsPort}/ws`;
 
         if (ws.current) ws.current.close();
-        
+
         try {
             ws.current = new WebSocket(wsUrl);
         } catch (err) {
