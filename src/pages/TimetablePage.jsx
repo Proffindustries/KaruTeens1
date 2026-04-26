@@ -31,6 +31,7 @@ import TimetableGrid from '../components/Timetable/TimetableGrid';
 import AttendanceCheckIn from '../components/Timetable/AttendanceCheckIn';
 import ExamModeView from '../components/Timetable/ExamModeView';
 import LibrarySearch from '../components/Timetable/LibrarySearch';
+import ClassDetailsModal from '../components/Timetable/ClassDetailsModal';
 import '../styles/TimetablePage.css';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -49,8 +50,10 @@ const TimetablePage = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const [showClassDetailsModal, setShowClassDetailsModal] = useState(false);
     const [activeClass, setActiveClass] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [notifiedClasses, setNotifiedClasses] = useState(new Set());
 
     // Form states
     const [newTimetableName, setNewTimetableName] = useState('');
@@ -88,6 +91,49 @@ const TimetablePage = () => {
     useEffect(() => {
         fetchTimetables();
     }, [fetchTimetables]);
+
+    // Push Notifications / Class Alarms (Check every minute)
+    useEffect(() => {
+        if (!selectedTimetable) return;
+        const interval = setInterval(() => {
+            const now = new Date();
+            const currentDayString = days[now.getDay() - 1] || 'Sunday';
+            const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const classes = Array.isArray(selectedTimetable.classes) ? selectedTimetable.classes : [];
+            classes.forEach(cls => {
+                if (cls.day === currentDayString) {
+                    const [startH, startM] = cls.start_time.split(':').map(Number);
+                    const classTimeParams = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0).getTime();
+                    const nowTimeParams = now.getTime();
+                    
+                    const diffMins = Math.round((classTimeParams - nowTimeParams) / 60000);
+                    
+                    // Alert 15 minutes before
+                    if (diffMins === 15 && !notifiedClasses.has(cls.id)) {
+                        showToast(`⏳ Up next: ${cls.title} in ${cls.room || 'TBA'} at ${cls.start_time}`, 'info');
+                        
+                        // Use native Notifications if permitted
+                        if (Notification.permission === 'granted') {
+                            new Notification(`Up Next: ${cls.title}`, {
+                                body: `Starts in 15 mins at ${cls.start_time} - Room ${cls.room || 'TBA'}`,
+                                icon: '/favicon.ico'
+                            });
+                        }
+                        
+                        setNotifiedClasses(prev => new Set(prev).add(cls.id));
+                    }
+                }
+            });
+        }, 60000); // run every minute
+        
+        // Request permission on mount
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        return () => clearInterval(interval);
+    }, [selectedTimetable, notifiedClasses, showToast]);
 
     const handleCreateTimetable = async () => {
         if (!newTimetableName.trim()) {
@@ -194,6 +240,19 @@ const TimetablePage = () => {
         }
     };
 
+    const handleUpdateClassLocal = (updatedClass) => {
+        // Optimistic UI update for tasks
+        const updatedTimetables = timetables.map(t => {
+            if (t._id === selectedTimetable._id) {
+                const updatedClasses = t.classes.map(c => c.id === updatedClass.id ? updatedClass : c);
+                return { ...t, classes: updatedClasses };
+            }
+            return t;
+        });
+        setTimetables(updatedTimetables);
+        setSelectedTimetable(updatedTimetables.find(t => t._id === selectedTimetable._id));
+    };
+
     const handleDeleteClass = async (classId) => {
         if (!selectedTimetable) return;
         try {
@@ -249,6 +308,23 @@ const TimetablePage = () => {
     };
 
     const currentDayClasses = getClassesForDay(selectedDay);
+
+    const hasClash = React.useMemo(() => {
+        if (!selectedTimetable || newClass.is_exam) return null;
+        const dayClasses = getClassesForDay(newClass.day);
+        
+        const newStart = parseInt(newClass.start_time.replace(':', ''));
+        const newEnd = parseInt(newClass.end_time.replace(':', ''));
+        
+        const clash = dayClasses.find(c => {
+            const s = parseInt(c.start_time.replace(':', ''));
+            const e = parseInt(c.end_time.replace(':', ''));
+            // Overlaps if it starts before the existing class ends AND ends after the existing class starts
+            return newStart < e && newEnd > s;
+        });
+        
+        return clash;
+    }, [selectedTimetable, newClass]);
 
     if (isLoading)
         return (
@@ -405,6 +481,7 @@ const TimetablePage = () => {
                     classes={selectedTimetable?.classes || []}
                     onClassClick={(cls) => {
                         setActiveClass(cls);
+                        setShowClassDetailsModal(true);
                     }}
                     onAttendanceClick={(cls) => {
                         setActiveClass(cls);
@@ -449,8 +526,10 @@ const TimetablePage = () => {
                                 )}
                             </div>
                         ) : (
-                            currentDayClasses.map((cls) => (
-                                <div key={cls.id} className="class-card">
+                            currentDayClasses.map((cls) => {
+                                const activeTasks = cls.tasks ? cls.tasks.filter(t => !t.completed).length : 0;
+                                return (
+                                <div key={cls.id} className="class-card" style={{ cursor: 'pointer' }} onClick={() => { setActiveClass(cls); setShowClassDetailsModal(true); }}>
                                     <div className="class-time">
                                         <Clock size={16} />
                                         <span>
@@ -459,9 +538,16 @@ const TimetablePage = () => {
                                     </div>
                                     <div className="class-info">
                                         <h3>{cls.title}</h3>
-                                        {cls.course_code && (
-                                            <span className="class-code">{cls.course_code}</span>
-                                        )}
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            {cls.course_code && (
+                                                <span className="class-code">{cls.course_code}</span>
+                                            )}
+                                            {activeTasks > 0 && (
+                                                <span className="badge warning" style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' }}>
+                                                    {activeTasks} tasks due
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="class-details">
                                             {cls.room && (
                                                 <span>
@@ -476,7 +562,8 @@ const TimetablePage = () => {
                                             <button
                                                 className="icon-btn"
                                                 title="Check-in"
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setActiveClass(cls);
                                                     setShowAttendanceModal(true);
                                                 }}
@@ -486,21 +573,21 @@ const TimetablePage = () => {
                                             <button
                                                 className="icon-btn warning"
                                                 title="Report Issue"
-                                                onClick={() => handleReportIssue(cls)}
+                                                onClick={(e) => { e.stopPropagation(); handleReportIssue(cls); }}
                                             >
                                                 <AlertCircle size={18} />
                                             </button>
                                             <button
                                                 className="icon-btn danger"
                                                 title="Delete"
-                                                onClick={() => handleDeleteClass(cls.id)}
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }}
                                             >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
                                     )}
                                 </div>
-                            ))
+                            )})
                         )}
                     </div>
                 </>
@@ -653,6 +740,14 @@ const TimetablePage = () => {
                                     />
                                 </div>
                             </div>
+                            
+                            {hasClash && (
+                                <div className="info-alert danger" style={{ background: 'rgba(var(--danger), 0.1)', color: 'rgb(var(--danger))', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <AlertCircle size={16} /> 
+                                    <strong>Time Conflict:</strong> This overlaps with {hasClash.title} ({hasClash.start_time} - {hasClash.end_time}).
+                                </div>
+                            )}
+
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Room</label>
@@ -706,6 +801,15 @@ const TimetablePage = () => {
                         />
                     </div>
                 </div>
+            )}
+
+            {/* Class Details / Tasks / Social Modal */}
+            {showClassDetailsModal && activeClass && (
+                <ClassDetailsModal
+                    classItem={activeClass}
+                    onClose={() => setShowClassDetailsModal(false)}
+                    onUpdate={handleUpdateClassLocal}
+                />
             )}
         </div>
     );
