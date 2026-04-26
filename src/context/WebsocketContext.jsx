@@ -55,11 +55,20 @@ export const WebsocketProvider = ({ children }) => {
     const connect = useCallback(() => {
         if (!token) return;
         const host = window.location.hostname;
-        const wsPort = '3000';
-        const wsUrl = `ws://${host}:${wsPort}/ws`;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // In production, you likely don't want port 3000 appended if using standard SSL port
+        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const wsPort = isProd ? '' : ':3000';
+        const wsUrl = `${protocol}//${host}${wsPort}/ws`;
 
         if (ws.current) ws.current.close();
-        ws.current = new WebSocket(wsUrl);
+        
+        try {
+            ws.current = new WebSocket(wsUrl);
+        } catch (err) {
+            console.error('Failed to create WebSocket:', err);
+            return;
+        }
 
         ws.current.onopen = () => {
             console.log('WS Connected');
