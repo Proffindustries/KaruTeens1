@@ -232,17 +232,20 @@ const DecryptedText = ({
     decryptFromSender,
     isDeleted,
 }) => {
-    const [decrypted, setDecrypted] = useState(content);
+    const [decrypted, setDecrypted] = useState(null);
     const [isDecrypting, setIsDecrypting] = useState(!!encryptedContent && !isDeleted);
 
     useEffect(() => {
         if (!isDeleted && encryptedContent && iv && participantPublicKey) {
             decryptFromSender(encryptedContent, iv, participantPublicKey).then((text) => {
-                setDecrypted(text);
+                setDecrypted(text || content); // Fallback to original content if decryption returns null
                 setIsDecrypting(false);
             });
+        } else {
+            setDecrypted(content);
+            setIsDecrypting(false);
         }
-    }, [encryptedContent, iv, participantPublicKey, isDeleted, decryptFromSender]);
+    }, [encryptedContent, iv, participantPublicKey, isDeleted, decryptFromSender, content]);
 
     if (isDeleted)
         return (
