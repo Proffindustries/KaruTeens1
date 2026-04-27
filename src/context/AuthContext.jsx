@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import api from '../api/client';
 import safeLocalStorage from '../utils/storage';
+import { useAbly } from './AblyContext';
 
 const AuthContext = createContext(null);
 
@@ -11,6 +12,9 @@ export const AuthProvider = ({ children }) => {
         const userJson = safeLocalStorage.getItem('user');
         return userJson ? JSON.parse(userJson) : null;
     });
+    
+    // Access Ably via useAbly hook
+    const { ably } = useAbly();
 
     // Derive isAuthenticated from token to avoid state sync issues
     const isAuthenticatedDerived = !!token;
@@ -39,6 +43,11 @@ export const AuthProvider = ({ children }) => {
         logout.inProgress = true;
 
         try {
+            // Close real-time connection first
+            if (ably) {
+                ably.connection.close();
+            }
+            
             // Only attempt logout if we have a token
             if (token) {
                 await api.post('/auth/logout');
@@ -53,7 +62,7 @@ export const AuthProvider = ({ children }) => {
             safeLocalStorage.removeItem('user');
             logout.inProgress = false;
         }
-    }, [token]);
+    }, [token, ably]);
 
     // Check token expiration and logout if expired
     useEffect(() => {
