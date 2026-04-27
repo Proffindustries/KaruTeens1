@@ -11,9 +11,6 @@ export const AuthProvider = ({ children }) => {
         const userJson = safeLocalStorage.getItem('user');
         return userJson ? JSON.parse(userJson) : null;
     });
-    
-    // Access Ably via useAbly hook
-    const { ably } = useAbly();
 
     // Derive isAuthenticated from token to avoid state sync issues
     const isAuthenticatedDerived = !!token;
