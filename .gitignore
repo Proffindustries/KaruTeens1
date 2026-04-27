@@ -33,3 +33,5 @@ backend/.env
 # Build
 dist/
 dist-ssr/
+.vercel
+.env*.local
