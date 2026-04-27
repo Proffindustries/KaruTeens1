@@ -249,24 +249,24 @@ const CreatePostModal = React.memo(
             );
         };
 
-        if (!isOpen) return null;
-
         return (
             <AnimatePresence>
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="modal-overlay"
-                    onClick={onClose}
-                >
+                {isOpen && (
                     <motion.div
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
-                        className="modal-content"
-                        onClick={(e) => e.stopPropagation()}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="modal-overlay"
+                        onClick={onClose}
                     >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+
                         <div className="modal-header">
                             <h3>Create Post</h3>
                             <button className="close-btn" onClick={onClose}>

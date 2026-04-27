@@ -801,7 +801,7 @@ pub async fn get_for_you_feed_handler(
     State(state): State<Arc<AppState>>,
     user: Option<AuthUser>,
     axum::extract::Query(query): axum::extract::Query<FeedQuery>,
-) -> AppResult<(StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     let limit = query.limit.unwrap_or(20) as i64;
     
     if let Some(ref auth_user) = user {
@@ -886,22 +886,22 @@ pub async fn get_for_you_feed_handler(
             if !posts.is_empty() {
                 let post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
                 
-                return Ok((StatusCode::OK, Json(json!({
-                    "posts": post_responses,
-                    "next_cursor": if all_posts.len() > limit as usize { post_responses.last().map(|p| p.id.clone()) } else { None }
-                }))));
+                return Ok((StatusCode::OK, Json(FeedResponse {
+                    posts: post_responses.clone(),
+                    next_cursor: if all_posts.len() > limit as usize { post_responses.last().map(|p| p.id.clone()) } else { None }
+                })).into_response());
             }
         }
     }
     
-    get_trending_posts_handler(State(state), user, axum::extract::Query(query)).await
+    get_trending_posts_handler(State(state), user, axum::extract::Query(query)).await.map(|r| r.into_response())
 }
 
 pub async fn get_trending_posts_handler(
     State(state): State<Arc<AppState>>,
     user: Option<AuthUser>,
     axum::extract::Query(query): axum::extract::Query<FeedQuery>,
-) -> AppResult<(StatusCode, Json<serde_json::Value>)> {
+) -> AppResult<impl IntoResponse> {
     let limit = query.limit.unwrap_or(20) as i64;
     let seventy_two_hours_ago = chrono::Utc::now() - chrono::Duration::hours(72);
     
@@ -944,10 +944,10 @@ pub async fn get_trending_posts_handler(
     
     let post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
     
-    Ok((StatusCode::OK, Json(json!(FeedResponse {
+    Ok((StatusCode::OK, Json(FeedResponse {
         posts: post_responses.clone(),
         next_cursor: if has_more { post_responses.last().map(|p| p.id.clone()) } else { None }
-    }))))
+    })))
 }
 
 pub async fn report_post_handler(

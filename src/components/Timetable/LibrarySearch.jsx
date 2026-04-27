@@ -59,8 +59,8 @@ const LibrarySearch = ({ onFork }) => {
                                 </span>
                             </div>
                         </div>
-                        <button className="btn btn-outline btn-sm" onClick={() => onFork(tt._id)}>
-                            <Copy size={14} /> Use Template
+                        <button className="btn btn-primary btn-sm" onClick={() => onFork(tt._id)}>
+                            <Copy size={14} /> Copy to My Timetables
                         </button>
                     </div>
                 ))}

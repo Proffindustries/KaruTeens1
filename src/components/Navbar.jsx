@@ -174,8 +174,8 @@ const Navbar = React.memo(() => {
                                 <Link to="/settings" className="settings-btn" title="Settings">
                                     <SettingsIcon size={20} />
                                 </Link>
-                                <Link to={`/profile/${user.username}`}>
-                                    <Avatar src={user.avatar_url} name={user.username} size="sm" />
+                                <Link to={`/profile/${user?.username}`}>
+                                    <Avatar src={user?.avatar_url} name={user?.username} size="sm" />
                                 </Link>
                                 <button
                                     onClick={logout}
@@ -270,9 +270,9 @@ const Navbar = React.memo(() => {
                                     padding: '0 1rem',
                                 }}
                             >
-                                <Avatar src={user.avatar_url} name={user.username} size="md" />
+                                <Avatar src={user?.avatar_url} name={user?.username} size="md" />
                                 <span style={{ fontWeight: '600', color: 'rgb(var(--text-main))' }}>
-                                    {user.username}
+                                    {user?.username}
                                 </span>
                             </div>
                             <button

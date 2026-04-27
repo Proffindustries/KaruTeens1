@@ -212,10 +212,31 @@ const TimetablePage = () => {
     };
 
     const handleAddClass = async () => {
-        if (!selectedTimetable) return;
+        // If current is template, we can't add to it directly
+        let targetId = selectedTimetable?._id;
+        
+        if (!selectedTimetable) {
+            showToast('Please select or create a timetable first', 'error');
+            return;
+        }
+
+        if (selectedTimetable.is_template) {
+            // Find a personal one or ask to create
+            const personal = timetables.find(t => !t.is_template);
+            if (personal) {
+                targetId = personal._id;
+                showToast(`Adding to your personal timetable: ${personal.name}`, 'info');
+            } else {
+                showToast('Please create a personal timetable before adding lessons', 'error');
+                setShowCreateModal(true);
+                setShowAddModal(false);
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
-            await api.post(`/timetable/${selectedTimetable._id}/classes`, {
+            await api.post(`/timetable/${targetId}/classes`, {
                 ...newClass,
                 id: Date.now().toString(),
             });
@@ -346,6 +367,9 @@ const TimetablePage = () => {
                     <button className="btn btn-outline" onClick={() => setShowCreateModal(true)}>
                         <Layout size={18} /> New Timetable
                     </button>
+                    <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+                        <Plus size={18} /> Add Lesson
+                    </button>
                     {selectedTimetable && !selectedTimetable.is_template && (
                         <>
                             <label className="btn btn-outline" style={{ cursor: 'pointer' }}>
@@ -357,12 +381,6 @@ const TimetablePage = () => {
                                     hidden
                                 />
                             </label>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => setShowAddModal(true)}
-                            >
-                                <Plus size={18} /> Add Class
-                            </button>
                         </>
                     )}
                 </div>
@@ -392,7 +410,7 @@ const TimetablePage = () => {
                                             handleCopyTemplate(t._id);
                                         }}
                                     >
-                                        <Plus size={12} /> Use
+                                        <Copy size={12} /> Copy
                                     </button>
                                 ) : (
                                     <button

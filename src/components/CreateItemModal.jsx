@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Coins, Tag, FileText, Image as ImageIcon, Shield, Check } from 'lucide-react';
+import { X, Upload, Coins, Tag, FileText, Image as ImageIcon, Shield, Check, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/CreateItemModal.css';
@@ -121,18 +121,17 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
         );
     };
 
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
-            <div className="create-item-modal-overlay" onClick={onClose}>
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="create-item-modal"
-                    onClick={(e) => e.stopPropagation()}
-                >
+            {isOpen && (
+                <div className="create-item-modal-overlay" onClick={onClose}>
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="create-item-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                     <div className="modal-header">
                         <h2>Sell an Item</h2>
                         <button className="close-btn" onClick={onClose}>

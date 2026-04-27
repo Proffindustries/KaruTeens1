@@ -10,7 +10,7 @@ import {
     useDeleteItem,
 } from '../hooks/useMarketplace.js';
 import Avatar from '../components/Avatar.jsx';
-import safeLocalStorage from '../utils/storage.js';
+import { useAuthContext } from '../context/AuthContext.jsx';
 
 const MarketplaceItemPage = () => {
     const { itemId } = useParams();
@@ -21,7 +21,7 @@ const MarketplaceItemPage = () => {
     const { mutate: markSold, isPending: isMarkingSold } = useMarkSold();
     const { mutate: boostItem, isPending: isBoosting } = useBoostItem();
     const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();
-    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
+    const { user: currentUser } = useAuthContext();
 
     if (isLoading) return <div className="container item-detail-page">Loading item details...</div>;
     if (error)
@@ -30,7 +30,7 @@ const MarketplaceItemPage = () => {
         );
     if (!item) return <div className="container item-detail-page">Item not found</div>;
 
-    const isOwner = currentUser.username === item.seller_name;
+    const isOwner = currentUser?.id === item.seller_id;
     const isBoosted = item.boosted_until && new Date(item.boosted_until) > new Date();
 
     const handleContactSeller = () => {

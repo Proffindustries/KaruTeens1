@@ -201,7 +201,7 @@ const PageDetailPage = () => {
                                 <>
                                     {isLoadingPosts ? (
                                         [1, 2, 3].map((n) => <PostSkeleton key={n} />)
-                                    ) : posts.length > 0 ? (
+                                    ) : (posts || []).length > 0 ? (
                                         posts.map((post) => <PostCard key={post.id} post={post} />)
                                     ) : (
                                         <div className="empty-feed">
@@ -222,7 +222,7 @@ const PageDetailPage = () => {
 
                             {activeTab === 'media' && (
                                 <div className="media-grid">
-                                    {posts.filter((p) => p.media_urls && p.media_urls.length > 0)
+                                    {(posts || []).filter((p) => p.media_urls && p.media_urls.length > 0)
                                         .length > 0 ? (
                                         posts
                                             .filter((p) => p.media_urls && p.media_urls.length > 0)

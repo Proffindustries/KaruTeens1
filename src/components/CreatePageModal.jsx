@@ -61,16 +61,17 @@ const CreatePageModal = ({ isOpen, onClose }) => {
         });
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <motion.div
-                className="modal-content create-page-modal"
-                onClick={(e) => e.stopPropagation()}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-            >
+        <AnimatePresence>
+            {isOpen && (
+                <div className="modal-overlay" onClick={onClose}>
+                    <motion.div
+                        className="modal-content create-page-modal"
+                        onClick={(e) => e.stopPropagation()}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                    >
                 <div className="modal-header">
                     <div>
                         <h3>Create Your Page</h3>

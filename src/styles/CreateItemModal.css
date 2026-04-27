@@ -219,3 +219,51 @@
         transform: rotate(360deg);
     }
 }
+
+.verification-gate-overlay {
+    padding: 2rem;
+    text-align: center;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+}
+
+.gate-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.gate-shield {
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+}
+
+.gate-benefits {
+    text-align: left;
+    background: var(--bg-primary);
+    padding: 1.5rem;
+    border-radius: 12px;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.benefit {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.benefit:last-child {
+    margin-bottom: 0;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+.micro-text {
+    font-size: 0.75rem;
+}
