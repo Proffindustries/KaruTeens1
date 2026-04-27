@@ -338,7 +338,8 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
                     )}
                 </motion.div>
             </div>
-        </AnimatePresence>
+        )}
+    </AnimatePresence>
     );
 });
 

@@ -650,9 +650,10 @@ const CreatePostModal = React.memo(
                         </div>
                     </motion.div>
                 </motion.div>
-            </AnimatePresence>
-        );
-    },
+            )}
+        </AnimatePresence>
+    );
+},
 );
 
 export default CreatePostModal;

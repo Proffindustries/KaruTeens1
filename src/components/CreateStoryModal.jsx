@@ -241,7 +241,8 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        )}
+    </AnimatePresence>
     );
 });
 
