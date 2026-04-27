@@ -159,7 +159,7 @@ pub async fn copy_template_handler(
     let user_timetable = Timetable {
         id: None,
         user_id: user.user_id,
-        name: format!("{} (Copy)", template.name),
+        name: template.name.clone(), // Remove "(Copy)" suffix
         is_template: false,
         is_public: false,
         fork_count: 0,
@@ -183,6 +183,49 @@ pub async fn copy_template_handler(
         "message": "Timetable copied successfully",
         "id": result.inserted_id.as_object_id().unwrap().to_hex()
     }))))
+}
+
+pub async fn merge_timetable_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path((template_id, target_id)): Path<(String, String)>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let template_oid = ObjectId::parse_str(&template_id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid Template ID"}))))?;
+    let target_oid = ObjectId::parse_str(&target_id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid Target ID"}))))?;
+    
+    let collection = state.mongo.collection::<Timetable>("timetables");
+
+    // Get the template/source
+    let template = collection.find_one(
+        doc! { 
+            "_id": template_oid,
+            "$or": [
+                { "is_template": true },
+                { "is_public": true }
+            ]
+        }, 
+        None
+    ).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Source timetable not found"}))))?;
+
+    // Add classes from template to target, avoiding duplicates based on ID if possible
+    // (In this simple version, we just push all)
+    let update = doc! {
+        "$push": { "classes": { "$each": mongodb::bson::to_bson(&template.classes).unwrap() } }
+    };
+
+    let result = collection.update_one(
+        doc! { "_id": target_oid, "user_id": user.user_id },
+        update,
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    if result.matched_count == 0 {
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Target timetable not found"}))));
+    }
+
+    Ok(StatusCode::OK)
 }
 
 pub async fn search_public_timetables_handler(
@@ -388,6 +431,7 @@ pub fn timetable_routes() -> Router<Arc<AppState>> {
         .route("/report", post(submit_report_handler))
         .route("/:id", get(get_timetable_handler).put(update_timetable_handler).delete(delete_timetable_handler))
         .route("/:id/copy", post(copy_template_handler))
+        .route("/:id/merge/:target_id", post(merge_timetable_handler))
         .route("/:id/classes", post(add_lesson_handler))
         .route("/:id/classes/:class_id", delete(remove_lesson_handler))
 }

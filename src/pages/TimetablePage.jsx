@@ -202,12 +202,48 @@ const TimetablePage = () => {
         setIsSubmitting(true);
         try {
             const { data } = await api.post(`/timetable/${templateId}/copy`);
-            showToast('Template copied to your timetables!', 'success');
+            showToast('Timetable added to your collection!', 'success');
             await fetchTimetables();
         } catch (error) {
-            showToast('Failed to copy template', 'error');
+            showToast('Failed to copy timetable', 'error');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleMergeTemplate = async (templateId) => {
+        const personalTimetables = timetables.filter(t => !t.is_template);
+        if (personalTimetables.length === 0) {
+            showToast('You don\'t have a personal timetable to merge into. Creating a new one instead.', 'info');
+            return handleCopyTemplate(templateId);
+        }
+
+        // For simplicity, merge into the currently selected one if it's personal,
+        // otherwise merge into the first personal one.
+        const target = (!selectedTimetable || selectedTimetable.is_template) 
+            ? personalTimetables[0] 
+            : selectedTimetable;
+
+        if (window.confirm(`Merge lessons from this template into "${target.name}"?`)) {
+            setIsSubmitting(true);
+            try {
+                await api.post(`/timetable/${templateId}/merge/${target._id}`);
+                showToast(`Lessons merged into ${target.name}!`, 'success');
+                await fetchTimetables();
+            } catch (error) {
+                showToast('Failed to merge lessons', 'error');
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
+    };
+
+    const handleCopyOrMerge = (templateId) => {
+        const choice = window.confirm("Do you want to create a NEW timetable from this (OK) or MERGE its lessons into your current timetable (Cancel)?");
+        if (choice) {
+            handleCopyTemplate(templateId);
+        } else {
+            handleMergeTemplate(templateId);
         }
     };
 
@@ -407,7 +443,7 @@ const TimetablePage = () => {
                                         className="copy-btn-hint"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleCopyTemplate(t._id);
+                                            handleCopyOrMerge(t._id);
                                         }}
                                     >
                                         <Copy size={12} /> Copy
@@ -439,7 +475,7 @@ const TimetablePage = () => {
                     </p>
                     <button
                         className="btn btn-primary btn-sm"
-                        onClick={() => handleCopyTemplate(selectedTimetable._id)}
+                        onClick={() => handleCopyOrMerge(selectedTimetable._id)}
                     >
                         Copy to My Timetables
                     </button>
@@ -491,7 +527,7 @@ const TimetablePage = () => {
             </div>
 
             {viewMode === 'library' ? (
-                <LibrarySearch onFork={handleCopyTemplate} />
+                <LibrarySearch onFork={handleCopyOrMerge} />
             ) : viewMode === 'exam' ? (
                 <ExamModeView exams={(selectedTimetable?.classes || []).filter((c) => c.is_exam)} />
             ) : viewMode === 'grid' ? (
