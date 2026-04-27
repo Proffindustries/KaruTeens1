@@ -364,6 +364,12 @@ const MessagesPage = () => {
 
     const { data: chats, isLoading: isLoadingChats } = useChats();
     const { data: messages, isLoading: isLoadingMessages } = useChatMessages(selectedChatId);
+    
+    useEffect(() => {
+        console.log("MessagesPage Debug - selectedChatId:", selectedChatId);
+        console.log("MessagesPage Debug - messages data:", messages);
+    }, [selectedChatId, messages]);
+
     const { mutate: sendMessage } = useSendMessage(selectedChatId);
     const { mutate: reactMessage } = useReactMessage(selectedChatId);
     const { mutate: markRead } = useMarkRead(selectedChatId);

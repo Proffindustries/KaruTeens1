@@ -534,9 +534,13 @@ pub async fn get_messages_handler(
             }
         }
 
-        let sender_username = profile_map.get(&msg.sender_id)
-            .map(|p| p.username.clone())
-            .unwrap_or_else(|| "Unknown".to_string());
+        let sender_username = if msg.is_system {
+            "System Admin".to_string()
+        } else {
+            profile_map.get(&msg.sender_id)
+                .map(|p| p.username.clone())
+                .unwrap_or_else(|| "Unknown".to_string())
+        };
 
         let mut reply_to = None;
         if let Some(parent_id) = msg.reply_to_id {
