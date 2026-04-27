@@ -421,51 +421,7 @@ const TimetablePage = () => {
                     )}
                 </div>
             </div>
-
-            {/* Timetable Selector / Template Copy Section */}
-            <div className="timetables-bar">
-                <h3>Select Timetable:</h3>
-                <div className="timetables-list-horizontal">
-                    {(Array.isArray(timetables) ? timetables : []).map((t) => (
-                        <div
-                            key={t._id}
-                            className={`timetable-item-small ${selectedTimetable?._id === t._id ? 'active' : ''}`}
-                            onClick={() => setSelectedTimetable(t)}
-                        >
-                            {t.is_template ? <Copy size={14} /> : <Calendar size={14} />}
-                            <span>{t.name}</span>
-                            <div
-                                className="timetable-item-actions"
-                                style={{ display: 'flex', gap: '4px' }}
-                            >
-                                {t.is_template ? (
-                                    <button
-                                        className="copy-btn-hint"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleCopyOrMerge(t._id);
-                                        }}
-                                    >
-                                        <Copy size={12} /> Copy
-                                    </button>
-                                ) : (
-                                    <button
-                                        className="icon-btn danger btn-xs"
-                                        style={{ padding: '2px', color: '#ff4757' }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteTimetable(t._id);
-                                        }}
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
+{/* Today Banner */}
             {selectedTimetable?.is_template && (
                 <div className="template-warning">
                     <AlertCircle size={20} />
