@@ -30,12 +30,16 @@ use crate::features::ads::ad_routes;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SystemSettings {
     pub is_payment_enabled: bool,
-    pub free_verification_limit: i64, // Just in case you want to limit
+    pub maintenance_mode: bool,
+    pub allow_new_registrations: bool,
+    pub free_verification_limit: i64,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateSettingsRequest {
-    pub is_payment_enabled: bool,
+    pub is_payment_enabled: Option<bool>,
+    pub maintenance_mode: Option<bool>,
+    pub allow_new_registrations: Option<bool>,
 }
 
 // --- Admin Middleware ---
@@ -74,6 +78,8 @@ pub struct AdminUserResponse {
     pub is_banned: bool,
     pub username: Option<String>,
     pub created_at: String,
+    pub last_seen_at: Option<String>,
+    pub post_count: i64,
 }
 
 #[derive(Serialize)]
@@ -89,6 +95,8 @@ pub struct PlatformStats {
     pub total_revenue: f64,
     pub total_stories: i64,
     pub total_reports: i64,
+    pub growth_rate: f64,
+    pub report_breakdown: std::collections::HashMap<String, i64>,
 }
 
 #[derive(Deserialize)]
@@ -160,6 +168,40 @@ pub async fn get_platform_stats_handler(
     let reports_collection = state.mongo.collection::<ContentModeration>("content_moderation");
     let total_reports = reports_collection.count_documents(doc! { "status": "pending" }, None).await.unwrap_or(0) as i64;
 
+    let mut report_breakdown = std::collections::HashMap::new();
+    let mut cursor = reports_collection.aggregate(vec![
+        doc! { "$group": { "_id": "$content_type", "count": { "$sum": 1 } } }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    while let Some(Ok(doc)) = cursor.next().await {
+        if let (Ok(content_type), Ok(count)) = (doc.get_str("_id"), doc.get_i32("count")) {
+            report_breakdown.insert(content_type.to_string(), count as i64);
+        }
+    }
+
+    // Calculate Growth Rate (last 30 days vs previous 30 days)
+    let thirty_days_ago = Utc::now() - Duration::days(30);
+    let sixty_days_ago = Utc::now() - Duration::days(60);
+    
+    let new_users = users_collection.count_documents(doc! { 
+        "created_at": { "$gte": DateTime::from_chrono(thirty_days_ago) } 
+    }, None).await.unwrap_or(0) as f64;
+    
+    let prev_users = users_collection.count_documents(doc! { 
+        "created_at": { 
+            "$gte": DateTime::from_chrono(sixty_days_ago),
+            "$lt": DateTime::from_chrono(thirty_days_ago)
+        } 
+    }, None).await.unwrap_or(0) as f64;
+    
+    let growth_rate = if prev_users > 0.0 {
+        ((new_users - prev_users) / prev_users) * 100.0
+    } else if new_users > 0.0 {
+        100.0
+    } else {
+        0.0
+    };
+
     let stats = PlatformStats {
         total_users,
         verified_users,
@@ -172,6 +214,8 @@ pub async fn get_platform_stats_handler(
         total_revenue,
         total_stories,
         total_reports,
+        growth_rate,
+        report_breakdown,
     };
 
     Ok((StatusCode::OK, Json(stats)))
@@ -225,10 +269,12 @@ pub async fn list_users_handler(
         if let Ok(u) = user {
             let user_id = u.id.unwrap();
 
-            let username = profiles_collection.find_one(doc! { "user_id": user_id }, None).await
-                .ok()
-                .flatten()
-                .map(|p| p.username);
+            let profile = profiles_collection.find_one(doc! { "user_id": user_id }, None).await.ok().flatten();
+            let username = profile.as_ref().map(|p| p.username.clone());
+            let last_seen_at = profile.as_ref().and_then(|p| p.last_seen_at.map(|ls| ls.to_chrono().to_rfc3339()));
+
+            let posts_collection = state.mongo.collection::<Post>("posts");
+            let post_count = posts_collection.count_documents(doc! { "author_id": user_id }, None).await.unwrap_or(0) as i64;
 
             users.push(AdminUserResponse {
                 id: user_id.to_hex(),
@@ -239,6 +285,8 @@ pub async fn list_users_handler(
                 is_banned: u.is_banned,
                 username,
                 created_at: u.created_at.to_chrono().to_rfc3339(),
+                last_seen_at,
+                post_count,
             });
         }
     }
@@ -394,7 +442,9 @@ pub async fn get_settings_handler(
     let settings = settings_collection.find_one(doc! {}, None).await
         .unwrap_or(None)
         .unwrap_or(SystemSettings {
-            is_payment_enabled: true, // Default ni true
+            is_payment_enabled: true,
+            maintenance_mode: false,
+            allow_new_registrations: true,
             free_verification_limit: 1000,
         });
 
@@ -413,13 +463,19 @@ pub async fn update_settings_update(
     }
 
     let settings_collection = state.mongo.collection::<mongodb::bson::Document>("settings");
+    let mut update_doc = doc! {};
+    
+    if let Some(val) = payload.is_payment_enabled { update_doc.insert("is_payment_enabled", val); }
+    if let Some(val) = payload.maintenance_mode { update_doc.insert("maintenance_mode", val); }
+    if let Some(val) = payload.allow_new_registrations { update_doc.insert("allow_new_registrations", val); }
+
     settings_collection.update_one(
         doc! {},
-        doc! { "$set": { "is_payment_enabled": payload.is_payment_enabled } },
+        doc! { "$set": update_doc },
         UpdateOptions::builder().upsert(true).build()
     ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    Ok((StatusCode::OK, Json(json!({"message": "System settings updated", "is_payment_enabled": payload.is_payment_enabled}))))
+    Ok((StatusCode::OK, Json(json!({"message": "System settings updated"}))))
 }
 
 

@@ -32,6 +32,7 @@ import AttendanceCheckIn from '../components/Timetable/AttendanceCheckIn';
 import ExamModeView from '../components/Timetable/ExamModeView';
 import LibrarySearch from '../components/Timetable/LibrarySearch';
 import ClassDetailsModal from '../components/Timetable/ClassDetailsModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/TimetablePage.css';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -522,94 +523,123 @@ const TimetablePage = () => {
 
                     {/* Classes List */}
                     <div className="classes-list">
-                        {currentDayClasses.length === 0 ? (
-                            <div className="empty-day">
-                                <BookOpen size={48} />
-                                <p>No classes scheduled for {selectedDay}</p>
-                                {selectedTimetable && !selectedTimetable.is_template && (
-                                    <button
-                                        className="btn btn-outline"
-                                        onClick={() => setShowAddModal(true)}
-                                    >
-                                        Add a class
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            currentDayClasses.map((cls) => {
-                                const activeTasks = cls.tasks ? cls.tasks.filter(t => !t.completed).length : 0;
-                                
-                                // Check if class is currently live
-                                const now = new Date();
-                                const currentDayString = days[now.getDay() - 1] || 'Sunday';
-                                let isLive = false;
-                                
-                                if (cls.day === currentDayString) {
-                                    const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                                    isLive = currentTimeStr >= cls.start_time && currentTimeStr <= cls.end_time;
-                                }
-
-                                return (
-                                <div key={cls.id} className={`class-card ${isLive ? 'live' : ''}`} style={{ cursor: 'pointer' }} onClick={() => { setActiveClass(cls); setShowClassDetailsModal(true); }}>
-                                    <div className="class-time">
-                                        <Clock size={16} />
-                                        <span>
-                                            {cls.start_time} - {cls.end_time}
-                                        </span>
-                                        {isLive && <span className="live-indicator">LIVE</span>}
-                                    </div>
-                                    <div className="class-info">
-                                        <h3>{cls.title}</h3>
-                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                            {cls.course_code && (
-                                                <span className="class-code">{cls.course_code}</span>
-                                            )}
-                                            {activeTasks > 0 && (
-                                                <span className="badge warning" style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' }}>
-                                                    {activeTasks} tasks due
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="class-details">
-                                            {cls.room && (
-                                                <span>
-                                                    <MapPin size={14} /> {cls.room}
-                                                </span>
-                                            )}
-                                            {cls.professor && <span>👨‍🏫 {cls.professor}</span>}
-                                        </div>
-                                    </div>
-                                    {!selectedTimetable.is_template && (
-                                        <div className="class-actions">
-                                            <button
-                                                className="icon-btn"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActiveClass(cls);
-                                                    setShowAttendanceModal(true);
-                                                }}
-                                            >
-                                                <Check size={18} />
-                                                <span>Check-in</span>
-                                            </button>
-                                            <button
-                                                className="icon-btn warning"
-                                                onClick={(e) => { e.stopPropagation(); handleReportIssue(cls); }}
-                                            >
-                                                <AlertCircle size={18} />
-                                                <span>Report</span>
-                                            </button>
-                                            <button
-                                                className="icon-btn danger"
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }}
-                                            >
-                                                <Trash2 size={18} />
-                                                <span>Remove</span>
-                                            </button>
-                                        </div>
+                        <AnimatePresence mode="wait">
+                            {currentDayClasses.length === 0 ? (
+                                <motion.div 
+                                    key="empty"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="empty-day"
+                                >
+                                    <BookOpen size={48} />
+                                    <p>No classes scheduled for {selectedDay}</p>
+                                    {selectedTimetable && !selectedTimetable.is_template && (
+                                        <button
+                                            className="btn btn-outline"
+                                            onClick={() => setShowAddModal(true)}
+                                        >
+                                            Add a class
+                                        </button>
                                     )}
-                                </div>
-                            )})}
+                                </motion.div>
+                            ) : (
+                                <motion.div 
+                                    key={selectedDay}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="day-content"
+                                >
+                                    {currentDayClasses.map((cls, index) => {
+                                        const activeTasks = cls.tasks ? cls.tasks.filter(t => !t.completed).length : 0;
+                                        
+                                        // Check if class is currently live
+                                        const now = new Date();
+                                        const currentDayString = days[now.getDay() - 1] || 'Sunday';
+                                        let isLive = false;
+                                        
+                                        if (cls.day === currentDayString) {
+                                            const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                                            isLive = currentTimeStr >= cls.start_time && currentTimeStr <= cls.end_time;
+                                        }
+
+                                        return (
+                                            <motion.div 
+                                                key={cls.id} 
+                                                layout
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                className={`class-card ${isLive ? 'live' : ''}`} 
+                                                style={{ cursor: 'pointer' }} 
+                                                onClick={() => { setActiveClass(cls); setShowClassDetailsModal(true); }}
+                                            >
+                                                <div className="class-time">
+                                                    <Clock size={16} />
+                                                    <span>
+                                                        {cls.start_time} - {cls.end_time}
+                                                    </span>
+                                                    {isLive && <span className="live-indicator">LIVE</span>}
+                                                </div>
+                                                <div className="class-info">
+                                                    <h3>{cls.title}</h3>
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                        {cls.course_code && (
+                                                            <span className="class-code">{cls.course_code}</span>
+                                                        )}
+                                                        {activeTasks > 0 && (
+                                                            <span className="badge warning" style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' }}>
+                                                                {activeTasks} tasks due
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="class-details">
+                                                        {cls.room && (
+                                                            <span>
+                                                                <MapPin size={14} /> {cls.room}
+                                                            </span>
+                                                        )}
+                                                        {cls.professor && <span>👨‍🏫 {cls.professor}</span>}
+                                                    </div>
+                                                </div>
+                                                {!selectedTimetable.is_template && (
+                                                    <div className="class-actions">
+                                                        <button
+                                                            className="icon-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveClass(cls);
+                                                                setShowAttendanceModal(true);
+                                                            }}
+                                                        >
+                                                            <Check size={18} />
+                                                            <span>Check-in</span>
+                                                        </button>
+                                                        <button
+                                                            className="icon-btn warning"
+                                                            onClick={(e) => { e.stopPropagation(); handleReportIssue(cls); }}
+                                                        >
+                                                            <AlertCircle size={18} />
+                                                            <span>Report</span>
+                                                        </button>
+                                                        <button
+                                                            className="icon-btn danger"
+                                                            onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }}
+                                                        >
+                                                            <Trash2 size={18} />
+                                                            <span>Remove</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )
+                                    })}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </>
             )}

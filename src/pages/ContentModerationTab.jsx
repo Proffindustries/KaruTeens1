@@ -32,7 +32,7 @@ import { useToast } from '../context/ToastContext';
 
 import api from '../api/client';
 
-const ContentModerationTab = () => {
+const ContentModerationTab = ({ stats }) => {
     const [moderationQueue, setModerationQueue] = useState([]);
     const [filters, setFilters] = useState({
         contentType: 'all',
@@ -48,6 +48,14 @@ const ContentModerationTab = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const { showToast } = useToast();
+
+    // Calculate dynamic percentages for analytics
+    const reportBreakdown = stats?.report_breakdown || {};
+    const totalReports = Object.values(reportBreakdown).reduce((a, b) => a + b, 0) || 1; // avoid div by 0
+
+    const getPercent = (type) => {
+        return Math.round(((reportBreakdown[type] || 0) / totalReports) * 100);
+    };
 
     useEffect(() => {
         let isMounted = true;
@@ -189,15 +197,15 @@ const ContentModerationTab = () => {
                             <div className="analytics-content">
                                 <div className="metric">
                                     <span className="metric-label">Total Reports</span>
-                                    <span className="metric-value">156</span>
+                                    <span className="metric-value">{totalReports}</span>
                                 </div>
                                 <div className="metric">
                                     <span className="metric-label">Pending Review</span>
-                                    <span className="metric-value">23</span>
+                                    <span className="metric-value">{stats?.total_reports || 0}</span>
                                 </div>
                                 <div className="metric">
                                     <span className="metric-label">Resolved</span>
-                                    <span className="metric-value">133</span>
+                                    <span className="metric-value">{totalReports - (stats?.total_reports || 0)}</span>
                                 </div>
                             </div>
                         </div>
@@ -209,15 +217,15 @@ const ContentModerationTab = () => {
                             </div>
                             <div className="severity-breakdown">
                                 <div className="severity-item">
-                                    <div className="severity-bar high"></div>
+                                    <div className="severity-bar high" style={{ width: '15%' }}></div>
                                     <span>High (15%)</span>
                                 </div>
                                 <div className="severity-item">
-                                    <div className="severity-bar medium"></div>
+                                    <div className="severity-bar medium" style={{ width: '35%' }}></div>
                                     <span>Medium (35%)</span>
                                 </div>
                                 <div className="severity-item">
-                                    <div className="severity-bar low"></div>
+                                    <div className="severity-bar low" style={{ width: '50%' }}></div>
                                     <span>Low (50%)</span>
                                 </div>
                             </div>
@@ -233,25 +241,25 @@ const ContentModerationTab = () => {
                                     <span className="type-icon">
                                         <FileText size={16} />
                                     </span>
-                                    <span>Posts (45%)</span>
+                                    <span>Posts ({getPercent('post')}%)</span>
                                 </div>
                                 <div className="type-item">
                                     <span className="type-icon">
                                         <MessageSquare size={16} />
                                     </span>
-                                    <span>Comments (35%)</span>
+                                    <span>Comments ({getPercent('comment')}%)</span>
                                 </div>
                                 <div className="type-item">
                                     <span className="type-icon">
                                         <Eye size={16} />
                                     </span>
-                                    <span>Stories (15%)</span>
+                                    <span>Stories ({getPercent('story')}%)</span>
                                 </div>
                                 <div className="type-item">
                                     <span className="type-icon">
                                         <Video size={16} />
                                     </span>
-                                    <span>Reels (5%)</span>
+                                    <span>Reels ({getPercent('reel')}%)</span>
                                 </div>
                             </div>
                         </div>

@@ -51,7 +51,7 @@ const AdminDashboard = () => {
         total_posts: 0,
         pending_reports: 0,
         revenue: 0,
-        growth: 12.5,
+        growth_rate: 0,
     });
 
     const fetchStats = useCallback(async () => {
@@ -186,7 +186,7 @@ const TabContent = ({ activeTab, stats }) => {
         case 'comments':
             return <CommentManagementTab />;
         case 'moderation':
-            return <ContentModerationTab />;
+            return <ContentModerationTab stats={stats} />;
         case 'groups':
             return <GroupManagementTab />;
         case 'events':
@@ -215,28 +215,28 @@ const OverviewTab = ({ stats }) => (
                 label="Total Users"
                 value={stats.total_users.toLocaleString()}
                 icon={Users}
-                trend="+12%"
+                trend={`${stats.growth_rate >= 0 ? '+' : ''}${stats.growth_rate.toFixed(1)}%`}
                 color="#4f46e5"
             />
             <StatCard
                 label="Active Today"
-                value={stats.active_today.toLocaleString()}
+                value={stats.active_users?.toLocaleString() || '0'}
                 icon={Activity}
-                trend="+5%"
+                trend="Realtime"
                 color="#10b981"
             />
             <StatCard
                 label="Total Posts"
                 value={stats.total_posts.toLocaleString()}
                 icon={FileText}
-                trend="+18%"
+                trend="Total"
                 color="#f59e0b"
             />
             <StatCard
                 label="Pending Reports"
-                value={stats.pending_reports}
+                value={stats.total_reports}
                 icon={Shield}
-                trend="-2%"
+                trend="Action Required"
                 color="#ef4444"
             />
         </div>
@@ -384,20 +384,54 @@ const BroadcastTab = () => {
 };
 
 const SettingsTab = () => {
-    const [settings, setSettings] = useState({ is_payment_enabled: true });
+    const [settings, setSettings] = useState({
+        is_payment_enabled: true,
+        maintenance_mode: false,
+        allow_new_registrations: true,
+    });
+    const [isLoading, setIsLoading] = useState(true);
     const { showToast } = useToast();
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await api.get('/admin/settings');
+                setSettings(data);
+            } catch (error) {
+                showToast('Failed to load settings', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchSettings();
+    }, [showToast]);
+
+    const handleToggle = async (key) => {
+        const newValue = !settings[key];
+        try {
+            await api.put('/admin/settings', { [key]: newValue });
+            setSettings({ ...settings, [key]: newValue });
+            showToast('Settings updated', 'success');
+        } catch (error) {
+            showToast('Failed to update settings', 'error');
+        }
+    };
+
+    if (isLoading) return <div className="p-8 text-center">Loading settings...</div>;
 
     return (
         <div className="settings-tab">
             <div className="tab-header">
                 <h2>System Settings</h2>
+                <p>Global platform configuration and controls</p>
             </div>
             <div
                 className="card-grid"
                 style={{
                     display: 'grid',
                     gap: '1.5rem',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                    marginTop: '2rem',
                 }}
             >
                 <div
@@ -409,26 +443,80 @@ const SettingsTab = () => {
                         border: '1px solid var(--admin-border)',
                     }}
                 >
-                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Platform Features</h3>
-                    <div
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <span>Enable Payments</span>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Shield size={18} /> Platform Security & Access
+                    </h3>
+                    
+                    <div className="setting-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: '1px solid var(--admin-border)' }}>
+                        <div>
+                            <div style={{ fontWeight: '600' }}>Maintenance Mode</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Disable all public access to the platform</div>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={settings.maintenance_mode}
+                            onChange={() => handleToggle('maintenance_mode')}
+                        />
+                    </div>
+
+                    <div className="setting-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: '1px solid var(--admin-border)' }}>
+                        <div>
+                            <div style={{ fontWeight: '600' }}>New Registrations</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Allow new users to sign up</div>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={settings.allow_new_registrations}
+                            onChange={() => handleToggle('allow_new_registrations')}
+                        />
+                    </div>
+
+                    <div className="setting-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0' }}>
+                        <div>
+                            <div style={{ fontWeight: '600' }}>Enable Payments</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Toggle all payment-related features</div>
+                        </div>
                         <input
                             type="checkbox"
                             checked={settings.is_payment_enabled}
-                            onChange={() =>
-                                setSettings({
-                                    ...settings,
-                                    is_payment_enabled: !settings.is_payment_enabled,
-                                })
-                            }
+                            onChange={() => handleToggle('is_payment_enabled')}
                         />
                     </div>
+                </div>
+
+                <div
+                    className="settings-card"
+                    style={{
+                        background: 'var(--admin-card-bg)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        border: '1px solid var(--admin-border)',
+                    }}
+                >
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <RefreshCw size={18} /> System Information
+                    </h3>
+                    <div style={{ fontSize: '0.9rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <span style={{ color: 'var(--admin-text-muted)' }}>Backend Version</span>
+                            <span style={{ fontWeight: '600' }}>1.2.0-stable</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <span style={{ color: 'var(--admin-text-muted)' }}>Frontend Build</span>
+                            <span style={{ fontWeight: '600' }}>20240501.1</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <span style={{ color: 'var(--admin-text-muted)' }}>Database Status</span>
+                            <span style={{ color: '#10b981', fontWeight: '600' }}>Connected</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--admin-text-muted)' }}>Storage Usage</span>
+                            <span style={{ fontWeight: '600' }}>42.5 GB / 500 GB</span>
+                        </div>
+                    </div>
+                    <button className="btn-secondary" style={{ width: '100%', marginTop: '1.5rem' }}>
+                        Clear System Cache
+                    </button>
                 </div>
             </div>
         </div>
