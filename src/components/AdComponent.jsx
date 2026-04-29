@@ -127,31 +127,48 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
 
     // Dedicated useEffect for pushing to adsbygoogle
     useEffect(() => {
-        if (!isPremium && !localAd && shouldShow) {
-            const pushAd = () => {
-                try {
-                    const adsbygoogle = window.adsbygoogle || [];
-                    const adElements = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status="done"])');
-                    
-                    if (adElements.length > 0) {
-                        // Only push if the element has width to avoid "No slot size for availableWidth=0"
-                        const lastElement = adElements[adElements.length - 1];
-                        if (lastElement.offsetWidth > 0) {
-                            adsbygoogle.push({});
-                        } else {
-                            // Retry in 500ms if no width yet
-                            setTimeout(pushAd, 500);
-                        }
-                    }
-                } catch (err) {
-                    console.warn('AdSense push failed:', err);
-                }
-            };
+        if (isPremium || localAd || !shouldShow) return;
 
-            // Small delay to ensure DOM is ready and layout is calculated
-            const timer = setTimeout(pushAd, 300);
-            return () => clearTimeout(timer);
+        let observer = null;
+        let pushed = false;
+
+        const pushAd = () => {
+            if (pushed) return;
+            try {
+                const adsbygoogle = window.adsbygoogle || [];
+                const adElements = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status="done"])');
+                
+                if (adElements.length > 0) {
+                    const lastElement = adElements[adElements.length - 1];
+                    // Verify width and visibility
+                    const rect = lastElement.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0 && window.getComputedStyle(lastElement).display !== 'none') {
+                        adsbygoogle.push({});
+                        pushed = true;
+                        if (observer) observer.disconnect();
+                    }
+                }
+            } catch (err) {
+                console.warn('AdSense push failed:', err);
+            }
+        };
+
+        // Try immediately after a small delay
+        const timer = setTimeout(pushAd, 500);
+
+        // Also use ResizeObserver to catch layout changes
+        const adReserve = document.querySelector('.adsense-reserve');
+        if (adReserve && 'ResizeObserver' in window) {
+            observer = new ResizeObserver(() => {
+                if (!pushed) pushAd();
+            });
+            observer.observe(adReserve);
         }
+
+        return () => {
+            clearTimeout(timer);
+            if (observer) observer.disconnect();
+        };
     }, [isPremium, localAd, shouldShow, page]);
 
     // If premium and no local ads, hide the component entirely to provide a clean experience

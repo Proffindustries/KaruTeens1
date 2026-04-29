@@ -579,3 +579,23 @@ pub struct GroupPost {
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
 }
+
+// --- Live Models ---
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LiveStream {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    pub username: String,
+    pub user_avatar: Option<String>,
+    pub title: String,
+    pub started_at: bson::DateTime,
+    pub ended_at: Option<bson::DateTime>,
+    pub is_active: bool,
+    pub viewer_count: i32,
+    pub stream_key: String,
+    pub stream_url: Option<String>,
+    pub thumbnail_url: Option<String>,
+    pub created_at: bson::DateTime,
+    pub updated_at: bson::DateTime,
+}

@@ -44,6 +44,7 @@ pub fn create_router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .nest("/api/follows", follows::follows_routes())
         .nest("/api/timetable", timetable::timetable_routes())
         .nest("/api/confessions", confessions::confessions_routes())
+        .nest("/api/live", crate::features::social::live::live_routes())
         .nest("/api/admin", admin::admin_routes())
         .with_state(state)
 }

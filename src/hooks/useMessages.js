@@ -78,7 +78,12 @@ export const useSendMessage = (chatId) => {
 
     return useMutation({
         mutationFn: async (messageData) => {
-            const { data } = await api.post(`/messages/${chatId}/messages`, messageData);
+            const payload = { ...messageData };
+            if (payload._mask_on_send) {
+                payload.content = '[Encrypted Message]';
+                delete payload._mask_on_send;
+            }
+            const { data } = await api.post(`/messages/${chatId}/messages`, payload);
             return data;
         },
         onMutate: async (newMessage) => {
@@ -92,6 +97,8 @@ export const useSendMessage = (chatId) => {
             const optimisticMessage = {
                 id: `temp-${Date.now()}`,
                 content: newMessage.content,
+                encrypted_content: newMessage.encrypted_content,
+                encryption_iv: newMessage.encryption_iv,
                 attachment_url: newMessage.attachment_url,
                 attachment_type: newMessage.attachment_type,
                 created_at: new Date().toISOString(),

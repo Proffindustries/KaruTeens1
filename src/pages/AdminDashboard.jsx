@@ -47,10 +47,10 @@ const AdminDashboard = () => {
     const { showToast } = useToast();
     const [stats, setStats] = useState({
         total_users: 0,
-        active_today: 0,
+        active_users: 0,
         total_posts: 0,
-        pending_reports: 0,
-        revenue: 0,
+        total_reports: 0,
+        total_revenue: 0,
         growth_rate: 0,
     });
 

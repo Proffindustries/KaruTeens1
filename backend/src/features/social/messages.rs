@@ -15,6 +15,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use crate::features::infrastructure::db::AppState;
 use crate::models::{Chat, Message, Profile, MessageReaction};
+use super::ably::publish_to_ably;
 use crate::features::auth::auth_service::AuthUser;
 use crate::features::social::notifications::create_notification;
 use crate::features::social::ws::{send_to_user, WsPayload};
@@ -875,8 +876,16 @@ pub async fn send_message_handler(
 
                     // Send WebSocket message
                     let _ = send_to_user(&state_clone, &pid, &ws_payload).await;
+
+                    // Publish to Ably for real-time chat list update (sidebar)
+                    let chat_update_channel = format!("user:{}:chats", pid.to_hex());
+                    publish_to_ably(&chat_update_channel, "update", json!({})).await;
                 }
             }
+            
+            // Publish to Ably for the specific chat channel (main area)
+            let chat_channel = format!("chat:{}", oid.to_hex());
+            publish_to_ably(&chat_channel, "new_message", json!(res)).await;
         }
     });
 

@@ -64,7 +64,7 @@
     -ms-overflow-style: none;
     position: sticky;
     top: 0;
-    background: rgba(var(--background-rgb), 0.8);
+    background: rgba(var(--background), 0.8);
     backdrop-filter: blur(10px);
     z-index: 10;
     margin: 0 -1rem 1.5rem;
@@ -93,7 +93,7 @@
 }
 
 .day-tab:hover {
-    background: rgba(var(--primary-rgb), 0.05);
+    background: rgba(var(--primary), 0.05);
     transform: translateY(-2px);
 }
 
@@ -101,7 +101,7 @@
     background: linear-gradient(135deg, rgb(var(--primary)), #2ecc71);
     border-color: transparent;
     color: white;
-    box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.3);
+    box-shadow: 0 8px 20px rgba(var(--primary), 0.3);
 }
 
 .day-tab.today::after {
@@ -173,7 +173,7 @@
 .class-card:hover {
     transform: scale(1.01);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-    border-color: rgba(var(--primary-rgb), 0.3);
+    border-color: rgba(var(--primary), 0.3);
 }
 
 .class-time {
@@ -199,8 +199,8 @@
 
 .class-card.live {
     border-color: rgb(var(--primary));
-    background: rgba(var(--primary-rgb), 0.03);
-    box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.1);
+    background: rgba(var(--primary), 0.03);
+    box-shadow: 0 4px 15px rgba(var(--primary), 0.1);
 }
 
 .class-card.live::before {
@@ -229,7 +229,7 @@
     display: inline-flex;
     align-items: center;
     padding: 0.25rem 0.75rem;
-    background: rgba(var(--primary-rgb), 0.1);
+    background: rgba(var(--primary), 0.1);
     color: rgb(var(--primary));
     border-radius: 8px;
     font-size: 0.75rem;
@@ -278,9 +278,9 @@
 }
 
 .class-actions .icon-btn:hover {
-    background: rgba(var(--primary-rgb), 0.1);
+    background: rgba(var(--primary), 0.1);
     color: rgb(var(--primary));
-    border-color: rgba(var(--primary-rgb), 0.3);
+    border-color: rgba(var(--primary), 0.3);
 }
 
 .class-actions .icon-btn.danger:hover {
@@ -316,7 +316,7 @@
 .timetables-bar {
     margin-bottom: 1.5rem;
     padding: 1rem;
-    background: rgba(var(--surface-rgb), 0.5);
+    background: rgba(var(--surface), 0.5);
     border-radius: var(--radius-md);
     border: 1px solid rgba(var(--border), 0.5);
 }
@@ -356,7 +356,7 @@
 }
 
 .timetable-item-small.active {
-    background: rgba(var(--primary-rgb), 0.1);
+    background: rgba(var(--primary), 0.1);
     border-color: rgb(var(--primary));
     color: rgb(var(--primary));
     font-weight: 600;
@@ -417,7 +417,7 @@
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
-    background: rgba(var(--surface-rgb), 0.5);
+    background: rgba(var(--surface), 0.5);
     padding: 0.25rem;
     border-radius: var(--radius-md);
     border: 1px solid rgba(var(--border), 0.1);
@@ -441,7 +441,7 @@
 }
 
 .view-tab:hover {
-    background: rgba(var(--primary-rgb), 0.1);
+    background: rgba(var(--primary), 0.1);
     color: rgb(var(--primary));
 }
 
@@ -517,7 +517,7 @@
     justify-content: center;
     width: 60px;
     height: 60px;
-    background: rgba(var(--primary-rgb), 0.1);
+    background: rgba(var(--primary), 0.1);
     border-radius: 12px;
     color: rgb(var(--primary));
 }
@@ -565,7 +565,7 @@
 .exam-countdown {
     text-align: center;
     padding: 0.5rem 1rem;
-    background: rgba(var(--surface-rgb), 0.5);
+    background: rgba(var(--surface), 0.5);
     border-radius: 12px;
 }
 
@@ -602,7 +602,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0 1rem;
-    background: rgba(var(--surface-rgb), 0.5);
+    background: rgba(var(--surface), 0.5);
     border: 1px solid rgba(var(--border), 0.2);
     border-radius: var(--radius-md);
 }

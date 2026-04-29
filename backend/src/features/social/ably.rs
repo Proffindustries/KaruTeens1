@@ -89,3 +89,34 @@ async fn get_ably_token_request(
         "mac": mac_base64
     })).into_response()
 }
+
+/// Helper to publish a message to an Ably channel from the backend
+pub async fn publish_to_ably(channel: &str, event_name: &str, data: serde_json::Value) {
+    let ably_api_key = std::env::var("ABLY_API_KEY").unwrap_or_default();
+    if ably_api_key.is_empty() {
+        tracing::warn!("ABLY_API_KEY not set, skipping real-time publish");
+        return;
+    }
+
+    let client = reqwest::Client::new();
+    let url = format!("https://rest.ably.io/channels/{}/messages", channel);
+
+    let res = client.post(&url)
+        .basic_auth(&ably_api_key, None as Option<&str>)
+        .json(&json!({
+            "name": event_name,
+            "data": data
+        }))
+        .send()
+        .await;
+
+    if let Err(e) = res {
+        tracing::error!("Failed to publish to Ably: {}", e);
+    } else if let Ok(r) = res {
+        if !r.status().is_success() {
+            let status = r.status();
+            let body = r.text().await.unwrap_or_default();
+            tracing::error!("Ably publish failed with status {}: {}", status, body);
+        }
+    }
+}

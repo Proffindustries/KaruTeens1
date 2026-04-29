@@ -8,3 +8,4 @@ pub mod groups;
 pub mod pages;
 pub mod confessions;
 pub mod hookup;
+pub mod live;

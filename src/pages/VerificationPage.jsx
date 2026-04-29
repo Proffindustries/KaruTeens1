@@ -5,6 +5,7 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import safeLocalStorage from '../utils/storage.js';
 import '../styles/Auth.css';
+import PaymentDrawer from '../components/PaymentDrawer.jsx';
 
 const VerificationPage = () => {
     const [step, setStep] = useState('pending'); // pending, processing, complete
@@ -166,7 +167,7 @@ const VerificationPage = () => {
                 )}
 
                 {isPaymentEnabled && step === 'pending' && (
-                    <form className="auth-body" onSubmit={handleInitiatePayment}>
+                    <div className="auth-body" style={{ textAlign: 'center' }}>
                         <div
                             className="verification-info"
                             style={{ textAlign: 'center', marginBottom: '2rem' }}
@@ -188,40 +189,34 @@ const VerificationPage = () => {
                             </p>
                         </div>
 
-                        <div className="form-group">
-                            <label>M-Pesa Phone Number</label>
-                            <div style={{ position: 'relative' }}>
-                                <Smartphone
-                                    size={18}
-                                    style={{
-                                        position: 'absolute',
-                                        left: '12px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        color: '#666',
-                                    }}
-                                />
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="07XXXXXXXX"
-                                    style={{ paddingLeft: '40px' }}
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-
                         <button
-                            type="submit"
-                            className="btn btn-primary btn-full"
-                            disabled={loading}
+                            onClick={() => setStep('drawer_open')}
+                            className="btn btn-primary btn-full pulse-anim"
                         >
-                            {loading ? 'Sending STK...' : 'Pay Ksh 20 and Verify'}
+                            Get Verified Now
                         </button>
-                    </form>
+                    </div>
                 )}
+
+                <PaymentDrawer
+                    isOpen={step === 'drawer_open' || step === 'processing'}
+                    onClose={() => setStep('pending')}
+                    amount={20}
+                    title="Account Verification"
+                    description="Enter your M-Pesa number to pay the one-time verification fee."
+                    onPaymentInitiated={async (formattedPhone) => {
+                        const { data } = await api.post('/payments/verify', {
+                            phone: formattedPhone,
+                            amount: 20,
+                            tx_type: 'verification',
+                        });
+                        setCheckoutId(data.checkout_request_id);
+                        setStep('processing');
+                    }}
+                    onSuccess={() => navigate('/feed')}
+                    checkoutId={checkoutId}
+                    status={step === 'complete' ? 'success' : step === 'processing' ? 'processing' : 'idle'}
+                />
 
                 {step === 'processing' && (
                     <div className="auth-body" style={{ textAlign: 'center', padding: '3rem 0' }}>

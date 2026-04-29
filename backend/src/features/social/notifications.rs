@@ -13,6 +13,7 @@ use crate::models::{Notification, Profile};
 use crate::features::auth::auth_service::AuthUser;
 use mongodb::{bson::{doc, oid::ObjectId}, options::FindOptions};
 use crate::features::social::ws::{send_to_user, WsPayload};
+use crate::features::social::ably::publish_to_ably;
 
 use futures::stream::StreamExt;
 
@@ -163,6 +164,10 @@ pub async fn create_notification(
         };
 
         send_to_user(state, &user_id, &ws_payload).await;
+
+        // Publish to Ably for real-time notification alerts
+        let channel = format!("user:{}:notifications", user_id.to_hex());
+        publish_to_ably(&channel, "new_notification", ws_payload.data).await;
     }
 
     Ok(())

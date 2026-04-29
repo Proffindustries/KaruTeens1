@@ -232,18 +232,59 @@ const DecryptedText = ({
     decryptFromSender,
     isDeleted,
 }) => {
-    const [decrypted, setDecrypted] = useState(null);
-    const [isDecrypting, setIsDecrypting] = useState(!!encryptedContent && !isDeleted);
+    const [decrypted, setDecrypted] = useState(() => {
+        // If it's already plaintext, just show it
+        if (content !== '[Encrypted Message]') return content;
+        return null;
+    });
+    const [isDecrypting, setIsDecrypting] = useState(false);
+    const lastContentRef = useRef(null);
 
     useEffect(() => {
-        if (!isDeleted && encryptedContent && iv && participantPublicKey) {
-            decryptFromSender(encryptedContent, iv, participantPublicKey).then((text) => {
-                setDecrypted(text || content); // Fallback to original content if decryption returns null
-                setIsDecrypting(false);
-            });
-        } else {
+        if (isDeleted) {
+            setDecrypted(null);
+            return;
+        }
+
+        // If content is not the placeholder, we don't need to decrypt
+        if (content !== '[Encrypted Message]') {
             setDecrypted(content);
             setIsDecrypting(false);
+            return;
+        }
+
+        // If we have encryption metadata, try to decrypt
+        if (encryptedContent && iv) {
+            // If we don't have the key yet, we can't decrypt
+            if (!participantPublicKey) {
+                setDecrypted('[Waiting for keys...]');
+                return;
+            }
+
+            // Check if we've already successfully decrypted this specific content
+            if (decrypted && decrypted !== '[Encrypted Message]' && decrypted !== '[Waiting for keys...]' && lastContentRef.current === encryptedContent) {
+                return;
+            }
+
+            const timer = setTimeout(() => {
+                setIsDecrypting(true);
+            }, 50);
+
+            decryptFromSender(encryptedContent, iv, participantPublicKey).then((text) => {
+                clearTimeout(timer);
+                if (text && text !== '[Encrypted Message]') {
+                    setDecrypted(text);
+                    lastContentRef.current = encryptedContent;
+                } else {
+                    // Decryption failed (maybe wrong device/key)
+                    setDecrypted('[Decryption Failed - Device Mismatch]');
+                }
+                setIsDecrypting(false);
+            });
+            return () => clearTimeout(timer);
+        } else {
+            // No encryption metadata but is placeholder? Should not happen but handle it.
+            setDecrypted(content);
         }
     }, [encryptedContent, iv, participantPublicKey, isDeleted, decryptFromSender, content]);
 
@@ -253,7 +294,9 @@ const DecryptedText = ({
                 <i>This message was deleted</i>
             </p>
         );
-    if (isDecrypting)
+    
+    // Show decrypting state only if we don't have a better fallback already
+    if (isDecrypting && (!decrypted || decrypted === '[Encrypted Message]'))
         return (
             <p className="decrypting-text">
                 <i>
@@ -262,11 +305,32 @@ const DecryptedText = ({
             </p>
         );
 
-    const links = decrypted?.match(URL_REGEX);
+    // If still null, show the original placeholder
+    const displayText = decrypted || content;
+
+    const links = typeof displayText === 'string' ? displayText.match(URL_REGEX) : null;
+
+    if (displayText === '[Waiting for keys...]') {
+        return (
+            <p className="e2ee-status-text">
+                <Loader2 size={10} className="animate-spin" /> {displayText}
+            </p>
+        );
+    }
+
+    if (displayText === '[Decryption Failed - Device Mismatch]') {
+        return (
+            <p className="e2ee-status-text failed">
+                <Lock size={10} /> {displayText}
+                <br />
+                <small>Message was sent to your other device</small>
+            </p>
+        );
+    }
 
     return (
         <>
-            <p>{decrypted}</p>
+            <p>{displayText}</p>
             {links?.map((link, idx) => (
                 <LinkPreview key={idx} url={link} />
             ))}
@@ -369,9 +433,29 @@ const MessagesPage = () => {
     const { data: messages, isLoading: isLoadingMessages } = useChatMessages(selectedChatId);
     
     useEffect(() => {
-        console.log("MessagesPage Debug - selectedChatId:", selectedChatId);
-        console.log("MessagesPage Debug - messages data:", messages);
-    }, [selectedChatId, messages]);
+        console.log("MessagesPage Debug - Initialized");
+        console.log("MessagesPage Debug - user:", user?.username);
+        console.log("MessagesPage Debug - isMobile:", isMobile);
+    }, []);
+
+    useEffect(() => {
+        console.log("MessagesPage Debug - selectedChatId changed:", selectedChatId);
+        if (selectedChatId) {
+            const chat = chats?.find(c => c.id === selectedChatId);
+            console.log("MessagesPage Debug - selected chat info:", chat);
+        }
+    }, [selectedChatId, chats]);
+
+    useEffect(() => {
+        if (selectedChatId) {
+            console.log(`MessagesPage Debug - Loading messages for ${selectedChatId}...`);
+            console.log("MessagesPage Debug - messages state:", {
+                count: messages?.length,
+                isLoading: isLoadingMessages,
+                data: messages
+            });
+        }
+    }, [selectedChatId, messages, isLoadingMessages]);
 
     const { mutate: sendMessage } = useSendMessage(selectedChatId);
     const { mutate: reactMessage } = useReactMessage(selectedChatId);
@@ -460,41 +544,39 @@ const MessagesPage = () => {
 
     // Signaling object for useWebRTC
     const signaling = useMemo(() => {
-        if (!ably || !selectedChatId) return null;
-        const channel = ably.channels.get(`chat:${selectedChatId}:webrtc`);
+        if (!ably) return null;
         return {
             send: (message) => {
                 try {
                     const parsed = JSON.parse(message);
-                    const eventType = parsed.type; // 'call-offer', 'call-answer', 'ice-candidate'
+                    const eventType = parsed.type;
+                    const recipientId = parsed.data.to;
+                    
+                    if (!recipientId) {
+                        console.warn('Signaling: No recipient ID in message');
+                        return;
+                    }
+
+                    // Publish to the specific recipient's signaling channel
+                    const channel = ably.channels.get(`user:${recipientId}:signaling`);
                     channel.publish(eventType, parsed.data);
                 } catch (err) {
                     console.error('Failed to parse signaling message', err);
                 }
             },
         };
-    }, [ably, selectedChatId]);
+    }, [ably]);
 
-    // Subscribe to WebRTC signaling events via Ably
+    // Subscribe to real-time signaling events via Ably (from AblyContext)
     useEffect(() => {
-        if (!ably || !selectedChatId) return;
-
-        const channel = ably.channels.get(`chat:${selectedChatId}:webrtc`);
-
-        const handleOffer = (msg) => handleWebRTCMessage('call-offer', msg.data);
-        const handleAnswer = (msg) => handleWebRTCMessage('call-answer', msg.data);
-        const handleIce = (msg) => handleWebRTCMessage('ice-candidate', msg.data);
-
-        channel.subscribe('call-offer', handleOffer);
-        channel.subscribe('call-answer', handleAnswer);
-        channel.subscribe('ice-candidate', handleIce);
-
-        return () => {
-            channel.unsubscribe('call-offer', handleOffer);
-            channel.unsubscribe('call-answer', handleAnswer);
-            channel.unsubscribe('ice-candidate', handleIce);
+        const handleSignalingEvent = (e) => {
+            const { type, data } = e.detail;
+            handleWebRTCMessage(type, data);
         };
-    }, [ably, selectedChatId, handleWebRTCMessage]);
+
+        window.addEventListener('ably-signaling', handleSignalingEvent);
+        return () => window.removeEventListener('ably-signaling', handleSignalingEvent);
+    }, [handleWebRTCMessage]);
 
     const webRTC = useWebRTC(signaling, currentUser?.id);
     webRTCRef.current = webRTC;
@@ -569,18 +651,23 @@ const MessagesPage = () => {
         }
     }, [messages, selectedChatId, memoizedMarkRead]);
 
+    const triggerSearch = useCallback(() => {
+        if (!searchQuery.trim() || isSearching) return;
+        setIsSearching(true);
+        createChat(searchQuery.trim(), {
+            onSuccess: (data) => {
+                setSelectedChatId(data.id);
+                setSearchQuery('');
+            },
+            onSettled: () => {
+                setIsSearching(false);
+            },
+        });
+    }, [searchQuery, isSearching, createChat]);
+
     const handleSearch = (e) => {
-        if (e.key === 'Enter' && searchQuery.trim()) {
-            setIsSearching(true);
-            createChat(searchQuery.trim(), {
-                onSuccess: (data) => {
-                    setSelectedChatId(data.id);
-                    setSearchQuery('');
-                },
-                onSettled: () => {
-                    setIsSearching(false);
-                },
-            });
+        if (e.key === 'Enter') {
+            triggerSearch();
         }
     };
 
@@ -689,10 +776,11 @@ const MessagesPage = () => {
             if (encrypted) {
                 sendMessage(
                     {
-                        content: '[Encrypted Message]',
+                        content: messageInput, // Keep original for optimistic UI
                         encrypted_content: encrypted.content,
                         encryption_iv: encrypted.iv,
                         reply_to_id: replyingTo?.id,
+                        _mask_on_send: true, // Internal flag for hook
                     },
                     { onSettled: cleanup },
                 );
@@ -1064,14 +1152,23 @@ const MessagesPage = () => {
                                 <Search
                                     size={16}
                                     className={`search-icon ${isSearching ? 'pulsing' : ''}`}
+                                    onClick={triggerSearch}
+                                    style={{ cursor: 'pointer' }}
                                 />
                                 <input
                                     type="text"
-                                    placeholder={isSearching ? 'Searching...' : 'Search users...'}
+                                    placeholder={isSearching ? 'Searching...' : 'Search username...'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={handleSearch}
                                 />
+                                <button
+                                    className="search-submit-btn"
+                                    onClick={triggerSearch}
+                                    disabled={isSearching || !searchQuery.trim()}
+                                >
+                                    {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                </button>
                             </div>
                             <button
                                 className="new-group-btn"
