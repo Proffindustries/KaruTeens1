@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import {
     X,
     MapPin,
@@ -13,6 +14,7 @@ import {
     Shield,
     Check,
     Calendar,
+    AlertCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -29,8 +31,7 @@ const CreatePostModal = React.memo(
     ({ isOpen, onClose, groupId = null, pageId = null, pageName = null, initialText = '' }) => {
         const [text, setText] = useState(initialText);
         const [location, setLocation] = useState(null);
-        const [selectedFiles, setSelectedFiles] = useState([]);
-        const [previews, setPreviews] = useState([]);
+        const [files, setFiles] = useState([]); // { id, file, previewUrl, type, name, status, progress, url, error }
         const [showLocationOptions, setShowLocationOptions] = useState(false);
 
         // Missing state variables
@@ -48,15 +49,15 @@ const CreatePostModal = React.memo(
 
         // Cleanup object URLs on unmount
         useEffect(() => {
-            const currentPreviews = previews;
+            const currentFiles = files;
             return () => {
-                currentPreviews.forEach((preview) => {
-                    if (preview.url && preview.url.startsWith('blob:')) {
-                        URL.revokeObjectURL(preview.url);
+                currentFiles.forEach((f) => {
+                    if (f.previewUrl && f.previewUrl.startsWith('blob:')) {
+                        URL.revokeObjectURL(f.previewUrl);
                     }
                 });
             };
-        }, [previews]);
+        }, [files]);
 
         const { isAuthenticated, user } = useAuth();
         const navigate = useNavigate();
@@ -72,66 +73,136 @@ const CreatePostModal = React.memo(
             });
         };
 
-        const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
-        const { uploadImage, uploadFile } = useMediaUpload();
+        const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } = useUpload();
+        const { uploadImage, uploadFile, batchUpload } = useMediaUpload();
 
         const createPost = groupId
             ? (data, options) => createGroupPost({ groupId, postData: data }, options)
             : createFeedPost;
 
         const handleFileChange = (e) => {
-            const files = Array.from(e.target.files);
-            setSelectedFiles((prev) => [...prev, ...files]);
-
-            const newPreviews = files.map((file) => {
+            const selected = Array.from(e.target.files);
+            const newFiles = selected.map((file) => {
                 let type = 'file';
                 if (file.type.startsWith('image/')) type = 'image';
                 else if (file.type.startsWith('video/')) type = 'video';
                 else if (file.type.startsWith('audio/')) type = 'audio';
 
                 return {
-                    url: URL.createObjectURL(file),
+                    id: Math.random().toString(36).substr(2, 9),
+                    file,
+                    previewUrl: URL.createObjectURL(file),
                     type,
                     name: file.name,
+                    status: 'idle',
+                    progress: 0,
+                    url: null,
+                    error: null,
+                    cancelTokenSource: null,
                 };
             });
-            setPreviews((prev) => [...prev, ...newPreviews]);
+            setFiles((prev) => [...prev, ...newFiles]);
         };
 
-        const removeFile = (index) => {
-            setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-            setPreviews((prev) => {
-                const newPreviews = [...prev];
-                const removed = newPreviews.splice(index, 1)[0];
-                if (removed && removed.url && removed.url.startsWith('blob:')) {
-                    URL.revokeObjectURL(removed.url);
+        const removeFile = (id) => {
+            setFiles((prev) => {
+                const fileToRemove = prev.find((f) => f.id === id);
+                if (fileToRemove) {
+                    if (fileToRemove.cancelTokenSource) {
+                        fileToRemove.cancelTokenSource.cancel('File removed by user');
+                    }
+                    if (fileToRemove.previewUrl && fileToRemove.previewUrl.startsWith('blob:')) {
+                        URL.revokeObjectURL(fileToRemove.previewUrl);
+                    }
                 }
-                return newPreviews;
+                return prev.filter((f) => f.id !== id);
             });
+        };
+
+        const uploadSingleFile = async (fileObj) => {
+            if (fileObj.status === 'completed') return fileObj.url;
+
+            const cancelTokenSource = axios.CancelToken.source();
+            
+            const uploadId = addUpload({
+                fileName: fileObj.name,
+                fileSize: fileObj.file.size,
+                type: fileObj.type === 'image' ? 'image' : 'file',
+            });
+            
+            setCancelToken(uploadId, cancelTokenSource);
+
+            setFiles((prev) =>
+                prev.map((f) =>
+                    f.id === fileObj.id 
+                        ? { ...f, status: 'uploading', progress: 0, error: null, cancelTokenSource } 
+                        : f,
+                ),
+            );
+
+            try {
+                let url;
+                const onProgress = (p, l) => {
+                    updateUploadProgress(uploadId, p, l);
+                    setFiles((prev) =>
+                        prev.map((f) => (f.id === fileObj.id ? { ...f, progress: p } : f)),
+                    );
+                };
+
+                if (fileObj.type === 'image') {
+                    url = await uploadImage(fileObj.file, onProgress, cancelTokenSource.token);
+                } else {
+                    url = await uploadFile(fileObj.file, onProgress, cancelTokenSource.token);
+                }
+
+                completeUpload(uploadId, { url });
+                setFiles((prev) =>
+                    prev.map((f) =>
+                        f.id === fileObj.id ? { ...f, status: 'completed', progress: 100, url, cancelTokenSource: null } : f,
+                    ),
+                );
+                return url;
+            } catch (err) {
+                if (axios.isCancel(err)) {
+                    console.log('Upload cancelled for file:', fileObj.name);
+                    // Don't fail the upload in context if it was explicitly cancelled
+                    return null;
+                }
+                failUpload(uploadId, err);
+                setFiles((prev) =>
+                    prev.map((f) =>
+                        f.id === fileObj.id ? { ...f, status: 'failed', error: err.message, cancelTokenSource: null } : f,
+                    ),
+                );
+                throw err;
+            }
+        };
+
+        const retryUpload = (id) => {
+            const fileObj = files.find((f) => f.id === id);
+            if (fileObj) uploadSingleFile(fileObj);
         };
 
         const handlePost = async () => {
-            if (!text.trim() && selectedFiles.length === 0) return;
+            if (!text.trim() && files.length === 0) return;
             setIsPosting(true);
 
             const postIsNsfw = isNsfw;
-
-            const postType =
-                selectedFiles.length > 0
-                    ? selectedFiles[0].type.startsWith('image/')
-                        ? 'image'
-                        : selectedFiles[0].type.startsWith('video/')
-                          ? 'video'
-                          : selectedFiles[0].type.startsWith('audio/')
-                            ? 'audio'
-                            : 'file'
-                    : 'text';
+            
+            // Determine post type based on files
+            let postType = 'text';
+            if (files.length > 0) {
+                const types = files.map(f => f.type);
+                if (types.includes('video')) postType = 'video';
+                else if (types.includes('audio')) postType = 'audio';
+                else if (types.includes('image')) postType = 'image';
+                else postType = 'file';
+            }
 
             const resetForm = () => {
                 setText('');
                 setLocation(null);
-                setSelectedFiles([]);
-                setPreviews([]);
+                setFiles([]);
                 setAudience(['all']);
                 setIsAnonymous(false);
                 setIsNsfw(false);
@@ -139,64 +210,64 @@ const CreatePostModal = React.memo(
                 onClose();
             };
 
-            // Upload files in background
-            if (selectedFiles.length > 0) {
-                const uploadPromises = selectedFiles.map(async (file) => {
-                    const uploadId = addUpload({
-                        fileName: file.name,
-                        fileSize: file.size,
-                        type: file.type.startsWith('image/') ? 'image' : 'file',
-                    });
+            // Upload files with concurrency control and individual state tracking
+            if (files.length > 0) {
+                const uploadResults = await batchUpload(
+                    files,
+                    (fileObj) => uploadSingleFile(fileObj),
+                    2 // Limit to 2 concurrent uploads
+                );
 
-                    try {
-                        let url;
-                        if (file.type.startsWith('image/')) {
-                            url = await uploadImage(file, (p, l) =>
-                                updateUploadProgress(uploadId, p, l),
-                            );
-                        } else {
-                            url = await uploadFile(file, (p, l) =>
-                                updateUploadProgress(uploadId, p, l),
-                            );
-                        }
-                        completeUpload(uploadId, { url });
-                        return url;
-                    } catch (err) {
-                        failUpload(uploadId, err);
-                        throw err;
-                    }
-                });
+                const mediaUrls = files
+                    .map((f, i) => {
+                        if (f.status === 'completed') return f.url;
+                        if (uploadResults[i].status === 'fulfilled') return uploadResults[i].value;
+                        return null;
+                    })
+                    .filter(Boolean);
 
-                try {
-                    const mediaUrls = await Promise.all(uploadPromises);
-                    const finalScheduledDate = scheduledDatetime
-                        ? new Date(scheduledDatetime).toISOString()
-                        : null;
+                const failedCount = files.length - mediaUrls.length;
 
-                    createPost(
-                        {
-                            content: text,
-                            media_urls: mediaUrls.filter(Boolean),
-                            post_type: postType,
-                            location: location,
-                            audience: audience,
-                            scheduled_publish_date: finalScheduledDate,
-                            is_anonymous: isAnonymous,
-                            is_nsfw: postIsNsfw,
-                            status: scheduledDatetime ? 'scheduled' : 'published',
-                            page_id: pageId, // Missing page_id added
-                        },
-                        {
-                            onSuccess: resetForm,
-                            onError: (err) =>
-                                showToast(err.message || 'Failed to create post', 'error'),
-                            onSettled: () => setIsPosting(false),
-                        },
-                    );
-                } catch {
-                    showToast('Failed to upload media. Please try again.', 'error');
+                if (failedCount > 0 && mediaUrls.length === 0) {
+                    showToast(`Failed to upload ${failedCount} file(s).`, 'error');
                     setIsPosting(false);
+                    return;
                 }
+
+                if (failedCount > 0) {
+                    const proceed = window.confirm(
+                        `${failedCount} file(s) failed to upload. Do you want to post anyway with only the successful ones?`,
+                    );
+                    if (!proceed) {
+                        setIsPosting(false);
+                        return;
+                    }
+                }
+
+                const finalScheduledDate = scheduledDatetime
+                    ? new Date(scheduledDatetime).toISOString()
+                    : null;
+
+                createPost(
+                    {
+                        content: text,
+                        media_urls: mediaUrls,
+                        post_type: postType,
+                        location: location,
+                        audience: audience,
+                        scheduled_publish_date: finalScheduledDate,
+                        is_anonymous: isAnonymous,
+                        is_nsfw: postIsNsfw,
+                        status: scheduledDatetime ? 'scheduled' : 'published',
+                        page_id: pageId,
+                    },
+                    {
+                        onSuccess: resetForm,
+                        onError: (err) =>
+                            showToast(err.message || 'Failed to create post', 'error'),
+                        onSettled: () => setIsPosting(false),
+                    },
+                );
             } else {
                 const finalScheduledDate = scheduledDatetime
                     ? new Date(scheduledDatetime).toISOString()
@@ -213,7 +284,7 @@ const CreatePostModal = React.memo(
                         is_anonymous: isAnonymous,
                         is_nsfw: postIsNsfw,
                         status: scheduledDatetime ? 'scheduled' : 'published',
-                        page_id: pageId, // Missing page_id added
+                        page_id: pageId,
                     },
                     {
                         onSuccess: resetForm,
@@ -469,36 +540,75 @@ const CreatePostModal = React.memo(
                                         </div>
                                     )}
 
-                                    {previews.length > 0 && (
+                                    {files.length > 0 && (
                                         <div className="media-preview-grid">
-                                            {previews.map((preview, idx) => (
-                                                <div key={idx} className="preview-item">
-                                                    {preview.type === 'image' && (
+                                            {files.map((fileObj) => (
+                                                <div key={fileObj.id} className="preview-item">
+                                                    {fileObj.type === 'image' && (
                                                         <img
-                                                            src={preview.url}
+                                                            src={fileObj.previewUrl}
                                                             alt="Preview"
                                                             loading="lazy"
                                                         />
                                                     )}
-                                                    {preview.type === 'video' && (
-                                                        <video src={preview.url} muted />
+                                                    {fileObj.type === 'video' && (
+                                                        <video src={fileObj.previewUrl} muted />
                                                     )}
-                                                    {preview.type === 'audio' && (
+                                                    {fileObj.type === 'audio' && (
                                                         <div className="file-preview-placeholder">
                                                             <Music size={32} color="#f7b928" />
-                                                            <span>{preview.name}</span>
+                                                            <span>{fileObj.name}</span>
                                                         </div>
                                                     )}
-                                                    {preview.type === 'file' && (
+                                                    {fileObj.type === 'file' && (
                                                         <div className="file-preview-placeholder">
                                                             <FileText size={32} color="#606770" />
-                                                            <span>{preview.name}</span>
+                                                            <span>{fileObj.name}</span>
                                                         </div>
                                                     )}
+
+                                                    {/* Individual Upload Progress Overlay */}
+                                                    {fileObj.status === 'uploading' && (
+                                                        <div className="preview-upload-overlay">
+                                                            <div className="mini-progress-bar">
+                                                                <div
+                                                                    className="mini-progress-fill"
+                                                                    style={{
+                                                                        width: `${fileObj.progress}%`,
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <span className="percent-text">
+                                                                {fileObj.progress}%
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {fileObj.status === 'completed' && (
+                                                        <div className="preview-upload-overlay success">
+                                                            <Check size={24} color="#fff" />
+                                                        </div>
+                                                    )}
+
+                                                    {fileObj.status === 'failed' && (
+                                                        <div className="preview-upload-overlay failed">
+                                                            <AlertCircle size={24} color="#fff" />
+                                                            <span className="error-text">Failed</span>
+                                                            <button
+                                                                className="retry-upload-btn"
+                                                                onClick={() =>
+                                                                    retryUpload(fileObj.id)
+                                                                }
+                                                            >
+                                                                Retry
+                                                            </button>
+                                                        </div>
+                                                    )}
+
                                                     <button
                                                         className="remove-preview"
                                                         onClick={() =>
-                                                            !isPosting && removeFile(idx)
+                                                            !isPosting && removeFile(fileObj.id)
                                                         }
                                                         disabled={isPosting}
                                                     >
@@ -641,7 +751,7 @@ const CreatePostModal = React.memo(
                             {user?.is_verified && (
                                 <button
                                     className="btn btn-primary btn-full"
-                                    disabled={(!text && selectedFiles.length === 0) || isPosting}
+                                    disabled={(!text && files.length === 0) || isPosting}
                                     onClick={handlePost}
                                 >
                                     {isPosting ? 'Posting...' : 'Post'}

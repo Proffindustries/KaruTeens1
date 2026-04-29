@@ -423,31 +423,46 @@ pub async fn get_chats_handler(
             });
         } else {
             let other_id = chat.participants.iter().find(|&&id| id != user.user_id).unwrap_or(&user.user_id);
-            if let Some(p) = profile_map.get(other_id) {
+            let profile_summary = if let Some(p) = profile_map.get(other_id) {
                 let presence_key = format!("user:presence:{}", p.user_id.to_hex());
                 let mut conn = state.redis.clone();
                 let is_online: bool = conn.exists(&presence_key).await.unwrap_or(false);
 
+                Some(ProfileSummary {
+                    user_id: p.user_id.to_hex(),
+                    username: p.username.clone(),
+                    avatar_url: p.avatar_url.clone(),
+                    public_key: p.public_key.clone(),
+                    is_online,
+                    last_seen: p.last_seen_at.map(|dt| dt.to_chrono().to_rfc3339()),
+                    last_location: p.last_location.as_ref().map(|l| LocationResponse {
+                        latitude: l.latitude,
+                        longitude: l.longitude,
+                        label: l.label.clone(),
+                        is_live: l.is_live,
+                        expires_at: l.expires_at.map(|dt| dt.to_chrono().to_rfc3339()),
+                    }),
+                })
+            } else {
+                // Fallback for missing profile (e.g. System Admin or deleted user)
+                Some(ProfileSummary {
+                    user_id: other_id.to_hex(),
+                    username: if chat.name.as_deref() == Some("System") { "System Admin".to_string() } else { "Unknown User".to_string() },
+                    avatar_url: None,
+                    public_key: None,
+                    is_online: false,
+                    last_seen: None,
+                    last_location: None,
+                })
+            };
+
+            if let Some(ps) = profile_summary {
                 response_chats.push(ChatResponse {
                     id: chat_id.to_hex(),
                     is_group: false,
-                    name: p.username.clone(),
-                    avatar_url: p.avatar_url.clone(),
-                    participant: Some(ProfileSummary {
-                        user_id: p.user_id.to_hex(),
-                        username: p.username.clone(),
-                        avatar_url: p.avatar_url.clone(),
-                        public_key: p.public_key.clone(),
-                        is_online,
-                        last_seen: p.last_seen_at.map(|dt| dt.to_chrono().to_rfc3339()),
-                        last_location: p.last_location.as_ref().map(|l| LocationResponse {
-                            latitude: l.latitude,
-                            longitude: l.longitude,
-                            label: l.label.clone(),
-                            is_live: l.is_live,
-                            expires_at: l.expires_at.map(|dt| dt.to_chrono().to_rfc3339()),
-                        }),
-                    }),
+                    name: ps.username.clone(),
+                    avatar_url: ps.avatar_url.clone(),
+                    participant: Some(ps),
                     last_message: chat.last_message,
                     last_message_time: chat.last_message_time.to_chrono().to_rfc3339(),
                     unread_count: unread_count as i32, 
@@ -658,10 +673,14 @@ pub async fn send_message_handler(
     let users_collection = state.mongo.collection::<crate::models::User>("users");
     let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
-    // Check verification
+    // Check verification (Admins bypass this check)
     let db_user = users_collection.find_one(doc! { "_id": user.user_id }, None).await.unwrap_or(None);
-    if db_user.map_or(true, |u| !u.is_verified) {
-        return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Account verification required to send messages. Please verify your account for Ksh 20."}))));
+    if let Some(u) = db_user {
+        if !u.is_verified && u.role != "admin" && u.role != "superadmin" {
+            return Err((StatusCode::FORBIDDEN, Json(json!({"error": "Account verification required to send messages. Please verify your account for Ksh 20."}))));
+        }
+    } else {
+        return Err((StatusCode::UNAUTHORIZED, Json(json!({"error": "User not found"}))));
     }
 
     // Verify participation and get chat info in one query

@@ -14,6 +14,8 @@ use chrono::Utc;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::Client as S3Client;
 use std::time::Duration;
+use rand::Rng;
+use rand::distributions::Alphanumeric;
 
 #[derive(Debug, Deserialize)]
 pub struct CloudinarySignatureRequest {
@@ -44,11 +46,14 @@ pub fn media_routes() -> Router<Arc<AppState>> {
         .route("/signature/r2", post(get_r2_presigned_url))
 }
 
+use crate::features::infrastructure::error::{AppError, AppResult};
+
 async fn get_cloudinary_signature(
     _user: AuthUser,
     Json(payload): Json<CloudinarySignatureRequest>,
-) -> impl IntoResponse {
-    let api_secret = std::env::var("CLOUDINARY_API_SECRET").expect("CLOUDINARY_API_SECRET not set");
+) -> AppResult<impl IntoResponse> {
+    let api_secret = std::env::var("CLOUDINARY_API_SECRET")
+        .map_err(|_| AppError::InternalServerError("CLOUDINARY_API_SECRET not set".to_string()))?;
     
     // Cloudinary signature requires params to be sorted alphabetically (BTreeMap does this)
     // and joined with & then appending secret (NO & before secret)
@@ -64,21 +69,26 @@ async fn get_cloudinary_signature(
     hasher.update(param_string.as_bytes());
     let signature = hex::encode(hasher.finalize());
 
-    Json(CloudinarySignatureResponse {
+    Ok(Json(CloudinarySignatureResponse {
         signature,
         timestamp: payload.params.get("timestamp").and_then(|t| t.parse().ok()).unwrap_or_else(|| Utc::now().timestamp()),
-    })
+    }))
 }
 
 async fn get_r2_presigned_url(
     _user: AuthUser,
     Json(payload): Json<R2PresignedUrlRequest>,
-) -> impl IntoResponse {
-    let account_id = std::env::var("R2_ACCOUNT_ID").expect("R2_ACCOUNT_ID not set");
-    let access_key_id = std::env::var("R2_ACCESS_KEY_ID").expect("R2_ACCESS_KEY_ID not set");
-    let secret_access_key = std::env::var("R2_SECRET_ACCESS_KEY").expect("R2_SECRET_ACCESS_KEY not set");
-    let bucket = std::env::var("R2_BUCKET").expect("R2_BUCKET not set");
-    let public_base_url = std::env::var("R2_PUBLIC_BASE_URL").expect("R2_PUBLIC_BASE_URL not set");
+) -> AppResult<impl IntoResponse> {
+    let account_id = std::env::var("R2_ACCOUNT_ID")
+        .map_err(|_| AppError::InternalServerError("R2_ACCOUNT_ID not set".to_string()))?;
+    let access_key_id = std::env::var("R2_ACCESS_KEY_ID")
+        .map_err(|_| AppError::InternalServerError("R2_ACCESS_KEY_ID not set".to_string()))?;
+    let secret_access_key = std::env::var("R2_SECRET_ACCESS_KEY")
+        .map_err(|_| AppError::InternalServerError("R2_SECRET_ACCESS_KEY not set".to_string()))?;
+    let bucket = std::env::var("R2_BUCKET")
+        .map_err(|_| AppError::InternalServerError("R2_BUCKET not set".to_string()))?;
+    let public_base_url = std::env::var("R2_PUBLIC_BASE_URL")
+        .map_err(|_| AppError::InternalServerError("R2_PUBLIC_BASE_URL not set".to_string()))?;
 
     let endpoint = format!("https://{}.r2.cloudflarestorage.com", account_id);
     
@@ -99,7 +109,28 @@ async fn get_r2_presigned_url(
 
     let client = S3Client::from_conf(config);
     
-    let key = format!("uploads/{}/{}", Utc::now().timestamp(), payload.file_name);
+    // Sanitize filename: replace whitespace with underscores, keep alphanumeric, dots, dashes, underscores
+    let mut sanitized_name = payload.file_name.chars()
+        .map(|c| if c.is_whitespace() { '_' } else { c })
+        .filter(|c| c.is_ascii() && (c.is_alphanumeric() || *c == '.' || *c == '-' || *c == '_'))
+        .collect::<String>();
+    
+    if sanitized_name.is_empty() {
+        sanitized_name = "file".to_string();
+    }
+    
+    // Truncate filename if it's too long to prevent S3 key issues
+    if sanitized_name.len() > 100 {
+        sanitized_name = sanitized_name.chars().take(100).collect();
+    }
+        
+    let suffix: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(6)
+        .map(char::from)
+        .collect();
+    
+    let key = format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix);
     
     let expires_in = Duration::from_secs(3600);
     let presigned_request = client
@@ -107,12 +138,18 @@ async fn get_r2_presigned_url(
         .bucket(bucket)
         .key(&key)
         .content_type(payload.content_type)
-        .presigned(PresigningConfig::expires_in(expires_in).unwrap())
+        .presigned(PresigningConfig::expires_in(expires_in).map_err(|e| {
+            tracing::error!("Presigned config error: {}", e);
+            AppError::InternalServerError("Failed to create presigning config".to_string())
+        })?)
         .await
-        .unwrap();
+        .map_err(|e| {
+            tracing::error!("S3 presigning error: {}", e);
+            AppError::InternalServerError("Failed to generate presigned URL".to_string())
+        })?;
 
-    Json(R2PresignedUrlResponse {
+    Ok(Json(R2PresignedUrlResponse {
         url: presigned_request.uri().to_string(),
         public_url: format!("{}/{}", public_base_url, key),
-    })
+    }))
 }

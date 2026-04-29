@@ -15,8 +15,8 @@ use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
 use chrono::{Utc, Duration};
 use mongodb::options::UpdateOptions;
-
-// Import sub-admin routes
+use crate::features::social::ws::{send_to_user, WsPayload};
+use crate::features::social::messages::MessageResponse;
 use crate::features::content::posts::post_routes;
 use crate::features::social::events::event_routes;
 use crate::features::content::comments::comment_routes;
@@ -462,83 +462,138 @@ pub async fn broadcast_system_message_handler(
     let mut cursor = users_collection.find(doc! { "is_banned": false }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let system_user_id = user.user_id; // Admin is the sender, but marked as system
+    let system_user_id = user.user_id;
 
-    while let Some(Ok(target_user)) = cursor.next().await {
-        let target_user_id = target_user.id.unwrap();
-        if target_user_id == system_user_id { continue; }
+    // Spawn the broadcast task to avoid timing out the admin request
+    let state_clone = state.clone();
+    let content = payload.content.clone();
+    
+    tokio::spawn(async move {
+        while let Some(Ok(target_user)) = cursor.next().await {
+            let target_user_id = target_user.id.unwrap();
+            if target_user_id == system_user_id { continue; }
 
-        // Find or create a 1-to-1 chat between admin and user marked as system
-        let chat_query = doc! {
-            "participants": { "$all": [system_user_id, target_user_id] },
-            "is_group": false
-        };
+            // Find or create a 1-to-1 chat between admin and user marked as system
+            let chat_query = doc! {
+                "participants": { "$all": [system_user_id, target_user_id] },
+                "is_group": false
+            };
 
-        let chat = chats_collection.find_one(chat_query.clone(), None).await.unwrap_or(None);
-        
-        let chat_id = if let Some(c) = chat {
-            c.id.unwrap()
-        } else {
-            let new_chat = crate::models::Chat {
+            let chat = state_clone.mongo.collection::<crate::models::Chat>("chats")
+                .find_one(chat_query.clone(), None).await.unwrap_or(None);
+            
+            let chat_id = if let Some(c) = chat {
+                let cid = c.id.unwrap();
+                // Update last_message and last_message_time for existing chat
+                let _ = state_clone.mongo.collection::<crate::models::Chat>("chats").update_one(
+                    doc! { "_id": cid },
+                    doc! { "$set": { 
+                        "last_message": content.clone(),
+                        "last_message_time": DateTime::now() 
+                    } },
+                    None
+                ).await;
+                cid
+            } else {
+                let new_chat = crate::models::Chat {
+                    id: None,
+                    participants: vec![system_user_id, target_user_id],
+                    is_group: false,
+                    name: Some("System".to_string()),
+                    avatar_url: None,
+                    admins: vec![system_user_id],
+                    last_message: Some(content.clone()),
+                    last_message_time: DateTime::now(),
+                    disappearing_duration: None,
+                    created_at: DateTime::now(),
+                };
+                if let Ok(res) = state_clone.mongo.collection::<crate::models::Chat>("chats").insert_one(new_chat, None).await {
+                    res.inserted_id.as_object_id().unwrap()
+                } else {
+                    continue;
+                }
+            };
+
+            // Create message
+            let new_msg = crate::models::Message {
                 id: None,
-                participants: vec![system_user_id, target_user_id],
-                is_group: false,
-                name: Some("System".to_string()),
-                avatar_url: None,
-                admins: vec![system_user_id],
-                last_message: Some(payload.content.clone()),
-                last_message_time: DateTime::now(),
-                disappearing_duration: None,
+                chat_id,
+                sender_id: system_user_id,
+                content: content.clone(),
+                encrypted_content: None,
+                encryption_iv: None,
+                attachment_url: None,
+                attachment_type: None,
+                reply_to_id: None,
+                reactions: vec![],
+                is_deleted: false,
+                deleted_at: None,
+                read_at: None,
+                poll: None,
+                location: None,
+                contact: None,
+                is_view_once: false,
+                is_system: true,
+                is_announcement: true,
+                viewed_at: None,
+                expires_at: None,
                 created_at: DateTime::now(),
             };
-            let res = chats_collection.insert_one(new_chat, None).await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-            res.inserted_id.as_object_id().unwrap()
-        };
 
-        // Create message
-        let new_msg = crate::models::Message {
-            id: None,
-            chat_id,
-            sender_id: system_user_id,
-            content: payload.content.clone(),
-            encrypted_content: None,
-            encryption_iv: None,
-            attachment_url: None,
-            attachment_type: None,
-            reply_to_id: None,
-            reactions: vec![],
-            is_deleted: false,
-            deleted_at: None,
-            read_at: None,
-            poll: None,
-            location: None,
-            contact: None,
-            is_view_once: false,
-            is_system: true,
-            is_announcement: true,
-            viewed_at: None,
-            expires_at: None,
-            created_at: DateTime::now(),
-        };
+            let msg_res = state_clone.mongo.collection::<crate::models::Message>("messages").insert_one(new_msg, None).await;
+            let msg_id = if let Ok(r) = msg_res {
+                r.inserted_id.as_object_id().unwrap()
+            } else {
+                continue;
+            };
 
-        messages_collection.insert_one(new_msg, None).await.ok();
+            // Notification
+            let notif = crate::models::Notification {
+                id: None,
+                user_id: target_user_id,
+                actor_id: system_user_id,
+                notification_type: "system_broadcast".to_string(),
+                target_id: Some(chat_id),
+                content: format!("System Message: {}", if content.len() > 50 { &content[..47] } else { &content }),
+                is_read: false,
+                created_at: DateTime::now(),
+            };
+            let _ = state_clone.mongo.collection::<crate::models::Notification>("notifications").insert_one(notif, None).await;
 
-        // Notification
-        let notif = crate::models::Notification {
-            id: None,
-            user_id: target_user_id,
-            actor_id: system_user_id,
-            notification_type: "system_broadcast".to_string(),
-            target_id: Some(chat_id),
-            content: format!("System Message: {}", if payload.content.len() > 50 { &payload.content[..47] } else { &payload.content }),
-            is_read: false,
-            created_at: DateTime::now(),
-        };
-        notifications_collection.insert_one(notif, None).await.ok();
-    }
+            // WebSocket Broadcast
+            let ws_msg = MessageResponse {
+                id: msg_id.to_hex(),
+                chat_id: chat_id.to_hex(),
+                sender_id: system_user_id.to_hex(),
+                sender_username: "System Admin".to_string(),
+                content: content.clone(),
+                attachment_url: None,
+                attachment_type: None,
+                created_at: chrono::Utc::now().to_rfc3339(),
+                is_me: false,
+                reply_to: None,
+                reactions: vec![],
+                is_deleted: false,
+                read_at: None,
+                encrypted_content: None,
+                encryption_iv: None,
+                poll: None,
+                location: None,
+                contact: None,
+                is_view_once: false,
+                viewed_at: None,
+                expires_at: None,
+            };
 
-    Ok((StatusCode::OK, Json(json!({"message": "Broadcast sent to all active users"}))))
+            let ws_payload = WsPayload {
+                r#type: "message".to_string(),
+                data: json!(ws_msg),
+            };
+            send_to_user(&state_clone, &target_user_id, &ws_payload).await;
+        }
+    });
+
+    Ok((StatusCode::OK, Json(json!({"message": "Broadcast is being sent to all active users"}))))
 }
 
 pub fn admin_routes() -> Router<Arc<AppState>> {

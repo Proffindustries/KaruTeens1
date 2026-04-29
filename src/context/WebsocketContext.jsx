@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from './ToastContext';
 
@@ -54,13 +55,8 @@ export const WebsocketProvider = ({ children }) => {
 
     const connect = useCallback(() => {
         if (!token) return;
-        const host = window.location.hostname;
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // In production, you likely don't want port 3000 appended if using standard SSL port
-        const isProd =
-            window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const wsPort = isProd ? '' : ':3000';
-        const wsUrl = `${protocol}//${host}${wsPort}/ws`;
+        const apiUrl = api.defaults.baseURL;
+        const wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '') + '/ws';
 
         if (ws.current) ws.current.close();
 
