@@ -44,6 +44,7 @@ const LiveStreamPage = () => {
     const [hearts, setHearts] = useState([]);
     const [showSettings, setShowSettings] = useState(false);
     const [streamTitle, setStreamTitle] = useState(`${user?.username}'s Live`);
+    const [gifts, setGifts] = useState([]);
 
     const videoRef = useRef(null);
     const mediaStreamRef = useRef(null);
@@ -146,6 +147,9 @@ const LiveStreamPage = () => {
                 chatChannel.subscribe('heart', () => {
                     sendHeartLocally();
                 });
+                chatChannel.subscribe('gift', (msg) => {
+                    handleIncomingGift(msg.data);
+                });
             }
 
             showToast('You are now live!', 'success');
@@ -213,6 +217,9 @@ const LiveStreamPage = () => {
             chatChannel.subscribe('heart', () => {
                 sendHeartLocally();
             });
+            chatChannel.subscribe('gift', (msg) => {
+                handleIncomingGift(msg.data);
+            });
         }
     };
 
@@ -255,6 +262,20 @@ const LiveStreamPage = () => {
         if (!ably || !currentStream) return;
         const chatChannel = ably.channels.get(`live:${currentStream.user_id}:chat`);
         chatChannel.publish('heart', {});
+    };
+
+    const sendGift = (giftType) => {
+        if (!ably || !currentStream) return;
+        const chatChannel = ably.channels.get(`live:${currentStream.user_id}:chat`);
+        chatChannel.publish('gift', { type: giftType, user: user?.username });
+    };
+
+    const handleIncomingGift = (gift) => {
+        const id = Date.now();
+        setGifts(prev => [...prev, { ...gift, id }]);
+        setTimeout(() => {
+            setGifts(prev => prev.filter(g => g.id !== id));
+        }, 4000);
     };
 
     // --- Render Helpers ---
@@ -303,14 +324,51 @@ const LiveStreamPage = () => {
                                     <Heart size={24} />
                                     <span className="action-label">Like</span>
                                 </button>
+                                <button className="action-btn gift-trigger" onClick={() => setShowSettings(!showSettings)}>
+                                    <span style={{ fontSize: '24px' }}>🎁</span>
+                                    <span className="action-label">Gift</span>
+                                </button>
+                                {showSettings && (
+                                    <div className="gift-menu shadow-lg">
+                                        <div className="gift-item" onClick={() => { sendGift('Rose'); setShowSettings(false); }}>🌹 Rose</div>
+                                        <div className="gift-item" onClick={() => { sendGift('Fire'); setShowSettings(false); }}>🔥 Fire</div>
+                                        <div className="gift-item" onClick={() => { sendGift('Ice Cream'); setShowSettings(false); }}>🍦 Ice Cream</div>
+                                        <div className="gift-item" onClick={() => { sendGift('Crown'); setShowSettings(false); }}>👑 Crown</div>
+                                    </div>
+                                )}
                                 <button className="action-btn">
                                     <Share2 size={24} />
                                     <span className="action-label">Share</span>
                                 </button>
-                                <button className="action-btn">
-                                    <MoreVertical size={24} />
-                                    <span className="action-label">More</span>
-                                </button>
+                            </div>
+
+                            {/* Gift Animation Overlay */}
+                            <div className="gifts-overlay-container">
+                                <AnimatePresence>
+                                    {gifts.map(gift => (
+                                        <motion.div
+                                            key={gift.id}
+                                            initial={{ opacity: 0, x: -100, scale: 0.5 }}
+                                            animate={{ opacity: 1, x: 20, scale: 1.2 }}
+                                            exit={{ opacity: 0, scale: 1.5 }}
+                                            className="gift-animation-pill"
+                                        >
+                                            <div className="gift-user-avatar">
+                                                {gift.user[0].toUpperCase()}
+                                            </div>
+                                            <div className="gift-info">
+                                                <strong>{gift.user}</strong>
+                                                <span>sent a {gift.type}</span>
+                                            </div>
+                                            <div className="gift-icon-big">
+                                                {gift.type === 'Rose' && '🌹'}
+                                                {gift.type === 'Fire' && '🔥'}
+                                                {gift.type === 'Ice Cream' && '🍦'}
+                                                {gift.type === 'Crown' && '👑'}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                             </div>
 
                             <div className="overlay-bottom">

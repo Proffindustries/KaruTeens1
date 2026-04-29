@@ -140,9 +140,9 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
                 
                 if (adElements.length > 0) {
                     const lastElement = adElements[adElements.length - 1];
-                    // Verify width and visibility
-                    const rect = lastElement.getBoundingClientRect();
-                    if (rect.width > 0 && rect.height > 0 && window.getComputedStyle(lastElement).display !== 'none') {
+                    // Verify width and visibility with a stricter check
+                    const offsetWidth = lastElement.offsetWidth;
+                    if (offsetWidth > 50 && window.getComputedStyle(lastElement).display !== 'none') {
                         adsbygoogle.push({});
                         pushed = true;
                         if (observer) observer.disconnect();

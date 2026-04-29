@@ -490,6 +490,8 @@ pub async fn get_public_settings_handler(
         .unwrap_or(None)
         .unwrap_or(SystemSettings {
             is_payment_enabled: true,
+            maintenance_mode: false,
+            allow_new_registrations: true,
             free_verification_limit: 1000,
         });
 

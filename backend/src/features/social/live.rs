@@ -8,6 +8,7 @@ use axum::{
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
 use crate::features::auth::auth_service::AuthUser;
+use crate::models::user::Profile;
 use crate::models::social::LiveStream;
 use serde_json::json;
 use bson::{doc, oid::ObjectId, DateTime};
@@ -37,14 +38,21 @@ async fn start_stream(
         None
     ).await;
 
+    // Fetch profile to get username and avatar
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+    let profile = profiles_collection.find_one(doc! { "user_id": user.user_id }, None).await.unwrap_or(None);
+    
+    let username = profile.as_ref().map(|p| p.username.clone()).unwrap_or_else(|| "User".to_string());
+    let user_avatar = profile.as_ref().and_then(|p| p.avatar_url.clone());
+
     let stream_key = uuid::Uuid::new_v4().to_string();
     let now = DateTime::now();
     
     let new_stream = LiveStream {
         id: None,
         user_id: user.user_id,
-        username: user.username.clone(),
-        user_avatar: user.avatar_url.clone(),
+        username,
+        user_avatar,
         title: payload.get("title").and_then(|t| t.as_str()).unwrap_or("Live Stream").to_string(),
         started_at: now,
         ended_at: None,
