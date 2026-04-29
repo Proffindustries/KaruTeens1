@@ -494,7 +494,7 @@ pub async fn get_messages_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Chat not found or access denied"}))))?;
 
-    let find_options = FindOptions::builder().sort(doc! { "created_at": 1 }).limit(100).build();
+    let find_options = FindOptions::builder().sort(doc! { "created_at": -1 }).limit(100).build();
     let mut cursor = messages_collection.find(doc! { "chat_id": oid }, find_options).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
@@ -506,6 +506,9 @@ pub async fn get_messages_handler(
     if raw_messages.is_empty() {
         return Ok((StatusCode::OK, Json(json!([]))));
     }
+
+    // Reverse to show in chronological order (oldest to newest)
+    raw_messages.reverse();
 
     // 1. Collect all unique sender IDs and parent message IDs
     let mut sender_ids = std::collections::HashSet::new();

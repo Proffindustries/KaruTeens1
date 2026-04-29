@@ -538,13 +538,25 @@ const TimetablePage = () => {
                         ) : (
                             currentDayClasses.map((cls) => {
                                 const activeTasks = cls.tasks ? cls.tasks.filter(t => !t.completed).length : 0;
+                                
+                                // Check if class is currently live
+                                const now = new Date();
+                                const currentDayString = days[now.getDay() - 1] || 'Sunday';
+                                let isLive = false;
+                                
+                                if (cls.day === currentDayString) {
+                                    const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                                    isLive = currentTimeStr >= cls.start_time && currentTimeStr <= cls.end_time;
+                                }
+
                                 return (
-                                <div key={cls.id} className="class-card" style={{ cursor: 'pointer' }} onClick={() => { setActiveClass(cls); setShowClassDetailsModal(true); }}>
+                                <div key={cls.id} className={`class-card ${isLive ? 'live' : ''}`} style={{ cursor: 'pointer' }} onClick={() => { setActiveClass(cls); setShowClassDetailsModal(true); }}>
                                     <div className="class-time">
                                         <Clock size={16} />
                                         <span>
                                             {cls.start_time} - {cls.end_time}
                                         </span>
+                                        {isLive && <span className="live-indicator">LIVE</span>}
                                     </div>
                                     <div className="class-info">
                                         <h3>{cls.title}</h3>
@@ -571,7 +583,6 @@ const TimetablePage = () => {
                                         <div className="class-actions">
                                             <button
                                                 className="icon-btn"
-                                                title="Check-in"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setActiveClass(cls);
@@ -579,26 +590,26 @@ const TimetablePage = () => {
                                                 }}
                                             >
                                                 <Check size={18} />
+                                                <span>Check-in</span>
                                             </button>
                                             <button
                                                 className="icon-btn warning"
-                                                title="Report Issue"
                                                 onClick={(e) => { e.stopPropagation(); handleReportIssue(cls); }}
                                             >
                                                 <AlertCircle size={18} />
+                                                <span>Report</span>
                                             </button>
                                             <button
                                                 className="icon-btn danger"
-                                                title="Delete"
                                                 onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }}
                                             >
                                                 <Trash2 size={18} />
+                                                <span>Remove</span>
                                             </button>
                                         </div>
                                     )}
                                 </div>
-                            )})
-                        )}
+                            )})}
                     </div>
                 </>
             )}
