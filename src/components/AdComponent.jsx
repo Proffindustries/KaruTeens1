@@ -83,7 +83,7 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
             try {
                 // Call the active ads endpoint
                 const { data } = await api.get('/ads/active', {
-                    params: { page, limit: 1 },
+                    params: { placement: page, limit: 1 },
                 });
                 if (data && data.length > 0) {
                     setLocalAd(data[0]);
@@ -128,13 +128,31 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
     // Dedicated useEffect for pushing to adsbygoogle
     useEffect(() => {
         if (!isPremium && !localAd && shouldShow) {
-            try {
-                (window.adsbygoogle = window.adsbygoogle || []).push({});
-            } catch (err) {
-                // AdSense might fail to push if script is blocked, ignore silently
-            }
+            const pushAd = () => {
+                try {
+                    const adsbygoogle = window.adsbygoogle || [];
+                    const adElements = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status="done"])');
+                    
+                    if (adElements.length > 0) {
+                        // Only push if the element has width to avoid "No slot size for availableWidth=0"
+                        const lastElement = adElements[adElements.length - 1];
+                        if (lastElement.offsetWidth > 0) {
+                            adsbygoogle.push({});
+                        } else {
+                            // Retry in 500ms if no width yet
+                            setTimeout(pushAd, 500);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('AdSense push failed:', err);
+                }
+            };
+
+            // Small delay to ensure DOM is ready and layout is calculated
+            const timer = setTimeout(pushAd, 300);
+            return () => clearTimeout(timer);
         }
-    }, [isPremium, localAd, shouldShow]);
+    }, [isPremium, localAd, shouldShow, page]);
 
     // If premium and no local ads, hide the component entirely to provide a clean experience
     if (isPremium && (!localAd || !shouldShow)) return null;

@@ -235,6 +235,7 @@ pub struct AdFilter {
     pub status: Option<String>,
     pub campaign_type: Option<String>,
     pub objective: Option<String>,
+    pub placement: Option<String>,
     pub optimization_goal: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
@@ -1238,6 +1239,11 @@ pub async fn get_active_ads_handler(
     
     if let Some(ctype) = &params.campaign_type {
         creative_filter.insert("creative_type", ctype);
+    }
+
+    if let Some(placement) = &params.placement {
+        // If ads have placement tags, we can filter here
+        // For now, we can just log it or use it to filter assets
     }
 
     let limit = params.limit.unwrap_or(1);
