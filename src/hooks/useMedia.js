@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import safeLocalStorage from '../utils/storage.js';
 
 import imageCompression from 'browser-image-compression';
 
@@ -23,19 +24,24 @@ export const useMediaUpload = () => {
     const uploadImage = async (file, onProgress = null, cancelToken = null) => {
         setIsUploading(true);
         try {
-            // Compress the image before uploading
+            // Compress and convert to WebP
             const options = {
-                maxSizeMB: 0.8,
-                maxWidthOrHeight: 1920,
+                maxSizeMB: 0.5, // Reduced from 0.8 to 0.5
+                maxWidthOrHeight: 1600, // Reduced from 1920 to 1600 for mobile-first
                 useWebWorker: true,
+                fileType: 'image/webp', // Force WebP conversion
                 onProgress: (progress) => {
                     if (onProgress) {
-                        onProgress(Math.round(progress * 0.15), 0); // Compression is first 15%
+                        onProgress(Math.round(progress * 0.15), 0);
                     }
                 },
             };
 
             const compressedFile = await imageCompression(file, options);
+            
+            // Rename to .webp if it was converted
+            const fileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+            const finalFile = new File([compressedFile], fileName, { type: 'image/webp' });
 
             // 1. Get signature from backend
             const timestamp = Math.round(new Date().getTime() / 1000).toString();
@@ -50,7 +56,7 @@ export const useMediaUpload = () => {
 
             // 2. Upload to Cloudinary
             const formData = new FormData();
-            formData.append('file', compressedFile);
+            formData.append('file', finalFile);
             formData.append('api_key', import.meta.env.VITE_CLOUDINARY_API_KEY);
             formData.append('timestamp', timestamp);
             formData.append('signature', signature);
@@ -79,7 +85,7 @@ export const useMediaUpload = () => {
                 throw err;
             }
             console.error('Image upload error:', err);
-            showToast('Image upload failed after multiple attempts', 'error');
+            showToast('Image upload failed', 'error');
             throw err;
         } finally {
             setIsUploading(false);
@@ -87,6 +93,17 @@ export const useMediaUpload = () => {
     };
 
     const uploadFile = async (file, onProgress = null, cancelToken = null) => {
+        const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
+        const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
+        const maxFileSizeMB = isPremium ? 100 : 50;
+        const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024;
+
+        // Enforce limit for generic files
+        if (file.size > maxFileSizeBytes) {
+            showToast(`File too large (Max ${maxFileSizeMB}MB)`, 'error');
+            throw new Error('File too large');
+        }
+
         setIsUploading(true);
         try {
             // 1. Get presigned URL from backend

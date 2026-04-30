@@ -71,6 +71,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
+import { getOptimizedUrl } from '../utils/mediaUtils.js';
 
 const COMMON_EMOJIS = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -940,7 +941,7 @@ const MessagesPage = () => {
         if (isImage) {
             return (
                 <div className={`msg-media-container ${isNsfw ? 'nsfw-blurred' : ''}`}>
-                    <img src={url} alt="attachment" />
+                    <img src={getOptimizedUrl(url)} alt="attachment" />
                     {isNsfw && (
                         <div
                             className="nsfw-overlay"

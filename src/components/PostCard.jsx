@@ -38,23 +38,7 @@ import Comment from './Comment.jsx';
 import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
-
-// Helper function for Cloudinary optimization
-const getOptimizedCloudinaryUrl = (url, transformations = 'f_auto,q_auto,w_800') => {
-    // Regex to match common Cloudinary URLs, handling the version string correctly
-    const cloudinaryRegex =
-        /(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)?(.+)/;
-    const match = url.match(cloudinaryRegex);
-
-    if (match) {
-        const baseUrl = match[1];
-        const version = match[2] || '';
-        const publicId = match[3];
-        // Insert transformations after 'upload/' and before the version/public_id
-        return `${baseUrl}${transformations}/${version}${publicId}`;
-    }
-    return url; // Return original URL if not a Cloudinary URL
-};
+import { getOptimizedUrl } from '../utils/mediaUtils.js';
 
 const getVideoThumbnail = (url) => {
     if (!url) return null;
@@ -654,7 +638,7 @@ const PostCard = React.memo(({ post }) => {
                                             </div>
                                         ) : isImage ? (
                                             <img
-                                                src={getOptimizedCloudinaryUrl(url)}
+                                                src={getOptimizedUrl(url, 'f_auto,q_auto,w_800')}
                                                 alt={`Post content ${idx + 1}`}
                                                 className="post-image"
                                                 loading="lazy"
