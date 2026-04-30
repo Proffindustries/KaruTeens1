@@ -67,7 +67,6 @@ import { useAbly } from '../context/AblyContext.jsx';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useMediaUpload } from '../hooks/useMedia.js';
-import { useEncryption } from '../hooks/useEncryption.js';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
@@ -224,126 +223,19 @@ const VoiceNotePlayer = ({ url }) => {
     );
 };
 
-const DecryptedText = ({
-    content,
-    encryptedContent,
-    iv,
-    participantPublicKey,
-    decryptFromSender,
-    isDeleted,
-}) => {
-    const [decrypted, setDecrypted] = useState(() => {
-        // If it's already plaintext, just show it
-        if (content !== '[Encrypted Message]') return content;
-        return null;
-    });
-    const [isDecrypting, setIsDecrypting] = useState(false);
-    const lastContentRef = useRef(null);
-
-    useEffect(() => {
-        if (isDeleted) {
-            setDecrypted(null);
-            return;
-        }
-
-        const isE2EEEnabled = import.meta.env.VITE_ENABLE_E2EE === 'true';
-
-        // If E2EE is disabled globally, just show whatever content we have
-        if (!isE2EEEnabled) {
-            if (content === '[Encrypted Message]') {
-                setDecrypted('[Message Encrypted - E2EE Disabled]');
-            } else {
-                setDecrypted(content);
-            }
-            setIsDecrypting(false);
-            return;
-        }
-
-        // If content is not the placeholder, we don't need to decrypt
-        if (content !== '[Encrypted Message]') {
-            setDecrypted(content);
-            setIsDecrypting(false);
-            return;
-        }
-
-        // If we have encryption metadata, try to decrypt
-        if (encryptedContent && iv) {
-            // If we don't have the key yet, we can't decrypt
-            if (!participantPublicKey) {
-                setDecrypted('[Waiting for keys...]');
-                return;
-            }
-
-            // Check if we've already successfully decrypted this specific content
-            if (decrypted && decrypted !== '[Encrypted Message]' && decrypted !== '[Waiting for keys...]' && lastContentRef.current === encryptedContent) {
-                return;
-            }
-
-            const timer = setTimeout(() => {
-                setIsDecrypting(true);
-            }, 50);
-
-            decryptFromSender(encryptedContent, iv, participantPublicKey).then((text) => {
-                clearTimeout(timer);
-                if (text && text !== '[Encrypted Message]') {
-                    setDecrypted(text);
-                    lastContentRef.current = encryptedContent;
-                } else {
-                    // Decryption failed (maybe wrong device/key)
-                    setDecrypted('[Decryption Failed - Device Mismatch]');
-                }
-                setIsDecrypting(false);
-            });
-            return () => clearTimeout(timer);
-        } else {
-            // No encryption metadata but is placeholder? Should not happen but handle it.
-            setDecrypted(content);
-        }
-    }, [encryptedContent, iv, participantPublicKey, isDeleted, decryptFromSender, content]);
-
+const MessageContent = ({ content, isDeleted }) => {
     if (isDeleted)
         return (
             <p className="deleted-text">
                 <i>This message was deleted</i>
             </p>
         );
-    
-    // Show decrypting state only if we don't have a better fallback already
-    if (isDecrypting && (!decrypted || decrypted === '[Encrypted Message]'))
-        return (
-            <p className="decrypting-text">
-                <i>
-                    <Lock size={10} /> Decrypting...
-                </i>
-            </p>
-        );
 
-    // If still null, show the original placeholder
-    const displayText = decrypted || content;
-
-    const links = typeof displayText === 'string' ? displayText.match(URL_REGEX) : null;
-
-    if (displayText === '[Waiting for keys...]') {
-        return (
-            <p className="e2ee-status-text">
-                <Loader2 size={10} className="animate-spin" /> {displayText}
-            </p>
-        );
-    }
-
-    if (displayText === '[Message Encrypted - E2EE Disabled]' || displayText === '[Decryption Failed - Device Mismatch]') {
-        return (
-            <p className="e2ee-status-text failed">
-                <Lock size={10} /> {displayText}
-                <br />
-                <small>{displayText.includes('Disabled') ? 'Enable E2EE in settings to read' : 'Message was sent to your other device'}</small>
-            </p>
-        );
-    }
+    const links = typeof content === 'string' ? content.match(URL_REGEX) : null;
 
     return (
         <>
-            <p>{displayText}</p>
+            <p>{content}</p>
             {links?.map((link, idx) => (
                 <LinkPreview key={idx} url={link} />
             ))}
@@ -488,7 +380,6 @@ const MessagesPage = () => {
     const { mutate: updateGroup } = useUpdateGroup(selectedChatId);
     const { mutate: toggleAdmin } = useToggleAdmin(selectedChatId);
 
-    const { isReady: isEncryptionReady, encryptForRecipient, decryptFromSender } = useEncryption();
 
     // WebRTC Integration
     const currentUser = JSON.parse(safeLocalStorage.getItem('user'));
@@ -776,7 +667,6 @@ const MessagesPage = () => {
         }
 
         const selectedChat = chats?.find((c) => c.id === selectedChatId);
-        const recipientPublicKey = selectedChat?.participant?.public_key;
 
         const cleanup = () => {
             setMessageInput('');
@@ -784,34 +674,10 @@ const MessagesPage = () => {
             setIsSending(false);
         };
 
-        const isE2EEEnabled = import.meta.env.VITE_ENABLE_E2EE === 'true';
-
-        if (isE2EEEnabled && isEncryptionReady && recipientPublicKey) {
-            const encrypted = await encryptForRecipient(messageInput, recipientPublicKey);
-            if (encrypted) {
-                sendMessage(
-                    {
-                        content: messageInput, // Keep original for optimistic UI
-                        encrypted_content: encrypted.content,
-                        encryption_iv: encrypted.iv,
-                        reply_to_id: replyingTo?.id,
-                        _mask_on_send: true, // Internal flag for hook
-                    },
-                    { onSettled: cleanup },
-                );
-            } else {
-                // Fallback to plain if encryption fails for some reason
-                sendMessage(
-                    { content: messageInput, reply_to_id: replyingTo?.id },
-                    { onSettled: cleanup },
-                );
-            }
-        } else {
-            sendMessage(
-                { content: messageInput, reply_to_id: replyingTo?.id },
-                { onSettled: cleanup },
-            );
-        }
+        sendMessage(
+            { content: messageInput, reply_to_id: replyingTo?.id },
+            { onSettled: cleanup },
+        );
     };
 
     const handleForwardSelect = (targetChatId) => {
@@ -1277,13 +1143,6 @@ const MessagesPage = () => {
                                                     : 'Offline'}
                                         </span>
                                     </div>
-                                    {!selectedChat?.is_group &&
-                                        selectedChat?.participant?.public_key &&
-                                        import.meta.env.VITE_ENABLE_E2EE === 'true' && (
-                                            <div className="e2ee-tag">
-                                                <Lock size={10} /> <span>E2EE</span>
-                                            </div>
-                                        )}
                                 </div>
                                 <div className="chat-actions">
                                     {showChatSearch && (
@@ -1531,15 +1390,8 @@ const MessagesPage = () => {
                                                     )}
 
                                                     <div className="msg-content-wrapper">
-                                                        <DecryptedText
+                                                        <MessageContent
                                                             content={msg.content}
-                                                            encryptedContent={msg.encrypted_content}
-                                                            iv={msg.encryption_iv}
-                                                            participantPublicKey={
-                                                                selectedChat?.participant
-                                                                    ?.public_key
-                                                            }
-                                                            decryptFromSender={decryptFromSender}
                                                             isDeleted={msg.is_deleted}
                                                         />
                                                         {!msg.is_deleted &&
