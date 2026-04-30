@@ -250,7 +250,11 @@ const DecryptedText = ({
 
         // If E2EE is disabled globally, just show whatever content we have
         if (!isE2EEEnabled) {
-            setDecrypted(content);
+            if (content === '[Encrypted Message]') {
+                setDecrypted('[Message Encrypted - E2EE Disabled]');
+            } else {
+                setDecrypted(content);
+            }
             setIsDecrypting(false);
             return;
         }
@@ -327,12 +331,12 @@ const DecryptedText = ({
         );
     }
 
-    if (displayText === '[Decryption Failed - Device Mismatch]') {
+    if (displayText === '[Message Encrypted - E2EE Disabled]' || displayText === '[Decryption Failed - Device Mismatch]') {
         return (
             <p className="e2ee-status-text failed">
                 <Lock size={10} /> {displayText}
                 <br />
-                <small>Message was sent to your other device</small>
+                <small>{displayText.includes('Disabled') ? 'Enable E2EE in settings to read' : 'Message was sent to your other device'}</small>
             </p>
         );
     }
