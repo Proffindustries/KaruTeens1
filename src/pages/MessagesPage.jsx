@@ -246,6 +246,15 @@ const DecryptedText = ({
             return;
         }
 
+        const isE2EEEnabled = import.meta.env.VITE_ENABLE_E2EE === 'true';
+
+        // If E2EE is disabled globally, just show whatever content we have
+        if (!isE2EEEnabled) {
+            setDecrypted(content);
+            setIsDecrypting(false);
+            return;
+        }
+
         // If content is not the placeholder, we don't need to decrypt
         if (content !== '[Encrypted Message]') {
             setDecrypted(content);
@@ -771,7 +780,9 @@ const MessagesPage = () => {
             setIsSending(false);
         };
 
-        if (isEncryptionReady && recipientPublicKey) {
+        const isE2EEEnabled = import.meta.env.VITE_ENABLE_E2EE === 'true';
+
+        if (isE2EEEnabled && isEncryptionReady && recipientPublicKey) {
             const encrypted = await encryptForRecipient(messageInput, recipientPublicKey);
             if (encrypted) {
                 sendMessage(
@@ -1263,7 +1274,8 @@ const MessagesPage = () => {
                                         </span>
                                     </div>
                                     {!selectedChat?.is_group &&
-                                        selectedChat?.participant?.public_key && (
+                                        selectedChat?.participant?.public_key &&
+                                        import.meta.env.VITE_ENABLE_E2EE === 'true' && (
                                             <div className="e2ee-tag">
                                                 <Lock size={10} /> <span>E2EE</span>
                                             </div>

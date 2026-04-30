@@ -11,6 +11,13 @@ export const useEncryption = () => {
     // Run initialization effect
     useEffect(() => {
         let mounted = true;
+        const isE2EEEnabled = import.meta.env.VITE_ENABLE_E2EE === 'true';
+
+        if (!isE2EEEnabled) {
+            setIsReady(false);
+            return;
+        }
+
         const runInit = async () => {
             try {
                 await encryptionService.init();
