@@ -58,7 +58,13 @@ const getFFmpeg = async (onProgress) => {
  */
 export const transformVideo = async (file, onProgress) => {
     const { fetchFile } = await import('@ffmpeg/util');
-    const ffmpeg = await getFFmpeg(onProgress);
+    let ffmpeg;
+    try {
+        ffmpeg = await getFFmpeg(onProgress);
+    } catch (err) {
+        console.warn('FFmpeg failed to load, falling back to original video file:', err);
+        return file;
+    }
 
     const inputName = 'input_' + Date.now() + '.' + (file.name.split('.').pop() || 'mp4');
     const outputName = 'output_' + Date.now() + '.mp4';
@@ -108,7 +114,13 @@ export const transformVideo = async (file, onProgress) => {
  */
 export const transformAudio = async (file, onProgress) => {
     const { fetchFile } = await import('@ffmpeg/util');
-    const ffmpeg = await getFFmpeg(onProgress);
+    let ffmpeg;
+    try {
+        ffmpeg = await getFFmpeg(onProgress);
+    } catch (err) {
+        console.warn('FFmpeg failed to load, falling back to original audio file:', err);
+        return file;
+    }
 
     const inputName = 'audio_in_' + Date.now() + '.' + (file.name.split('.').pop() || 'mp3');
     const outputName = 'audio_out_' + Date.now() + '.mp3';

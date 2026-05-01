@@ -703,6 +703,13 @@ const CreatePostModal = React.memo(
                                             >
                                                 <Music size={24} color="#f7b928" />
                                             </button>
+                                            <button
+                                                className="icon-btn"
+                                                title="Document"
+                                                onClick={() => documentInputRef.current.click()}
+                                            >
+                                                <FileText size={24} color="#606770" />
+                                            </button>
                                             <div style={{ position: 'relative' }}>
                                                 <button
                                                     className="icon-btn"

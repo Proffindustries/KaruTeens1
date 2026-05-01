@@ -40,6 +40,8 @@ import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
 import { getOptimizedUrl } from '../utils/mediaUtils.js';
+import { useMediaUpload } from '../hooks/useMedia';
+import { useAuthContext } from '../context/AuthContext.jsx';
 
 const getVideoThumbnail = (url) => {
     if (!url) return null;
@@ -78,7 +80,9 @@ const PostCard = React.memo(({ post }) => {
     const [isHidden, setIsHidden] = useState(false);
     const [isNsfwRevealed, setIsNsfwRevealed] = useState(false);
     const { showToast } = useToast();
-    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
+    const { user: currentUser } = useAuthContext();
+    const { uploadMedia } = useMediaUpload();
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const fileInputRef = useRef(null);
     const commentInputRef = useRef(null);
 
@@ -100,7 +104,7 @@ const PostCard = React.memo(({ post }) => {
 
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
-    const { mutateAsync: addCommentAsync, isPending: isSubmittingComment } = useAddComment();
+    const { mutateAsync: addCommentAsync } = useAddComment();
     const { mutate: deletePost } = useDeletePost();
     const { mutate: reportPost } = useReportPost();
     const { mutate: savePost } = useSavePost();
@@ -238,14 +242,26 @@ const PostCard = React.memo(({ post }) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
+        setIsSubmittingComment(true);
         try {
+            let uploadedUrl = customStickerUrl;
+            let mediaType = customStickerUrl ? 'sticker' : undefined;
+
+            if (commentMedia) {
+                showToast('Uploading media...', 'info');
+                uploadedUrl = await uploadMedia(commentMedia);
+                if (commentMedia.type.startsWith('image/')) mediaType = 'image';
+                else if (commentMedia.type.startsWith('video/')) mediaType = 'video';
+                else if (commentMedia.type.startsWith('audio/')) mediaType = 'audio';
+                else mediaType = 'file';
+            }
+
             await addCommentAsync({
                 postId: postId,
                 content: customStickerUrl ? 'Sticker' : commentText,
-                parent_comment_id: null,
-                mediaFile: commentMedia, // Note: backend doesn't support files yet, but it's here
-                mediaUrl: customStickerUrl,
-                mediaType: customStickerUrl ? 'sticker' : undefined,
+                parentCommentId: undefined, // Type uses parentCommentId
+                mediaUrl: uploadedUrl,
+                mediaType: mediaType,
             });
             setCommentText('');
             setCommentMedia(null);
@@ -256,6 +272,8 @@ const PostCard = React.memo(({ post }) => {
         } catch (error) {
             setCommentsCount(previousCount);
             showToast('Failed to post comment', 'error');
+        } finally {
+            setIsSubmittingComment(false);
         }
     };
 
@@ -278,13 +296,24 @@ const PostCard = React.memo(({ post }) => {
         setCommentsCount(previousCount + 1);
 
         try {
+            let uploadedUrl = customStickerUrl;
+            let mediaType = customStickerUrl ? 'sticker' : undefined;
+
+            if (replyMedia) {
+                showToast('Uploading media...', 'info');
+                uploadedUrl = await uploadMedia(replyMedia);
+                if (replyMedia.type.startsWith('image/')) mediaType = 'image';
+                else if (replyMedia.type.startsWith('video/')) mediaType = 'video';
+                else if (replyMedia.type.startsWith('audio/')) mediaType = 'audio';
+                else mediaType = 'file';
+            }
+
             await addCommentAsync({
                 postId: postId,
                 content: replyContent,
-                parent_comment_id: parentCommentId,
-                mediaFile: replyMedia,
-                mediaUrl: customStickerUrl,
-                mediaType: customStickerUrl ? 'sticker' : undefined,
+                parentCommentId: parentCommentId,
+                mediaUrl: uploadedUrl,
+                mediaType: mediaType,
             });
         } catch (error) {
             setCommentsCount(previousCount);
@@ -837,7 +866,7 @@ const PostCard = React.memo(({ post }) => {
                                         type="file"
                                         ref={fileInputRef}
                                         onChange={handleMediaSelect}
-                                        accept="image/*,video/*"
+                                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                                         hidden
                                     />
                                     <button

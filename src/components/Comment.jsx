@@ -232,7 +232,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                     type="file"
                                     ref={fileInputRef}
                                     onChange={handleMediaSelect}
-                                    accept="image/*,video/*"
+                                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                                     hidden
                                 />
                                 <button
