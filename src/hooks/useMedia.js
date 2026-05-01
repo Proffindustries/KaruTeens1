@@ -4,7 +4,6 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
 import safeLocalStorage from '../utils/storage.js';
 import imageCompression from 'browser-image-compression';
-import { transformVideo, transformAudio } from '../utils/mediaTransform.js';
 
 export const useMediaUpload = () => {
     const [isUploading, setIsUploading] = useState(false);
@@ -21,10 +20,25 @@ export const useMediaUpload = () => {
         }
     };
 
+    const pollJobStatus = async (jobId, maxAttempts = 60) => {
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                const { data } = await api.get(`/media/status/${jobId}`);
+                if (data.status === 'completed') return data;
+                if (data.status === 'failed') throw new Error(data.error || 'Optimization failed');
+            } catch (err) {
+                if (err.message.includes('failed')) throw err;
+                // Job might not be in DB yet, ignore and continue
+            }
+            await new Promise((r) => setTimeout(r, 2000)); // Poll every 2s
+        }
+        throw new Error('Optimization timed out');
+    };
+
     // ── Upload a (possibly transformed) file to R2 via presigned URL ─────────
     const uploadToR2 = async (file, onProgress = null, cancelToken = null) => {
         const {
-            data: { url, public_url },
+            data: { url, public_url, final_public_url },
         } = await withRetry(() =>
             api.post(
                 '/media/signature/r2',
@@ -48,7 +62,7 @@ export const useMediaUpload = () => {
             }),
         );
 
-        return public_url;
+        return { public_url, final_public_url };
     };
 
     // ── Images: compress → WebP → R2 ─────────────────────────────────────────
@@ -68,13 +82,13 @@ export const useMediaUpload = () => {
             const finalFile = new File([compressed], fileName, { type: 'image/webp' });
 
             // Progress 50–100%: upload
-            const url = await uploadToR2(
+            const { final_public_url } = await uploadToR2(
                 finalFile,
                 onProgress ? (p, l) => onProgress(50 + Math.round(p / 2), l) : null,
                 cancelToken,
             );
 
-            return url;
+            return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
             console.error('Image upload error:', err);
@@ -89,7 +103,7 @@ export const useMediaUpload = () => {
     const uploadVideo = async (file, onProgress = null, cancelToken = null) => {
         const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
         const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
-        const maxSizeMB = isPremium ? 500 : 200;
+        const maxSizeMB = isPremium ? 1000 : 200;
 
         if (file.size > maxSizeMB * 1024 * 1024) {
             showToast(`Video too large (Max ${maxSizeMB}MB)`, 'error');
@@ -98,28 +112,25 @@ export const useMediaUpload = () => {
 
         setIsUploading(true);
         try {
-            showToast('Processing video… this may take a moment', 'info');
-
-            // Progress 0–70%: ffmpeg transcode
-            let transformed;
-            try {
-                transformed = await transformVideo(
-                    file,
-                    onProgress ? (p) => onProgress(Math.round(p * 0.7), 0) : null,
-                );
-            } catch (transcodeErr) {
-                console.warn('Video transcode failed, using original:', transcodeErr);
-                transformed = file;
-            }
-
-            // Progress 70–100%: R2 upload
-            const url = await uploadToR2(
-                transformed,
-                onProgress ? (p, l) => onProgress(70 + Math.round(p * 0.3), l) : null,
+            // 1. Upload Raw to Temp
+            const { public_url, final_public_url } = await uploadToR2(
+                file,
+                onProgress,
                 cancelToken,
             );
 
-            return url;
+            // 2. Trigger Server Processing
+            const { data } = await api.post('/media/process', {
+                temp_url: public_url,
+                media_type: 'video',
+                original_name: file.name,
+            });
+
+            // 3. Poll for Completion
+            showToast('Optimizing video…', 'info');
+            await pollJobStatus(data.job_id);
+
+            return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
             console.error('Video upload error:', err);
@@ -134,7 +145,7 @@ export const useMediaUpload = () => {
     const uploadAudio = async (file, onProgress = null, cancelToken = null) => {
         const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
         const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
-        const maxSizeMB = isPremium ? 100 : 25;
+        const maxSizeMB = isPremium ? 200 : 50;
 
         if (file.size > maxSizeMB * 1024 * 1024) {
             showToast(`Audio too large (Max ${maxSizeMB}MB)`, 'error');
@@ -143,26 +154,23 @@ export const useMediaUpload = () => {
 
         setIsUploading(true);
         try {
-            showToast('Processing audio…', 'info');
-
-            let transformed;
-            try {
-                transformed = await transformAudio(
-                    file,
-                    onProgress ? (p) => onProgress(Math.round(p * 0.7), 0) : null,
-                );
-            } catch (transcodeErr) {
-                console.warn('Audio transcode failed, using original:', transcodeErr);
-                transformed = file;
-            }
-
-            const url = await uploadToR2(
-                transformed,
-                onProgress ? (p, l) => onProgress(70 + Math.round(p * 0.3), l) : null,
+            const { public_url, final_public_url } = await uploadToR2(
+                file,
+                onProgress,
                 cancelToken,
             );
 
-            return url;
+            const { data } = await api.post('/media/process', {
+                temp_url: public_url,
+                media_type: file.name.includes('voice_note') ? 'voice_note' : 'audio',
+                original_name: file.name,
+            });
+
+            if (file.name.includes('voice_note')) {
+                await pollJobStatus(data.job_id);
+            }
+
+            return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
             console.error('Audio upload error:', err);
@@ -175,22 +183,14 @@ export const useMediaUpload = () => {
 
     // ── Documents / other files: straight to R2 (no transform) ──────────────
     const uploadFile = async (file, onProgress = null, cancelToken = null) => {
-        const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
-        const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
-        const maxFileSizeMB = isPremium ? 100 : 50;
-
-        if (file.size > maxFileSizeMB * 1024 * 1024) {
-            showToast(`File too large (Max ${maxFileSizeMB}MB)`, 'error');
-            throw new Error('File too large');
-        }
-
         setIsUploading(true);
         try {
-            return await uploadToR2(file, onProgress, cancelToken);
+            const { final_public_url } = await uploadToR2(file, onProgress, cancelToken);
+            return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
             console.error('File upload error:', err);
-            showToast('File upload failed after multiple attempts', 'error');
+            showToast('File upload failed', 'error');
             throw err;
         } finally {
             setIsUploading(false);

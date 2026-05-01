@@ -102,3 +102,24 @@ export const inferMediaType = (url) => {
     if (/\.(jpg|jpeg|png|gif|webp|avif|svg)$/.test(lower)) return 'image';
     return 'file';
 };
+
+/**
+ * Adaptive Video Selection
+ * Returns the URL for the appropriate variant (480p for mobile, 720p for desktop)
+ * if the media is served from R2.
+ */
+export const getVariantUrl = (url) => {
+    if (!url || !url.includes('/uploads/')) return url;
+    if (url.match(/\.(mp4|webm)$/i)) {
+        // Simple screen-width check as verified in Phase 4
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        const suffix = isMobile ? '_480p' : '_720p';
+        
+        // Skip if already has a variant suffix
+        if (url.includes('_480p.') || url.includes('_720p.')) return url;
+        
+        // Insert suffix before extension
+        return url.replace(/(\.[^.]+)$/, `${suffix}$1`);
+    }
+    return url;
+};

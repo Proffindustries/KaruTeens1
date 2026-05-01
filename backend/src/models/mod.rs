@@ -10,6 +10,7 @@ pub mod ads;
 pub mod social;
 pub mod academic;
 pub mod pages;
+pub mod media;
 
 // Re-export core models for convenience (maintains backward compatibility)
 pub use base::*;
@@ -22,6 +23,7 @@ pub use marketplace::*;
 pub use events::*;
 pub use ads::*;
 pub use pages::*;
+pub use media::*;
 
 // Explicit re-exports for structured modules
 pub mod stories {

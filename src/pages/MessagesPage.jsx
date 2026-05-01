@@ -72,7 +72,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
-import { getOptimizedUrl } from '../utils/mediaUtils.js';
+import { getOptimizedUrl, getVariantUrl } from '../utils/mediaUtils.js';
 import { saveSticker, isStickerSaved } from '../utils/stickerStorage.js';
 
 const COMMON_EMOJIS = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
@@ -997,7 +997,7 @@ const MessagesPage = () => {
         if (isVideo)
             return (
                 <div className={`msg-media-container ${isNsfw ? 'nsfw-blurred' : ''}`}>
-                    <video src={url} controls={!isNsfw} />
+                    <video src={getVariantUrl(url)} controls={!isNsfw} />
                     {isNsfw && (
                         <div
                             className="nsfw-overlay"

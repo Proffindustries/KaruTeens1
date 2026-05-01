@@ -5,6 +5,7 @@ pub mod cache;
 pub mod cache_utils;
 pub mod cdn;
 pub mod media;
+pub mod media_processor;
 pub mod push;
 pub mod rate_limit;
 pub mod search;

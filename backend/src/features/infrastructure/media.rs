@@ -37,13 +37,101 @@ pub struct R2PresignedUrlRequest {
 #[derive(Debug, Serialize)]
 pub struct R2PresignedUrlResponse {
     pub url: String,
-    pub public_url: String,
+    pub public_url: String, // The actual URL being uploaded to (might be temp)
+    pub final_public_url: String, // Where it will be after processing
 }
 
 pub fn media_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/signature/cloudinary", post(get_cloudinary_signature))
         .route("/signature/r2", post(get_r2_presigned_url))
+        .route("/process", post(trigger_media_processing))
+        .route("/status/:job_id", axum::routing::get(get_media_status))
+}
+
+use crate::models::MediaJobRecord;
+
+async fn get_media_status(
+    _user: AuthUser,
+    state: axum::extract::State<Arc<AppState>>,
+    axum::extract::Path(job_id): axum::extract::Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let coll = state.mongo.collection::<MediaJobRecord>("media_jobs");
+    let job = coll.find_one(mongodb::bson::doc! { "_id": &job_id }, None)
+        .await
+        .map_err(|e| AppError::InternalServerError(format!("DB error: {}", e)))?
+        .ok_or_else(|| AppError::NotFound("Job not found".to_string()))?;
+
+    Ok(Json(job))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MediaProcessRequest {
+    pub temp_url: String,
+    pub media_type: String, // "video", "audio", "voice_note"
+    pub original_name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MediaProcessResponse {
+    pub job_id: String,
+    pub status: String,
+}
+
+async fn trigger_media_processing(
+    _user: AuthUser,
+    state: axum::extract::State<Arc<AppState>>,
+    Json(payload): Json<MediaProcessRequest>,
+) -> AppResult<impl IntoResponse> {
+    let job_id = uuid::Uuid::new_v4().to_string();
+    
+    // 1. Create Job Record in MongoDB
+    let coll = state.mongo.collection::<MediaJobRecord>("media_jobs");
+    let final_url = format!("{}/uploads/{}", 
+        std::env::var("R2_PUBLIC_BASE_URL").unwrap_or_default(),
+        payload.temp_url.split("/temp/").last().unwrap_or("")
+    );
+
+    let record = MediaJobRecord {
+        id: job_id.clone(),
+        user_id: _user.id.to_string(),
+        status: "pending".to_string(),
+        media_type: payload.media_type.clone(),
+        original_name: payload.original_name.clone(),
+        final_url,
+        error: None,
+        created_at: Utc::now().timestamp(),
+        updated_at: Utc::now().timestamp(),
+    };
+    
+    coll.insert_one(record, None).await.map_err(|e| {
+        tracing::error!("Failed to create job record: {}", e);
+        AppError::InternalServerError("Database error".to_string())
+    })?;
+
+    // 2. Push job to Redis queue
+    let mut conn = state.redis.clone();
+    let job_data = serde_json::json!({
+        "job_id": &job_id,
+        "temp_url": payload.temp_url,
+        "media_type": payload.media_type,
+        "original_name": payload.original_name,
+        "user_id": _user.id.to_string(),
+        "created_at": Utc::now().timestamp(),
+    });
+
+    let _: () = redis::Cmd::lpush("media_queue", job_data.to_string())
+        .query_async(&mut conn)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to queue media job: {}", e);
+            AppError::InternalServerError("Queue system unavailable".to_string())
+        })?;
+
+    Ok(Json(MediaProcessResponse {
+        job_id,
+        status: "queued".to_string(),
+    }))
 }
 
 use crate::features::infrastructure::error::{AppError, AppResult};
@@ -130,7 +218,12 @@ async fn get_r2_presigned_url(
         .map(char::from)
         .collect();
     
-    let key = format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix);
+    let key = if payload.content_type.starts_with("image/") {
+        format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
+    } else {
+        // Videos, Audio, and Docs go to temp/ for processing or safe storage
+        format!("temp/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
+    };
     
     let expires_in = Duration::from_secs(3600);
     let presigned_request = client
@@ -148,8 +241,16 @@ async fn get_r2_presigned_url(
             AppError::InternalServerError("Failed to generate presigned URL".to_string())
         })?;
 
+    let final_public_url = if payload.content_type.starts_with("image/") {
+        format!("{}/{}", public_base_url, key)
+    } else {
+        // Map temp/ prefix to uploads/ for final destination
+        format!("{}/{}", public_base_url, key.replace("temp/", "uploads/"))
+    };
+
     Ok(Json(R2PresignedUrlResponse {
         url: presigned_request.uri().to_string(),
         public_url: format!("{}/{}", public_base_url, key),
+        final_public_url,
     }))
 }

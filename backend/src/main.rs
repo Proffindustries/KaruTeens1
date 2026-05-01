@@ -74,6 +74,9 @@ async fn main() {
 
     // Start AI Model Updater
     ai::spawn_model_updater(state.clone());
+    
+    // Start Media Processing Worker
+    crate::features::infrastructure::media_processor::spawn_media_worker(state.clone());
 
     // Port and Address Setup
     let port = std::env::var("PORT")

@@ -39,7 +39,7 @@ import StickerPicker from './StickerPicker.jsx';
 import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
-import { getOptimizedUrl } from '../utils/mediaUtils.js';
+import { getOptimizedUrl, getVariantUrl } from '../utils/mediaUtils.js';
 import { useMediaUpload } from '../hooks/useMedia';
 import { useAuthContext } from '../context/AuthContext.jsx';
 
@@ -648,7 +648,7 @@ const PostCard = React.memo(({ post }) => {
                                         {isVideo ? (
                                             <div className="video-wrapper">
                                                 <CustomVideoPlayer
-                                                    src={url}
+                                                    src={getVariantUrl(url)}
                                                     poster={getVideoThumbnail(url)}
                                                 />
                                             </div>
