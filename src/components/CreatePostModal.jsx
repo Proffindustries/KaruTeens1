@@ -87,6 +87,12 @@ const CreatePostModal = React.memo(
                 if (file.type.startsWith('image/')) type = 'image';
                 else if (file.type.startsWith('video/')) type = 'video';
                 else if (file.type.startsWith('audio/')) type = 'audio';
+                else if (file.type === 'application/pdf') type = 'pdf';
+                else if (
+                    file.type === 'application/vnd.ms-excel' ||
+                    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.name.match(/\.(xls|xlsx)$/i)
+                ) type = 'excel';
 
                 return {
                     id: Math.random().toString(36).substr(2, 9),
@@ -556,10 +562,25 @@ const CreatePostModal = React.memo(
                                                             <span>{fileObj.name}</span>
                                                         </div>
                                                     )}
+                                                    {fileObj.type === 'pdf' && (
+                                                        <iframe
+                                                            src={`${fileObj.previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                            className="pdf-preview"
+                                                            title={fileObj.name}
+                                                        />
+                                                    )}
+                                                    {fileObj.type === 'excel' && (
+                                                        <div className="file-preview-placeholder">
+                                                            <div className="excel-icon-wrapper">
+                                                                <FileText size={24} color="#fff" />
+                                                            </div>
+                                                            <span title={fileObj.name}>{fileObj.name}</span>
+                                                        </div>
+                                                    )}
                                                     {fileObj.type === 'file' && (
                                                         <div className="file-preview-placeholder">
                                                             <FileText size={32} color="#606770" />
-                                                            <span>{fileObj.name}</span>
+                                                            <span title={fileObj.name}>{fileObj.name}</span>
                                                         </div>
                                                     )}
 

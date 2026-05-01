@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, File as FileIcon } from 'lucide-react';
+import React, { useMemo, useEffect } from 'react';
+import { X, File as FileIcon, Music, FileText } from 'lucide-react';
 
 const FilePreviewModal = ({
     selectedUploadFile,
@@ -8,7 +8,30 @@ const FilePreviewModal = ({
     setIsViewOnceUpload,
     confirmUpload,
 }) => {
+    const previewUrl = useMemo(() => {
+        if (!selectedUploadFile) return null;
+        return URL.createObjectURL(selectedUploadFile);
+    }, [selectedUploadFile]);
+
+    // Cleanup URL on unmount or when file changes
+    useEffect(() => {
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
+
     if (!selectedUploadFile) return null;
+
+    let type = 'file';
+    if (selectedUploadFile.type.startsWith('image/')) type = 'image';
+    else if (selectedUploadFile.type.startsWith('video/')) type = 'video';
+    else if (selectedUploadFile.type.startsWith('audio/')) type = 'audio';
+    else if (selectedUploadFile.type === 'application/pdf') type = 'pdf';
+    else if (
+        selectedUploadFile.type === 'application/vnd.ms-excel' ||
+        selectedUploadFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        selectedUploadFile.name.match(/\.(xls|xlsx)$/i)
+    ) type = 'excel';
 
     return (
         <div className="modal-overlay">
@@ -19,24 +42,59 @@ const FilePreviewModal = ({
                         <X size={20} />
                     </button>
                 </div>
-                <div className="modal-body">
-                    <div className="file-preview-info">
-                        <FileIcon size={40} />
-                        <p>{selectedUploadFile.name}</p>
-                        <span>{(selectedUploadFile.size / 1024).toFixed(1)} KB</span>
+                <div className="modal-body p-0">
+                    <div className="file-preview-content">
+                        {type === 'image' && (
+                            <img src={previewUrl} alt="Preview" className="media-preview-img" />
+                        )}
+                        {type === 'video' && (
+                            <video src={previewUrl} controls className="media-preview-video" />
+                        )}
+                        {type === 'audio' && (
+                            <div className="generic-file-view">
+                                <Music size={48} color="#f7b928" />
+                                <p className="file-preview-name">{selectedUploadFile.name}</p>
+                            </div>
+                        )}
+                        {type === 'pdf' && (
+                            <iframe 
+                                src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
+                                className="media-preview-pdf" 
+                                title="PDF Preview"
+                            />
+                        )}
+                        {type === 'excel' && (
+                            <div className="generic-file-view excel-view">
+                                <div className="excel-icon-wrapper-large">
+                                    <FileText size={48} color="#fff" />
+                                </div>
+                                <p className="file-preview-name">{selectedUploadFile.name}</p>
+                            </div>
+                        )}
+                        {type === 'file' && (
+                            <div className="generic-file-view">
+                                <FileIcon size={48} color="#606770" />
+                                <p className="file-preview-name">{selectedUploadFile.name}</p>
+                            </div>
+                        )}
                     </div>
-                    <div className="form-group-checkbox view-once-toggle">
-                        <input
-                            type="checkbox"
-                            id="viewOnceUpload"
-                            checked={isViewOnceUpload}
-                            onChange={(e) => setIsViewOnceUpload(e.target.checked)}
-                        />
-                        <label htmlFor="viewOnceUpload">View Once</label>
+                    <div className="file-meta-info">
+                        <span className="file-size-badge">{(selectedUploadFile.size / 1024).toFixed(1)} KB</span>
                     </div>
-                    <button className="create-btn" onClick={confirmUpload}>
-                        Send File
-                    </button>
+                    <div className="p-4">
+                        <div className="form-group-checkbox view-once-toggle">
+                            <input
+                                type="checkbox"
+                                id="viewOnceUpload"
+                                checked={isViewOnceUpload}
+                                onChange={(e) => setIsViewOnceUpload(e.target.checked)}
+                            />
+                            <label htmlFor="viewOnceUpload">View Once</label>
+                        </div>
+                        <button className="create-btn" style={{ width: '100%', marginTop: '1rem' }} onClick={confirmUpload}>
+                            Send File
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -556,12 +556,14 @@ const PostCard = React.memo(({ post }) => {
                                     url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) ||
                                     post.post_type === 'audio';
                                 const isPDF = url.match(/\.pdf$/i);
+                                const isExcel = url.match(/\.(xls|xlsx)$/i) || url.includes('spreadsheet');
                                 const isImage =
                                     url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i) ||
                                     post.post_type === 'image' ||
                                     (!isVideo &&
                                         !isAudio &&
                                         !isPDF &&
+                                        !isExcel &&
                                         url.includes('cloudinary.com'));
                                 const isLastVisible = idx === 3 && post.media_urls.length > 4;
                                 const remainingCount = post.media_urls.length - 3;
@@ -621,6 +623,13 @@ const PostCard = React.memo(({ post }) => {
                                                 filename={`Audio ${idx + 1}`}
                                             />
                                         ) : isPDF ? (
+                                            <iframe
+                                                src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                className="post-pdf-preview"
+                                                style={{ width: '100%', height: '100%', border: 'none', pointerEvents: 'none', background: '#e9e9e9' }}
+                                                title="PDF Preview"
+                                            />
+                                        ) : isExcel ? (
                                             <div
                                                 className="file-wrapper-mini"
                                                 style={{
@@ -634,14 +643,12 @@ const PostCard = React.memo(({ post }) => {
                                                     gap: '8px',
                                                 }}
                                             >
-                                                <FileText size={32} color="var(--primary-color)" />
-                                                {post.media_urls.length === 1 && (
-                                                    <span
-                                                        style={{ color: 'white', fontSize: '10px' }}
-                                                    >
-                                                        Open Document
-                                                    </span>
-                                                )}
+                                                <div style={{ background: '#217346', padding: '12px', borderRadius: '8px' }}>
+                                                    <FileText size={32} color="white" />
+                                                </div>
+                                                <span style={{ color: 'white', fontSize: '10px', textAlign: 'center', wordBreak: 'break-all' }}>
+                                                    Excel Document
+                                                </span>
                                             </div>
                                         ) : isImage ? (
                                             <img
