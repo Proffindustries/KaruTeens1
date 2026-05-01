@@ -11,6 +11,7 @@ use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::features::infrastructure::db::AppState;
 use crate::models::{User, Profile, AdCampaign, AdGroup, AdCreative, AdAnalytics, AdReport, AdBudget, AdFrequencyCapping, AdExclusionRule};
+use crate::features::infrastructure::dto::{PostResponse, PostAnalyticsSummary};
 use crate::features::auth::auth_service::AuthUser;
 use crate::features::infrastructure::error::{AppError, AppResult};
 use futures::stream::StreamExt;
@@ -1222,35 +1223,21 @@ pub async fn get_active_ads_handler(
     State(state): State<Arc<AppState>>,
     Query(params): Query<AdFilter>,
 ) -> AppResult<impl IntoResponse> {
+    let ads = get_ads_for_feed(&state, params.limit.unwrap_or(1)).await?;
+    Ok((StatusCode::OK, Json(ads)))
+}
+
+pub async fn get_ads_for_feed(
+    state: &Arc<AppState>,
+    limit: i64,
+) -> AppResult<Vec<PostResponse>> {
     let creatives_collection = state.mongo.collection::<AdCreative>("ad_creatives");
-    let groups_collection = state.mongo.collection::<AdGroup>("ad_groups");
     
-    // 1. Build targeting filter for groups
-    let group_filter = doc! { "status": "active" };
-    
-    // Example: filter by objective or campaign type if provided in params
-    if let Some(obj) = &params.objective {
-        // We actually need the campaign for this, but let's assume ad groups inherit or link
-        // For simplicity, let's filter creatives directly by status and basic params
-    }
-
-    // 2. Build creative filter
-    let mut creative_filter = doc! { "status": "active" };
-    
-    if let Some(ctype) = &params.campaign_type {
-        creative_filter.insert("creative_type", ctype);
-    }
-
-    if let Some(placement) = &params.placement {
-        // If ads have placement tags, we can filter here
-        // For now, we can just log it or use it to filter assets
-    }
-
-    let limit = params.limit.unwrap_or(1);
+    let creative_filter = doc! { "status": "active" };
     
     let find_options = mongodb::options::FindOptions::builder()
         .limit(Some(limit))
-        .sort(doc! { "performance_score": -1, "created_at": -1 }) // Prioritize performance
+        .sort(doc! { "performance_score": -1, "created_at": -1 })
         .build();
 
     let mut cursor = creatives_collection.find(creative_filter, find_options).await
@@ -1259,12 +1246,53 @@ pub async fn get_active_ads_handler(
     let mut ads = Vec::new();
     while let Some(creative) = cursor.next().await {
         if let Ok(c) = creative {
-            let ad_response = build_ad_creative_response(&c, &state).await?;
-            ads.push(ad_response);
+            ads.push(creative_to_post_response(c));
         }
     }
 
-    Ok((StatusCode::OK, Json(ads)))
+    Ok(ads)
+}
+
+fn creative_to_post_response(creative: AdCreative) -> PostResponse {
+    let media_urls = if creative.assets.is_empty() {
+        None
+    } else {
+        Some(creative.assets.iter().map(|a| a.asset_url.clone()).collect())
+    };
+
+    PostResponse {
+        id: creative.id.unwrap().to_hex(),
+        content: creative.headline.clone().unwrap_or_else(|| "".to_string()),
+        user: "Sponsored".to_string(),
+        user_avatar: None, // Could be brand logo if added to model
+        likes: 0,
+        comments: 0,
+        created_at: creative.created_at.to_chrono().to_rfc3339(),
+        media_urls,
+        location: None,
+        post_type: creative.creative_type.clone(),
+        is_liked: false,
+        group_id: None,
+        group_name: None,
+        group_avatar: None,
+        page_id: None,
+        page_name: None,
+        page_avatar: None,
+        is_nsfw: false,
+        is_anonymous: false,
+        author_id: "sponsored".to_string(),
+        content_rating: None,
+        is_saved: false,
+        poll: None,
+        engagement_score: 0.0,
+        // Ad-specific fields
+        is_sponsored: Some(true),
+        ad_id: Some(creative.id.unwrap().to_hex()),
+        campaign_id: Some(creative.ad_group_id.to_hex()),
+        cta_text: creative.call_to_action.clone(),
+        cta_url: Some(creative.final_url.clone()),
+        is_ad: Some(true),
+    }
 }
 
 pub async fn track_ad_event_handler(

@@ -221,6 +221,7 @@ pub fn message_routes() -> Router<Arc<AppState>> {
         .route("/", get(get_chats_handler).post(create_chat_handler))
         .route("/group", post(create_group_handler))
         .route("/:id/messages", get(get_messages_handler).post(send_message_handler))
+        .route("/:id/search", get(search_messages_handler))
         .route("/:id/participants/add", post(add_participants_handler))
         .route("/:id/participants/remove", post(remove_participant_handler))
         .route("/:id/leave", post(leave_group_handler))
@@ -234,6 +235,13 @@ pub fn message_routes() -> Router<Arc<AppState>> {
         .route("/messages/:msg_id/read", post(mark_read_handler))
         .route("/messages/:msg_id", post(delete_message_handler))
         .route("/update-live-location", post(update_live_location_handler))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SearchMessagesQuery {
+    pub q: String,
+    pub limit: Option<i64>,
+    pub before: Option<String>,
 }
 
 // --- Handlers ---
@@ -508,8 +516,17 @@ pub async fn get_messages_handler(
         return Ok((StatusCode::OK, Json(json!([]))));
     }
 
-    // Reverse to show in chronological order (oldest to newest)
-    raw_messages.reverse();
+    let responses = messages_to_responses(&state, user.user_id, raw_messages).await?;
+    Ok((StatusCode::OK, Json(json!(responses))))
+}
+
+pub async fn messages_to_responses(
+    state: &AppState,
+    current_user_id: ObjectId,
+    raw_messages: Vec<Message>,
+) -> Result<Vec<MessageResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let messages_collection = state.mongo.collection::<Message>("messages");
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     // 1. Collect all unique sender IDs and parent message IDs
     let mut sender_ids = std::collections::HashSet::new();
@@ -582,7 +599,7 @@ pub async fn get_messages_handler(
 
         for r in &msg.reactions {
             *emo_map.entry(r.emoji.clone()).or_insert(0) += 1;
-            if r.user_id == user.user_id {
+            if r.user_id == current_user_id {
                 me_emojis.insert(r.emoji.clone());
             }
         }
@@ -610,7 +627,7 @@ pub async fn get_messages_handler(
             attachment_url: if msg.is_deleted { None } else { msg.attachment_url.clone() },
             attachment_type: if msg.is_deleted { None } else { msg.attachment_type.clone() },
             created_at: msg.created_at.to_chrono().to_rfc3339(),
-            is_me: msg.sender_id == user.user_id,
+            is_me: msg.sender_id == current_user_id,
             reply_to,
             reactions: reaction_summaries,
             is_deleted: msg.is_deleted,
@@ -625,7 +642,7 @@ pub async fn get_messages_handler(
                     PollOptionResponse {
                         text: opt.text,
                         count,
-                        me_voted: opt.voter_ids.contains(&user.user_id),
+                        me_voted: opt.voter_ids.contains(&current_user_id),
                     }
                 }).collect();
                 PollResponse {
@@ -661,7 +678,54 @@ pub async fn get_messages_handler(
         messages.push(res);
     }
 
-    Ok((StatusCode::OK, Json(json!(messages))))
+    Ok(messages)
+}
+
+pub async fn search_messages_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(chat_id): Path<String>,
+    Query(params): Query<SearchMessagesQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let oid = ObjectId::parse_str(&chat_id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+    let chats_collection = state.mongo.collection::<Chat>("chats");
+    let messages_collection = state.mongo.collection::<Message>("messages");
+
+    // Verify participation
+    let _chat = chats_collection.find_one(doc! { "_id": oid, "participants": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Chat not found or access denied"}))))?;
+
+    let limit = params.limit.unwrap_or(20);
+    let mut filter = doc! { 
+        "chat_id": oid,
+        "$or": [
+            { "content": { "$regex": &params.q, "$options": "i" } },
+            { "encrypted_content": { "$regex": &params.q, "$options": "i" } }
+        ]
+    };
+
+    if let Some(before_id) = params.before {
+        if let Ok(before_oid) = ObjectId::parse_str(before_id) {
+            filter.insert("_id", doc! { "$lt": before_oid });
+        }
+    }
+
+    let find_options = FindOptions::builder().sort(doc! { "created_at": -1 }).limit(limit).build();
+    let mut cursor = messages_collection.find(filter, find_options).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut raw_messages = Vec::new();
+    while let Some(Ok(msg)) = cursor.next().await {
+        raw_messages.push(msg);
+    }
+
+    if raw_messages.is_empty() {
+        return Ok((StatusCode::OK, Json(json!([]))));
+    }
+
+    let responses = messages_to_responses(&state, user.user_id, raw_messages).await?;
+    Ok((StatusCode::OK, Json(json!(responses))))
 }
 
 // Send Message
@@ -927,6 +991,15 @@ pub async fn react_message_handler(
         ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
     }
 
+    // Publish Reaction Update via Ably
+    if let Ok(Some(msg)) = messages_collection.find_one(doc! { "_id": oid }, None).await {
+        let responses = messages_to_responses(&state, user.user_id, vec![msg.clone()]).await.unwrap_or_default();
+        if let Some(res) = responses.first() {
+            let chat_channel = format!("chat:{}", msg.chat_id.to_hex());
+            let _ = publish_to_ably(&chat_channel, "reaction_updated", json!(res)).await;
+        }
+    }
+
     Ok(StatusCode::OK)
 }
 
@@ -945,6 +1018,11 @@ pub async fn mark_read_handler(
         None
     ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
+    // Publish Read Update via Ably
+    if let Ok(Some(msg)) = messages_collection.find_one(doc! { "_id": oid }, None).await {
+        let _ = publish_to_ably(&format!("chat:{}", msg.chat_id.to_hex()), "message_read", json!({ "id": msg_id, "read_at": msg.read_at.map(|dt| dt.to_chrono().to_rfc3339()) })).await;
+    }
+
     Ok(StatusCode::OK)
 }
 
@@ -962,6 +1040,11 @@ pub async fn mark_viewed_handler(
         doc! { "$set": { "viewed_at": DateTime::now() } },
         None
     ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    // Publish View Update via Ably
+    if let Ok(Some(msg)) = messages_collection.find_one(doc! { "_id": oid }, None).await {
+        let _ = publish_to_ably(&format!("chat:{}", msg.chat_id.to_hex()), "message_viewed", json!({ "id": msg_id, "viewed_at": msg.viewed_at.map(|dt| dt.to_chrono().to_rfc3339()) })).await;
+    }
 
     Ok(StatusCode::OK)
 }
@@ -989,11 +1072,16 @@ pub async fn delete_message_handler(
             doc! { "$set": { "is_deleted": true, "deleted_at": DateTime::now() } },
             None
         ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+        // Publish Delete Update via Ably
+        let _ = publish_to_ably(&format!("chat:{}", msg.chat_id.to_hex()), "message_deleted", json!({ "id": msg_id, "mode": "everyone" })).await;
     } else {
         // Mode "me" - Simple delete for sender
         if msg.sender_id == user.user_id {
             messages_collection.delete_one(doc! { "_id": oid }, None).await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+            
+            // Note: usually don't broadcast "delete for me" to others
         }
     }
 

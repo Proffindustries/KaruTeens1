@@ -197,6 +197,7 @@ pub async fn register_handler(
           last_location: None,
           public_key: None,
           blocked_users: None,
+          hidden_posts: None,
           muted_chats: None,
           interests: None,
           notification_settings: None,

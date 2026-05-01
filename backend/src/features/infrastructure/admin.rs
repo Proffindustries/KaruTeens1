@@ -66,6 +66,9 @@ pub struct UserFilter {
     pub verified: Option<String>,  // Changed from bool to String to handle "all"
     pub premium: Option<String>,   // Changed from bool to String to handle "all"
     pub search: Option<String>,
+    pub joined_after: Option<String>,
+    pub joined_before: Option<String>,
+    pub min_posts: Option<i64>,
 }
 
 #[derive(Serialize)]
@@ -99,6 +102,19 @@ pub struct PlatformStats {
     pub report_breakdown: std::collections::HashMap<String, i64>,
 }
 
+#[derive(Serialize)]
+pub struct AnalyticsDataPoint {
+    pub date: String,
+    pub count: i64,
+}
+
+#[derive(Serialize)]
+pub struct AnalyticsSummary {
+    pub growth: Vec<AnalyticsDataPoint>,
+    pub content: Vec<AnalyticsDataPoint>,
+    pub reports: Vec<AnalyticsDataPoint>,
+}
+
 #[derive(Deserialize)]
 pub struct UpdateRoleRequest {
     pub role: String,
@@ -107,6 +123,15 @@ pub struct UpdateRoleRequest {
 #[derive(Deserialize)]
 pub struct BanUserRequest {
     pub banned: bool,
+}
+
+#[derive(Deserialize)]
+pub struct AdminUpdateUserRequest {
+    pub email: Option<String>,
+    pub username: Option<String>,
+    pub role: Option<String>,
+    pub is_verified: Option<bool>,
+    pub is_premium: Option<bool>,
 }
 
 // --- Handlers ---
@@ -255,6 +280,20 @@ pub async fn list_users_handler(
         }
     }
 
+    if let (Some(after), Some(before)) = (&filter.joined_after, &filter.joined_before) {
+        if let (Ok(a), Ok(b)) = (DateTime::parse_rfc3339_str(after), DateTime::parse_rfc3339_str(before)) {
+            query.insert("created_at", doc! { "$gte": a, "$lte": b });
+        }
+    } else if let Some(after) = &filter.joined_after {
+        if let Ok(a) = DateTime::parse_rfc3339_str(after) {
+            query.insert("created_at", doc! { "$gte": a });
+        }
+    } else if let Some(before) = &filter.joined_before {
+        if let Ok(b) = DateTime::parse_rfc3339_str(before) {
+            query.insert("created_at", doc! { "$lte": b });
+        }
+    }
+
     let mut cursor = users_collection.find(
         query,
         mongodb::options::FindOptions::builder()
@@ -358,6 +397,112 @@ pub async fn ban_user_handler(
 
     let action = if payload.banned { "banned" } else { "unbanned" };
     Ok((StatusCode::OK, Json(json!({"message": format!("User {}", action)}))))
+}
+
+pub async fn admin_update_user_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(user_id_str): Path<String>,
+    Json(payload): Json<AdminUpdateUserRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let admin_role = require_admin(user.user_id, &state).await?;
+    
+    let target_user_id = ObjectId::parse_str(&user_id_str)
+        .map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid user ID"}))))?;
+
+    // Update User Collection
+    let mut user_update = doc! {};
+    if let Some(email) = payload.email { user_update.insert("email", email); }
+    if let Some(is_verified) = payload.is_verified { user_update.insert("is_verified", is_verified); }
+    if let Some(is_premium) = payload.is_premium { user_update.insert("is_premium", is_premium); }
+    
+    // Only superadmin can change roles
+    if let Some(role) = payload.role {
+        if admin_role == "superadmin" {
+            user_update.insert("role", role);
+        }
+    }
+
+    if !user_update.is_empty() {
+        let users_collection = state.mongo.collection::<User>("users");
+        users_collection.update_one(doc! { "_id": target_user_id }, doc! { "$set": user_update }, None).await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    }
+
+    // Update Profile Collection (username)
+    if let Some(username) = payload.username {
+        let profiles_collection = state.mongo.collection::<Profile>("profiles");
+        profiles_collection.update_one(
+            doc! { "user_id": target_user_id },
+            doc! { "$set": { "username": username } },
+            None
+        ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+    }
+
+    Ok((StatusCode::OK, Json(json!({"message": "User updated successfully"}))))
+}
+
+pub async fn clear_cache_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    let mut conn = state.redis.clone();
+    let _: () = redis::cmd("FLUSHALL").query_async(&mut conn).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "System cache cleared successfully"}))))
+}
+
+pub async fn export_users_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Query(filter): Query<UserFilter>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    // Reuse list_users logic but format as CSV
+    let users_collection = state.mongo.collection::<User>("users");
+    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+
+    let mut query = doc! {};
+    if let Some(role) = filter.role { if role != "all" { query.insert("role", role); } }
+    if let Some(verified) = filter.verified {
+        if verified == "true" { query.insert("is_verified", true); }
+        else if verified == "false" { query.insert("is_verified", false); }
+    }
+
+    let mut cursor = users_collection.find(query, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut csv = String::from("ID,Email,Username,Role,Verified,Premium,Banned,Joined\n");
+
+    while let Some(user_doc) = cursor.next().await {
+        if let Ok(u) = user_doc {
+            let uid = u.id.unwrap();
+            let profile = profiles_collection.find_one(doc! { "user_id": uid }, None).await.ok().flatten();
+            let username = profile.map(|p| p.username).unwrap_or_else(|| "N/A".to_string());
+            
+            csv.push_str(&format!("{},{},{},{},{},{},{},{}\n",
+                uid.to_hex(),
+                u.email,
+                username,
+                u.role,
+                u.is_verified,
+                u.is_premium,
+                u.is_banned,
+                u.created_at.to_chrono().to_rfc3339()
+            ));
+        }
+    }
+
+    Ok((
+        StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "text/csv"), 
+         (axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"users_export.csv\"")],
+        csv
+    ))
 }
 
 pub async fn verify_user_handler(
@@ -654,16 +799,91 @@ pub async fn broadcast_system_message_handler(
     Ok((StatusCode::OK, Json(json!({"message": "Broadcast is being sent to all active users"}))))
 }
 
+pub async fn get_analytics_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    require_admin(user.user_id, &state).await?;
+
+    let users_collection = state.mongo.collection::<User>("users");
+    let posts_collection = state.mongo.collection::<Post>("posts");
+    let reports_collection = state.mongo.collection::<ContentModeration>("content_moderation");
+
+    // Aggregate by day for last 30 days
+    let thirty_days_ago = Utc::now() - Duration::days(30);
+
+    let mut growth = Vec::new();
+    let mut content = Vec::new();
+    let mut reports = Vec::new();
+
+    // User Growth Aggregation
+    let mut cursor = users_collection.aggregate(vec![
+        doc! { "$match": { "created_at": { "$gte": DateTime::from_chrono(thirty_days_ago) } } },
+        doc! { "$group": {
+            "_id": { "$dateToString": { "format": "%Y-%m-%d", "date": "$created_at" } },
+            "count": { "$sum": 1 }
+        }},
+        doc! { "$sort": { "_id": 1 } }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    while let Some(Ok(doc)) = cursor.next().await {
+        growth.push(AnalyticsDataPoint {
+            date: doc.get_str("_id").unwrap_or("").to_string(),
+            count: doc.get_i32("count").unwrap_or(0) as i64,
+        });
+    }
+
+    // Content Volume Aggregation
+    let mut cursor = posts_collection.aggregate(vec![
+        doc! { "$match": { "created_at": { "$gte": DateTime::from_chrono(thirty_days_ago) } } },
+        doc! { "$group": {
+            "_id": { "$dateToString": { "format": "%Y-%m-%d", "date": "$created_at" } },
+            "count": { "$sum": 1 }
+        }},
+        doc! { "$sort": { "_id": 1 } }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    while let Some(Ok(doc)) = cursor.next().await {
+        content.push(AnalyticsDataPoint {
+            date: doc.get_str("_id").unwrap_or("").to_string(),
+            count: doc.get_i32("count").unwrap_or(0) as i64,
+        });
+    }
+
+    // Report Trends Aggregation
+    let mut cursor = reports_collection.aggregate(vec![
+        doc! { "$match": { "created_at": { "$gte": DateTime::from_chrono(thirty_days_ago) } } },
+        doc! { "$group": {
+            "_id": { "$dateToString": { "format": "%Y-%m-%d", "date": "$created_at" } },
+            "count": { "$sum": 1 }
+        }},
+        doc! { "$sort": { "_id": 1 } }
+    ], None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    while let Some(Ok(doc)) = cursor.next().await {
+        reports.push(AnalyticsDataPoint {
+            date: doc.get_str("_id").unwrap_or("").to_string(),
+            count: doc.get_i32("count").unwrap_or(0) as i64,
+        });
+    }
+
+    Ok(Json(AnalyticsSummary { growth, content, reports }))
+}
+
 pub fn admin_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/stats", get(get_platform_stats_handler))
         .route("/broadcast", axum::routing::post(broadcast_system_message_handler))
+        .route("/cache/clear", axum::routing::post(clear_cache_handler))
         .route("/users", get(list_users_handler))
+        .route("/users/export", get(export_users_handler))
+        .route("/users/:id", put(admin_update_user_handler))
         .route("/users/:id/role", put(update_user_role_handler))
         .route("/users/:id/ban", put(ban_user_handler))
         .route("/users/:id/verify", put(verify_user_handler))
         .route("/moderation", get(list_moderation_items_handler))
         .route("/moderation/:id", put(update_moderation_handler))
+        .route("/analytics", get(get_analytics_handler))
         .route("/settings", get(get_settings_handler).put(update_settings_update))
         .nest("/posts", post_routes())
         .nest("/events", event_routes())

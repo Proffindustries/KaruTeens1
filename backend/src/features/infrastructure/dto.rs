@@ -169,10 +169,18 @@ pub struct PostResponse {
     pub page_avatar: Option<String>,
     pub is_nsfw: bool,
     pub is_anonymous: bool,
+    pub author_id: String,
     pub content_rating: Option<String>,
     pub is_saved: bool,
     pub poll: Option<serde_json::Value>,
     pub engagement_score: f64,
+    // Ad-specific fields
+    pub is_sponsored: Option<bool>,
+    pub ad_id: Option<String>,
+    pub campaign_id: Option<String>,
+    pub cta_text: Option<String>,
+    pub cta_url: Option<String>,
+    pub is_ad: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -272,6 +280,11 @@ pub struct UpdatePostRequest {
 pub struct ReportPostRequest {
     pub reason: String,
     pub description: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct VotePollRequest {
+    pub option_index: usize,
 }
 
 // Common filter types

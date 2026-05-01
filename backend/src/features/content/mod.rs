@@ -24,6 +24,7 @@ use mongodb::{bson::{doc, Bson}, options::FindOptions};
 use chrono::Utc;
 use bson::oid::ObjectId;
 use crate::features::social::notifications::create_notification;
+use crate::features::ads::get_ads_for_feed;
 
 // --- DTOs ---
 #[derive(Deserialize, Serialize)]
@@ -207,10 +208,17 @@ pub async fn posts_to_responses(
             page_avatar: p.page_id.and_then(|id| page_map.get(&id).and_then(|g| g.avatar_url.clone())),
             is_nsfw: p.is_nsfw.unwrap_or(false),
             is_anonymous: p.is_anonymous,
+            author_id: p.author_id.to_hex(),
             content_rating: p.content_rating,
             is_saved: saved_post_ids.contains(&pid),
-            poll: p.poll.map(|p| serde_json::to_value(p).unwrap_or(serde_json::Value::Null)),
+            poll: p.poll.map(|poll| serde_json::to_value(poll).unwrap_or_default()),
             engagement_score: (p.like_count as f64 * 2.0) + (p.comment_count as f64 * 3.0),
+            is_sponsored: Some(false),
+            ad_id: None,
+            campaign_id: None,
+            cta_text: None,
+            cta_url: None,
+            is_ad: Some(false),
         }
     }).collect()
 }
@@ -269,6 +277,7 @@ pub async fn create_post_handler(
         post_type: payload.post_type,
         category: "general".to_string(),
         tags: None,
+        mentions: None,
         author_id: user_id,
         author_name,
         media_urls: if payload.media_urls.is_empty() { None } else { Some(payload.media_urls) },
@@ -360,6 +369,18 @@ pub async fn get_feed_handler(
         "status": "published",
     };
 
+    // Fetch profile for hidden posts exclusion
+    if let Some(ref auth) = user {
+        let profiles = state.mongo.collection::<Profile>("profiles");
+        if let Ok(Some(profile)) = profiles.find_one(doc! { "user_id": auth.user_id }, None).await {
+            if let Some(hidden) = profile.hidden_posts {
+                if !hidden.is_empty() {
+                    filter.insert("_id", doc! { "$nin": hidden });
+                }
+            }
+        }
+    }
+
     // --- Safety Filter for Guests/AdSense Crawler ---
     if user.is_none() {
         filter.insert("is_nsfw", doc! { "$ne": true });
@@ -380,11 +401,21 @@ pub async fn get_feed_handler(
     // Add search query if provided
     if let Some(ref search_query) = query.search {
         if !search_query.trim().is_empty() {
-            let search_regex = doc! { "$regex": search_query, "$options": "i" };
-            let search_or = vec![
-                doc! { "content": search_regex.clone() },
-                doc! { "title": search_regex },
-            ];
+            let mut search_or = Vec::new();
+            
+            if search_query.starts_with('#') {
+                let tag = search_query[1..].to_lowercase();
+                search_or.push(doc! { "tags": tag });
+            } else if search_query.starts_with('@') {
+                let mention = search_query[1..].to_lowercase();
+                search_or.push(doc! { "mentions": mention });
+            } else {
+                let search_regex = doc! { "$regex": search_query, "$options": "i" };
+                search_or.push(doc! { "content": search_regex.clone() });
+                search_or.push(doc! { "title": search_regex.clone() });
+                search_or.push(doc! { "tags": search_query.to_lowercase() });
+                search_or.push(doc! { "mentions": search_query.to_lowercase() });
+            }
             
             if let Ok(existing_or) = filter.get_array("$or") {
                 let existing_or = existing_or.clone();
@@ -437,10 +468,38 @@ pub async fn get_feed_handler(
     }
 
     // Build responses using helper
-    let post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
+    let mut post_responses = posts_to_responses(&state, user.as_ref(), posts).await;
+
+    // --- Ad Injection ---
+    let mut is_premium = false;
+    if let Some(ref auth) = user {
+        let users_coll = state.mongo.collection::<crate::models::User>("users");
+        if let Ok(Some(u)) = users_coll.find_one(doc! { "_id": auth.user_id }, None).await {
+            is_premium = u.is_premium;
+        }
+    }
+
+    if !is_premium && !post_responses.is_empty() {
+        // Fetch ads
+        let ad_count = (post_responses.len() as f64 / 8.0).ceil() as i64;
+        if let Ok(ads) = get_ads_for_feed(&state, ad_count).await {
+            // Interleave ads every 8 posts
+            let mut ad_idx = 0;
+            let mut i = 8;
+            while i <= post_responses.len() && ad_idx < ads.len() {
+                post_responses.insert(i, ads[ad_idx].clone());
+                ad_idx += 1;
+                i += 9; // Skip the inserted ad + 8 posts
+            }
+        }
+    }
 
     let next_cursor = if has_more {
-        post_responses.last().map(|p| p.id.clone())
+        // We find the last organic post ID for pagination
+        post_responses.iter()
+            .rev()
+            .find(|p| p.is_sponsored.unwrap_or(false) == false)
+            .map(|p| p.id.clone())
     } else {
         None
     };

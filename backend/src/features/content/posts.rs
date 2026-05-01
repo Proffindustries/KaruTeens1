@@ -14,12 +14,13 @@ use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostSh
 use crate::features::infrastructure::dto::{
     PostDetailResponse, PostAnalyticsSummary, PostWorkflowResponse, 
     CreatePostRequest, UpdatePostRequest, ApprovePostRequest, PostFilter,
-    PaginatedResponse, PaginationInfo
+    PaginatedResponse, PaginationInfo, VotePollRequest
 };
 use crate::features::infrastructure::error::{AppResult, AppError};
 use crate::features::auth::auth_service::AuthUser;
 use crate::utils::check_admin;
 use futures::stream::StreamExt;
+use regex::Regex;
 
 // --- Handlers ---
 
@@ -115,7 +116,9 @@ pub async fn get_post_handler(
     user: AuthUser,
     Path(post_id): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    check_admin(user.user_id, &state).await?;
+    // Anyone logged in can try to view a post, 
+    // but the implementation might need more logic for drafts vs published.
+    // For now, let's just remove the strict admin check.
 
     let oid = ObjectId::parse_str(&post_id)
         .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
@@ -134,15 +137,17 @@ pub async fn update_post_handler(
     Path(post_id): Path<String>,
     Json(payload): Json<UpdatePostRequest>,
 ) -> AppResult<impl IntoResponse> {
-    check_admin(user.user_id, &state).await?;
-
     let oid = ObjectId::parse_str(&post_id)
         .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
     
-    if posts.find_one(doc! { "_id": oid }, None).await?.is_none() {
-        return Err(AppError::NotFound("Post not found".to_string()));
+    let existing_post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
+
+    // Authorization: Admin ONLY for updates
+    if user.role != "admin" {
+        return Err(AppError::Forbidden("Only administrators can update posts".to_string()));
     }
 
     let mut update_doc = doc! {};
@@ -272,12 +277,19 @@ pub async fn delete_post_handler(
     user: AuthUser,
     Path(post_id): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    check_admin(user.user_id, &state).await?;
-
     let oid = ObjectId::parse_str(&post_id)
         .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
 
     let posts = state.mongo.collection::<Post>("posts");
+    
+    let existing_post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
+
+    // Authorization: Admin OR Author
+    if user.role != "admin" && existing_post.author_id != user.user_id {
+        return Err(AppError::Forbidden("You do not have permission to delete this post".to_string()));
+    }
+
     posts.delete_one(doc! { "_id": oid }, None).await?;
 
     // Cleanup associated data
@@ -390,6 +402,78 @@ pub async fn get_post_analytics_handler(
     }))))
 }
 
+pub async fn vote_poll_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(post_id): Path<String>,
+    Json(payload): Json<VotePollRequest>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&post_id)
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
+
+    let posts = state.mongo.collection::<Post>("posts");
+    
+    let post = posts.find_one(doc! { "_id": oid }, None).await?
+        .ok_or(AppError::NotFound("Post not found".to_string()))?;
+
+    let poll = post.poll.ok_or(AppError::BadRequest("This post does not have a poll".to_string()))?;
+
+    if poll.is_closed {
+        return Err(AppError::BadRequest("This poll is closed".to_string()));
+    }
+
+    // Check if user already voted in any option
+    for option in &poll.options {
+        if option.voter_ids.contains(&user.user_id) {
+            return Err(AppError::Conflict("You have already voted in this poll".to_string()));
+        }
+    }
+
+    if payload.option_index >= poll.options.len() {
+        return Err(AppError::BadRequest("Invalid poll option index".to_string()));
+    }
+
+    // Atomically push user_id to the specific option's voter_ids
+    // and prevent double voting at the DB level just in case
+    let update_query = doc! {
+        "_id": oid,
+        "poll.options.voter_ids": { "$ne": user.user_id }
+    };
+    
+    let update_doc = doc! {
+        "$push": {
+            format!("poll.options.{}.voter_ids", payload.option_index): user.user_id
+        }
+    };
+
+    let result = posts.update_one(update_query, update_doc, None).await?;
+
+    if result.modified_count == 0 {
+        return Err(AppError::Conflict("Vote could not be registered (possible double-vote or poll closed)".to_string()));
+    }
+
+    Ok((StatusCode::OK, Json(json!({"message": "Vote registered successfully"}))))
+}
+
+pub async fn hide_post_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(post_id): Path<String>,
+) -> AppResult<impl IntoResponse> {
+    let oid = ObjectId::parse_str(&post_id)
+        .map_err(|_| AppError::BadRequest("Invalid post ID".to_string()))?;
+
+    let profiles = state.mongo.collection::<Profile>("profiles");
+    
+    profiles.update_one(
+        doc! { "user_id": user.user_id },
+        doc! { "$addToSet": { "hidden_posts": oid } },
+        None
+    ).await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "Post hidden persistently"}))))
+}
+
 // --- Helper Functions ---
 
 async fn build_post_response(
@@ -490,6 +574,28 @@ pub async fn create_post_handler(
         None
     };
 
+    let content = payload.content.clone();
+    
+    // Extract Tags
+    let mut tags = payload.tags.unwrap_or_default();
+    let tag_re = Regex::new(r"#(\w+)").unwrap();
+    for cap in tag_re.captures_iter(&content) {
+        let tag = cap[1].to_lowercase();
+        if !tags.contains(&tag) {
+            tags.push(tag);
+        }
+    }
+
+    // Extract Mentions
+    let mut mentions = Vec::new();
+    let mention_re = Regex::new(r"@(\w+)").unwrap();
+    for cap in mention_re.captures_iter(&content) {
+        let mention = cap[1].to_lowercase();
+        if !mentions.contains(&mention) {
+            mentions.push(mention);
+        }
+    }
+
     let new_post = Post {
         id: None,
         group_id: None,
@@ -503,7 +609,8 @@ pub async fn create_post_handler(
         status: payload.status.clone().unwrap_or_else(|| "draft".to_string()),
         post_type: payload.post_type.unwrap_or_else(|| "text".to_string()),
         category: payload.category,
-        tags: payload.tags,
+        tags: if tags.is_empty() { None } else { Some(tags) },
+        mentions: if mentions.is_empty() { None } else { Some(mentions) },
         media_urls: payload.media_urls,
         scheduled_publish_date,
         language: payload.language.unwrap_or_else(|| "en".to_string()),
@@ -557,4 +664,6 @@ pub fn post_routes() -> Router<Arc<AppState>> {
         .route("/:id/publish", post(publish_post_handler))
         .route("/:id/workflow", get(get_post_workflow_handler))
         .route("/:id/analytics", get(get_post_analytics_handler))
+        .route("/:id/poll/vote", post(vote_poll_handler))
+        .route("/:id/hide", post(hide_post_handler))
 }

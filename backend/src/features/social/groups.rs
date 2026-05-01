@@ -334,6 +334,7 @@ pub async fn create_group_post_handler(
         post_type: payload.post_type,
         category: "general".to_string(),
         tags: None,
+        mentions: None,
         media_urls: if payload.media_urls.is_empty() { None } else { Some(payload.media_urls) },
         location: payload.location.map(|l| crate::models::Location {
             latitude: l.latitude,

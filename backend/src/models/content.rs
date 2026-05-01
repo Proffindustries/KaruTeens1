@@ -41,6 +41,8 @@ pub struct Post {
     pub category: String,
     #[serde(default)]
     pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub mentions: Option<Vec<String>>,
     pub author_id: ObjectId,
     #[serde(default)]
     pub author_name: String,

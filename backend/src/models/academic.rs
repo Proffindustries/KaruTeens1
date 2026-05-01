@@ -15,6 +15,16 @@ pub struct StudyRoom {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TimetableTask {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub due_date: Option<String>, // ISO date
+    pub completed: bool,
+    pub created_at: bson::DateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TimetableClass {
     pub id: String,
     pub title: String,
@@ -30,6 +40,8 @@ pub struct TimetableClass {
     #[serde(default)]
     pub reliability_score: f64, // 0.0 to 1.0
     pub last_report: Option<String>,
+    #[serde(default)]
+    pub tasks: Vec<TimetableTask>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

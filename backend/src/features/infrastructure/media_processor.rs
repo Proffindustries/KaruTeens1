@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
+use tokio::sync::Semaphore;
 use crate::features::infrastructure::db::AppState;
 use crate::models::MediaJobRecord;
 use redis::AsyncCommands;
@@ -20,12 +21,15 @@ struct MediaJobQueueItem {
 }
 
 pub fn spawn_media_worker(state: Arc<AppState>) {
+    // Limit to 8 concurrent FFmpeg processes to prevent CPU/RAM exhaustion
+    let semaphore = Arc::new(Semaphore::new(8));
+
     tokio::spawn(async move {
-        tracing::info!("Media Worker started and listening to 'media_queue'");
+        tracing::info!("Media Worker started with concurrency limit of 8");
         let mut conn = state.redis.clone();
 
         loop {
-            let result: Result<(String, String), _> = redis::Cmd::blpop("media_queue", 0)
+            let result: Result<(String, String), _> = redis::Cmd::blpop("media_queue", 0.0)
                 .query_async(&mut conn)
                 .await;
 
@@ -33,7 +37,11 @@ pub fn spawn_media_worker(state: Arc<AppState>) {
                 Ok((_, job_json)) => {
                     if let Ok(job) = serde_json::from_str::<MediaJobQueueItem>(&job_json) {
                         let state_clone = state.clone();
+                        let permit = semaphore.clone().acquire_owned().await;
+                        
                         tokio::spawn(async move {
+                            // The permit is held until this task finishes
+                            let _permit = permit; 
                             if let Err(e) = process_media_job(state_clone, job).await {
                                 tracing::error!("Media job processing failed: {}", e);
                             }

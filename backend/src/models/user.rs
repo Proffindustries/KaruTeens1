@@ -48,6 +48,7 @@ pub struct Profile {
     pub last_location: Option<Location>,
     pub public_key: Option<String>,
     pub blocked_users: Option<Vec<ObjectId>>,
+    pub hidden_posts: Option<Vec<ObjectId>>,
     pub muted_chats: Option<Vec<ObjectId>>,
     pub interests: Option<Vec<String>>,
     pub notification_settings: Option<NotificationSettings>,

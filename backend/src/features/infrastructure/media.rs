@@ -94,7 +94,7 @@ async fn trigger_media_processing(
 
     let record = MediaJobRecord {
         id: job_id.clone(),
-        user_id: _user.id.to_string(),
+        user_id: _user.user_id.to_string(),
         status: "pending".to_string(),
         media_type: payload.media_type.clone(),
         original_name: payload.original_name.clone(),
@@ -116,7 +116,7 @@ async fn trigger_media_processing(
         "temp_url": payload.temp_url,
         "media_type": payload.media_type,
         "original_name": payload.original_name,
-        "user_id": _user.id.to_string(),
+        "user_id": _user.user_id.to_string(),
         "created_at": Utc::now().timestamp(),
     });
 
@@ -230,7 +230,7 @@ async fn get_r2_presigned_url(
         .put_object()
         .bucket(bucket)
         .key(&key)
-        .content_type(payload.content_type)
+        .content_type(payload.content_type.clone())
         .presigned(PresigningConfig::expires_in(expires_in).map_err(|e| {
             tracing::error!("Presigned config error: {}", e);
             AppError::InternalServerError("Failed to create presigning config".to_string())

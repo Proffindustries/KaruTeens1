@@ -61,6 +61,11 @@ pub struct SearchQuery {
     pub query: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateTasksRequest {
+    pub tasks: Vec<crate::models::TimetableTask>,
+}
+
 // --- Handlers ---
 
 pub async fn list_timetables_handler(
@@ -423,15 +428,72 @@ pub async fn remove_lesson_handler(
     Ok(StatusCode::OK)
 }
 
+pub async fn update_class_tasks_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path((id, class_id)): Path<(String, String)>,
+    Json(payload): Json<UpdateTasksRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
+    let collection = state.mongo.collection::<Timetable>("timetables");
+
+    let tasks_bson = mongodb::bson::to_bson(&payload.tasks).unwrap();
+    
+    let result = collection.update_one(
+        doc! { "_id": oid, "user_id": user.user_id, "classes.id": class_id },
+        doc! { "$set": { "classes.$.tasks": tasks_bson } },
+        None
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    if result.matched_count == 0 {
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Timetable or Class not found"}))));
+    }
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn get_user_exams_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let collection = state.mongo.collection::<Timetable>("timetables");
+
+    // Fetch all user's timetables and extract exams
+    let mut cursor = collection.find(doc! { "user_id": user.user_id }, None).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+
+    let mut exams = Vec::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(t) = result {
+            for cls in t.classes {
+                if cls.is_exam {
+                    exams.push(cls);
+                }
+            }
+        }
+    }
+
+    // Sort by date
+    exams.sort_by(|a, b| {
+        let da = a.date.as_deref().unwrap_or("9999-12-31");
+        let db = b.date.as_deref().unwrap_or("9999-12-31");
+        da.cmp(db)
+    });
+
+    Ok(Json(exams))
+}
+
 pub fn timetable_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(list_timetables_handler).post(create_timetable_handler))
         .route("/search", get(search_public_timetables_handler))
         .route("/attendance", post(log_attendance_handler).get(get_missed_summary_handler))
+        .route("/exams", get(get_user_exams_handler))
         .route("/report", post(submit_report_handler))
         .route("/:id", get(get_timetable_handler).put(update_timetable_handler).delete(delete_timetable_handler))
         .route("/:id/copy", post(copy_template_handler))
         .route("/:id/merge/:target_id", post(merge_timetable_handler))
         .route("/:id/classes", post(add_lesson_handler))
         .route("/:id/classes/:class_id", delete(remove_lesson_handler))
+        .route("/:id/classes/:class_id/tasks", put(update_class_tasks_handler))
 }
