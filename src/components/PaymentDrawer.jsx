@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    X, 
-    Smartphone, 
-    ShieldCheck, 
-    CreditCard, 
-    ArrowRight, 
-    Loader2, 
+import {
+    X,
+    Smartphone,
+    ShieldCheck,
+    CreditCard,
+    ArrowRight,
+    Loader2,
     CheckCircle2,
-    Lock
+    Lock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/PaymentDrawer.css';
 
-const PaymentDrawer = ({ 
-    isOpen, 
-    onClose, 
-    amount, 
-    title, 
-    description, 
+const PaymentDrawer = ({
+    isOpen,
+    onClose,
+    amount,
+    title,
+    description,
     onPaymentInitiated,
     onSuccess,
     checkoutId: externalCheckoutId,
-    status: externalStatus
+    status: externalStatus,
 }) => {
     const [phone, setPhone] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -59,14 +59,14 @@ const PaymentDrawer = ({
         <AnimatePresence>
             {isOpen && (
                 <>
-                    <motion.div 
+                    <motion.div
                         className="payment-drawer-overlay"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                     />
-                    <motion.div 
+                    <motion.div
                         className="payment-drawer"
                         initial={{ y: '100%' }}
                         animate={{ y: 0 }}
@@ -87,8 +87,10 @@ const PaymentDrawer = ({
                                         <div className="mpesa-logo">M-PESA</div>
                                     </div>
                                     <h2>{title || 'Make Payment'}</h2>
-                                    <p className="payment-desc">{description || 'Enter your M-Pesa number to proceed'}</p>
-                                    
+                                    <p className="payment-desc">
+                                        {description || 'Enter your M-Pesa number to proceed'}
+                                    </p>
+
                                     <div className="payment-summary">
                                         <div className="summary-item">
                                             <span>Amount Due</span>
@@ -99,8 +101,8 @@ const PaymentDrawer = ({
                                     <form onSubmit={handleSubmit} className="mpesa-form">
                                         <div className="input-group-animated">
                                             <Smartphone size={18} className="input-icon" />
-                                            <input 
-                                                type="text" 
+                                            <input
+                                                type="text"
                                                 placeholder="07XXXXXXXX"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value)}
@@ -110,8 +112,8 @@ const PaymentDrawer = ({
                                             <label>Phone Number</label>
                                         </div>
 
-                                        <button 
-                                            type="submit" 
+                                        <button
+                                            type="submit"
                                             className="pay-now-btn"
                                             disabled={isLoading || !phone}
                                         >
@@ -141,8 +143,11 @@ const PaymentDrawer = ({
                                         <Smartphone size={40} className="pulse-phone" />
                                     </div>
                                     <h3>Awaiting Confirmation</h3>
-                                    <p>Please enter your M-Pesa PIN on the prompt sent to your phone <b>{phone}</b></p>
-                                    
+                                    <p>
+                                        Please enter your M-Pesa PIN on the prompt sent to your
+                                        phone <b>{phone}</b>
+                                    </p>
+
                                     <div className="processing-steps">
                                         <div className="step active">1. Request Sent</div>
                                         <div className="step active">2. Enter PIN</div>
@@ -157,7 +162,7 @@ const PaymentDrawer = ({
 
                             {localStatus === 'success' && (
                                 <div className="payment-success-view">
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ type: 'spring', bounce: 0.5 }}
@@ -179,7 +184,10 @@ const PaymentDrawer = ({
                                     </div>
                                     <h3>Payment Failed</h3>
                                     <p>The transaction could not be completed. Please try again.</p>
-                                    <button className="retry-btn" onClick={() => setLocalStatus('idle')}>
+                                    <button
+                                        className="retry-btn"
+                                        onClick={() => setLocalStatus('idle')}
+                                    >
                                         Try Again
                                     </button>
                                 </div>

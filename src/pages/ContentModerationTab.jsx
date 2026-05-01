@@ -201,11 +201,15 @@ const ContentModerationTab = ({ stats }) => {
                                 </div>
                                 <div className="metric">
                                     <span className="metric-label">Pending Review</span>
-                                    <span className="metric-value">{stats?.total_reports || 0}</span>
+                                    <span className="metric-value">
+                                        {stats?.total_reports || 0}
+                                    </span>
                                 </div>
                                 <div className="metric">
                                     <span className="metric-label">Resolved</span>
-                                    <span className="metric-value">{totalReports - (stats?.total_reports || 0)}</span>
+                                    <span className="metric-value">
+                                        {totalReports - (stats?.total_reports || 0)}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -217,15 +221,24 @@ const ContentModerationTab = ({ stats }) => {
                             </div>
                             <div className="severity-breakdown">
                                 <div className="severity-item">
-                                    <div className="severity-bar high" style={{ width: '15%' }}></div>
+                                    <div
+                                        className="severity-bar high"
+                                        style={{ width: '15%' }}
+                                    ></div>
                                     <span>High (15%)</span>
                                 </div>
                                 <div className="severity-item">
-                                    <div className="severity-bar medium" style={{ width: '35%' }}></div>
+                                    <div
+                                        className="severity-bar medium"
+                                        style={{ width: '35%' }}
+                                    ></div>
                                     <span>Medium (35%)</span>
                                 </div>
                                 <div className="severity-item">
-                                    <div className="severity-bar low" style={{ width: '50%' }}></div>
+                                    <div
+                                        className="severity-bar low"
+                                        style={{ width: '50%' }}
+                                    ></div>
                                     <span>Low (50%)</span>
                                 </div>
                             </div>

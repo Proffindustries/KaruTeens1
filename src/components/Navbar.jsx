@@ -175,7 +175,11 @@ const Navbar = React.memo(() => {
                                     <SettingsIcon size={20} />
                                 </Link>
                                 <Link to={`/profile/${user?.username}`}>
-                                    <Avatar src={user?.avatar_url} name={user?.username} size="sm" />
+                                    <Avatar
+                                        src={user?.avatar_url}
+                                        name={user?.username}
+                                        size="sm"
+                                    />
                                 </Link>
                                 <button
                                     onClick={logout}

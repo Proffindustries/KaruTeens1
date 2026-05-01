@@ -215,7 +215,13 @@ const VerificationPage = () => {
                     }}
                     onSuccess={() => navigate('/feed')}
                     checkoutId={checkoutId}
-                    status={step === 'complete' ? 'success' : step === 'processing' ? 'processing' : 'idle'}
+                    status={
+                        step === 'complete'
+                            ? 'success'
+                            : step === 'processing'
+                              ? 'processing'
+                              : 'idle'
+                    }
                 />
 
                 {step === 'processing' && (

@@ -144,7 +144,9 @@ const StudyPlaylistsPage = () => {
                 });
 
                 try {
-                    const uploadedUrl = await uploadMedia(file, (p, l) => updateUploadProgress(uploadId, p, l));
+                    const uploadedUrl = await uploadMedia(file, (p, l) =>
+                        updateUploadProgress(uploadId, p, l),
+                    );
                     completeUpload(uploadId, { url: uploadedUrl });
 
                     const effectiveTitle = selectedFiles.length === 1 && title ? title : file.name;

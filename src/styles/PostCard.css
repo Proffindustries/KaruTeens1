@@ -695,3 +695,8 @@
 .post-location-preview .map-preview-container {
     max-width: 100%;
 }
+
+/* Document Themes */
+.file-wrapper-mini.excel-bg { border-bottom: 4px solid #217346; }
+.file-wrapper-mini.word-bg { border-bottom: 4px solid #2b579a; }
+.file-wrapper-mini.ppt-bg { border-bottom: 4px solid #b7472a; }

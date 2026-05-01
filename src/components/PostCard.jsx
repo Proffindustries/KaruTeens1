@@ -291,7 +291,12 @@ const PostCard = React.memo(({ post }) => {
         }
     };
 
-    const handleReply = async (parentCommentId, replyContent, replyMedia = null, customStickerUrl = null) => {
+    const handleReply = async (
+        parentCommentId,
+        replyContent,
+        replyMedia = null,
+        customStickerUrl = null,
+    ) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
@@ -585,7 +590,8 @@ const PostCard = React.memo(({ post }) => {
                                     url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) ||
                                     post.post_type === 'audio';
                                 const isPDF = url.match(/\.pdf$/i);
-                                const isExcel = url.match(/\.(xls|xlsx)$/i) || url.includes('spreadsheet');
+                                const isExcel =
+                                    url.match(/\.(xls|xlsx)$/i) || url.includes('spreadsheet');
                                 const isImage =
                                     url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i) ||
                                     post.post_type === 'image' ||
@@ -655,12 +661,18 @@ const PostCard = React.memo(({ post }) => {
                                             <iframe
                                                 src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
                                                 className="post-pdf-preview"
-                                                style={{ width: '100%', height: '100%', border: 'none', pointerEvents: 'none', background: '#e9e9e9' }}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    border: 'none',
+                                                    pointerEvents: 'none',
+                                                    background: '#e9e9e9',
+                                                }}
                                                 title="PDF Preview"
                                             />
                                         ) : isExcel ? (
                                             <div
-                                                className="file-wrapper-mini"
+                                                className="file-wrapper-mini excel-bg"
                                                 style={{
                                                     padding: '20px',
                                                     background: '#1a1a1a',
@@ -672,11 +684,92 @@ const PostCard = React.memo(({ post }) => {
                                                     gap: '8px',
                                                 }}
                                             >
-                                                <div style={{ background: '#217346', padding: '12px', borderRadius: '8px' }}>
+                                                <div
+                                                    style={{
+                                                        background: '#217346',
+                                                        padding: '12px',
+                                                        borderRadius: '8px',
+                                                    }}
+                                                >
                                                     <FileText size={32} color="white" />
                                                 </div>
-                                                <span style={{ color: 'white', fontSize: '10px', textAlign: 'center', wordBreak: 'break-all' }}>
+                                                <span
+                                                    style={{
+                                                        color: 'white',
+                                                        fontSize: '10px',
+                                                        textAlign: 'center',
+                                                        wordBreak: 'break-all',
+                                                    }}
+                                                >
                                                     Excel Document
+                                                </span>
+                                            </div>
+                                        ) : url.match(/\.(doc|docx)$/i) ? (
+                                            <div
+                                                className="file-wrapper-mini word-bg"
+                                                style={{
+                                                    padding: '20px',
+                                                    background: '#1a1a1a',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        background: '#2b579a',
+                                                        padding: '12px',
+                                                        borderRadius: '8px',
+                                                    }}
+                                                >
+                                                    <FileText size={32} color="white" />
+                                                </div>
+                                                <span
+                                                    style={{
+                                                        color: 'white',
+                                                        fontSize: '10px',
+                                                        textAlign: 'center',
+                                                        wordBreak: 'break-all',
+                                                    }}
+                                                >
+                                                    Word Document
+                                                </span>
+                                            </div>
+                                        ) : url.match(/\.(ppt|pptx)$/i) ? (
+                                            <div
+                                                className="file-wrapper-mini ppt-bg"
+                                                style={{
+                                                    padding: '20px',
+                                                    background: '#1a1a1a',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        background: '#b7472a',
+                                                        padding: '12px',
+                                                        borderRadius: '8px',
+                                                    }}
+                                                >
+                                                    <FileText size={32} color="white" />
+                                                </div>
+                                                <span
+                                                    style={{
+                                                        color: 'white',
+                                                        fontSize: '10px',
+                                                        textAlign: 'center',
+                                                        wordBreak: 'break-all',
+                                                    }}
+                                                >
+                                                    PowerPoint
                                                 </span>
                                             </div>
                                         ) : isImage ? (
@@ -882,7 +975,23 @@ const PostCard = React.memo(({ post }) => {
                                             color: showStickerPicker ? 'var(--primary)' : 'inherit',
                                         }}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/><path d="M10 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/><path d="M14 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/><path d="M10 16c.5-1.5 1.5-2 2-2s1.5.5 2 2"/></svg>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
+                                            <path d="M15 3v6h6" />
+                                            <path d="M10 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z" />
+                                            <path d="M14 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z" />
+                                            <path d="M10 16c.5-1.5 1.5-2 2-2s1.5.5 2 2" />
+                                        </svg>
                                     </button>
                                     <button
                                         type="button"
@@ -898,9 +1007,16 @@ const PostCard = React.memo(({ post }) => {
                                     >
                                         <Image size={16} />
                                     </button>
-                                    
+
                                     {showStickerPicker && (
-                                        <div style={{ position: 'absolute', bottom: '40px', right: '0', zIndex: 100 }}>
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: '40px',
+                                                right: '0',
+                                                zIndex: 100,
+                                            }}
+                                        >
                                             <StickerPicker
                                                 onSelect={(url) => handleCommentSubmit(null, url)}
                                                 onClose={() => setShowStickerPicker(false)}

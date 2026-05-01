@@ -212,8 +212,8 @@ export default defineConfig(({ mode }) => ({
             'axios',
         ],
         exclude: [
-            'katex',       // Heavy, load on demand
-            '@ffmpeg/ffmpeg',  // Ships its own ESM build
+            'katex', // Heavy, load on demand
+            '@ffmpeg/ffmpeg', // Ships its own ESM build
             '@ffmpeg/util',
         ],
     },

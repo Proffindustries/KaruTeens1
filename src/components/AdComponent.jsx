@@ -136,13 +136,18 @@ const AdComponent = ({ type = 'auto', page = 'general' }) => {
             if (pushed) return;
             try {
                 const adsbygoogle = window.adsbygoogle || [];
-                const adElements = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status="done"])');
-                
+                const adElements = document.querySelectorAll(
+                    '.adsbygoogle:not([data-adsbygoogle-status="done"])',
+                );
+
                 if (adElements.length > 0) {
                     const lastElement = adElements[adElements.length - 1];
                     // Verify width and visibility with a stricter check
                     const offsetWidth = lastElement.offsetWidth;
-                    if (offsetWidth > 50 && window.getComputedStyle(lastElement).display !== 'none') {
+                    if (
+                        offsetWidth > 50 &&
+                        window.getComputedStyle(lastElement).display !== 'none'
+                    ) {
                         adsbygoogle.push({});
                         pushed = true;
                         if (observer) observer.disconnect();

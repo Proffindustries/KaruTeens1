@@ -443,14 +443,33 @@ const SettingsTab = () => {
                         border: '1px solid var(--admin-border)',
                     }}
                 >
-                    <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h3
+                        style={{
+                            fontSize: '1rem',
+                            marginBottom: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                        }}
+                    >
                         <Shield size={18} /> Platform Security & Access
                     </h3>
-                    
-                    <div className="setting-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: '1px solid var(--admin-border)' }}>
+
+                    <div
+                        className="setting-row"
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '1rem 0',
+                            borderBottom: '1px solid var(--admin-border)',
+                        }}
+                    >
                         <div>
                             <div style={{ fontWeight: '600' }}>Maintenance Mode</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Disable all public access to the platform</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                                Disable all public access to the platform
+                            </div>
                         </div>
                         <input
                             type="checkbox"
@@ -459,10 +478,21 @@ const SettingsTab = () => {
                         />
                     </div>
 
-                    <div className="setting-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: '1px solid var(--admin-border)' }}>
+                    <div
+                        className="setting-row"
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '1rem 0',
+                            borderBottom: '1px solid var(--admin-border)',
+                        }}
+                    >
                         <div>
                             <div style={{ fontWeight: '600' }}>New Registrations</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Allow new users to sign up</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                                Allow new users to sign up
+                            </div>
                         </div>
                         <input
                             type="checkbox"
@@ -471,10 +501,20 @@ const SettingsTab = () => {
                         />
                     </div>
 
-                    <div className="setting-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0' }}>
+                    <div
+                        className="setting-row"
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '1rem 0',
+                        }}
+                    >
                         <div>
                             <div style={{ fontWeight: '600' }}>Enable Payments</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>Toggle all payment-related features</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                                Toggle all payment-related features
+                            </div>
                         </div>
                         <input
                             type="checkbox"
@@ -493,20 +533,50 @@ const SettingsTab = () => {
                         border: '1px solid var(--admin-border)',
                     }}
                 >
-                    <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h3
+                        style={{
+                            fontSize: '1rem',
+                            marginBottom: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                        }}
+                    >
                         <RefreshCw size={18} /> System Information
                     </h3>
                     <div style={{ fontSize: '0.9rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                            <span style={{ color: 'var(--admin-text-muted)' }}>Backend Version</span>
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '0.75rem',
+                            }}
+                        >
+                            <span style={{ color: 'var(--admin-text-muted)' }}>
+                                Backend Version
+                            </span>
                             <span style={{ fontWeight: '600' }}>1.2.0-stable</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '0.75rem',
+                            }}
+                        >
                             <span style={{ color: 'var(--admin-text-muted)' }}>Frontend Build</span>
                             <span style={{ fontWeight: '600' }}>20240501.1</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                            <span style={{ color: 'var(--admin-text-muted)' }}>Database Status</span>
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '0.75rem',
+                            }}
+                        >
+                            <span style={{ color: 'var(--admin-text-muted)' }}>
+                                Database Status
+                            </span>
                             <span style={{ color: '#10b981', fontWeight: '600' }}>Connected</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -514,7 +584,10 @@ const SettingsTab = () => {
                             <span style={{ fontWeight: '600' }}>42.5 GB / 500 GB</span>
                         </div>
                     </div>
-                    <button className="btn-secondary" style={{ width: '100%', marginTop: '1.5rem' }}>
+                    <button
+                        className="btn-secondary"
+                        style={{ width: '100%', marginTop: '1.5rem' }}
+                    >
                         Clear System Cache
                     </button>
                 </div>

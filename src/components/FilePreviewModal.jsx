@@ -29,9 +29,25 @@ const FilePreviewModal = ({
     else if (selectedUploadFile.type === 'application/pdf') type = 'pdf';
     else if (
         selectedUploadFile.type === 'application/vnd.ms-excel' ||
-        selectedUploadFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        selectedUploadFile.type ===
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
         selectedUploadFile.name.match(/\.(xls|xlsx)$/i)
-    ) type = 'excel';
+    )
+        type = 'excel';
+    else if (
+        selectedUploadFile.type === 'application/msword' ||
+        selectedUploadFile.type ===
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        selectedUploadFile.name.match(/\.(doc|docx)$/i)
+    )
+        type = 'word';
+    else if (
+        selectedUploadFile.type === 'application/vnd.ms-powerpoint' ||
+        selectedUploadFile.type ===
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+        selectedUploadFile.name.match(/\.(ppt|pptx)$/i)
+    )
+        type = 'powerpoint';
 
     return (
         <div className="modal-overlay">
@@ -57,15 +73,31 @@ const FilePreviewModal = ({
                             </div>
                         )}
                         {type === 'pdf' && (
-                            <iframe 
-                                src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
-                                className="media-preview-pdf" 
+                            <iframe
+                                src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                                className="media-preview-pdf"
                                 title="PDF Preview"
                             />
                         )}
                         {type === 'excel' && (
                             <div className="generic-file-view excel-view">
                                 <div className="excel-icon-wrapper-large">
+                                    <FileText size={48} color="#fff" />
+                                </div>
+                                <p className="file-preview-name">{selectedUploadFile.name}</p>
+                            </div>
+                        )}
+                        {type === 'word' && (
+                            <div className="generic-file-view word-view">
+                                <div className="word-icon-wrapper-large">
+                                    <FileText size={48} color="#fff" />
+                                </div>
+                                <p className="file-preview-name">{selectedUploadFile.name}</p>
+                            </div>
+                        )}
+                        {type === 'powerpoint' && (
+                            <div className="generic-file-view ppt-view">
+                                <div className="ppt-icon-wrapper-large">
                                     <FileText size={48} color="#fff" />
                                 </div>
                                 <p className="file-preview-name">{selectedUploadFile.name}</p>
@@ -79,7 +111,14 @@ const FilePreviewModal = ({
                         )}
                     </div>
                     <div className="file-meta-info">
-                        <span className="file-size-badge">{(selectedUploadFile.size / 1024).toFixed(1)} KB</span>
+                        <span className="file-size-badge">
+                            {(selectedUploadFile.size / 1024).toFixed(1)} KB
+                        </span>
+                        {(type === 'video' || type === 'image') && (
+                            <span className="optimization-hint">
+                                ✨ Will be optimized for web
+                            </span>
+                        )}
                     </div>
                     <div className="p-4">
                         <div className="form-group-checkbox view-once-toggle">
@@ -91,7 +130,11 @@ const FilePreviewModal = ({
                             />
                             <label htmlFor="viewOnceUpload">View Once</label>
                         </div>
-                        <button className="create-btn" style={{ width: '100%', marginTop: '1rem' }} onClick={confirmUpload}>
+                        <button
+                            className="create-btn"
+                            style={{ width: '100%', marginTop: '1rem' }}
+                            onClick={confirmUpload}
+                        >
                             Send File
                         </button>
                     </div>

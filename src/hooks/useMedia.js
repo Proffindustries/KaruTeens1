@@ -101,10 +101,16 @@ export const useMediaUpload = () => {
             showToast('Processing video… this may take a moment', 'info');
 
             // Progress 0–70%: ffmpeg transcode
-            const transformed = await transformVideo(
-                file,
-                onProgress ? (p) => onProgress(Math.round(p * 0.7), 0) : null,
-            );
+            let transformed;
+            try {
+                transformed = await transformVideo(
+                    file,
+                    onProgress ? (p) => onProgress(Math.round(p * 0.7), 0) : null,
+                );
+            } catch (transcodeErr) {
+                console.warn('Video transcode failed, using original:', transcodeErr);
+                transformed = file;
+            }
 
             // Progress 70–100%: R2 upload
             const url = await uploadToR2(
@@ -139,10 +145,16 @@ export const useMediaUpload = () => {
         try {
             showToast('Processing audio…', 'info');
 
-            const transformed = await transformAudio(
-                file,
-                onProgress ? (p) => onProgress(Math.round(p * 0.7), 0) : null,
-            );
+            let transformed;
+            try {
+                transformed = await transformAudio(
+                    file,
+                    onProgress ? (p) => onProgress(Math.round(p * 0.7), 0) : null,
+                );
+            } catch (transcodeErr) {
+                console.warn('Audio transcode failed, using original:', transcodeErr);
+                transformed = file;
+            }
 
             const url = await uploadToR2(
                 transformed,
@@ -214,9 +226,8 @@ export const useMediaUpload = () => {
             if (queue.length > 0) await processQueue();
         };
 
-        const workers = Array.from(
-            { length: Math.min(concurrency, files.length) },
-            () => processQueue(),
+        const workers = Array.from({ length: Math.min(concurrency, files.length) }, () =>
+            processQueue(),
         );
         await Promise.all(workers);
         return Promise.all(results);

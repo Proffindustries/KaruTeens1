@@ -503,7 +503,9 @@ const UserManagementTab = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <span className="post-count">{user.post_count}</span>
+                                                <span className="post-count">
+                                                    {user.post_count}
+                                                </span>
                                             </td>
                                             <td>
                                                 <div className="date-info">

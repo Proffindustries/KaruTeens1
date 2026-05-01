@@ -978,6 +978,29 @@
     text-overflow: ellipsis;
 }
 
+/* Document Type Colors */
+.doc-icon.pdf { background: #ff4757; }
+.doc-icon.excel { background: #217346; }
+.doc-icon.word { background: #2b579a; }
+.doc-icon.ppt { background: #b7472a; }
+
+.generic-file-icon-placeholder {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--border), 0.05);
+    color: rgb(var(--text-muted));
+    gap: 0.5rem;
+}
+
+.file-ext {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
 /* Action Buttons on Hover */
 .message-bubble {
     position: relative;
@@ -2075,6 +2098,16 @@
 .group-info-header span {
     color: #666;
     font-size: 0.9rem;
+}
+
+.optimization-hint {
+    font-size: 0.75rem;
+    color: #4caf50;
+    font-weight: 600;
+    margin-left: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .participants-section h4,

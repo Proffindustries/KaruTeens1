@@ -33,7 +33,7 @@ const LiveStreamPage = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const { ably } = useAbly();
-    
+
     const [isLive, setIsLive] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [currentStream, setCurrentStream] = useState(null);
@@ -79,7 +79,7 @@ const LiveStreamPage = () => {
                 video: {
                     facingMode: 'user',
                     width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    height: { ideal: 720 },
                 },
                 audio: true,
             });
@@ -96,38 +96,38 @@ const LiveStreamPage = () => {
             const { data } = await api.post('/live/start', { title: streamTitle });
             setCurrentStream(data);
             setIsLive(true);
-            
+
             // Subscribe to streamer's signaling channel
             if (ably) {
                 const channel = ably.channels.get(`live:${user.id}:signaling`);
-                
+
                 channel.subscribe('join-request', async (msg) => {
                     const viewerId = msg.data.viewerId;
                     console.log(`Streamer: Received join request from ${viewerId}`);
-                    
+
                     const pc = new RTCPeerConnection(ICE_SERVERS);
                     peerConnections.current[viewerId] = pc;
 
-                    mediaStreamRef.current.getTracks().forEach(track => {
+                    mediaStreamRef.current.getTracks().forEach((track) => {
                         pc.addTrack(track, mediaStreamRef.current);
                     });
 
                     pc.onicecandidate = (event) => {
                         if (event.candidate) {
-                            channel.publish(`ice-candidate:${viewerId}`, { 
+                            channel.publish(`ice-candidate:${viewerId}`, {
                                 candidate: event.candidate,
-                                from: user.id 
+                                from: user.id,
                             });
                         }
                     };
 
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
-                    
-                    channel.publish(`offer:${viewerId}`, { 
-                        offer, 
+
+                    channel.publish(`offer:${viewerId}`, {
+                        offer,
                         streamerId: user.id,
-                        streamerName: user.username 
+                        streamerName: user.username,
                     });
                 });
 
@@ -142,7 +142,7 @@ const LiveStreamPage = () => {
                 // Chat & Hearts
                 const chatChannel = ably.channels.get(`live:${user.id}:chat`);
                 chatChannel.subscribe('message', (msg) => {
-                    setChatMessages(prev => [...prev.slice(-50), msg.data]);
+                    setChatMessages((prev) => [...prev.slice(-50), msg.data]);
                 });
                 chatChannel.subscribe('heart', () => {
                     sendHeartLocally();
@@ -162,12 +162,12 @@ const LiveStreamPage = () => {
         if (currentStream) {
             await api.post(`/live/${currentStream.id}/end`);
         }
-        
-        Object.values(peerConnections.current).forEach(pc => pc.close());
+
+        Object.values(peerConnections.current).forEach((pc) => pc.close());
         peerConnections.current = {};
-        
+
         if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(t => t.stop());
+            mediaStreamRef.current.getTracks().forEach((t) => t.stop());
             mediaStreamRef.current = null;
         }
 
@@ -195,9 +195,9 @@ const LiveStreamPage = () => {
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
-                    signalingChannel.publish(`ice-candidate:${user.id}`, { 
+                    signalingChannel.publish(`ice-candidate:${user.id}`, {
                         candidate: event.candidate,
-                        from: user.id 
+                        from: user.id,
                     });
                 }
             };
@@ -212,7 +212,7 @@ const LiveStreamPage = () => {
             signalingChannel.publish('join-request', { viewerId: user.id });
 
             chatChannel.subscribe('message', (msg) => {
-                setChatMessages(prev => [...prev.slice(-50), msg.data]);
+                setChatMessages((prev) => [...prev.slice(-50), msg.data]);
             });
             chatChannel.subscribe('heart', () => {
                 sendHeartLocally();
@@ -238,13 +238,13 @@ const LiveStreamPage = () => {
     const sendMessage = (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !ably || !currentStream) return;
-        
+
         const msg = {
             user: user?.username || 'Guest',
             text: newMessage,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         };
-        
+
         const chatChannel = ably.channels.get(`live:${currentStream.user_id}:chat`);
         chatChannel.publish('message', msg);
         setNewMessage('');
@@ -252,9 +252,9 @@ const LiveStreamPage = () => {
 
     const sendHeartLocally = () => {
         const id = Date.now();
-        setHearts(prev => [...prev, id]);
+        setHearts((prev) => [...prev, id]);
         setTimeout(() => {
-            setHearts(prev => prev.filter(h => h !== id));
+            setHearts((prev) => prev.filter((h) => h !== id));
         }, 2000);
     };
 
@@ -272,9 +272,9 @@ const LiveStreamPage = () => {
 
     const handleIncomingGift = (gift) => {
         const id = Date.now();
-        setGifts(prev => [...prev, { ...gift, id }]);
+        setGifts((prev) => [...prev, { ...gift, id }]);
         setTimeout(() => {
-            setGifts(prev => prev.filter(g => g.id !== id));
+            setGifts((prev) => prev.filter((g) => g.id !== id));
         }, 4000);
     };
 
@@ -282,7 +282,7 @@ const LiveStreamPage = () => {
 
     if (isLive && currentStream) {
         const isOwner = currentStream.user_id === user?.id;
-        
+
         return (
             <div className="live-stream-page immersive">
                 <div className="stream-broadcast">
@@ -294,17 +294,23 @@ const LiveStreamPage = () => {
                             muted={isOwner}
                             className="broadcast-video"
                         />
-                        
+
                         <div className="stream-overlay">
                             <div className="overlay-top">
                                 <div className="streamer-info">
-                                    <img 
-                                        src={currentStream.user_avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + currentStream.username} 
-                                        className="streamer-avatar" 
-                                        alt="" 
+                                    <img
+                                        src={
+                                            currentStream.user_avatar ||
+                                            'https://api.dicebear.com/7.x/avataaars/svg?seed=' +
+                                                currentStream.username
+                                        }
+                                        className="streamer-avatar"
+                                        alt=""
                                     />
                                     <div>
-                                        <div className="streamer-name">{currentStream.username}</div>
+                                        <div className="streamer-name">
+                                            {currentStream.username}
+                                        </div>
                                         <div className="live-badge">LIVE</div>
                                     </div>
                                 </div>
@@ -313,7 +319,10 @@ const LiveStreamPage = () => {
                                         <Eye size={14} style={{ marginRight: 4 }} />
                                         {viewers || 1}
                                     </div>
-                                    <button className="action-btn" onClick={isOwner ? stopLive : leaveStream}>
+                                    <button
+                                        className="action-btn"
+                                        onClick={isOwner ? stopLive : leaveStream}
+                                    >
                                         <X size={20} />
                                     </button>
                                 </div>
@@ -324,16 +333,51 @@ const LiveStreamPage = () => {
                                     <Heart size={24} />
                                     <span className="action-label">Like</span>
                                 </button>
-                                <button className="action-btn gift-trigger" onClick={() => setShowSettings(!showSettings)}>
+                                <button
+                                    className="action-btn gift-trigger"
+                                    onClick={() => setShowSettings(!showSettings)}
+                                >
                                     <span style={{ fontSize: '24px' }}>🎁</span>
                                     <span className="action-label">Gift</span>
                                 </button>
                                 {showSettings && (
                                     <div className="gift-menu shadow-lg">
-                                        <div className="gift-item" onClick={() => { sendGift('Rose'); setShowSettings(false); }}>🌹 Rose</div>
-                                        <div className="gift-item" onClick={() => { sendGift('Fire'); setShowSettings(false); }}>🔥 Fire</div>
-                                        <div className="gift-item" onClick={() => { sendGift('Ice Cream'); setShowSettings(false); }}>🍦 Ice Cream</div>
-                                        <div className="gift-item" onClick={() => { sendGift('Crown'); setShowSettings(false); }}>👑 Crown</div>
+                                        <div
+                                            className="gift-item"
+                                            onClick={() => {
+                                                sendGift('Rose');
+                                                setShowSettings(false);
+                                            }}
+                                        >
+                                            🌹 Rose
+                                        </div>
+                                        <div
+                                            className="gift-item"
+                                            onClick={() => {
+                                                sendGift('Fire');
+                                                setShowSettings(false);
+                                            }}
+                                        >
+                                            🔥 Fire
+                                        </div>
+                                        <div
+                                            className="gift-item"
+                                            onClick={() => {
+                                                sendGift('Ice Cream');
+                                                setShowSettings(false);
+                                            }}
+                                        >
+                                            🍦 Ice Cream
+                                        </div>
+                                        <div
+                                            className="gift-item"
+                                            onClick={() => {
+                                                sendGift('Crown');
+                                                setShowSettings(false);
+                                            }}
+                                        >
+                                            👑 Crown
+                                        </div>
                                     </div>
                                 )}
                                 <button className="action-btn">
@@ -345,7 +389,7 @@ const LiveStreamPage = () => {
                             {/* Gift Animation Overlay */}
                             <div className="gifts-overlay-container">
                                 <AnimatePresence>
-                                    {gifts.map(gift => (
+                                    {gifts.map((gift) => (
                                         <motion.div
                                             key={gift.id}
                                             initial={{ opacity: 0, x: -100, scale: 0.5 }}
@@ -389,7 +433,11 @@ const LiveStreamPage = () => {
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
                                     />
-                                    <button type="submit" className="action-btn" style={{ background: '#ff0050' }}>
+                                    <button
+                                        type="submit"
+                                        className="action-btn"
+                                        style={{ background: '#ff0050' }}
+                                    >
                                         <Send size={18} />
                                     </button>
                                 </form>
@@ -398,8 +446,12 @@ const LiveStreamPage = () => {
 
                         {/* Floating Hearts Container */}
                         <div className="hearts-container">
-                            {hearts.map(id => (
-                                <div key={id} className="floating-heart" style={{ left: `${Math.random() * 40 + 60}%` }}>
+                            {hearts.map((id) => (
+                                <div
+                                    key={id}
+                                    className="floating-heart"
+                                    style={{ left: `${Math.random() * 40 + 60}%` }}
+                                >
                                     <Heart fill="#ff0050" color="#ff0050" size={32} />
                                 </div>
                             ))}
@@ -420,37 +472,77 @@ const LiveStreamPage = () => {
 
                 <div className="live-actions" style={{ marginBottom: '3rem', textAlign: 'center' }}>
                     {!isPreviewing ? (
-                        <button className="btn btn-primary" style={{ padding: '1.5rem 3rem', fontSize: '1.2rem', borderRadius: '40px' }} onClick={startPreview}>
+                        <button
+                            className="btn btn-primary"
+                            style={{
+                                padding: '1.5rem 3rem',
+                                fontSize: '1.2rem',
+                                borderRadius: '40px',
+                            }}
+                            onClick={startPreview}
+                        >
                             <Video size={24} /> Go Live Now
                         </button>
                     ) : (
-                        <div className="preview-container" style={{ maxWidth: '400px', margin: '0 auto' }}>
-                            <div className="video-container" style={{ aspectRatio: '9/16', marginBottom: '1rem' }}>
-                                <video ref={videoRef} autoPlay muted playsInline className="broadcast-video" style={{ borderRadius: '20px' }} />
-                                <div className="overlay-top" style={{ position: 'absolute', top: '10px', left: '10px' }}>
-                                    <div className="live-badge" style={{ background: '#777' }}>PREVIEW</div>
+                        <div
+                            className="preview-container"
+                            style={{ maxWidth: '400px', margin: '0 auto' }}
+                        >
+                            <div
+                                className="video-container"
+                                style={{ aspectRatio: '9/16', marginBottom: '1rem' }}
+                            >
+                                <video
+                                    ref={videoRef}
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    className="broadcast-video"
+                                    style={{ borderRadius: '20px' }}
+                                />
+                                <div
+                                    className="overlay-top"
+                                    style={{ position: 'absolute', top: '10px', left: '10px' }}
+                                >
+                                    <div className="live-badge" style={{ background: '#777' }}>
+                                        PREVIEW
+                                    </div>
                                 </div>
                             </div>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <input 
-                                    type="text" 
-                                    className="chat-input-pill" 
+                                <input
+                                    type="text"
+                                    className="chat-input-pill"
                                     style={{ background: '#222' }}
-                                    placeholder="Stream Title..." 
+                                    placeholder="Stream Title..."
                                     value={streamTitle}
                                     onChange={(e) => setStreamTitle(e.target.value)}
                                 />
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <button className="btn btn-outline" onClick={() => setIsPreviewing(false)} style={{ flex: 1 }}>Cancel</button>
-                                <button className="btn btn-primary" onClick={goLive} style={{ flex: 1, background: '#ff0050' }}>Start Live</button>
+                                <button
+                                    className="btn btn-outline"
+                                    onClick={() => setIsPreviewing(false)}
+                                    style={{ flex: 1 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={goLive}
+                                    style={{ flex: 1, background: '#ff0050' }}
+                                >
+                                    Start Live
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
 
                 <div className="active-streams-section">
-                    <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>🔥 Active Streams</h2>
+                    <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>
+                        🔥 Active Streams
+                    </h2>
                     <div className="streams-grid">
                         {activeStreams.length > 0 ? (
                             activeStreams.map((stream) => (
@@ -460,19 +552,50 @@ const LiveStreamPage = () => {
                                     whileHover={{ scale: 1.05 }}
                                     onClick={() => joinStream(stream)}
                                 >
-                                    <img src={stream.thumbnail_url || `https://picsum.photos/seed/${stream.id}/400/700`} alt="" />
-                                    <div className="live-badge" style={{ position: 'absolute', top: 10, left: 10 }}>LIVE</div>
+                                    <img
+                                        src={
+                                            stream.thumbnail_url ||
+                                            `https://picsum.photos/seed/${stream.id}/400/700`
+                                        }
+                                        alt=""
+                                    />
+                                    <div
+                                        className="live-badge"
+                                        style={{ position: 'absolute', top: 10, left: 10 }}
+                                    >
+                                        LIVE
+                                    </div>
                                     <div className="card-overlay">
                                         <div style={{ fontWeight: 800 }}>{stream.title}</div>
-                                        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>@{stream.username}</div>
+                                        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                                            @{stream.username}
+                                        </div>
                                     </div>
-                                    <div className="viewer-count" style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem' }}>
+                                    <div
+                                        className="viewer-count"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 10,
+                                            right: 10,
+                                            background: 'rgba(0,0,0,0.5)',
+                                            padding: '2px 8px',
+                                            borderRadius: '10px',
+                                            fontSize: '0.7rem',
+                                        }}
+                                    >
                                         <Eye size={10} /> {stream.viewer_count || 0}
                                     </div>
                                 </motion.div>
                             ))
                         ) : (
-                            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
+                            <div
+                                style={{
+                                    gridColumn: '1/-1',
+                                    textAlign: 'center',
+                                    padding: '4rem',
+                                    opacity: 0.5,
+                                }}
+                            >
                                 <Video size={48} style={{ marginBottom: '1rem' }} />
                                 <p>No one is live right now. Be the first!</p>
                             </div>

@@ -97,9 +97,11 @@ export const AblyProvider = ({ children }) => {
         signalingChannel.subscribe(['call-offer', 'call-answer', 'ice-candidate'], (msg) => {
             // This will be handled by the MessagesPage or a global CallProvider
             // For now, we dispatch a custom event that MessagesPage can listen to
-            window.dispatchEvent(new CustomEvent('ably-signaling', { 
-                detail: { type: msg.name, data: msg.data } 
-            }));
+            window.dispatchEvent(
+                new CustomEvent('ably-signaling', {
+                    detail: { type: msg.name, data: msg.data },
+                }),
+            );
         });
 
         return () => {

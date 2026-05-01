@@ -100,34 +100,46 @@ const TimetablePage = () => {
             const now = new Date();
             const currentDayString = days[now.getDay() - 1] || 'Sunday';
             const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            
-            const classes = Array.isArray(selectedTimetable.classes) ? selectedTimetable.classes : [];
-            classes.forEach(cls => {
+
+            const classes = Array.isArray(selectedTimetable.classes)
+                ? selectedTimetable.classes
+                : [];
+            classes.forEach((cls) => {
                 if (cls.day === currentDayString) {
                     const [startH, startM] = cls.start_time.split(':').map(Number);
-                    const classTimeParams = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0).getTime();
+                    const classTimeParams = new Date(
+                        now.getFullYear(),
+                        now.getMonth(),
+                        now.getDate(),
+                        startH,
+                        startM,
+                        0,
+                    ).getTime();
                     const nowTimeParams = now.getTime();
-                    
+
                     const diffMins = Math.round((classTimeParams - nowTimeParams) / 60000);
-                    
+
                     // Alert 15 minutes before
                     if (diffMins === 15 && !notifiedClasses.has(cls.id)) {
-                        showToast(`⏳ Up next: ${cls.title} in ${cls.room || 'TBA'} at ${cls.start_time}`, 'info');
-                        
+                        showToast(
+                            `⏳ Up next: ${cls.title} in ${cls.room || 'TBA'} at ${cls.start_time}`,
+                            'info',
+                        );
+
                         // Use native Notifications if permitted
                         if (Notification.permission === 'granted') {
                             new Notification(`Up Next: ${cls.title}`, {
                                 body: `Starts in 15 mins at ${cls.start_time} - Room ${cls.room || 'TBA'}`,
-                                icon: '/favicon.ico'
+                                icon: '/favicon.ico',
                             });
                         }
-                        
-                        setNotifiedClasses(prev => new Set(prev).add(cls.id));
+
+                        setNotifiedClasses((prev) => new Set(prev).add(cls.id));
                     }
                 }
             });
         }, 60000); // run every minute
-        
+
         // Request permission on mount
         if (Notification.permission === 'default') {
             Notification.requestPermission();
@@ -213,17 +225,21 @@ const TimetablePage = () => {
     };
 
     const handleMergeTemplate = async (templateId) => {
-        const personalTimetables = timetables.filter(t => !t.is_template);
+        const personalTimetables = timetables.filter((t) => !t.is_template);
         if (personalTimetables.length === 0) {
-            showToast('You don\'t have a personal timetable to merge into. Creating a new one instead.', 'info');
+            showToast(
+                "You don't have a personal timetable to merge into. Creating a new one instead.",
+                'info',
+            );
             return handleCopyTemplate(templateId);
         }
 
         // For simplicity, merge into the currently selected one if it's personal,
         // otherwise merge into the first personal one.
-        const target = (!selectedTimetable || selectedTimetable.is_template) 
-            ? personalTimetables[0] 
-            : selectedTimetable;
+        const target =
+            !selectedTimetable || selectedTimetable.is_template
+                ? personalTimetables[0]
+                : selectedTimetable;
 
         if (window.confirm(`Merge lessons from this template into "${target.name}"?`)) {
             setIsSubmitting(true);
@@ -240,7 +256,9 @@ const TimetablePage = () => {
     };
 
     const handleCopyOrMerge = (templateId) => {
-        const choice = window.confirm("Do you want to create a NEW timetable from this (OK) or MERGE its lessons into your current timetable (Cancel)?");
+        const choice = window.confirm(
+            'Do you want to create a NEW timetable from this (OK) or MERGE its lessons into your current timetable (Cancel)?',
+        );
         if (choice) {
             handleCopyTemplate(templateId);
         } else {
@@ -251,7 +269,7 @@ const TimetablePage = () => {
     const handleAddClass = async () => {
         // If current is template, we can't add to it directly
         let targetId = selectedTimetable?._id;
-        
+
         if (!selectedTimetable) {
             showToast('Please select or create a timetable first', 'error');
             return;
@@ -259,7 +277,7 @@ const TimetablePage = () => {
 
         if (selectedTimetable.is_template) {
             // Find a personal one or ask to create
-            const personal = timetables.find(t => !t.is_template);
+            const personal = timetables.find((t) => !t.is_template);
             if (personal) {
                 targetId = personal._id;
                 showToast(`Adding to your personal timetable: ${personal.name}`, 'info');
@@ -300,15 +318,17 @@ const TimetablePage = () => {
 
     const handleUpdateClassLocal = (updatedClass) => {
         // Optimistic UI update for tasks
-        const updatedTimetables = timetables.map(t => {
+        const updatedTimetables = timetables.map((t) => {
             if (t._id === selectedTimetable._id) {
-                const updatedClasses = t.classes.map(c => c.id === updatedClass.id ? updatedClass : c);
+                const updatedClasses = t.classes.map((c) =>
+                    c.id === updatedClass.id ? updatedClass : c,
+                );
                 return { ...t, classes: updatedClasses };
             }
             return t;
         });
         setTimetables(updatedTimetables);
-        setSelectedTimetable(updatedTimetables.find(t => t._id === selectedTimetable._id));
+        setSelectedTimetable(updatedTimetables.find((t) => t._id === selectedTimetable._id));
     };
 
     const handleDeleteClass = async (classId) => {
@@ -370,17 +390,17 @@ const TimetablePage = () => {
     const hasClash = React.useMemo(() => {
         if (!selectedTimetable || newClass.is_exam) return null;
         const dayClasses = getClassesForDay(newClass.day);
-        
+
         const newStart = parseInt(newClass.start_time.replace(':', ''));
         const newEnd = parseInt(newClass.end_time.replace(':', ''));
-        
-        const clash = dayClasses.find(c => {
+
+        const clash = dayClasses.find((c) => {
             const s = parseInt(c.start_time.replace(':', ''));
             const e = parseInt(c.end_time.replace(':', ''));
             // Overlaps if it starts before the existing class ends AND ends after the existing class starts
             return newStart < e && newEnd > s;
         });
-        
+
         return clash;
     }, [selectedTimetable, newClass]);
 
@@ -422,7 +442,7 @@ const TimetablePage = () => {
                     )}
                 </div>
             </div>
-{/* Today Banner */}
+            {/* Today Banner */}
             {selectedTimetable?.is_template && (
                 <div className="template-warning">
                     <AlertCircle size={20} />
@@ -525,7 +545,7 @@ const TimetablePage = () => {
                     <div className="classes-list">
                         <AnimatePresence mode="wait">
                             {currentDayClasses.length === 0 ? (
-                                <motion.div 
+                                <motion.div
                                     key="empty"
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -544,7 +564,7 @@ const TimetablePage = () => {
                                     )}
                                 </motion.div>
                             ) : (
-                                <motion.div 
+                                <motion.div
                                     key={selectedDay}
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
@@ -553,45 +573,69 @@ const TimetablePage = () => {
                                     className="day-content"
                                 >
                                     {currentDayClasses.map((cls, index) => {
-                                        const activeTasks = cls.tasks ? cls.tasks.filter(t => !t.completed).length : 0;
-                                        
+                                        const activeTasks = cls.tasks
+                                            ? cls.tasks.filter((t) => !t.completed).length
+                                            : 0;
+
                                         // Check if class is currently live
                                         const now = new Date();
                                         const currentDayString = days[now.getDay() - 1] || 'Sunday';
                                         let isLive = false;
-                                        
+
                                         if (cls.day === currentDayString) {
                                             const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                                            isLive = currentTimeStr >= cls.start_time && currentTimeStr <= cls.end_time;
+                                            isLive =
+                                                currentTimeStr >= cls.start_time &&
+                                                currentTimeStr <= cls.end_time;
                                         }
 
                                         return (
-                                            <motion.div 
-                                                key={cls.id} 
+                                            <motion.div
+                                                key={cls.id}
                                                 layout
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.05 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                className={`class-card ${isLive ? 'live' : ''}`} 
-                                                style={{ cursor: 'pointer' }} 
-                                                onClick={() => { setActiveClass(cls); setShowClassDetailsModal(true); }}
+                                                className={`class-card ${isLive ? 'live' : ''}`}
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => {
+                                                    setActiveClass(cls);
+                                                    setShowClassDetailsModal(true);
+                                                }}
                                             >
                                                 <div className="class-time">
                                                     <Clock size={16} />
                                                     <span>
                                                         {cls.start_time} - {cls.end_time}
                                                     </span>
-                                                    {isLive && <span className="live-indicator">LIVE</span>}
+                                                    {isLive && (
+                                                        <span className="live-indicator">LIVE</span>
+                                                    )}
                                                 </div>
                                                 <div className="class-info">
                                                     <h3>{cls.title}</h3>
-                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <div
+                                                        style={{
+                                                            display: 'flex',
+                                                            gap: '8px',
+                                                            alignItems: 'center',
+                                                        }}
+                                                    >
                                                         {cls.course_code && (
-                                                            <span className="class-code">{cls.course_code}</span>
+                                                            <span className="class-code">
+                                                                {cls.course_code}
+                                                            </span>
                                                         )}
                                                         {activeTasks > 0 && (
-                                                            <span className="badge warning" style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' }}>
+                                                            <span
+                                                                className="badge warning"
+                                                                style={{
+                                                                    fontSize: '0.7rem',
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '10px',
+                                                                }}
+                                                            >
                                                                 {activeTasks} tasks due
                                                             </span>
                                                         )}
@@ -602,7 +646,9 @@ const TimetablePage = () => {
                                                                 <MapPin size={14} /> {cls.room}
                                                             </span>
                                                         )}
-                                                        {cls.professor && <span>👨‍🏫 {cls.professor}</span>}
+                                                        {cls.professor && (
+                                                            <span>👨‍🏫 {cls.professor}</span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 {!selectedTimetable.is_template && (
@@ -620,14 +666,20 @@ const TimetablePage = () => {
                                                         </button>
                                                         <button
                                                             className="icon-btn warning"
-                                                            onClick={(e) => { e.stopPropagation(); handleReportIssue(cls); }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleReportIssue(cls);
+                                                            }}
                                                         >
                                                             <AlertCircle size={18} />
                                                             <span>Report</span>
                                                         </button>
                                                         <button
                                                             className="icon-btn danger"
-                                                            onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteClass(cls.id);
+                                                            }}
                                                         >
                                                             <Trash2 size={18} />
                                                             <span>Remove</span>
@@ -635,7 +687,7 @@ const TimetablePage = () => {
                                                     </div>
                                                 )}
                                             </motion.div>
-                                        )
+                                        );
                                     })}
                                 </motion.div>
                             )}
@@ -791,11 +843,24 @@ const TimetablePage = () => {
                                     />
                                 </div>
                             </div>
-                            
+
                             {hasClash && (
-                                <div className="info-alert danger" style={{ background: 'rgba(var(--danger), 0.1)', color: 'rgb(var(--danger))', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <AlertCircle size={16} /> 
-                                    <strong>Time Conflict:</strong> This overlaps with {hasClash.title} ({hasClash.start_time} - {hasClash.end_time}).
+                                <div
+                                    className="info-alert danger"
+                                    style={{
+                                        background: 'rgba(var(--danger), 0.1)',
+                                        color: 'rgb(var(--danger))',
+                                        padding: '0.75rem',
+                                        borderRadius: 'var(--radius-sm)',
+                                        marginBottom: '1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                    }}
+                                >
+                                    <AlertCircle size={16} />
+                                    <strong>Time Conflict:</strong> This overlaps with{' '}
+                                    {hasClash.title} ({hasClash.start_time} - {hasClash.end_time}).
                                 </div>
                             )}
 

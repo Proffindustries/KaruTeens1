@@ -77,25 +77,40 @@ export const transformVideo = async (file, onProgress) => {
     }
 
     await ffmpeg.writeFile(inputName, await fetchFile(file));
+    console.log(`[FFmpeg] Input file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
 
     await ffmpeg.exec([
-        '-i', inputName,
+        '-i',
+        inputName,
         // Video: H.264, cap at 720p, CRF 28, fast preset for browser speed
-        '-c:v', 'libx264',
-        '-crf', '28',
-        '-preset', 'fast',
-        '-vf', 'scale=w=1280:h=720:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2',
+        '-c:v',
+        'libx264',
+        '-crf',
+        '28',
+        '-preset',
+        'fast',
+        '-vf',
+        'scale=w=1280:h=720:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2',
         // Audio: AAC 128kbps stereo
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-ac', '2',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '128k',
+        '-ac',
+        '2',
         // Strip metadata, fast-start for web streaming
-        '-map_metadata', '-1',
-        '-movflags', '+faststart',
+        '-map_metadata',
+        '-1',
+        '-movflags',
+        '+faststart',
         outputName,
     ]);
 
     const data = await ffmpeg.readFile(outputName);
+    const outputSize = data.buffer.byteLength;
+    console.log(`[FFmpeg] Output file size: ${(outputSize / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`[FFmpeg] Reduction: ${Math.round((1 - outputSize / file.size) * 100)}%`);
+
     await ffmpeg.deleteFile(inputName);
     await ffmpeg.deleteFile(outputName);
 
@@ -134,11 +149,16 @@ export const transformAudio = async (file, onProgress) => {
     await ffmpeg.writeFile(inputName, await fetchFile(file));
 
     await ffmpeg.exec([
-        '-i', inputName,
-        '-c:a', 'libmp3lame',
-        '-b:a', '128k',
-        '-ac', '2',
-        '-map_metadata', '-1',
+        '-i',
+        inputName,
+        '-c:a',
+        'libmp3lame',
+        '-b:a',
+        '128k',
+        '-ac',
+        '2',
+        '-map_metadata',
+        '-1',
         outputName,
     ]);
 

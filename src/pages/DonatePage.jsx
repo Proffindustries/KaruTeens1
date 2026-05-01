@@ -37,9 +37,7 @@ const DonatePage = () => {
         showToast('Donation received! Thank you for your support.', 'success');
         // Refresh data
         api.get('/payments/donations/stats').then((res) => setStats(res.data));
-        api.get('/payments/donations/recent').then((res) =>
-            setRecentDonors(res.data),
-        );
+        api.get('/payments/donations/recent').then((res) => setRecentDonors(res.data));
         setAmount('');
     };
 
@@ -98,11 +96,7 @@ const DonatePage = () => {
                         }}
                     >
                         Donate with M-Pesa{' '}
-                        <Heart
-                            size={20}
-                            fill="white"
-                            style={{ marginLeft: '8px' }}
-                        />
+                        <Heart size={20} fill="white" style={{ marginLeft: '8px' }} />
                     </button>
                     <p className="donate-secure">
                         <CreditCard size={14} /> Secure M-Pesa Transaction
@@ -157,7 +151,7 @@ const DonatePage = () => {
                 </div>
             </div>
 
-            <MpesaPaymentModal 
+            <MpesaPaymentModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 amount={parseFloat(amount)}

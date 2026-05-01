@@ -64,8 +64,7 @@ export const getOptimizedVideoUrl = (url) =>
  * @param {string} url
  * @returns {string}
  */
-export const getOptimizedAudioUrl = (url) =>
-    injectCloudinaryTransforms(url, 'f_mp3,q_auto');
+export const getOptimizedAudioUrl = (url) => injectCloudinaryTransforms(url, 'f_mp3,q_auto');
 
 /**
  * Smart dispatcher — picks the right optimizer based on media type.

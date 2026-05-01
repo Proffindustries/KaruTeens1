@@ -73,7 +73,8 @@ const CreatePostModal = React.memo(
             });
         };
 
-        const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } = useUpload();
+        const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } =
+            useUpload();
         const { uploadMedia, batchUpload } = useMediaUpload();
 
         const createPost = groupId
@@ -90,9 +91,11 @@ const CreatePostModal = React.memo(
                 else if (file.type === 'application/pdf') type = 'pdf';
                 else if (
                     file.type === 'application/vnd.ms-excel' ||
-                    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.type ===
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
                     file.name.match(/\.(xls|xlsx)$/i)
-                ) type = 'excel';
+                )
+                    type = 'excel';
 
                 return {
                     id: Math.random().toString(36).substr(2, 9),
@@ -129,19 +132,19 @@ const CreatePostModal = React.memo(
             if (fileObj.status === 'completed') return fileObj.url;
 
             const cancelTokenSource = axios.CancelToken.source();
-            
+
             const uploadId = addUpload({
                 fileName: fileObj.name,
                 fileSize: fileObj.file.size,
                 type: fileObj.type === 'image' ? 'image' : 'file',
             });
-            
+
             setCancelToken(uploadId, cancelTokenSource);
 
             setFiles((prev) =>
                 prev.map((f) =>
-                    f.id === fileObj.id 
-                        ? { ...f, status: 'uploading', progress: 0, error: null, cancelTokenSource } 
+                    f.id === fileObj.id
+                        ? { ...f, status: 'uploading', progress: 0, error: null, cancelTokenSource }
                         : f,
                 ),
             );
@@ -160,7 +163,15 @@ const CreatePostModal = React.memo(
                 completeUpload(uploadId, { url });
                 setFiles((prev) =>
                     prev.map((f) =>
-                        f.id === fileObj.id ? { ...f, status: 'completed', progress: 100, url, cancelTokenSource: null } : f,
+                        f.id === fileObj.id
+                            ? {
+                                  ...f,
+                                  status: 'completed',
+                                  progress: 100,
+                                  url,
+                                  cancelTokenSource: null,
+                              }
+                            : f,
                     ),
                 );
                 return url;
@@ -173,7 +184,14 @@ const CreatePostModal = React.memo(
                 failUpload(uploadId, err);
                 setFiles((prev) =>
                     prev.map((f) =>
-                        f.id === fileObj.id ? { ...f, status: 'failed', error: err.message, cancelTokenSource: null } : f,
+                        f.id === fileObj.id
+                            ? {
+                                  ...f,
+                                  status: 'failed',
+                                  error: err.message,
+                                  cancelTokenSource: null,
+                              }
+                            : f,
                     ),
                 );
                 throw err;
@@ -190,11 +208,11 @@ const CreatePostModal = React.memo(
             setIsPosting(true);
 
             const postIsNsfw = isNsfw;
-            
+
             // Determine post type based on files
             let postType = 'text';
             if (files.length > 0) {
-                const types = files.map(f => f.type);
+                const types = files.map((f) => f.type);
                 if (types.includes('video')) postType = 'video';
                 else if (types.includes('audio')) postType = 'audio';
                 else if (types.includes('image')) postType = 'image';
@@ -217,7 +235,7 @@ const CreatePostModal = React.memo(
                 const uploadResults = await batchUpload(
                     files,
                     (fileObj) => uploadSingleFile(fileObj),
-                    2 // Limit to 2 concurrent uploads
+                    2, // Limit to 2 concurrent uploads
                 );
 
                 const mediaUrls = files
@@ -339,455 +357,485 @@ const CreatePostModal = React.memo(
                             className="modal-content"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            <div className="modal-header">
+                                <h3>Create Post</h3>
+                                <button className="close-btn" onClick={onClose}>
+                                    <X size={24} />
+                                </button>
+                            </div>
 
-                        <div className="modal-header">
-                            <h3>Create Post</h3>
-                            <button className="close-btn" onClick={onClose}>
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="modal-body">
-                            {!isAuthenticated ? (
-                                <div className="verification-gate-overlay">
-                                    <div className="gate-content">
-                                        <Shield size={64} className="gate-shield" />
-                                        <h3>Login Required</h3>
-                                        <p>
-                                            You need to be logged in to share updates with the
-                                            KaruTeens community.
-                                        </p>
-                                        <button
-                                            className="btn btn-primary btn-full"
-                                            onClick={() => {
-                                                onClose();
-                                                navigate('/login');
-                                            }}
-                                        >
-                                            Log In / Sign Up
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : !user?.is_verified ? (
-                                <div className="verification-gate-overlay">
-                                    <div className="gate-content">
-                                        <Shield size={64} className="gate-shield" />
-                                        <h3>Verification Required</h3>
-                                        <p>
-                                            To keep KaruTeens safe and bot-free, you need to verify
-                                            your student status with a one-time fee of{' '}
-                                            <strong>Ksh 20</strong>.
-                                        </p>
-                                        <div className="gate-benefits">
-                                            <div className="benefit">
-                                                <Check size={16} /> Post on the Feed
-                                            </div>
-                                            <div className="benefit">
-                                                <Check size={16} /> Comment & Reply
-                                            </div>
-                                            <div className="benefit">
-                                                <Check size={16} /> Use Marketplace
-                                            </div>
-                                        </div>
-                                        <button
-                                            className="btn btn-primary btn-full"
-                                            onClick={() => {
-                                                onClose();
-                                                navigate('/verification');
-                                            }}
-                                        >
-                                            Verify My Account Now
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="user-preview-row">
-                                        <Avatar
-                                            src={user.avatar_url}
-                                            name={user.username || 'User'}
-                                            className="modal-avatar"
-                                        />
-                                        <div className="user-details">
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
+                            <div className="modal-body">
+                                {!isAuthenticated ? (
+                                    <div className="verification-gate-overlay">
+                                        <div className="gate-content">
+                                            <Shield size={64} className="gate-shield" />
+                                            <h3>Login Required</h3>
+                                            <p>
+                                                You need to be logged in to share updates with the
+                                                KaruTeens community.
+                                            </p>
+                                            <button
+                                                className="btn btn-primary btn-full"
+                                                onClick={() => {
+                                                    onClose();
+                                                    navigate('/login');
                                                 }}
                                             >
-                                                <strong>
-                                                    {isAnonymous
-                                                        ? 'Anonymous'
-                                                        : user.username || 'User'}
-                                                </strong>
-                                                <span
-                                                    className={`toggle-anonymous ${isAnonymous ? 'active' : ''} ${isPosting ? 'disabled' : ''}`}
-                                                    onClick={() =>
-                                                        !isPosting && setIsAnonymous(!isAnonymous)
-                                                    }
-                                                    title="Post Anonymously"
-                                                >
-                                                    {isAnonymous ? '👻' : '👤'}
-                                                </span>
-                                            </div>
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    gap: '0.5rem',
-                                                    marginTop: '4px',
-                                                }}
-                                            >
-                                                <select
-                                                    className="audience-select"
-                                                    value={audience[0]}
-                                                    onChange={(e) => setAudience([e.target.value])}
-                                                    disabled={isPosting}
-                                                >
-                                                    <option value="all">Public (All)</option>
-                                                    <option value="freshers">Freshers (Y1)</option>
-                                                    <option value="2nd year">2nd Year</option>
-                                                    <option value="3rd year">3rd Year</option>
-                                                    <option value="4th year">4th Year</option>
-                                                    <option value="alumni">Alumni</option>
-                                                    <option value="staff">Staff Only</option>
-                                                </select>
-
-                                                <button
-                                                    className={`schedule-btn ${scheduledDatetime ? 'active' : ''}`}
-                                                    onClick={() =>
-                                                        !isPosting &&
-                                                        setShowScheduling(!showScheduling)
-                                                    }
-                                                    disabled={isPosting}
-                                                    title="Schedule Post"
-                                                >
-                                                    <Calendar size={14} />{' '}
-                                                    {scheduledDatetime ? 'Scheduled' : 'Now'}
-                                                </button>
-                                            </div>
+                                                Log In / Sign Up
+                                            </button>
                                         </div>
                                     </div>
-
-                                    {showScheduling && (
-                                        <div className="scheduling-panel">
-                                            <div className="scheduling-row">
-                                                <div
-                                                    className="form-group"
-                                                    style={{ width: '100%' }}
-                                                >
-                                                    <label>Date & Time:</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        style={{ width: '100%', padding: '0.5rem' }}
-                                                        value={scheduledDatetime}
-                                                        onChange={(e) =>
-                                                            setScheduledDatetime(e.target.value)
-                                                        }
-                                                        min={new Date().toISOString().slice(0, 16)}
-                                                    />
+                                ) : !user?.is_verified ? (
+                                    <div className="verification-gate-overlay">
+                                        <div className="gate-content">
+                                            <Shield size={64} className="gate-shield" />
+                                            <h3>Verification Required</h3>
+                                            <p>
+                                                To keep KaruTeens safe and bot-free, you need to
+                                                verify your student status with a one-time fee of{' '}
+                                                <strong>Ksh 20</strong>.
+                                            </p>
+                                            <div className="gate-benefits">
+                                                <div className="benefit">
+                                                    <Check size={16} /> Post on the Feed
+                                                </div>
+                                                <div className="benefit">
+                                                    <Check size={16} /> Comment & Reply
+                                                </div>
+                                                <div className="benefit">
+                                                    <Check size={16} /> Use Marketplace
                                                 </div>
                                             </div>
                                             <button
-                                                className="clear-schedule"
+                                                className="btn btn-primary btn-full"
                                                 onClick={() => {
-                                                    setScheduledDatetime('');
-                                                    setShowScheduling(false);
+                                                    onClose();
+                                                    navigate('/verification');
                                                 }}
                                             >
-                                                Clear
+                                                Verify My Account Now
                                             </button>
                                         </div>
-                                    )}
-
-                                    <textarea
-                                        className="post-textarea"
-                                        placeholder="What's on your mind? Use #hashtags or @mentions..."
-                                        value={text}
-                                        onChange={(e) => setText(e.target.value)}
-                                        disabled={isPosting}
-                                        autoFocus
-                                    ></textarea>
-
-                                    {trending && trending.length > 0 && (
-                                        <div className="trending-suggestions-mini">
-                                            <span className="label">Trending:</span>
-                                            <div className="tags-list">
-                                                {trending.slice(0, 5).map((tag, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        className="tag-suggest-btn"
-                                                        onClick={() => appendHashtag(tag.id)}
-                                                        type="button"
-                                                    >
-                                                        {tag.id}
-                                                    </button>
-                                                ))}
-                                                {/* Pre-made suggestions */}
-                                                {[
-                                                    '#KaruTeens',
-                                                    '#CampusLife',
-                                                    '#KaratinaUniversity',
-                                                ].map((tag, idx) => (
-                                                    <button
-                                                        key={`suggest-${idx}`}
-                                                        className="tag-suggest-btn premade"
-                                                        onClick={() => appendHashtag(tag)}
-                                                        type="button"
-                                                    >
-                                                        {tag}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {files.length > 0 && (
-                                        <div className="media-preview-grid">
-                                            {files.map((fileObj) => (
-                                                <div key={fileObj.id} className="preview-item">
-                                                    {fileObj.type === 'image' && (
-                                                        <img
-                                                            src={fileObj.previewUrl}
-                                                            alt="Preview"
-                                                            loading="lazy"
-                                                        />
-                                                    )}
-                                                    {fileObj.type === 'video' && (
-                                                        <video src={fileObj.previewUrl} muted />
-                                                    )}
-                                                    {fileObj.type === 'audio' && (
-                                                        <div className="file-preview-placeholder">
-                                                            <Music size={32} color="#f7b928" />
-                                                            <span>{fileObj.name}</span>
-                                                        </div>
-                                                    )}
-                                                    {fileObj.type === 'pdf' && (
-                                                        <iframe
-                                                            src={`${fileObj.previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                            className="pdf-preview"
-                                                            title={fileObj.name}
-                                                        />
-                                                    )}
-                                                    {fileObj.type === 'excel' && (
-                                                        <div className="file-preview-placeholder">
-                                                            <div className="excel-icon-wrapper">
-                                                                <FileText size={24} color="#fff" />
-                                                            </div>
-                                                            <span title={fileObj.name}>{fileObj.name}</span>
-                                                        </div>
-                                                    )}
-                                                    {fileObj.type === 'file' && (
-                                                        <div className="file-preview-placeholder">
-                                                            <FileText size={32} color="#606770" />
-                                                            <span title={fileObj.name}>{fileObj.name}</span>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Individual Upload Progress Overlay */}
-                                                    {fileObj.status === 'uploading' && (
-                                                        <div className="preview-upload-overlay">
-                                                            <div className="mini-progress-bar">
-                                                                <div
-                                                                    className="mini-progress-fill"
-                                                                    style={{
-                                                                        width: `${fileObj.progress}%`,
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="percent-text">
-                                                                {fileObj.progress}%
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {fileObj.status === 'completed' && (
-                                                        <div className="preview-upload-overlay success">
-                                                            <Check size={24} color="#fff" />
-                                                        </div>
-                                                    )}
-
-                                                    {fileObj.status === 'failed' && (
-                                                        <div className="preview-upload-overlay failed">
-                                                            <AlertCircle size={24} color="#fff" />
-                                                            <span className="error-text">Failed</span>
-                                                            <button
-                                                                className="retry-upload-btn"
-                                                                onClick={() =>
-                                                                    retryUpload(fileObj.id)
-                                                                }
-                                                            >
-                                                                Retry
-                                                            </button>
-                                                        </div>
-                                                    )}
-
-                                                    <button
-                                                        className="remove-preview"
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="user-preview-row">
+                                            <Avatar
+                                                src={user.avatar_url}
+                                                name={user.username || 'User'}
+                                                className="modal-avatar"
+                                            />
+                                            <div className="user-details">
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                    }}
+                                                >
+                                                    <strong>
+                                                        {isAnonymous
+                                                            ? 'Anonymous'
+                                                            : user.username || 'User'}
+                                                    </strong>
+                                                    <span
+                                                        className={`toggle-anonymous ${isAnonymous ? 'active' : ''} ${isPosting ? 'disabled' : ''}`}
                                                         onClick={() =>
-                                                            !isPosting && removeFile(fileObj.id)
+                                                            !isPosting &&
+                                                            setIsAnonymous(!isAnonymous)
+                                                        }
+                                                        title="Post Anonymously"
+                                                    >
+                                                        {isAnonymous ? '👻' : '👤'}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        gap: '0.5rem',
+                                                        marginTop: '4px',
+                                                    }}
+                                                >
+                                                    <select
+                                                        className="audience-select"
+                                                        value={audience[0]}
+                                                        onChange={(e) =>
+                                                            setAudience([e.target.value])
                                                         }
                                                         disabled={isPosting}
                                                     >
-                                                        <X size={16} />
+                                                        <option value="all">Public (All)</option>
+                                                        <option value="freshers">
+                                                            Freshers (Y1)
+                                                        </option>
+                                                        <option value="2nd year">2nd Year</option>
+                                                        <option value="3rd year">3rd Year</option>
+                                                        <option value="4th year">4th Year</option>
+                                                        <option value="alumni">Alumni</option>
+                                                        <option value="staff">Staff Only</option>
+                                                    </select>
+
+                                                    <button
+                                                        className={`schedule-btn ${scheduledDatetime ? 'active' : ''}`}
+                                                        onClick={() =>
+                                                            !isPosting &&
+                                                            setShowScheduling(!showScheduling)
+                                                        }
+                                                        disabled={isPosting}
+                                                        title="Schedule Post"
+                                                    >
+                                                        <Calendar size={14} />{' '}
+                                                        {scheduledDatetime ? 'Scheduled' : 'Now'}
                                                     </button>
                                                 </div>
-                                            ))}
+                                            </div>
                                         </div>
-                                    )}
 
-                                    {location && (
-                                        <div className="active-tag-badge">
-                                            <MapPin size={14} />{' '}
-                                            {location.is_live ? '📡 Live' : '📍 At'}{' '}
-                                            {location.label || 'Location'}
-                                            <button onClick={() => setLocation(null)}>
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    <div className="add-to-post">
-                                        <span>Add to your post</span>
-                                        <div className="add-icons">
-                                            <input
-                                                type="file"
-                                                ref={fileInputRef}
-                                                hidden
-                                                multiple
-                                                accept="image/*"
-                                                onChange={handleFileChange}
-                                            />
-                                            <input
-                                                type="file"
-                                                ref={videoInputRef}
-                                                hidden
-                                                accept="video/*"
-                                                onChange={handleFileChange}
-                                            />
-                                            <input
-                                                type="file"
-                                                ref={audioInputRef}
-                                                hidden
-                                                accept="audio/*"
-                                                onChange={handleFileChange}
-                                            />
-                                            <input
-                                                type="file"
-                                                ref={documentInputRef}
-                                                hidden
-                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                                                onChange={handleFileChange}
-                                            />
-                                            <button
-                                                className="icon-btn"
-                                                title="Photo"
-                                                onClick={() => fileInputRef.current.click()}
-                                            >
-                                                <ImageIcon size={24} color="#45bd62" />
-                                            </button>
-                                            <button
-                                                className="icon-btn"
-                                                title="Video"
-                                                onClick={() => videoInputRef.current.click()}
-                                            >
-                                                <Video size={24} color="#fb7185" />
-                                            </button>
-                                            <button className="icon-btn" title="Tag People">
-                                                <Users size={24} color="#1877f2" />
-                                            </button>
-                                            <button
-                                                className="icon-btn"
-                                                title="Audio"
-                                                onClick={() => audioInputRef.current.click()}
-                                            >
-                                                <Music size={24} color="#f7b928" />
-                                            </button>
-                                            <button
-                                                className="icon-btn"
-                                                title="Document"
-                                                onClick={() => documentInputRef.current.click()}
-                                            >
-                                                <FileText size={24} color="#606770" />
-                                            </button>
-                                            <div style={{ position: 'relative' }}>
+                                        {showScheduling && (
+                                            <div className="scheduling-panel">
+                                                <div className="scheduling-row">
+                                                    <div
+                                                        className="form-group"
+                                                        style={{ width: '100%' }}
+                                                    >
+                                                        <label>Date & Time:</label>
+                                                        <input
+                                                            type="datetime-local"
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '0.5rem',
+                                                            }}
+                                                            value={scheduledDatetime}
+                                                            onChange={(e) =>
+                                                                setScheduledDatetime(e.target.value)
+                                                            }
+                                                            min={new Date()
+                                                                .toISOString()
+                                                                .slice(0, 16)}
+                                                        />
+                                                    </div>
+                                                </div>
                                                 <button
-                                                    className="icon-btn"
-                                                    title="Check In"
-                                                    onClick={() =>
-                                                        setShowLocationOptions(!showLocationOptions)
-                                                    }
+                                                    className="clear-schedule"
+                                                    onClick={() => {
+                                                        setScheduledDatetime('');
+                                                        setShowScheduling(false);
+                                                    }}
                                                 >
-                                                    <MapPin size={24} color="#f5533d" />
+                                                    Clear
                                                 </button>
-                                                {showLocationOptions && (
-                                                    <div className="location-context-menu">
+                                            </div>
+                                        )}
+
+                                        <textarea
+                                            className="post-textarea"
+                                            placeholder="What's on your mind? Use #hashtags or @mentions..."
+                                            value={text}
+                                            onChange={(e) => setText(e.target.value)}
+                                            disabled={isPosting}
+                                            autoFocus
+                                        ></textarea>
+
+                                        {trending && trending.length > 0 && (
+                                            <div className="trending-suggestions-mini">
+                                                <span className="label">Trending:</span>
+                                                <div className="tags-list">
+                                                    {trending.slice(0, 5).map((tag, idx) => (
                                                         <button
-                                                            onClick={() => handleGetLocation(false)}
+                                                            key={idx}
+                                                            className="tag-suggest-btn"
+                                                            onClick={() => appendHashtag(tag.id)}
+                                                            type="button"
                                                         >
-                                                            📍 Share Current Location
+                                                            {tag.id}
                                                         </button>
+                                                    ))}
+                                                    {/* Pre-made suggestions */}
+                                                    {[
+                                                        '#KaruTeens',
+                                                        '#CampusLife',
+                                                        '#KaratinaUniversity',
+                                                    ].map((tag, idx) => (
                                                         <button
-                                                            onClick={() => handleGetLocation(true)}
+                                                            key={`suggest-${idx}`}
+                                                            className="tag-suggest-btn premade"
+                                                            onClick={() => appendHashtag(tag)}
+                                                            type="button"
                                                         >
-                                                            📡 Start Live Sharing (1h)
+                                                            {tag}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {files.length > 0 && (
+                                            <div className="media-preview-grid">
+                                                {files.map((fileObj) => (
+                                                    <div key={fileObj.id} className="preview-item">
+                                                        {fileObj.type === 'image' && (
+                                                            <img
+                                                                src={fileObj.previewUrl}
+                                                                alt="Preview"
+                                                                loading="lazy"
+                                                            />
+                                                        )}
+                                                        {fileObj.type === 'video' && (
+                                                            <video src={fileObj.previewUrl} muted />
+                                                        )}
+                                                        {fileObj.type === 'audio' && (
+                                                            <div className="file-preview-placeholder">
+                                                                <Music size={32} color="#f7b928" />
+                                                                <span>{fileObj.name}</span>
+                                                            </div>
+                                                        )}
+                                                        {fileObj.type === 'pdf' && (
+                                                            <iframe
+                                                                src={`${fileObj.previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                className="pdf-preview"
+                                                                title={fileObj.name}
+                                                            />
+                                                        )}
+                                                        {fileObj.type === 'excel' && (
+                                                            <div className="file-preview-placeholder">
+                                                                <div className="excel-icon-wrapper">
+                                                                    <FileText
+                                                                        size={24}
+                                                                        color="#fff"
+                                                                    />
+                                                                </div>
+                                                                <span title={fileObj.name}>
+                                                                    {fileObj.name}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {fileObj.type === 'file' && (
+                                                            <div className="file-preview-placeholder">
+                                                                <FileText
+                                                                    size={32}
+                                                                    color="#606770"
+                                                                />
+                                                                <span title={fileObj.name}>
+                                                                    {fileObj.name}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Individual Upload Progress Overlay */}
+                                                        {fileObj.status === 'uploading' && (
+                                                            <div className="preview-upload-overlay">
+                                                                <div className="mini-progress-bar">
+                                                                    <div
+                                                                        className="mini-progress-fill"
+                                                                        style={{
+                                                                            width: `${fileObj.progress}%`,
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <span className="percent-text">
+                                                                    {fileObj.progress}%
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {fileObj.status === 'completed' && (
+                                                            <div className="preview-upload-overlay success">
+                                                                <Check size={24} color="#fff" />
+                                                            </div>
+                                                        )}
+
+                                                        {fileObj.status === 'failed' && (
+                                                            <div className="preview-upload-overlay failed">
+                                                                <AlertCircle
+                                                                    size={24}
+                                                                    color="#fff"
+                                                                />
+                                                                <span className="error-text">
+                                                                    Failed
+                                                                </span>
+                                                                <button
+                                                                    className="retry-upload-btn"
+                                                                    onClick={() =>
+                                                                        retryUpload(fileObj.id)
+                                                                    }
+                                                                >
+                                                                    Retry
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        <button
+                                                            className="remove-preview"
+                                                            onClick={() =>
+                                                                !isPosting && removeFile(fileObj.id)
+                                                            }
+                                                            disabled={isPosting}
+                                                        >
+                                                            <X size={16} />
                                                         </button>
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
-                                            <button
-                                                className="icon-btn"
-                                                title="File"
-                                                onClick={() => documentInputRef.current.click()}
-                                            >
-                                                <FileText size={24} color="#606770" />
-                                            </button>
+                                        )}
 
-                                            <button
-                                                className={`icon-btn ${isNsfw ? 'active' : ''}`}
-                                                title="NSFW Content"
-                                                onClick={() => !isPosting && setIsNsfw(!isNsfw)}
-                                                disabled={isPosting}
-                                            >
-                                                <Shield
-                                                    size={24}
-                                                    color={isNsfw ? '#f5533d' : '#606770'}
+                                        {location && (
+                                            <div className="active-tag-badge">
+                                                <MapPin size={14} />{' '}
+                                                {location.is_live ? '📡 Live' : '📍 At'}{' '}
+                                                {location.label || 'Location'}
+                                                <button onClick={() => setLocation(null)}>
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <div className="add-to-post">
+                                            <span>Add to your post</span>
+                                            <div className="add-icons">
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    hidden
+                                                    multiple
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
                                                 />
-                                            </button>
+                                                <input
+                                                    type="file"
+                                                    ref={videoInputRef}
+                                                    hidden
+                                                    accept="video/*"
+                                                    onChange={handleFileChange}
+                                                />
+                                                <input
+                                                    type="file"
+                                                    ref={audioInputRef}
+                                                    hidden
+                                                    accept="audio/*"
+                                                    onChange={handleFileChange}
+                                                />
+                                                <input
+                                                    type="file"
+                                                    ref={documentInputRef}
+                                                    hidden
+                                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf"
+                                                    onChange={handleFileChange}
+                                                />
+                                                <button
+                                                    className="icon-btn"
+                                                    title="Photo"
+                                                    onClick={() => fileInputRef.current.click()}
+                                                >
+                                                    <ImageIcon size={24} color="#45bd62" />
+                                                </button>
+                                                <button
+                                                    className="icon-btn"
+                                                    title="Video"
+                                                    onClick={() => videoInputRef.current.click()}
+                                                >
+                                                    <Video size={24} color="#fb7185" />
+                                                </button>
+                                                <button className="icon-btn" title="Tag People">
+                                                    <Users size={24} color="#1877f2" />
+                                                </button>
+                                                <button
+                                                    className="icon-btn"
+                                                    title="Audio"
+                                                    onClick={() => audioInputRef.current.click()}
+                                                >
+                                                    <Music size={24} color="#f7b928" />
+                                                </button>
+                                                <button
+                                                    className="icon-btn"
+                                                    title="Document"
+                                                    onClick={() => documentInputRef.current.click()}
+                                                >
+                                                    <FileText size={24} color="#606770" />
+                                                </button>
+                                                <div style={{ position: 'relative' }}>
+                                                    <button
+                                                        className="icon-btn"
+                                                        title="Check In"
+                                                        onClick={() =>
+                                                            setShowLocationOptions(
+                                                                !showLocationOptions,
+                                                            )
+                                                        }
+                                                    >
+                                                        <MapPin size={24} color="#f5533d" />
+                                                    </button>
+                                                    {showLocationOptions && (
+                                                        <div className="location-context-menu">
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleGetLocation(false)
+                                                                }
+                                                            >
+                                                                📍 Share Current Location
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleGetLocation(true)
+                                                                }
+                                                            >
+                                                                📡 Start Live Sharing (1h)
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    className="icon-btn"
+                                                    title="File"
+                                                    onClick={() => documentInputRef.current.click()}
+                                                >
+                                                    <FileText size={24} color="#606770" />
+                                                </button>
+
+                                                <button
+                                                    className={`icon-btn ${isNsfw ? 'active' : ''}`}
+                                                    title="NSFW Content"
+                                                    onClick={() => !isPosting && setIsNsfw(!isNsfw)}
+                                                    disabled={isPosting}
+                                                >
+                                                    <Shield
+                                                        size={24}
+                                                        color={isNsfw ? '#f5533d' : '#606770'}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="modal-footer">
+                                {isPosting && (
+                                    <div className="upload-progress-inline">
+                                        <div className="progress-text">
+                                            <span>Uploading & Processing...</span>
+                                            <Loader2 size={16} className="spinner" />
+                                        </div>
+                                        <div className="progress-bar-container">
+                                            <div className="progress-bar-fill" />
                                         </div>
                                     </div>
-                                </>
-                            )}
-                        </div>
-
-                        <div className="modal-footer">
-                            {isPosting && (
-                                <div className="upload-progress-inline">
-                                    <div className="progress-text">
-                                        <span>Uploading & Processing...</span>
-                                        <Loader2 size={16} className="spinner" />
-                                    </div>
-                                    <div className="progress-bar-container">
-                                        <div className="progress-bar-fill" />
-                                    </div>
-                                </div>
-                            )}
-                            {user?.is_verified && (
-                                <button
-                                    className="btn btn-primary btn-full"
-                                    disabled={(!text && files.length === 0) || isPosting}
-                                    onClick={handlePost}
-                                >
-                                    {isPosting ? 'Posting...' : 'Post'}
-                                </button>
-                            )}
-                        </div>
+                                )}
+                                {user?.is_verified && (
+                                    <button
+                                        className="btn btn-primary btn-full"
+                                        disabled={(!text && files.length === 0) || isPosting}
+                                        onClick={handlePost}
+                                    >
+                                        {isPosting ? 'Posting...' : 'Post'}
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
                     </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-},
+                )}
+            </AnimatePresence>
+        );
+    },
 );
 
 export default CreatePostModal;

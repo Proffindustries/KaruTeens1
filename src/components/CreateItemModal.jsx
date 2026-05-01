@@ -1,5 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Coins, Tag, FileText, Image as ImageIcon, Shield, Check, Loader2 } from 'lucide-react';
+import {
+    X,
+    Upload,
+    Coins,
+    Tag,
+    FileText,
+    Image as ImageIcon,
+    Shield,
+    Check,
+    Loader2,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/CreateItemModal.css';
@@ -132,214 +142,214 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
                         className="create-item-modal"
                         onClick={(e) => e.stopPropagation()}
                     >
-                    <div className="modal-header">
-                        <h2>Sell an Item</h2>
-                        <button className="close-btn" onClick={onClose}>
-                            <X size={24} />
-                        </button>
-                    </div>
+                        <div className="modal-header">
+                            <h2>Sell an Item</h2>
+                            <button className="close-btn" onClick={onClose}>
+                                <X size={24} />
+                            </button>
+                        </div>
 
-                    {!user.is_verified ? (
-                        <div className="verification-gate-overlay">
-                            <div className="gate-content">
-                                <Shield size={64} className="gate-shield" />
-                                <h3>Verification Required</h3>
-                                <p>
-                                    To prevent fraud and ensure a safe marketplace, sellers must
-                                    complete a one-time human verification.
-                                </p>
+                        {!user.is_verified ? (
+                            <div className="verification-gate-overlay">
+                                <div className="gate-content">
+                                    <Shield size={64} className="gate-shield" />
+                                    <h3>Verification Required</h3>
+                                    <p>
+                                        To prevent fraud and ensure a safe marketplace, sellers must
+                                        complete a one-time human verification.
+                                    </p>
 
-                                <div className="gate-benefits">
-                                    <div className="benefit">
-                                        <Check size={16} />
-                                        <span>List unlimited items</span>
+                                    <div className="gate-benefits">
+                                        <div className="benefit">
+                                            <Check size={16} />
+                                            <span>List unlimited items</span>
+                                        </div>
+                                        <div className="benefit">
+                                            <Check size={16} />
+                                            <span>Verified seller badge</span>
+                                        </div>
+                                        <div className="benefit">
+                                            <Check size={16} />
+                                            <span>Appear higher in searches</span>
+                                        </div>
                                     </div>
-                                    <div className="benefit">
-                                        <Check size={16} />
-                                        <span>Verified seller badge</span>
-                                    </div>
-                                    <div className="benefit">
-                                        <Check size={16} />
-                                        <span>Appear higher in searches</span>
-                                    </div>
+
+                                    <button
+                                        className="btn btn-primary btn-full"
+                                        onClick={() => {
+                                            onClose();
+                                            window.location.href = '/verification';
+                                        }}
+                                    >
+                                        Verify My Account (Ksh 20)
+                                    </button>
+                                    <p
+                                        className="micro-text"
+                                        style={{ marginTop: '1rem', opacity: 0.6 }}
+                                    >
+                                        One-time fee for lifetime access.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit}>
+                                <div className="form-group">
+                                    <label>Item Title</label>
+                                    <input
+                                        name="title"
+                                        className="form-input"
+                                        placeholder="e.g. Calculus Textbook"
+                                        value={formData.title}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
                                 </div>
 
-                                <button
-                                    className="btn btn-primary btn-full"
-                                    onClick={() => {
-                                        onClose();
-                                        window.location.href = '/verification';
-                                    }}
-                                >
-                                    Verify My Account (Ksh 20)
-                                </button>
-                                <p
-                                    className="micro-text"
-                                    style={{ marginTop: '1rem', opacity: 0.6 }}
-                                >
-                                    One-time fee for lifetime access.
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group">
-                                <label>Item Title</label>
-                                <input
-                                    name="title"
-                                    className="form-input"
-                                    placeholder="e.g. Calculus Textbook"
-                                    value={formData.title}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Price</label>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Price</label>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <select
+                                                name="currency"
+                                                className="form-select"
+                                                style={{ width: '80px' }}
+                                                value={formData.currency}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option>Ksh</option>
+                                                <option>USD</option>
+                                            </select>
+                                            <input
+                                                name="price"
+                                                type="number"
+                                                className="form-input"
+                                                placeholder="0.00"
+                                                value={formData.price}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Category</label>
                                         <select
-                                            name="currency"
+                                            name="category"
                                             className="form-select"
-                                            style={{ width: '80px' }}
-                                            value={formData.currency}
+                                            value={formData.category}
                                             onChange={handleInputChange}
                                         >
-                                            <option>Ksh</option>
-                                            <option>USD</option>
+                                            <option>Electronics</option>
+                                            <option>Books</option>
+                                            <option>Clothing</option>
+                                            <option>Furniture</option>
+                                            <option>Notes</option>
+                                            <option>Other</option>
                                         </select>
-                                        <input
-                                            name="price"
-                                            type="number"
-                                            className="form-input"
-                                            placeholder="0.00"
-                                            value={formData.price}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
                                     </div>
                                 </div>
+
                                 <div className="form-group">
-                                    <label>Category</label>
+                                    <label>Condition</label>
                                     <select
-                                        name="category"
+                                        name="condition"
                                         className="form-select"
-                                        value={formData.category}
+                                        value={formData.condition}
                                         onChange={handleInputChange}
                                     >
-                                        <option>Electronics</option>
-                                        <option>Books</option>
-                                        <option>Clothing</option>
-                                        <option>Furniture</option>
-                                        <option>Notes</option>
-                                        <option>Other</option>
+                                        <option>New</option>
+                                        <option>Like New</option>
+                                        <option>Used - Good</option>
+                                        <option>Used - Fair</option>
                                     </select>
                                 </div>
-                            </div>
 
-                            <div className="form-group">
-                                <label>Condition</label>
-                                <select
-                                    name="condition"
-                                    className="form-select"
-                                    value={formData.condition}
-                                    onChange={handleInputChange}
-                                >
-                                    <option>New</option>
-                                    <option>Like New</option>
-                                    <option>Used - Good</option>
-                                    <option>Used - Fair</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Description</label>
-                                <textarea
-                                    name="description"
-                                    className="form-textarea"
-                                    rows="3"
-                                    placeholder="Describe the item condition, features, reason for selling..."
-                                    value={formData.description}
-                                    onChange={handleInputChange}
-                                    required
-                                ></textarea>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Photos</label>
-                                <div
-                                    className="image-upload-area"
-                                    onClick={() => fileInputRef.current.click()}
-                                >
-                                    <Upload size={32} color="#666" />
-                                    <p>Click to upload photos</p>
+                                <div className="form-group">
+                                    <label>Description</label>
+                                    <textarea
+                                        name="description"
+                                        className="form-textarea"
+                                        rows="3"
+                                        placeholder="Describe the item condition, features, reason for selling..."
+                                        value={formData.description}
+                                        onChange={handleInputChange}
+                                        required
+                                    ></textarea>
                                 </div>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    hidden
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                />
 
-                                {previews.length > 0 && (
-                                    <div className="image-previews">
-                                        {previews.map((prev, idx) => (
-                                            <div key={idx} className="preview-container">
-                                                <img
-                                                    src={prev.url}
-                                                    alt="preview"
-                                                    className="preview-image"
-                                                    loading="lazy"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className="remove-image-btn"
-                                                    onClick={() => removeFile(idx)}
-                                                >
-                                                    <X size={12} />
-                                                </button>
-                                            </div>
-                                        ))}
+                                <div className="form-group">
+                                    <label>Photos</label>
+                                    <div
+                                        className="image-upload-area"
+                                        onClick={() => fileInputRef.current.click()}
+                                    >
+                                        <Upload size={32} color="#666" />
+                                        <p>Click to upload photos</p>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        hidden
+                                        multiple
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+
+                                    {previews.length > 0 && (
+                                        <div className="image-previews">
+                                            {previews.map((prev, idx) => (
+                                                <div key={idx} className="preview-container">
+                                                    <img
+                                                        src={prev.url}
+                                                        alt="preview"
+                                                        className="preview-image"
+                                                        loading="lazy"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="remove-image-btn"
+                                                        onClick={() => removeFile(idx)}
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {(isUploading || isPending) && (
+                                    <div className="upload-progress-inline">
+                                        <div className="progress-text">
+                                            <span>
+                                                {isUploading
+                                                    ? 'Uploading Images...'
+                                                    : 'Listing Item...'}
+                                            </span>
+                                            <Loader2 size={16} className="spinner" />
+                                        </div>
+                                        <div className="progress-bar-container">
+                                            <div className="progress-bar-fill" />
+                                        </div>
                                     </div>
                                 )}
-                            </div>
 
-                            {(isUploading || isPending) && (
-                                <div className="upload-progress-inline">
-                                    <div className="progress-text">
-                                        <span>
-                                            {isUploading
-                                                ? 'Uploading Images...'
-                                                : 'Listing Item...'}
-                                        </span>
-                                        <Loader2 size={16} className="spinner" />
-                                    </div>
-                                    <div className="progress-bar-container">
-                                        <div className="progress-bar-fill" />
-                                    </div>
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                className="submit-btn"
-                                disabled={isPending || isUploading}
-                            >
-                                {isUploading
-                                    ? 'Uploading Images...'
-                                    : isPending
-                                      ? 'Listing Item...'
-                                      : 'List Item'}
-                            </button>
-                        </form>
-                    )}
-                </motion.div>
-            </div>
-        )}
-    </AnimatePresence>
+                                <button
+                                    type="submit"
+                                    className="submit-btn"
+                                    disabled={isPending || isUploading}
+                                >
+                                    {isUploading
+                                        ? 'Uploading Images...'
+                                        : isPending
+                                          ? 'Listing Item...'
+                                          : 'List Item'}
+                                </button>
+                            </form>
+                        )}
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
     );
 });
 

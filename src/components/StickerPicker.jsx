@@ -30,7 +30,7 @@ const StickerPicker = ({ onSelect, onClose, staticStickers }) => {
     const handleSearch = async (e) => {
         e.preventDefault();
         if (!query.trim()) return;
-        
+
         setActiveTab('search');
         setIsLoading(true);
         const results = await searchStickers(query);
@@ -42,28 +42,28 @@ const StickerPicker = ({ onSelect, onClose, staticStickers }) => {
         <div className="sticker-picker-container">
             <div className="sticker-picker-header">
                 <div className="sticker-tabs">
-                    <button 
+                    <button
                         className={`sticker-tab ${activeTab === 'trending' ? 'active' : ''}`}
                         onClick={() => setActiveTab('trending')}
                         title="Trending"
                     >
                         <Flame size={18} />
                     </button>
-                    <button 
+                    <button
                         className={`sticker-tab ${activeTab === 'search' ? 'active' : ''}`}
                         onClick={() => setActiveTab('search')}
                         title="Search Giphy"
                     >
                         <Search size={18} />
                     </button>
-                    <button 
+                    <button
                         className={`sticker-tab ${activeTab === 'saved' ? 'active' : ''}`}
                         onClick={() => setActiveTab('saved')}
                         title="Saved Stickers"
                     >
                         <Bookmark size={18} />
                     </button>
-                    <button 
+                    <button
                         className={`sticker-tab ${activeTab === 'default' ? 'active' : ''}`}
                         onClick={() => setActiveTab('default')}
                         title="Default"
@@ -75,9 +75,9 @@ const StickerPicker = ({ onSelect, onClose, staticStickers }) => {
 
             {activeTab === 'search' && (
                 <form onSubmit={handleSearch} className="sticker-search-form">
-                    <input 
-                        type="text" 
-                        placeholder="Search Giphy stickers..." 
+                    <input
+                        type="text"
+                        placeholder="Search Giphy stickers..."
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         autoFocus

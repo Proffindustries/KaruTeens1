@@ -94,149 +94,149 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
                     className="modal-overlay"
                     onClick={handleClose}
                 >
-                <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    className="modal-content"
-                    style={{ maxWidth: '400px' }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="modal-header">
-                        <h3>Add to Story</h3>
-                        <button className="close-btn" onClick={handleClose}>
-                            <X size={24} />
-                        </button>
-                    </div>
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        className="modal-content"
+                        style={{ maxWidth: '400px' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="modal-header">
+                            <h3>Add to Story</h3>
+                            <button className="close-btn" onClick={handleClose}>
+                                <X size={24} />
+                            </button>
+                        </div>
 
-                    <div className="modal-body">
-                        {!preview ? (
-                            <div
-                                className="upload-placeholder"
-                                style={{
-                                    height: '300px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    border: '2px dashed rgba(255,255,255,0.1)',
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                }}
-                                onClick={() => fileInputRef.current.click()}
-                            >
-                                <div className="flex gap-4 mb-4">
-                                    <ImageIcon size={48} className="text-gray-400" />
-                                    <Video size={48} className="text-gray-400" />
-                                </div>
-                                <span className="text-gray-400">
-                                    Click to select photo or video
-                                </span>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    hidden
-                                    accept="image/*,video/*"
-                                    onChange={handleFileChange}
-                                />
-                            </div>
-                        ) : (
-                            <div
-                                className="preview-container"
-                                style={{
-                                    position: 'relative',
-                                    borderRadius: '12px',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                {preview.type === 'video' ? (
-                                    <video
-                                        src={preview.url}
-                                        controls
-                                        className="w-full h-auto max-h-[400px]"
-                                    />
-                                ) : (
-                                    <img
-                                        src={preview.url}
-                                        alt="Preview"
-                                        className="w-full h-auto max-h-[400px] object-contain"
-                                        loading="lazy"
-                                    />
-                                )}
-                                <button
-                                    onClick={() => {
-                                        setSelectedFile(null);
-                                        setPreview(null);
-                                    }}
-                                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="mt-4 flex flex-col gap-3">
-                            <input
-                                type="text"
-                                placeholder="Add a caption..."
-                                value={caption}
-                                onChange={(e) => setCaption(e.target.value)}
-                                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 outline-none"
-                            />
-
-                            <div
-                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isNsfw ? 'bg-red-500/20 border-red-500/50' : 'bg-gray-800 border-gray-700'} border`}
-                                onClick={() => setIsNsfw(!isNsfw)}
-                            >
-                                <Shield
-                                    size={18}
-                                    className={isNsfw ? 'text-red-500' : 'text-gray-400'}
-                                />
-                                <span
-                                    className={`text-sm ${isNsfw ? 'text-red-200' : 'text-gray-300'}`}
-                                >
-                                    Mark as Sensitive (NSFW)
-                                </span>
+                        <div className="modal-body">
+                            {!preview ? (
                                 <div
-                                    className={`ml-auto w-10 h-5 rounded-full relative transition-colors ${isNsfw ? 'bg-red-500' : 'bg-gray-600'}`}
+                                    className="upload-placeholder"
+                                    style={{
+                                        height: '300px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '2px dashed rgba(255,255,255,0.1)',
+                                        borderRadius: '12px',
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => fileInputRef.current.click()}
                                 >
-                                    <div
-                                        className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isNsfw ? 'left-6' : 'left-1'}`}
+                                    <div className="flex gap-4 mb-4">
+                                        <ImageIcon size={48} className="text-gray-400" />
+                                        <Video size={48} className="text-gray-400" />
+                                    </div>
+                                    <span className="text-gray-400">
+                                        Click to select photo or video
+                                    </span>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        hidden
+                                        accept="image/*,video/*"
+                                        onChange={handleFileChange}
                                     />
+                                </div>
+                            ) : (
+                                <div
+                                    className="preview-container"
+                                    style={{
+                                        position: 'relative',
+                                        borderRadius: '12px',
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    {preview.type === 'video' ? (
+                                        <video
+                                            src={preview.url}
+                                            controls
+                                            className="w-full h-auto max-h-[400px]"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={preview.url}
+                                            alt="Preview"
+                                            className="w-full h-auto max-h-[400px] object-contain"
+                                            loading="lazy"
+                                        />
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            setSelectedFile(null);
+                                            setPreview(null);
+                                        }}
+                                        className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="mt-4 flex flex-col gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Add a caption..."
+                                    value={caption}
+                                    onChange={(e) => setCaption(e.target.value)}
+                                    className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 outline-none"
+                                />
+
+                                <div
+                                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isNsfw ? 'bg-red-500/20 border-red-500/50' : 'bg-gray-800 border-gray-700'} border`}
+                                    onClick={() => setIsNsfw(!isNsfw)}
+                                >
+                                    <Shield
+                                        size={18}
+                                        className={isNsfw ? 'text-red-500' : 'text-gray-400'}
+                                    />
+                                    <span
+                                        className={`text-sm ${isNsfw ? 'text-red-200' : 'text-gray-300'}`}
+                                    >
+                                        Mark as Sensitive (NSFW)
+                                    </span>
+                                    <div
+                                        className={`ml-auto w-10 h-5 rounded-full relative transition-colors ${isNsfw ? 'bg-red-500' : 'bg-gray-600'}`}
+                                    >
+                                        <div
+                                            className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isNsfw ? 'left-6' : 'left-1'}`}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="modal-footer">
-                        {isUploading && (
-                            <div className="upload-progress-inline">
-                                <div className="progress-text">
-                                    <span>Uploading Story...</span>
-                                    <Loader2 size={16} className="spinner" />
+                        <div className="modal-footer">
+                            {isUploading && (
+                                <div className="upload-progress-inline">
+                                    <div className="progress-text">
+                                        <span>Uploading Story...</span>
+                                        <Loader2 size={16} className="spinner" />
+                                    </div>
+                                    <div className="progress-bar-container">
+                                        <div className="progress-bar-fill" />
+                                    </div>
                                 </div>
-                                <div className="progress-bar-container">
-                                    <div className="progress-bar-fill" />
-                                </div>
-                            </div>
-                        )}
-                        <button
-                            className="btn btn-primary btn-full flex items-center justify-center gap-2"
-                            disabled={!selectedFile || isUploading}
-                            onClick={handlePost}
-                        >
-                            {isUploading ? (
-                                <Loader2 className="animate-spin" size={20} />
-                            ) : (
-                                <Send size={20} />
                             )}
-                            {isUploading ? 'Posting...' : 'Share to Story'}
-                        </button>
-                    </div>
+                            <button
+                                className="btn btn-primary btn-full flex items-center justify-center gap-2"
+                                disabled={!selectedFile || isUploading}
+                                onClick={handlePost}
+                            >
+                                {isUploading ? (
+                                    <Loader2 className="animate-spin" size={20} />
+                                ) : (
+                                    <Send size={20} />
+                                )}
+                                {isUploading ? 'Posting...' : 'Share to Story'}
+                            </button>
+                        </div>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
-        )}
-    </AnimatePresence>
+            )}
+        </AnimatePresence>
     );
 });
 

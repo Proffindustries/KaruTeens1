@@ -222,8 +222,9 @@ const PageDetailPage = () => {
 
                             {activeTab === 'media' && (
                                 <div className="media-grid">
-                                    {(posts || []).filter((p) => p.media_urls && p.media_urls.length > 0)
-                                        .length > 0 ? (
+                                    {(posts || []).filter(
+                                        (p) => p.media_urls && p.media_urls.length > 0,
+                                    ).length > 0 ? (
                                         posts
                                             .filter((p) => p.media_urls && p.media_urls.length > 0)
                                             .map((post) => <PostCard key={post.id} post={post} />)

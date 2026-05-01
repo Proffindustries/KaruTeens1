@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Smartphone, Loader, CheckCircle, AlertCircle, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import {
+    X,
+    Smartphone,
+    Loader,
+    CheckCircle,
+    AlertCircle,
+    ArrowRight,
+    ShieldCheck,
+    Zap,
+} from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import '../styles/MpesaPaymentModal.css';
 
-const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess, extraData = {} }) => {
+const MpesaPaymentModal = ({
+    isOpen,
+    onClose,
+    amount,
+    txType,
+    onWait,
+    onSuccess,
+    extraData = {},
+}) => {
     const { showToast } = useToast();
     const [step, setStep] = useState('input'); // input, processing, waiting, success, error
     const [phone, setPhone] = useState('');
@@ -41,7 +58,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                 phone: formattedPhone,
                 amount: amount,
                 tx_type: txType,
-                ...extraData
+                ...extraData,
             });
             setCheckoutId(data.checkout_request_id);
             setStep('waiting');
@@ -83,14 +100,14 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
     const variants = {
         hidden: { y: '100%', opacity: 0 },
         visible: { y: 0, opacity: 1 },
-        exit: { y: '100%', opacity: 0 }
+        exit: { y: '100%', opacity: 0 },
     };
 
     return (
         <div className="mpesa-modal-overlay" onClick={onClose}>
-            <motion.div 
+            <motion.div
                 className="mpesa-modal-content"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
@@ -98,7 +115,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             >
                 <div className="mpesa-modal-handle" onClick={onClose} />
-                
+
                 <button className="mpesa-close-btn" onClick={onClose}>
                     <X size={20} />
                 </button>
@@ -106,7 +123,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                 <div className="mpesa-modal-inner">
                     <AnimatePresence mode="wait">
                         {step === 'input' && (
-                            <motion.div 
+                            <motion.div
                                 key="input"
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -126,11 +143,11 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                                         <label>Enter M-Pesa Number</label>
                                         <div className="input-with-icon">
                                             <Smartphone size={18} />
-                                            <input 
-                                                type="text" 
-                                                placeholder="07XXXXXXXX" 
+                                            <input
+                                                type="text"
+                                                placeholder="07XXXXXXXX"
                                                 value={phone}
-                                                onChange={e => setPhone(e.target.value)}
+                                                onChange={(e) => setPhone(e.target.value)}
                                                 autoFocus
                                             />
                                         </div>
@@ -141,7 +158,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                                         <span>You will receive an STK push on your phone</span>
                                     </div>
 
-                                    <button 
+                                    <button
                                         className="mpesa-primary-btn"
                                         onClick={handleInitiate}
                                         disabled={!phone}
@@ -153,7 +170,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                         )}
 
                         {step === 'processing' && (
-                            <motion.div 
+                            <motion.div
                                 key="processing"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -170,7 +187,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                         )}
 
                         {step === 'waiting' && (
-                            <motion.div 
+                            <motion.div
                                 key="waiting"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -186,7 +203,10 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                                                     Pay Ksh {amount} to KaruTeens?
                                                 </div>
                                                 <div className="stk-pin-dots">
-                                                    <span /><span /><span /><span />
+                                                    <span />
+                                                    <span />
+                                                    <span />
+                                                    <span />
                                                 </div>
                                             </div>
                                         </div>
@@ -198,13 +218,16 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                                     </div>
                                 </div>
                                 <h3>Check Your Phone</h3>
-                                <p>Enter your M-Pesa PIN to authorize the payment of <strong>Ksh {amount}</strong></p>
+                                <p>
+                                    Enter your M-Pesa PIN to authorize the payment of{' '}
+                                    <strong>Ksh {amount}</strong>
+                                </p>
                                 <div className="timer-line" />
                             </motion.div>
                         )}
 
                         {step === 'success' && (
-                            <motion.div 
+                            <motion.div
                                 key="success"
                                 initial={{ opacity: 0, scale: 0.5 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -215,7 +238,9 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                                     <div className="confetti-cannon" />
                                 </div>
                                 <h3>Payment Successful!</h3>
-                                <p>Thank you for your transaction. Your account has been updated.</p>
+                                <p>
+                                    Thank you for your transaction. Your account has been updated.
+                                </p>
                                 <button className="mpesa-finish-btn" onClick={onClose}>
                                     Done
                                 </button>
@@ -223,7 +248,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                         )}
 
                         {step === 'error' && (
-                            <motion.div 
+                            <motion.div
                                 key="error"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -234,7 +259,10 @@ const MpesaPaymentModal = ({ isOpen, onClose, amount, txType, onWait, onSuccess,
                                 </div>
                                 <h3>Payment Failed</h3>
                                 <p>{error}</p>
-                                <button className="mpesa-retry-btn" onClick={() => setStep('input')}>
+                                <button
+                                    className="mpesa-retry-btn"
+                                    onClick={() => setStep('input')}
+                                >
                                     Try Again
                                 </button>
                             </motion.div>

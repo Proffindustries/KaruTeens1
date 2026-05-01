@@ -339,28 +339,28 @@ const MessagesPage = () => {
 
     const { data: chats, isLoading: isLoadingChats } = useChats();
     const { data: messages, isLoading: isLoadingMessages } = useChatMessages(selectedChatId);
-    
+
     useEffect(() => {
-        console.log("MessagesPage Debug - Initialized");
-        console.log("MessagesPage Debug - user:", user?.username);
-        console.log("MessagesPage Debug - isMobile:", isMobile);
+        console.log('MessagesPage Debug - Initialized');
+        console.log('MessagesPage Debug - user:', user?.username);
+        console.log('MessagesPage Debug - isMobile:', isMobile);
     }, []);
 
     useEffect(() => {
-        console.log("MessagesPage Debug - selectedChatId changed:", selectedChatId);
+        console.log('MessagesPage Debug - selectedChatId changed:', selectedChatId);
         if (selectedChatId) {
-            const chat = chats?.find(c => c.id === selectedChatId);
-            console.log("MessagesPage Debug - selected chat info:", chat);
+            const chat = chats?.find((c) => c.id === selectedChatId);
+            console.log('MessagesPage Debug - selected chat info:', chat);
         }
     }, [selectedChatId, chats]);
 
     useEffect(() => {
         if (selectedChatId) {
             console.log(`MessagesPage Debug - Loading messages for ${selectedChatId}...`);
-            console.log("MessagesPage Debug - messages state:", {
+            console.log('MessagesPage Debug - messages state:', {
                 count: messages?.length,
                 isLoading: isLoadingMessages,
-                data: messages
+                data: messages,
             });
         }
     }, [selectedChatId, messages, isLoadingMessages]);
@@ -382,7 +382,6 @@ const MessagesPage = () => {
     const { mutate: setDisappearing } = useSetDisappearing(selectedChatId);
     const { mutate: updateGroup } = useUpdateGroup(selectedChatId);
     const { mutate: toggleAdmin } = useToggleAdmin(selectedChatId);
-
 
     // WebRTC Integration
     const currentUser = JSON.parse(safeLocalStorage.getItem('user'));
@@ -458,7 +457,7 @@ const MessagesPage = () => {
                     const parsed = JSON.parse(message);
                     const eventType = parsed.type;
                     const recipientId = parsed.data.to;
-                    
+
                     if (!recipientId) {
                         console.warn('Signaling: No recipient ID in message');
                         return;
@@ -587,6 +586,19 @@ const MessagesPage = () => {
             else if (file.type.startsWith('video/')) type = 'video';
             else if (file.type.startsWith('audio/')) type = 'audio';
             else if (file.type.includes('pdf')) type = 'pdf';
+            else if (
+                file.name.match(/\.(xls|xlsx)$/i) ||
+                file.type.includes('spreadsheet') ||
+                file.type.includes('excel')
+            )
+                type = 'excel';
+            else if (file.name.match(/\.(doc|docx)$/i) || file.type.includes('word')) type = 'word';
+            else if (
+                file.name.match(/\.(ppt|pptx)$/i) ||
+                file.type.includes('powerpoint') ||
+                file.type.includes('presentation')
+            )
+                type = 'powerpoint';
 
             const url = await uploadMedia(file, (p) => setUploadProgress(p));
 
@@ -624,6 +636,19 @@ const MessagesPage = () => {
             else if (file.type.startsWith('video/')) type = 'video';
             else if (file.type.startsWith('audio/')) type = 'audio';
             else if (file.type.includes('pdf')) type = 'pdf';
+            else if (
+                file.name.match(/\.(xls|xlsx)$/i) ||
+                file.type.includes('spreadsheet') ||
+                file.type.includes('excel')
+            )
+                type = 'excel';
+            else if (file.name.match(/\.(doc|docx)$/i) || file.type.includes('word')) type = 'word';
+            else if (
+                file.name.match(/\.(ppt|pptx)$/i) ||
+                file.type.includes('powerpoint') ||
+                file.type.includes('presentation')
+            )
+                type = 'powerpoint';
 
             const url = await uploadMedia(file, (p) => setUploadProgress(p));
 
@@ -667,10 +692,7 @@ const MessagesPage = () => {
             setIsSending(false);
         };
 
-        sendMessage(
-            { content: messageInput, reply_to_id: replyingTo?.id },
-            { onSettled: cleanup },
-        );
+        sendMessage({ content: messageInput, reply_to_id: replyingTo?.id }, { onSettled: cleanup });
     };
 
     const handleForwardSelect = (targetChatId) => {
@@ -913,8 +935,8 @@ const MessagesPage = () => {
         if (type === 'sticker') {
             const isSaved = isStickerSaved(url);
             return (
-                <div 
-                    className="msg-media-container sticker-container" 
+                <div
+                    className="msg-media-container sticker-container"
                     onClick={() => {
                         if (!isSaved) {
                             const result = saveSticker(url);
@@ -929,7 +951,7 @@ const MessagesPage = () => {
                         }
                     }}
                     style={{ cursor: 'pointer', position: 'relative' }}
-                    title={isSaved ? "Already saved" : "Click to save sticker"}
+                    title={isSaved ? 'Already saved' : 'Click to save sticker'}
                 >
                     <img
                         src={url}
@@ -989,6 +1011,10 @@ const MessagesPage = () => {
             );
 
         // Inline PDF or Doc Viewer
+        const isExcel = type === 'excel' || url.match(/\.(xls|xlsx)$/i);
+        const isWord = type === 'word' || url.match(/\.(doc|docx)$/i);
+        const isPPT = type === 'powerpoint' || url.match(/\.(ppt|pptx)$/i);
+
         const viewerUrl = isPDF
             ? url
             : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
@@ -996,13 +1022,36 @@ const MessagesPage = () => {
         return (
             <div className="inline-doc-viewer">
                 <div className="doc-preview-container">
-                    <iframe src={viewerUrl} title="Document Preview" className="inline-iframe" />
+                    {isPDF || isWord || isExcel || isPPT ? (
+                        <iframe
+                            src={viewerUrl}
+                            title="Document Preview"
+                            className="inline-iframe"
+                        />
+                    ) : (
+                        <div className="generic-file-icon-placeholder">
+                            <FileIcon size={48} />
+                            <span className="file-ext">File</span>
+                        </div>
+                    )}
                 </div>
                 <div className="doc-footer">
-                    <div className={`doc-icon ${isPDF ? 'pdf' : ''}`}>
+                    <div
+                        className={`doc-icon ${isPDF ? 'pdf' : isExcel ? 'excel' : isWord ? 'word' : isPPT ? 'ppt' : ''}`}
+                    >
                         <FileIcon size={12} />
                     </div>
-                    <span className="doc-name">{isPDF ? 'PDF Document' : 'Document'}</span>
+                    <span className="doc-name">
+                        {isPDF
+                            ? 'PDF Document'
+                            : isExcel
+                              ? 'Excel Sheet'
+                              : isWord
+                                ? 'Word Doc'
+                                : isPPT
+                                  ? 'Presentation'
+                                  : 'File'}
+                    </span>
                     <a href={url} download className="doc-download-link">
                         Save
                     </a>
@@ -1054,7 +1103,9 @@ const MessagesPage = () => {
                                 />
                                 <input
                                     type="text"
-                                    placeholder={isSearching ? 'Searching...' : 'Search username...'}
+                                    placeholder={
+                                        isSearching ? 'Searching...' : 'Search username...'
+                                    }
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={handleSearch}
@@ -1064,7 +1115,11 @@ const MessagesPage = () => {
                                     onClick={triggerSearch}
                                     disabled={isSearching || !searchQuery.trim()}
                                 >
-                                    {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                    {isSearching ? (
+                                        <Loader2 size={14} className="animate-spin" />
+                                    ) : (
+                                        <Send size={14} />
+                                    )}
                                 </button>
                             </div>
                             <button
@@ -1535,6 +1590,7 @@ const MessagesPage = () => {
                                                 type="file"
                                                 ref={fileInputRef}
                                                 style={{ display: 'none' }}
+                                                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
                                                 onChange={handleFileUpload}
                                             />
 
