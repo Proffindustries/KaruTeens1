@@ -575,6 +575,8 @@ pub async fn unlike_post_handler(
 pub struct CommentRequest {
     pub content: String,
     pub parent_comment_id: Option<String>, // Optional parent for replies
+    pub media_url: Option<String>,
+    pub media_type: Option<String>,
 }
 
 pub async fn add_comment_handler(
@@ -619,6 +621,8 @@ pub async fn add_comment_handler(
         user_avatar: profile.avatar_url,
         parent_id: parent_oid,
         content: payload.content,
+        media_url: payload.media_url,
+        media_type: payload.media_type,
         status: "approved".to_string(),
         spam_score: None,
         sentiment_score: None,
@@ -690,6 +694,8 @@ pub async fn get_comments_handler(
                 user_avatar: comment.user_avatar,
                 parent_id: comment.parent_id.map(|oid| oid.to_hex()),
                 content: comment.content,
+                media_url: comment.media_url,
+                media_type: comment.media_type,
                 status: comment.status,
                 spam_score: comment.spam_score,
                 sentiment_score: comment.sentiment_score,

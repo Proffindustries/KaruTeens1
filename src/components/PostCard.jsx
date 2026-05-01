@@ -35,6 +35,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import CustomVideoPlayer from './CustomVideoPlayer.jsx';
 import CustomAudioPlayer from './CustomAudioPlayer.jsx';
 import Comment from './Comment.jsx';
+import StickerPicker from './StickerPicker.jsx';
 import Avatar from './Avatar.jsx';
 import MapPreview from './MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
@@ -72,6 +73,7 @@ const PostCard = React.memo(({ post }) => {
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [commentMedia, setCommentMedia] = useState(null);
+    const [showStickerPicker, setShowStickerPicker] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [isHidden, setIsHidden] = useState(false);
     const [isNsfwRevealed, setIsNsfwRevealed] = useState(false);
@@ -228,9 +230,9 @@ const PostCard = React.memo(({ post }) => {
         setShowMenu(false);
     };
 
-    const handleCommentSubmit = async (e) => {
-        e.preventDefault();
-        if (!commentText.trim() && !commentMedia) return;
+    const handleCommentSubmit = async (e, customStickerUrl = null) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (!commentText.trim() && !commentMedia && !customStickerUrl) return;
 
         // Optimistic Count Update
         const previousCount = commentsCount;
@@ -239,12 +241,15 @@ const PostCard = React.memo(({ post }) => {
         try {
             await addCommentAsync({
                 postId: postId,
-                content: commentText,
+                content: customStickerUrl ? 'Sticker' : commentText,
                 parent_comment_id: null,
-                mediaFile: commentMedia,
+                mediaFile: commentMedia, // Note: backend doesn't support files yet, but it's here
+                mediaUrl: customStickerUrl,
+                mediaType: customStickerUrl ? 'sticker' : undefined,
             });
             setCommentText('');
             setCommentMedia(null);
+            setShowStickerPicker(false);
             if (commentInputRef.current) {
                 commentInputRef.current.style.height = 'inherit';
             }
@@ -268,7 +273,7 @@ const PostCard = React.memo(({ post }) => {
         }
     };
 
-    const handleReply = async (parentCommentId, replyContent, replyMedia = null) => {
+    const handleReply = async (parentCommentId, replyContent, replyMedia = null, customStickerUrl = null) => {
         const previousCount = commentsCount;
         setCommentsCount(previousCount + 1);
 
@@ -278,6 +283,8 @@ const PostCard = React.memo(({ post }) => {
                 content: replyContent,
                 parent_comment_id: parentCommentId,
                 mediaFile: replyMedia,
+                mediaUrl: customStickerUrl,
+                mediaType: customStickerUrl ? 'sticker' : undefined,
             });
         } catch (error) {
             setCommentsCount(previousCount);
@@ -828,6 +835,21 @@ const PostCard = React.memo(({ post }) => {
                                     />
                                     <button
                                         type="button"
+                                        onClick={() => setShowStickerPicker(!showStickerPicker)}
+                                        className="btn-media"
+                                        title="Add Sticker"
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                            color: showStickerPicker ? 'var(--primary)' : 'inherit',
+                                        }}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/><path d="M10 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/><path d="M14 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/><path d="M10 16c.5-1.5 1.5-2 2-2s1.5.5 2 2"/></svg>
+                                    </button>
+                                    <button
+                                        type="button"
                                         onClick={() => fileInputRef.current?.click()}
                                         className="btn-media"
                                         title="Add media"
@@ -840,6 +862,15 @@ const PostCard = React.memo(({ post }) => {
                                     >
                                         <Image size={16} />
                                     </button>
+                                    
+                                    {showStickerPicker && (
+                                        <div style={{ position: 'absolute', bottom: '40px', right: '0', zIndex: 100 }}>
+                                            <StickerPicker
+                                                onSelect={(url) => handleCommentSubmit(null, url)}
+                                                onClose={() => setShowStickerPicker(false)}
+                                            />
+                                        </div>
+                                    )}
                                     {commentMedia && (
                                         <div
                                             className="media-preview"

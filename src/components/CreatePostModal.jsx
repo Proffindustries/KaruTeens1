@@ -74,7 +74,7 @@ const CreatePostModal = React.memo(
         };
 
         const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } = useUpload();
-        const { uploadImage, uploadFile, batchUpload } = useMediaUpload();
+        const { uploadMedia, batchUpload } = useMediaUpload();
 
         const createPost = groupId
             ? (data, options) => createGroupPost({ groupId, postData: data }, options)
@@ -149,11 +149,7 @@ const CreatePostModal = React.memo(
                     );
                 };
 
-                if (fileObj.type === 'image') {
-                    url = await uploadImage(fileObj.file, onProgress, cancelTokenSource.token);
-                } else {
-                    url = await uploadFile(fileObj.file, onProgress, cancelTokenSource.token);
-                }
+                url = await uploadMedia(fileObj.file, onProgress, cancelTokenSource.token);
 
                 completeUpload(uploadId, { url });
                 setFiles((prev) =>

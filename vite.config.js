@@ -135,6 +135,11 @@ export default defineConfig(({ mode }) => ({
         strictPort: true,
         open: true,
         cors: true,
+        headers: {
+            // Required for ffmpeg.wasm SharedArrayBuffer support
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Cross-Origin-Embedder-Policy': 'require-corp',
+        },
         // Proxy API requests during development
         proxy: {
             '/api': {
@@ -158,6 +163,10 @@ export default defineConfig(({ mode }) => ({
         port: 4173,
         strictPort: true,
         open: true,
+        headers: {
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Cross-Origin-Embedder-Policy': 'require-corp',
+        },
     },
 
     // Resolve aliases for cleaner imports
@@ -202,7 +211,11 @@ export default defineConfig(({ mode }) => ({
             'lucide-react',
             'axios',
         ],
-        exclude: ['katex'], // Heavy, load on demand
+        exclude: [
+            'katex',       // Heavy, load on demand
+            '@ffmpeg/ffmpeg',  // Ships its own ESM build
+            '@ffmpeg/util',
+        ],
     },
 
     // Experimental features

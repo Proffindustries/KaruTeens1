@@ -251,7 +251,7 @@ const ActiveRoom = ({ roomId }) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { ably } = useAbly();
-    const { uploadFile } = useMediaUpload();
+    const { uploadMedia } = useMediaUpload();
 
     const { data: room } = useStudyRoom(roomId);
     const { data: history } = useRoomHistory(roomId);
@@ -561,7 +561,7 @@ const ActiveRoom = ({ roomId }) => {
         if (!file) return;
         setUploadingFile(true);
         try {
-            const url = await uploadFile(file);
+            const url = await uploadMedia(file);
             const fileData = {
                 filename: file.name,
                 url,

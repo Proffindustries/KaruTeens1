@@ -60,6 +60,7 @@ import {
     useToggleAdmin,
 } from '../hooks/useMessages.js';
 import GifPicker from '../components/GifPicker.jsx';
+import StickerPicker from '../components/StickerPicker.jsx';
 import { IncomingCallModal, ActiveCallScreen, CallingScreen } from '../components/CallUI.jsx';
 import { useWebRTC } from '../hooks/useWebRTC.js';
 
@@ -72,6 +73,7 @@ import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';
 import { getOptimizedUrl } from '../utils/mediaUtils.js';
+import { saveSticker, isStickerSaved } from '../utils/stickerStorage.js';
 
 const COMMON_EMOJIS = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -512,7 +514,7 @@ const MessagesPage = () => {
     const [selectedUploadFile, setSelectedUploadFile] = useState(null);
     const [isViewOnceUpload, setIsViewOnceUpload] = useState(false);
     const [viewedMediaUrl, setViewedMediaUrl] = useState(null);
-    const { uploadFile, uploadImage } = useMediaUpload();
+    const { uploadMedia } = useMediaUpload();
     const [showInputMenu, setShowInputMenu] = useState(false);
     const [revealedNsfwMessages, setRevealedNsfwMessages] = useState(new Set());
 
@@ -586,12 +588,7 @@ const MessagesPage = () => {
             else if (file.type.startsWith('audio/')) type = 'audio';
             else if (file.type.includes('pdf')) type = 'pdf';
 
-            let url;
-            if (type === 'image') {
-                url = await uploadImage(file, (p) => setUploadProgress(p));
-            } else {
-                url = await uploadFile(file, (p) => setUploadProgress(p));
-            }
+            const url = await uploadMedia(file, (p) => setUploadProgress(p));
 
             sendMessage({
                 content: file.name,
@@ -628,12 +625,7 @@ const MessagesPage = () => {
             else if (file.type.startsWith('audio/')) type = 'audio';
             else if (file.type.includes('pdf')) type = 'pdf';
 
-            let url;
-            if (type === 'image') {
-                url = await uploadImage(file, (p) => setUploadProgress(p));
-            } else {
-                url = await uploadFile(file, (p) => setUploadProgress(p));
-            }
+            const url = await uploadMedia(file, (p) => setUploadProgress(p));
 
             sendMessage({
                 content: file.name,
@@ -919,13 +911,36 @@ const MessagesPage = () => {
 
         // Stickers
         if (type === 'sticker') {
+            const isSaved = isStickerSaved(url);
             return (
-                <div className="msg-media-container sticker-container">
+                <div 
+                    className="msg-media-container sticker-container" 
+                    onClick={() => {
+                        if (!isSaved) {
+                            const result = saveSticker(url);
+                            if (result.success) {
+                                // Find a toast function or just use a basic alert if showToast isn't in scope
+                                // RenderMedia doesn't have showToast directly unless passed in, but it's defined in the main component.
+                                // It seems renderMedia is a closure inside MessagesPage, so it has access to showToast.
+                                showToast('Sticker saved to your collection!', 'success');
+                            }
+                        } else {
+                            showToast('Sticker is already in your collection', 'info');
+                        }
+                    }}
+                    style={{ cursor: 'pointer', position: 'relative' }}
+                    title={isSaved ? "Already saved" : "Click to save sticker"}
+                >
                     <img
                         src={url}
                         alt="Sticker"
                         style={{ width: '120px', height: '120px', objectFit: 'contain' }}
                     />
+                    {!isSaved && (
+                        <div className="sticker-save-hint">
+                            <Bookmark size={14} /> Save
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -1684,23 +1699,18 @@ const MessagesPage = () => {
                                 />
                             )}
                             {showStickerPicker && (
-                                <div className="sticker-picker-mini">
-                                    {STICKERS.map((s) => (
-                                        <img
-                                            key={s.id}
-                                            src={s.url}
-                                            alt="Sticker"
-                                            onClick={() => {
-                                                sendMessage({
-                                                    content: 'Sticker',
-                                                    attachment_url: s.url,
-                                                    attachment_type: 'sticker',
-                                                });
-                                                setShowStickerPicker(false);
-                                            }}
-                                        />
-                                    ))}
-                                </div>
+                                <StickerPicker
+                                    staticStickers={STICKERS}
+                                    onClose={() => setShowStickerPicker(false)}
+                                    onSelect={(url) => {
+                                        sendMessage({
+                                            content: 'Sticker',
+                                            attachment_url: url,
+                                            attachment_type: 'sticker',
+                                        });
+                                        setShowStickerPicker(false);
+                                    }}
+                                />
                             )}
                         </>
                     )}

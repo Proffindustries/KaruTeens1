@@ -36,7 +36,7 @@ const StudyPlaylistsPage = () => {
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
 
     // Add Item states
-    const { uploadFile, uploadImage, isUploading } = useMediaUpload();
+    const { uploadMedia, isUploading } = useMediaUpload();
     const fileInputRef = React.useRef(null);
     const [uploadMode, setUploadMode] = useState('url');
     const [itemUrl, setItemUrl] = useState('');
@@ -144,16 +144,7 @@ const StudyPlaylistsPage = () => {
                 });
 
                 try {
-                    let uploadedUrl;
-                    if (itemType === 'image') {
-                        uploadedUrl = await uploadImage(file, (p, l) =>
-                            updateUploadProgress(uploadId, p, l),
-                        );
-                    } else {
-                        uploadedUrl = await uploadFile(file, (p, l) =>
-                            updateUploadProgress(uploadId, p, l),
-                        );
-                    }
+                    const uploadedUrl = await uploadMedia(file, (p, l) => updateUploadProgress(uploadId, p, l));
                     completeUpload(uploadId, { url: uploadedUrl });
 
                     const effectiveTitle = selectedFiles.length === 1 && title ? title : file.name;

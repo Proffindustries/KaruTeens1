@@ -364,6 +364,8 @@ pub async fn get_user_comments_handler(
             user_avatar: comment.user_avatar,
             parent_id: comment.parent_id.map(|oid| oid.to_hex()),
             content: comment.content,
+            media_url: comment.media_url,
+            media_type: comment.media_type,
             status: comment.status,
             spam_score: comment.spam_score,
             sentiment_score: comment.sentiment_score,

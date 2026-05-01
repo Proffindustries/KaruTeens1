@@ -2,7 +2,9 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Reply, ChevronDown, ChevronUp, Image, X, File, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from './Avatar.jsx';
+import StickerPicker from './StickerPicker.jsx';
 import { useDeleteComment } from '../hooks/useContent';
+import { saveSticker, isStickerSaved } from '../utils/stickerStorage.js';
 import safeLocalStorage from '../utils/storage.js';
 import '../styles/Comment.css';
 
@@ -12,6 +14,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [replyMedia, setReplyMedia] = useState(null);
+    const [showStickerPicker, setShowStickerPicker] = useState(false);
     const fileInputRef = useRef(null);
     const replyInputRef = useRef(null);
 
@@ -34,15 +37,17 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
 
     const handleReplySubmit = useCallback(
-        async (e) => {
-            e.preventDefault();
-            if (!replyText.trim() && !replyMedia) return;
+        async (e, customStickerUrl = null) => {
+            if (e && e.preventDefault) e.preventDefault();
+            if (!replyText.trim() && !replyMedia && !customStickerUrl) return;
 
             setIsSubmittingReply(true);
             try {
-                await onReply(commentId, replyText, replyMedia);
+                // We pass customStickerUrl as the 4th parameter, so we need to update PostCard's onReply
+                await onReply(commentId, customStickerUrl ? 'Sticker' : replyText, replyMedia, customStickerUrl);
                 setReplyText('');
                 setReplyMedia(null);
+                setShowStickerPicker(false);
                 if (replyInputRef.current) {
                     replyInputRef.current.style.height = 'inherit';
                 }
@@ -113,6 +118,41 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                         </span>
                     </div>
                     <p className="comment-text">{comment.content}</p>
+                    
+                    {comment.media_url && (
+                        <div className="comment-media" style={{ marginTop: '8px', position: 'relative', display: 'inline-block' }}>
+                            {comment.media_type === 'sticker' ? (
+                                <div
+                                    className="sticker-bubble"
+                                    style={{ position: 'relative', display: 'inline-block', cursor: 'pointer' }}
+                                    title="Click to save sticker"
+                                    onClick={() => {
+                                        const result = saveSticker(comment.media_url);
+                                        alert(result.message);
+                                    }}
+                                >
+                                    <img
+                                        src={comment.media_url}
+                                        alt="Sticker"
+                                        style={{ width: '80px', height: '80px', objectFit: 'contain', display: 'block' }}
+                                    />
+                                    <div className="sticker-save-hint" style={{
+                                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                                        background: 'rgba(0,0,0,0.55)', color: '#fff',
+                                        fontSize: '10px', textAlign: 'center', padding: '2px',
+                                        borderRadius: '0 0 6px 6px', opacity: 0,
+                                        transition: 'opacity 0.2s',
+                                    }}>Save</div>
+                                </div>
+                            ) : (
+                                <img
+                                    src={comment.media_url}
+                                    alt="Attachment"
+                                    style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px' }}
+                                />
+                            )}
+                        </div>
+                    )}
 
                     <div className="comment-actions">
                         <button
@@ -197,12 +237,30 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                 />
                                 <button
                                     type="button"
+                                    onClick={() => setShowStickerPicker(!showStickerPicker)}
+                                    className="btn-media"
+                                    title="Add Sticker"
+                                    style={{ color: showStickerPicker ? 'var(--primary)' : 'inherit' }}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/><path d="M10 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/><path d="M14 12.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/><path d="M10 16c.5-1.5 1.5-2 2-2s1.5.5 2 2"/></svg>
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => fileInputRef.current?.click()}
                                     className="btn-media"
                                     title="Add media"
                                 >
                                     <Image size={16} />
                                 </button>
+                                
+                                {showStickerPicker && (
+                                    <div style={{ position: 'absolute', bottom: '40px', left: '0', zIndex: 100 }}>
+                                        <StickerPicker
+                                            onSelect={(url) => handleReplySubmit(null, url)}
+                                            onClose={() => setShowStickerPicker(false)}
+                                        />
+                                    </div>
+                                )}
                                 {replyMedia && (
                                     <div className="media-preview">
                                         <span>{replyMedia.name}</span>

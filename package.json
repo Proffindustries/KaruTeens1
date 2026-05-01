@@ -14,6 +14,8 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@ffmpeg/ffmpeg": "^0.12.15",
+        "@ffmpeg/util": "^0.12.2",
         "@tanstack/react-query": "^5.90.13",
         "ably": "^2.16.0",
         "axios": "^1.13.2",

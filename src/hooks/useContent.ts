@@ -176,14 +176,20 @@ export const useAddComment = () => {
             postId,
             content,
             parentCommentId,
+            mediaUrl,
+            mediaType,
         }: {
             postId: string;
             content: string;
             parentCommentId?: string;
+            mediaUrl?: string;
+            mediaType?: string;
         }) => {
             const { data } = await api.post(`/posts/${postId}/comments`, {
                 content,
                 parent_comment_id: parentCommentId,
+                media_url: mediaUrl,
+                media_type: mediaType,
             });
             return data;
         },

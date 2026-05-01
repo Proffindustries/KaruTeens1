@@ -16,7 +16,7 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
 
     const fileInputRef = useRef(null);
     const { mutate: createStory } = useCreateStory();
-    const { uploadImage, uploadFile } = useMediaUpload();
+    const { uploadMedia } = useMediaUpload();
     const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { showToast } = useToast();
 
@@ -45,15 +45,9 @@ const CreateStoryModal = React.memo(({ isOpen, onClose }) => {
                 type: mediaType,
             });
 
-            if (mediaType === 'image') {
-                mediaUrl = await uploadImage(selectedFile, (p, l) =>
-                    updateUploadProgress(uploadId, p, l),
-                );
-            } else {
-                mediaUrl = await uploadFile(selectedFile, (p, l) =>
-                    updateUploadProgress(uploadId, p, l),
-                );
-            }
+            mediaUrl = await uploadMedia(selectedFile, (p, l) =>
+                updateUploadProgress(uploadId, p, l),
+            );
             completeUpload(uploadId, { url: mediaUrl });
 
             createStory(

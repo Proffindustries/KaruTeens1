@@ -235,3 +235,22 @@
         left: -0.5rem;
     }
 }
+
+/* Sticker save overlay */
+.sticker-bubble:hover .sticker-save-hint {
+    opacity: 1 !important;
+}
+
+.sticker-bubble img {
+    border-radius: 6px;
+    transition: transform 0.15s ease;
+}
+
+.sticker-bubble:hover img {
+    transform: scale(1.05);
+}
+
+/* Ensure relative positioning for StickerPicker popup inside replies */
+.reply-actions {
+    position: relative;
+}

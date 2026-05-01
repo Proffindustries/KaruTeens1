@@ -17,6 +17,10 @@ pub struct Comment {
     pub parent_id: Option<ObjectId>, // for nested comments
     #[serde(default)]
     pub content: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_type: Option<String>,
     #[serde(default)]
     pub status: String, // pending, approved, rejected, spam, deleted
     #[serde(default)]
