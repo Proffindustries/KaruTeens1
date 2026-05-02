@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../api/client';
 import '../styles/PostCard.css';
 import {
     useLikePost,
@@ -29,6 +30,8 @@ import {
     useDeletePost,
     useReportPost,
     useSavePost,
+    useVotePoll,
+    useHidePost,
 } from '../hooks/useContent';
 import { shouldBlur } from '../utils/contentFilters.js';
 import { useToast } from '../context/ToastContext.jsx';
@@ -86,7 +89,7 @@ const PostCard = React.memo(({ post }) => {
     const fileInputRef = useRef(null);
     const commentInputRef = useRef(null);
 
-    const isOwner = currentUser?.username === post.user;
+    const isOwner = currentUser?.id === post.author_id || currentUser?.username === post.user;
     const cardRef = React.useRef(null);
     const menuRef = React.useRef(null);
 
@@ -96,6 +99,42 @@ const PostCard = React.memo(({ post }) => {
     const [commentsCount, setCommentsCount] = useState(post.comments || 0);
 
     // Sync with props if they change (e.g., after a background refetch)
+    // Impression tracking for ads
+    const [impressionLogged, setImpressionLogged] = React.useState(false);
+
+    React.useEffect(() => {
+        if (post.is_sponsored && !impressionLogged && cardRef.current) {
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting) {
+                        api.post('/ads/tracker', {
+                            creative_id: post.ad_id,
+                            event_type: 'impression',
+                        }).catch(() => {});
+                        setImpressionLogged(true);
+                    }
+                },
+                { threshold: 0.5 },
+            );
+            observer.observe(cardRef.current);
+            return () => observer.disconnect();
+        }
+    }, [post.is_sponsored, post.ad_id, impressionLogged]);
+
+    const handleAdClick = async (e) => {
+        e.stopPropagation();
+        try {
+            await api.post('/ads/tracker', {
+                creative_id: post.ad_id,
+                event_type: 'click',
+            });
+        } catch (err) {
+            console.error('Failed to log ad click:', err);
+        }
+        if (post.cta_url) {
+            window.open(post.cta_url, '_blank');
+        }
+    };
     React.useEffect(() => {
         setIsLiked(post.is_liked);
         setLikesCount(post.likes);
@@ -108,6 +147,8 @@ const PostCard = React.memo(({ post }) => {
     const { mutate: deletePost } = useDeletePost();
     const { mutate: reportPost } = useReportPost();
     const { mutate: savePost } = useSavePost();
+    const { mutate: votePoll } = useVotePoll();
+    const { mutate: hidePostPersistently } = useHidePost();
     const { data: comments, isLoading: isLoadingComments } = useComments(
         showComments ? postId : null,
     );
@@ -177,6 +218,7 @@ const PostCard = React.memo(({ post }) => {
     const handleHidePost = () => {
         setIsHidden(true);
         setShowMenu(false);
+        hidePostPersistently(postId);
     };
 
     const handleReportPost = () => {
@@ -363,8 +405,8 @@ const PostCard = React.memo(({ post }) => {
     const renderContent = (content) => {
         if (!content) return null;
 
-        // Regex to find hashtags
-        const parts = content.split(/(#[a-zA-Z0-9_]+\b)/g);
+        // Regex to find hashtags and mentions
+        const parts = content.split(/(#[a-zA-Z0-9_]+\b|@[a-zA-Z0-9_]+\b)/g);
 
         return parts.map((part, i) => {
             if (part.startsWith('#')) {
@@ -374,7 +416,6 @@ const PostCard = React.memo(({ post }) => {
                         className="hashtag"
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Use replace: true if already on explore to avoid history bloat
                             const isFeed = window.location.pathname.startsWith('/feed');
                             navigate(`/feed?search=${encodeURIComponent(part)}`, {
                                 replace: isFeed,
@@ -383,6 +424,19 @@ const PostCard = React.memo(({ post }) => {
                     >
                         {part}
                     </span>
+                );
+            }
+            if (part.startsWith('@')) {
+                const username = part.substring(1);
+                return (
+                    <Link
+                        key={i}
+                        to={`/profile/${username}`}
+                        className="mention"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </Link>
                 );
             }
             return part;
@@ -430,7 +484,9 @@ const PostCard = React.memo(({ post }) => {
                     />
                     <div className="post-meta">
                         <span className="post-username">
-                            {post.is_anonymous ? (
+                            {post.is_sponsored ? (
+                                <span className="sponsored-label">Sponsored</span>
+                            ) : post.is_anonymous ? (
                                 <span style={{ fontWeight: 600 }}>Anonymous 👻</span>
                             ) : (
                                 <Link
@@ -489,26 +545,39 @@ const PostCard = React.memo(({ post }) => {
                                     color: '#ff4757',
                                     background: 'rgba(255, 71, 87, 0.1)',
                                     padding: '2px 8px',
-                                    borderRadius: '12px',
-                                    fontWeight: 'bold',
+                                    borderRadius: '4px',
                                 }}
-                                title="Algorithmic Engagement Score"
                             >
-                                🔥 {post.algorithmic_score} Score
+                                🔥 {post.algorithmic_score}
                             </span>
                         )}
+                        </div>
                     </div>
                 </div>
+
                 <div className="post-options-wrapper" ref={menuRef}>
-                    <button className="post-options-btn" onClick={() => setShowMenu(!showMenu)}>
+                    <button
+                        className="post-options-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMenu(!showMenu);
+                        }}
+                        aria-label="Post options"
+                    >
                         <MoreHorizontal size={20} />
                     </button>
+
                     {showMenu && (
                         <div className="post-options-menu">
                             <button
                                 className="menu-item"
-                                onClick={handleCopyLink}
-                                aria-label="Copy post link"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(
+                                        `${window.location.origin}/post/${postId}`,
+                                    );
+                                    showToast('Link copied to clipboard!', 'success');
+                                    setShowMenu(false);
+                                }}
                             >
                                 <Link2 size={18} />
                                 Copy Link
@@ -533,7 +602,7 @@ const PostCard = React.memo(({ post }) => {
                                         <UserMinus size={18} />
                                         Unfollow @{post.user}
                                     </button>
-                                    <button className="menu-item" onClick={handleBlockUser}>
+                                    <button className="menu-item danger" onClick={handleBlockUser}>
                                         <UserMinus size={18} style={{ color: '#ff4757' }} />
                                         Block @{post.user}
                                     </button>
@@ -545,13 +614,15 @@ const PostCard = React.memo(({ post }) => {
                             )}
                             {isOwner && (
                                 <>
-                                    <button
-                                        className="menu-item"
-                                        onClick={() => setShowMenu(false)}
-                                    >
-                                        <FileText size={18} />
-                                        Edit Post
-                                    </button>
+                                    {currentUser?.role === 'admin' && (
+                                        <button
+                                            className="menu-item"
+                                            onClick={() => setShowMenu(false)}
+                                        >
+                                            <FileText size={18} />
+                                            Edit Post
+                                        </button>
+                                    )}
                                     <button className="menu-item danger" onClick={handleDeletePost}>
                                         <Trash2 size={18} />
                                         Delete Post
@@ -567,12 +638,86 @@ const PostCard = React.memo(({ post }) => {
             <div
                 className={`post-content-wrapper ${shouldBlur(post) && !isNsfwRevealed ? 'nsfw-blurred' : ''}`}
             >
-                <div className="post-content">
+                <div 
+                    className="post-content" 
+                    onClick={post.is_sponsored ? handleAdClick : undefined}
+                    style={{ cursor: post.is_sponsored ? 'pointer' : 'default' }}
+                >
                     {post.content && <p className="post-text">{renderContent(post.content)}</p>}
+                    {post.is_sponsored && post.description && (
+                        <p className="post-description">{post.description}</p>
+                    )}
 
                     {post.location && (
                         <div className="post-location-preview">
                             <MapPreview location={post.location} />
+                        </div>
+                    )}
+
+                    {/* Poll Rendering */}
+                    {post.poll && (
+                        <div className="post-poll-container" onClick={(e) => e.stopPropagation()}>
+                            <h4 className="poll-question">{post.poll.question}</h4>
+                            <div className="poll-options">
+                                {(() => {
+                                    const totalVotes = post.poll.options.reduce(
+                                        (acc, opt) => acc + (opt.voter_ids?.length || 0),
+                                        0,
+                                    );
+                                    const hasVoted = post.poll.options.some((opt) =>
+                                        opt.voter_ids?.includes(currentUser?.id),
+                                    );
+
+                                    return post.poll.options.map((opt, idx) => {
+                                        const voteCount = opt.voter_ids?.length || 0;
+                                        const percentage =
+                                            totalVotes > 0
+                                                ? Math.round((voteCount / totalVotes) * 100)
+                                                : 0;
+                                        const isMyVote = opt.voter_ids?.includes(currentUser?.id);
+
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`poll-option ${isMyVote ? 'voted' : ''} ${hasVoted ? 'results-view' : ''}`}
+                                                onClick={() =>
+                                                    !hasVoted &&
+                                                    votePoll({ postId, optionIndex: idx })
+                                                }
+                                            >
+                                                {hasVoted && (
+                                                    <div
+                                                        className="poll-option-bg"
+                                                        style={{ width: `${percentage}%` }}
+                                                    ></div>
+                                                )}
+                                                <div className="poll-option-content">
+                                                    <span className="poll-option-text">
+                                                        {opt.text}
+                                                    </span>
+                                                    {hasVoted && (
+                                                        <span className="poll-option-percentage">
+                                                            {percentage}%
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                            <div className="poll-footer">
+                                <span>
+                                    {post.poll.options.reduce(
+                                        (acc, opt) => acc + (opt.voter_ids?.length || 0),
+                                        0,
+                                    )}{' '}
+                                    votes
+                                </span>
+                                {post.poll.is_multiple && (
+                                    <span className="poll-badge">Multiple Choice</span>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -605,6 +750,11 @@ const PostCard = React.memo(({ post }) => {
 
                                 // Handle navigation to post details (outside video play zone)
                                 const handleMediaClick = (e) => {
+                                    if (post.is_sponsored) {
+                                        handleAdClick(e);
+                                        return;
+                                    }
+
                                     if (shouldBlur(post) && !isNsfwRevealed) return;
                                     // Only navigate if clicking outside the video play zone
                                     const rect = e.currentTarget.getBoundingClientRect();
@@ -826,45 +976,62 @@ const PostCard = React.memo(({ post }) => {
                 )}
             </div>
 
-            {/* Post Stats */}
-            <div className="post-stats">
-                <span>{likesCount} Likes</span>
-                <span onClick={() => setShowComments(!showComments)} style={{ cursor: 'pointer' }}>
-                    {commentsCount} Comments
-                </span>
-            </div>
+            {/* Post Stats & Actions */}
+            {post.is_sponsored ? (
+                <div className="post-footer sponsored-footer">
+                    <button className="cta-button primary-btn" onClick={handleAdClick}>
+                        {post.cta_text || 'Learn More'}
+                    </button>
+                </div>
+            ) : (
+                <>
+                    {/* Post Stats */}
+                    <div className="post-stats">
+                        <span>{likesCount} Likes</span>
+                        <span
+                            onClick={() => setShowComments(!showComments)}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            {commentsCount} Comments
+                        </span>
+                    </div>
 
-            <div className="post-actions-divider"></div>
+                    <div className="post-actions-divider"></div>
 
-            {/* Action Buttons */}
-            <div className="post-actions">
-                <button
-                    className={`action-btn ${isLiked ? 'liked' : ''}`}
-                    onClick={handleLikeToggle}
-                    style={{ color: isLiked ? '#ff4757' : 'inherit' }}
-                >
-                    <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
-                    <span>Like</span>
-                </button>
+                    {/* Action Buttons */}
+                    <div className="post-actions">
+                        <button
+                            className={`action-btn ${isLiked ? 'liked' : ''}`}
+                            onClick={handleLikeToggle}
+                            style={{ color: isLiked ? '#ff4757' : 'inherit' }}
+                        >
+                            <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
+                            <span>Like</span>
+                        </button>
 
-                <button className="action-btn" onClick={() => setShowComments(!showComments)}>
-                    <MessageCircle size={20} />
-                    <span>Comment</span>
-                </button>
+                        <button
+                            className="action-btn"
+                            onClick={() => setShowComments(!showComments)}
+                        >
+                            <MessageCircle size={20} />
+                            <span>Comment</span>
+                        </button>
 
-                <button className="action-btn" onClick={handleShare}>
-                    <Share2 size={20} />
-                    <span>Share</span>
-                </button>
+                        <button className="action-btn" onClick={handleShare}>
+                            <Share2 size={20} />
+                            <span>Share</span>
+                        </button>
 
-                <button
-                    className={`action-btn ${post.is_saved ? 'active-save' : ''}`}
-                    onClick={() => savePost(postId)}
-                >
-                    <Bookmark size={20} fill={post.is_saved ? 'currentColor' : 'none'} />
-                    <span>{post.is_saved ? 'Saved' : 'Save'}</span>
-                </button>
-            </div>
+                        <button
+                            className={`action-btn ${post.is_saved ? 'active-save' : ''}`}
+                            onClick={() => savePost(postId)}
+                        >
+                            <Bookmark size={20} fill={post.is_saved ? 'currentColor' : 'none'} />
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </>
+            )}
 
             {/* Comments Section */}
             {showComments && (

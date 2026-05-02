@@ -88,19 +88,26 @@ export const useInfiniteTrendingPosts = () => {
  */
 export const useInfiniteUserContent = (
     userId: string,
-    contentType: 'posts' | 'comments' | 'reactions',
+    contentType: 'posts' | 'comments' | 'reactions' | 'media' | 'likes',
     options: any = {}
 ) => {
     return useInfiniteQuery({
         queryKey: ['user-content', userId, contentType],
         queryFn: async ({ pageParam }: { pageParam: string | null }) => {
-            const { data } = await api.get(`/users/${userId}/${contentType}`, {
-                params: {
-                    last_id: pageParam,
-                    limit: 10,
-                },
+            let endpoint = `/users/${userId}/${contentType}`;
+            let queryParams: any = { last_id: pageParam, limit: 10 };
+            
+            if (contentType === 'media' || contentType === 'likes') {
+                endpoint = `/users/${userId}/posts`;
+                queryParams.type = contentType;
+            }
+
+            const { data } = await api.get(endpoint, {
+                params: queryParams,
             });
-            return data[contentType] || data.data || [];
+            
+            const responseKey = (contentType === 'media' || contentType === 'likes') ? 'posts' : contentType;
+            return data[responseKey] || data.data || [];
         },
         getNextPageParam: (lastPage: any[]) => {
             if (!lastPage || lastPage.length === 0) return undefined;

@@ -350,3 +350,16 @@ export const useToggleAdmin = (chatId) => {
         },
     });
 };
+
+// Search messages in a chat
+export const useSearchChatMessages = (chatId) => {
+    return useMutation({
+        mutationFn: async ({ q, before }) => {
+            if (!chatId || !q) return [];
+            const { data } = await api.get(`/messages/${chatId}/search`, {
+                params: { q, before },
+            });
+            return data;
+        },
+    });
+};

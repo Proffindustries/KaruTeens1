@@ -17,15 +17,16 @@ export const AblyProvider = ({ children }) => {
     const isConnectingRef = useRef(false);
 
     const userId = user?.id;
-    const username = user?.username;
 
     useEffect(() => {
         if (!token || !userId) {
+            // User logged out — tear down cleanly
             if (ablyRef.current) {
                 ablyRef.current.close();
                 ablyRef.current = null;
                 setAbly(null);
             }
+            isConnectingRef.current = false;
             return;
         }
 
@@ -35,46 +36,66 @@ export const AblyProvider = ({ children }) => {
 
         const client = new Ably.Realtime({
             authCallback: async (tokenParams, callback) => {
-                let lastErr = null;
                 for (let attempt = 0; attempt < 3; attempt++) {
                     try {
                         const { data } = await api.get('/ably/auth');
+                        // data must be a plain object — Ably token request format
                         callback(null, data);
                         return;
                     } catch (err) {
-                        lastErr = err;
                         console.warn(
-                            `Ably Auth attempt ${attempt + 1} failed:`,
-                            err?.response?.status,
+                            `Ably auth attempt ${attempt + 1} failed:`,
+                            err?.response?.status ?? err?.message,
                         );
                         if (attempt < 2) {
-                            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+                            await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
                         }
                     }
                 }
-                console.error('Ably Auth Request failed after retries:', lastErr);
-                // Don't call callback with error — let Ably retry on its own schedule
-                setTimeout(() => callback(lastErr, null), 10000);
+                // IMPORTANT: Pass a plain Error string — NOT an axios error object.
+                // Passing an object Ably doesn't understand causes the "Connection closed" loop.
+                console.error('Ably auth failed after 3 attempts — will retry later');
+                callback('Auth request failed', null);
             },
             closeOnUnload: true,
+            disconnectedRetryTimeout: 5000,
+            suspendedRetryTimeout: 15000,
         });
 
         client.connection.on('connected', () => {
+            console.log('Ably connected');
             isConnectingRef.current = false;
             ablyRef.current = client;
             setAbly(client);
         });
 
-        client.connection.on('failed', (err) => {
-            console.error('Ably Connection Failed:', err);
+        client.connection.on('failed', (stateChange) => {
+            console.error('Ably connection failed:', stateChange?.reason?.message);
             isConnectingRef.current = false;
+            // Don't set ably to null — let it retry on its own
+        });
+
+        client.connection.on('disconnected', (stateChange) => {
+            console.warn('Ably disconnected:', stateChange?.reason?.message);
+        });
+
+        client.connection.on('suspended', () => {
+            console.warn('Ably suspended — will retry in 15s');
+        });
+
+        client.connection.on('closed', () => {
+            // Only clear state if this is our current client
+            if (ablyRef.current === client) {
+                ablyRef.current = null;
+                setAbly(null);
+            }
         });
 
         // Global notification channel
         const notificationChannel = client.channels.get(`user:${userId}:notifications`);
         notificationChannel.subscribe('new_notification', (msg) => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            showToast(msg.data.content, 'info');
+            if (msg.data?.content) showToast(msg.data.content, 'info');
         });
 
         // Global chat update channel
@@ -83,20 +104,16 @@ export const AblyProvider = ({ children }) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
         });
 
-        // Activity feed channel - real-time updates
+        // Activity feed channel
         const activityChannel = client.channels.get(`user:${userId}:activity`);
         activityChannel.subscribe(['new_activity', 'activity_updated'], (msg) => {
             queryClient.invalidateQueries({ queryKey: ['activity'] });
-            if (msg.data?.content) {
-                showToast(msg.data.content, 'info');
-            }
+            if (msg.data?.content) showToast(msg.data.content, 'info');
         });
 
-        // Global Signaling channel for WebRTC
+        // WebRTC signaling channel
         const signalingChannel = client.channels.get(`user:${userId}:signaling`);
         signalingChannel.subscribe(['call-offer', 'call-answer', 'ice-candidate'], (msg) => {
-            // This will be handled by the MessagesPage or a global CallProvider
-            // For now, we dispatch a custom event that MessagesPage can listen to
             window.dispatchEvent(
                 new CustomEvent('ably-signaling', {
                     detail: { type: msg.name, data: msg.data },
@@ -105,13 +122,14 @@ export const AblyProvider = ({ children }) => {
         });
 
         return () => {
-            if (ablyRef.current) {
-                ablyRef.current.close();
+            isConnectingRef.current = false;
+            if (ablyRef.current === client) {
                 ablyRef.current = null;
                 setAbly(null);
             }
+            client.close();
         };
-    }, [token, userId, queryClient, showToast]);
+    }, [token, userId]); // intentionally minimal deps — queryClient and showToast are stable refs
 
     // Track presence in a global "campus" channel
     useEffect(() => {
@@ -123,40 +141,45 @@ export const AblyProvider = ({ children }) => {
             username: user.username,
             avatar: user.avatar_url,
             userId: user.id,
-        });
+        }).catch((e) => console.warn('Presence enter failed:', e));
 
-        globalChannel.presence.subscribe(['enter', 'leave', 'update', 'present'], (member) => {
+        const handler = (member) => {
             setPresenceData((prev) => {
                 const newData = { ...prev };
                 if (member.action === 'leave') {
                     delete newData[member.clientId || member.data?.userId];
                 } else {
                     const id = member.clientId || member.data?.userId;
-                    newData[id] = {
-                        status: 'online',
-                        ...member.data,
-                        lastSeen: new Date(),
-                    };
+                    if (id) {
+                        newData[id] = {
+                            status: 'online',
+                            ...member.data,
+                            lastSeen: new Date(),
+                        };
+                    }
                 }
                 return newData;
             });
-        });
+        };
+
+        globalChannel.presence.subscribe(['enter', 'leave', 'update', 'present'], handler);
 
         globalChannel.presence.get((err, members) => {
-            if (!err) {
+            if (!err && members) {
                 const initial = {};
                 members.forEach((m) => {
                     const id = m.clientId || m.data?.userId;
-                    initial[id] = { status: 'online', ...m.data };
+                    if (id) initial[id] = { status: 'online', ...m.data };
                 });
                 setPresenceData(initial);
             }
         });
 
         return () => {
-            globalChannel.presence.leave();
+            globalChannel.presence.leave().catch(() => {});
+            globalChannel.presence.unsubscribe(handler);
         };
-    }, [ably, user, queryClient, showToast]);
+    }, [ably, user]);
 
     return <AblyContext.Provider value={{ ably, presenceData }}>{children}</AblyContext.Provider>;
 };

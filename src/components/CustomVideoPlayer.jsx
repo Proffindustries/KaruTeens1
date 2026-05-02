@@ -3,6 +3,8 @@ import { Play, Pause, Settings } from 'lucide-react';
 import { useInView } from 'react-intersection-observer'; // Import useInView
 import { useAudio } from '../context/AudioContext';
 import { useToast } from '../context/ToastContext';
+import { shouldBlur } from '../utils/contentFilters.js';
+import { getVariantUrl } from '../utils/mediaUtils.js';
 import '../styles/CustomVideoPlayer.css';
 
 const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }) => {
@@ -125,14 +127,14 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
             {poster && (
                 <div
                     className="video-blur-backdrop"
-                    style={{ backgroundImage: `url(${poster})` }}
+                    style={{ backgroundImage: `url(${getVariantUrl(poster)})` }}
                 />
             )}
 
             {(!isPlaying || !inView) && poster && (
                 <div
                     className="video-poster-overlay"
-                    style={{ backgroundImage: `url(${poster})` }}
+                    style={{ backgroundImage: `url(${getVariantUrl(poster)})` }}
                     onClick={togglePlayPause}
                 />
             )}
@@ -140,7 +142,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
             {inView && (
                 <video
                     ref={videoRef}
-                    src={src}
+                    src={getVariantUrl(src)}
                     preload="metadata"
                     className="video-element"
                     onClick={togglePlayPause}

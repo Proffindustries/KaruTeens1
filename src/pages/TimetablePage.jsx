@@ -47,6 +47,7 @@ const TimetablePage = () => {
     const [selectedDay, setSelectedDay] = useState('Monday');
     const [isLoading, setIsLoading] = useState(true);
     const [viewMode, setViewMode] = useState('list'); // list, grid, exam, library
+    const [exams, setExams] = useState([]);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -92,6 +93,20 @@ const TimetablePage = () => {
     useEffect(() => {
         fetchTimetables();
     }, [fetchTimetables]);
+
+    useEffect(() => {
+        if (viewMode === 'exam') {
+            const fetchExams = async () => {
+                try {
+                    const { data } = await api.get('/timetable/exams');
+                    setExams(data);
+                } catch (err) {
+                    showToast('Failed to load exams', 'error');
+                }
+            };
+            fetchExams();
+        }
+    }, [viewMode, showToast]);
 
     // Push Notifications / Class Alarms (Check every minute)
     useEffect(() => {
@@ -316,8 +331,10 @@ const TimetablePage = () => {
         }
     };
 
-    const handleUpdateClassLocal = (updatedClass) => {
-        // Optimistic UI update for tasks
+    const handleUpdateClassTasks = async (updatedClass) => {
+        if (!selectedTimetable) return;
+
+        // Optimistic UI update
         const updatedTimetables = timetables.map((t) => {
             if (t._id === selectedTimetable._id) {
                 const updatedClasses = t.classes.map((c) =>
@@ -329,6 +346,16 @@ const TimetablePage = () => {
         });
         setTimetables(updatedTimetables);
         setSelectedTimetable(updatedTimetables.find((t) => t._id === selectedTimetable._id));
+
+        try {
+            // Persist to backend
+            await api.put(`/timetable/${selectedTimetable._id}/classes/${updatedClass.id}/tasks`, {
+                tasks: updatedClass.tasks,
+            });
+        } catch (error) {
+            showToast('Failed to save task changes to server', 'error');
+            // In a real app, you might want to rollback the optimistic update here
+        }
     };
 
     const handleDeleteClass = async (classId) => {
@@ -506,7 +533,7 @@ const TimetablePage = () => {
             {viewMode === 'library' ? (
                 <LibrarySearch onFork={handleCopyOrMerge} />
             ) : viewMode === 'exam' ? (
-                <ExamModeView exams={(selectedTimetable?.classes || []).filter((c) => c.is_exam)} />
+                <ExamModeView exams={exams} />
             ) : viewMode === 'grid' ? (
                 <TimetableGrid
                     classes={selectedTimetable?.classes || []}
@@ -924,7 +951,7 @@ const TimetablePage = () => {
                 <ClassDetailsModal
                     classItem={activeClass}
                     onClose={() => setShowClassDetailsModal(false)}
-                    onUpdate={handleUpdateClassLocal}
+                    onUpdate={handleUpdateClassTasks}
                 />
             )}
         </div>

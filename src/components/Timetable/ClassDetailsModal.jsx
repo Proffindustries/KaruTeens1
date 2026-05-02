@@ -9,6 +9,8 @@ const ClassDetailsModal = ({ classItem, onClose, onUpdate }) => {
     const [activeTab, setActiveTab] = useState('tasks');
     const [tasks, setTasks] = useState(classItem.tasks || []);
     const [newTaskTitle, setNewTaskTitle] = useState('');
+    const [newTaskDesc, setNewTaskDesc] = useState('');
+    const [newTaskDate, setNewTaskDate] = useState('');
     const [classmates, setClassmates] = useState([]);
     const [isLoadingClassmates, setIsLoadingClassmates] = useState(false);
 
@@ -30,19 +32,32 @@ const ClassDetailsModal = ({ classItem, onClose, onUpdate }) => {
 
     const handleAddTask = async () => {
         if (!newTaskTitle.trim()) return;
+        
+        // Find the timetable ID from the parent context or passed prop
+        // Assuming we need to find which timetable this class belongs to
+        // For now, we'll try to get it from the classItem if it's there or handle it via onUpdate
+        
         const newTask = {
             id: Date.now().toString(),
             title: newTaskTitle,
+            description: newTaskDesc || null,
+            due_date: newTaskDate || null,
             completed: false,
+            created_at: new Date().toISOString(),
         };
+        
         const updatedTasks = [...tasks, newTask];
         setTasks(updatedTasks);
         setNewTaskTitle('');
+        setNewTaskDesc('');
+        setNewTaskDate('');
 
-        // Mock save to backend
         try {
-            // await api.put(`/timetable/classes/${classItem.id}/tasks`, { tasks: updatedTasks });
+            // We need the timetable_id. If not in classItem, we'll have to rely on onUpdate 
+            // which handles the state in TimetablePage.
+            // Let's assume classItem or the parent provides what's needed.
             onUpdate({ ...classItem, tasks: updatedTasks });
+            showToast('Task added!', 'success');
         } catch (err) {
             showToast('Failed to save task', 'error');
         }

@@ -58,6 +58,7 @@ import {
     useSetDisappearing,
     useUpdateGroup,
     useToggleAdmin,
+    useSearchChatMessages,
 } from '../hooks/useMessages.js';
 import GifPicker from '../components/GifPicker.jsx';
 import StickerPicker from '../components/StickerPicker.jsx';
@@ -382,6 +383,9 @@ const MessagesPage = () => {
     const { mutate: setDisappearing } = useSetDisappearing(selectedChatId);
     const { mutate: updateGroup } = useUpdateGroup(selectedChatId);
     const { mutate: toggleAdmin } = useToggleAdmin(selectedChatId);
+    const { mutate: searchChatMessages, isLoading: isSearchInChatLoading } =
+        useSearchChatMessages(selectedChatId);
+    const [chatSearchResults, setChatSearchResults] = useState([]);
 
     // WebRTC Integration
     const currentUser = JSON.parse(safeLocalStorage.getItem('user'));
@@ -427,17 +431,81 @@ const MessagesPage = () => {
 
         const channel = ably.channels.get(`chat:${selectedChatId}`);
         const subscription = (msg) => {
-            queryClient.setQueryData(['messages', selectedChatId], (old) => {
-                const messages = old || [];
-                if (messages.find((m) => m.id === msg.data.id)) return messages;
-                return [...messages, msg.data];
-            });
+            if (msg.name === 'new_message') {
+                queryClient.setQueryData(['messages', selectedChatId], (old) => {
+                    const messages = old || [];
+                    if (messages.find((m) => m.id === msg.data.id)) return messages;
+                    return [...messages, msg.data];
+                });
+            } else if (msg.name === 'reaction_updated') {
+                queryClient.setQueryData(['messages', selectedChatId], (old) => {
+                    if (!old) return old;
+                    return old.map((m) => (m.id === msg.data.id ? msg.data : m));
+                });
+            } else if (msg.name === 'message_read') {
+                queryClient.setQueryData(['messages', selectedChatId], (old) => {
+                    if (!old) return old;
+                    return old.map((m) =>
+                        m.id === msg.data.id ? { ...m, read_at: msg.data.read_at } : m,
+                    );
+                });
+            } else if (msg.name === 'message_viewed') {
+                queryClient.setQueryData(['messages', selectedChatId], (old) => {
+                    if (!old) return old;
+                    return old.map((m) =>
+                        m.id === msg.data.id
+                            ? {
+                                  ...m,
+                                  viewed_at: msg.data.viewed_at,
+                                  content: 'Media viewed',
+                                  attachment_url: null,
+                              }
+                            : m,
+                    );
+                });
+            } else if (msg.name === 'message_deleted') {
+                if (msg.data.mode === 'everyone') {
+                    queryClient.setQueryData(['messages', selectedChatId], (old) => {
+                        if (!old) return old;
+                        return old.map((m) =>
+                            m.id === msg.data.id
+                                ? {
+                                      ...m,
+                                      is_deleted: true,
+                                      content: 'This message was deleted',
+                                      attachment_url: null,
+                                      attachment_type: null,
+                                  }
+                                : m,
+                        );
+                    });
+                }
+            }
             // Also invalidate chats to update the last message in sidebar
             queryClient.invalidateQueries({ queryKey: ['chats'] });
         };
 
-        channel.subscribe('new_message', subscription);
-        return () => channel.unsubscribe('new_message', subscription);
+        channel.subscribe(
+            [
+                'new_message',
+                'reaction_updated',
+                'message_read',
+                'message_viewed',
+                'message_deleted',
+            ],
+            subscription,
+        );
+        return () =>
+            channel.unsubscribe(
+                [
+                    'new_message',
+                    'reaction_updated',
+                    'message_read',
+                    'message_viewed',
+                    'message_deleted',
+                ],
+                subscription,
+            );
     }, [ably, selectedChatId, queryClient]);
 
     const webRTCRef = useRef(null);
@@ -577,7 +645,37 @@ const MessagesPage = () => {
         }
     };
 
-    const uploadProcessRef = useRef(null);
+    // In-chat search handler
+    useEffect(() => {
+        if (!chatSearchQuery.trim()) {
+            setChatSearchResults([]);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            searchChatMessages(
+                { q: chatSearchQuery },
+                {
+                    onSuccess: (data) => {
+                        setChatSearchResults(data);
+                    },
+                },
+            );
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [chatSearchQuery, searchChatMessages]);
+
+    const scrollToMessage = useCallback((msgId) => {
+        const element = document.getElementById(`msg-${msgId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-search');
+            setTimeout(() => element.classList.remove('highlight-search'), 3000);
+        } else {
+            showToast('Message not currently loaded in view. Scroll up to find it.', 'info');
+        }
+    }, [showToast]);
     uploadProcessRef.current = async (file) => {
         setIsUploading(true);
         try {
@@ -1217,14 +1315,42 @@ const MessagesPage = () => {
                                 </div>
                                 <div className="chat-actions">
                                     {showChatSearch && (
-                                        <input
-                                            type="text"
-                                            className="chat-search-input"
-                                            placeholder="Search in chat..."
-                                            value={chatSearchQuery}
-                                            onChange={(e) => setChatSearchQuery(e.target.value)}
-                                            autoFocus
-                                        />
+                                        <div className="chat-search-container">
+                                            <input
+                                                type="text"
+                                                className="chat-search-input"
+                                                placeholder="Search in chat..."
+                                                value={chatSearchQuery}
+                                                onChange={(e) => setChatSearchQuery(e.target.value)}
+                                                autoFocus
+                                            />
+                                            {isSearchInChatLoading && <Loader2 size={14} className="animate-spin" />}
+                                            {chatSearchResults.length > 0 && (
+                                                <div className="chat-search-results">
+                                                    <div className="search-results-header">
+                                                        <span>{chatSearchResults.length} Results</span>
+                                                        <button onClick={() => setChatSearchResults([])}>
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="search-results-list">
+                                                        {chatSearchResults.map(res => (
+                                                            <div 
+                                                                key={res.id} 
+                                                                className="search-result-item"
+                                                                onClick={() => scrollToMessage(res.id)}
+                                                            >
+                                                                <div className="search-result-info">
+                                                                    <strong>{res.sender_username}</strong>
+                                                                    <span>{new Date(res.created_at).toLocaleDateString()}</span>
+                                                                </div>
+                                                                <p>{res.content}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                     <button
                                         className={`icon-btn ${showChatSearch ? 'active' : ''}`}
@@ -1334,6 +1460,7 @@ const MessagesPage = () => {
                                         .map((msg) => (
                                             <div
                                                 key={msg.id}
+                                                id={`msg-${msg.id}`}
                                                 className={`message-row ${msg.is_me ? 'sent' : 'received'} ${msg.is_deleted ? 'is-deleted' : ''}`}
                                             >
                                                 <div className="message-bubble">

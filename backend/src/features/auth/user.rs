@@ -75,6 +75,7 @@ pub async fn get_profile_handler(
         reg: profile.reg,
         quote: profile.quote,
         location: profile.location,
+        cover_photo_url: profile.cover_photo_url,
         social_links: profile.social_links,
         is_verified,
         is_premium,
@@ -232,9 +233,38 @@ pub async fn unblock_user_handler(
     Ok((StatusCode::OK, Json(json!({"message": "User unblocked"}))))
 }
 
+#[derive(Deserialize)]
+pub struct ContentQueryParams {
+    pub r#type: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateCoverPhotoRequest {
+    pub cover_photo_url: String,
+}
+
+pub async fn update_cover_photo_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<UpdateCoverPhotoRequest>,
+) -> AppResult<impl IntoResponse> {
+    let collection = state.mongo.collection::<Profile>("profiles");
+
+    collection
+        .update_one(
+            doc! { "user_id": user.user_id },
+            doc! { "$set": { "cover_photo_url": &payload.cover_photo_url } },
+            None,
+        )
+        .await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "Cover photo updated", "cover_photo_url": payload.cover_photo_url}))))
+}
+
 pub async fn get_user_posts_handler(
     State(state): State<Arc<AppState>>,
     Path(user_id_or_username): Path<String>,
+    Query(params): Query<ContentQueryParams>,
 ) -> AppResult<impl IntoResponse> {
     let user_oid = match ObjectId::parse_str(&user_id_or_username) {
         Ok(oid) => oid,
@@ -251,18 +281,57 @@ pub async fn get_user_posts_handler(
     
     let posts_collection = state.mongo.collection::<Post>("posts");
     
-    // Get user's published posts
-    let mut cursor = posts_collection
-        .find(
-            doc! { 
-                "author_id": user_oid,
-                "status": "published"
-            },
-            FindOptions::builder()
-                .sort(doc! { "created_at": -1 })
-                .build()
-        )
-        .await?;
+    let mut cursor = match params.r#type.as_deref().unwrap_or("posts") {
+        "media" => {
+            posts_collection
+                .find(
+                    doc! { 
+                        "author_id": user_oid,
+                        "status": "published",
+                        "media_urls": { "$exists": true, "$ne": [] }
+                    },
+                    FindOptions::builder()
+                        .sort(doc! { "created_at": -1 })
+                        .build()
+                )
+                .await?
+        },
+        "likes" => {
+            let likes_collection = state.mongo.collection::<crate::models::Like>("likes");
+            let mut likes_cursor = likes_collection.find(doc! { "user_id": user_oid }, None).await?;
+            let mut liked_post_ids = Vec::new();
+            while let Some(like_doc) = likes_cursor.next().await {
+                if let Ok(like) = like_doc {
+                    liked_post_ids.push(like.post_id);
+                }
+            }
+            
+            posts_collection
+                .find(
+                    doc! { 
+                        "_id": { "$in": liked_post_ids },
+                        "status": "published"
+                    },
+                    FindOptions::builder()
+                        .sort(doc! { "created_at": -1 })
+                        .build()
+                )
+                .await?
+        },
+        _ => {
+            posts_collection
+                .find(
+                    doc! { 
+                        "author_id": user_oid,
+                        "status": "published"
+                    },
+                    FindOptions::builder()
+                        .sort(doc! { "created_at": -1 })
+                        .build()
+                )
+                .await?
+        }
+    };
     
     let mut posts = Vec::new();
     while let Some(result) = cursor.next().await {
@@ -505,15 +574,64 @@ pub async fn unfollow_user_by_username_handler(
     Ok((StatusCode::OK, Json(json!({"message": "User unfollowed successfully"}))))
 }
 
+pub async fn get_notification_settings_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> AppResult<impl IntoResponse> {
+    let collection = state.mongo.collection::<Profile>("profiles");
+
+    let profile = collection
+        .find_one(doc! { "user_id": user.user_id }, None)
+        .await?
+        .ok_or(AppError::NotFound("Profile not found".to_string()))?;
+
+    // If no settings exist yet, return defaults based on the struct
+    let settings = profile.notification_settings.unwrap_or_else(|| crate::models::base::NotificationSettings {
+        messages: true,
+        likes: true,
+        comments: true,
+        follows: true,
+        mentions: true,
+        class_reminders: true,
+        template_updates: false,
+        ad_promotions: false,
+        email_digest: false,
+    });
+
+    Ok((StatusCode::OK, Json(settings)))
+}
+
+pub async fn update_notification_settings_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Json(payload): Json<crate::models::base::NotificationSettings>,
+) -> AppResult<impl IntoResponse> {
+    let collection = state.mongo.collection::<Profile>("profiles");
+
+    let settings_bson = mongodb::bson::to_bson(&payload).map_err(|_| AppError::InternalServerError("Failed to serialize settings".to_string()))?;
+
+    collection
+        .update_one(
+            doc! { "user_id": user.user_id },
+            doc! { "$set": { "notification_settings": settings_bson } },
+            None,
+        )
+        .await?;
+
+    Ok((StatusCode::OK, Json(json!({"message": "Notification settings updated"}))))
+}
+
 pub fn user_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/:username", get(get_profile_handler))
         .route("/:username/gamification", get(get_user_gamification_handler))
+        .route("/profile/cover", put(update_cover_photo_handler))
         .route("/:userId/posts", get(get_user_posts_handler))
         .route("/:userId/comments", get(get_user_comments_handler))
         .route("/:username/follow", post(follow_user_by_username_handler))
         .route("/:username/unfollow", post(unfollow_user_by_username_handler))
         .route("/update", put(update_profile_handler))
+        .route("/notifications/settings", get(get_notification_settings_handler).put(update_notification_settings_handler))
         .route("/chat/:id/mute", post(mute_chat_handler).delete(unmute_chat_handler))
         .route("/block/:id", post(block_user_handler).delete(unblock_user_handler))
 }

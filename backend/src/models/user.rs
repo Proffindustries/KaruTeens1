@@ -36,6 +36,7 @@ pub struct Profile {
     pub full_name: Option<String>,
     pub bio: Option<String>,
     pub avatar_url: Option<String>,
+    pub cover_photo_url: Option<String>,
     pub school: Option<String>,
     pub year_of_study: Option<i32>,
     pub age: Option<i32>,

@@ -184,6 +184,7 @@ pub async fn register_handler(
           full_name: payload.full_name,
           bio: payload.bio,
           avatar_url: payload.avatar_url,
+          cover_photo_url: None,
           school: payload.school,
           year_of_study: payload.year_of_study,
           age: payload.age,

@@ -19,8 +19,13 @@ import {
     Award,
     Star,
     Lock,
+    Camera,
+    Grid,
+    Heart,
+    FileText,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '../api/client';
 import PostCard from '../components/PostCard.jsx';
 import { PostSkeleton, ProfileSkeleton } from '../components/Skeleton.jsx';
 import AdComponent from '../components/AdComponent.jsx';
@@ -51,9 +56,19 @@ const ProfilePage = () => {
     const { data: gamificationData } = useGamification(targetUsername);
     const gamificationRes = gamificationData;
 
-    // Fetch user's posts
-    const { data: postsData } = useInfiniteUserContent(targetUsername, 'posts');
-    const userPosts = postsData?.pages?.flatMap((page) => page) || [];
+    // Content tab state
+    const [activeTab, setActiveTab] = useState('posts');
+    const coverInputRef = React.useRef(null);
+    const [isUploadingCover, setIsUploadingCover] = useState(false);
+
+    // All three tab queries (always mounted to avoid refetch on tab switch)
+    const { data: postsData, isLoading: postsLoading } = useInfiniteUserContent(targetUsername, 'posts');
+    const { data: mediaData, isLoading: mediaLoading } = useInfiniteUserContent(targetUsername, 'media');
+    const { data: likesData, isLoading: likesLoading } = useInfiniteUserContent(targetUsername, 'likes');
+
+    const userPosts  = postsData?.pages?.flatMap((page) => page) || [];
+    const userMedia  = mediaData?.pages?.flatMap((page) => page) || [];
+    const userLikes  = likesData?.pages?.flatMap((page) => page) || [];
 
     const profile = profileRes?.profile || profileRes;
     const stats = {
@@ -90,6 +105,22 @@ const ProfilePage = () => {
         } catch (err) {
             failUpload(uploadId, err);
             showToast('Avatar upload failed. Please try again.', 'error');
+        }
+    };
+
+    const handleCoverChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploadingCover(true);
+        try {
+            const url = await uploadImage(file);
+            await api.put('/users/profile/cover', { cover_photo_url: url });
+            updateProfile({ cover_photo_url: url });
+            showToast('Cover photo updated!', 'success');
+        } catch (err) {
+            showToast('Cover photo upload failed.', 'error');
+        } finally {
+            setIsUploadingCover(false);
         }
     };
 
@@ -218,7 +249,42 @@ const ProfilePage = () => {
         <div className="container profile-page">
             {/* Header / Cover */}
             <div className="profile-header-card">
-                <div className="profile-cover"></div>
+                <div
+                className="profile-cover"
+                style={profile?.cover_photo_url ? {
+                    backgroundImage: `url(${profile.cover_photo_url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                } : {
+                    background: 'linear-gradient(135deg, hsl(250,60%,20%) 0%, hsl(210,70%,25%) 50%, hsl(170,60%,20%) 100%)',
+                }}
+            >
+                {isOwnProfile && (
+                    <button
+                        className="cover-edit-btn"
+                        onClick={() => coverInputRef.current.click()}
+                        disabled={isUploadingCover}
+                        style={{
+                            position: 'absolute', bottom: '0.75rem', right: '0.75rem',
+                            display: 'flex', alignItems: 'center', gap: '0.4rem',
+                            padding: '0.45rem 0.9rem', borderRadius: '20px',
+                            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+                            border: '1px solid rgba(255,255,255,0.2)', color: '#fff',
+                            cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
+                        }}
+                    >
+                        <Camera size={14} />
+                        {isUploadingCover ? 'Uploading…' : 'Edit cover'}
+                    </button>
+                )}
+                <input
+                    type="file"
+                    ref={coverInputRef}
+                    hidden
+                    accept="image/*"
+                    onChange={handleCoverChange}
+                />
+            </div>
                 <div className="profile-main-info">
                     <div
                         className={`profile-avatar-container ${isOwnProfile ? 'editable' : ''}`}
@@ -523,39 +589,200 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="main-column">
-                    <div className="posts-feed">
-                        {isLocked ? (
-                            <div
-                                className="empty-state card"
-                                style={{ padding: '3rem', textAlign: 'center' }}
+                    {/* Content tabs */}
+                    {!isLocked && (
+                        <div className="profile-tabs" style={{
+                            display: 'flex', gap: 0, marginBottom: '1.25rem',
+                            borderRadius: '10px', overflow: 'hidden',
+                            border: '1px solid rgba(var(--card-border), 0.4)',
+                            background: 'rgba(var(--card-bg), 0.6)',
+                        }}>
+                            {[
+                                { id: 'posts', label: 'Posts', icon: <FileText size={15} /> },
+                                { id: 'media', label: 'Media', icon: <Grid size={15} /> },
+                                { id: 'likes', label: 'Likes', icon: <Heart size={15} /> },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    style={{
+                                        flex: 1, padding: '0.7rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        gap: '0.4rem', fontWeight: 600, fontSize: '0.9rem',
+                                        border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                        background: activeTab === tab.id
+                                            ? 'rgba(var(--primary-color), 0.15)'
+                                            : 'transparent',
+                                        color: activeTab === tab.id
+                                            ? 'rgb(var(--primary-color))'
+                                            : 'var(--text-muted)',
+                                        borderBottom: activeTab === tab.id
+                                            ? '2px solid rgb(var(--primary-color))'
+                                            : '2px solid transparent',
+                                    }}
+                                >
+                                    {tab.icon} {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Locked state */}
+                    {isLocked ? (
+                        <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
+                            <ShieldCheck size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                            <h3>Locked Profile</h3>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                Follow this user to see their posts and interactions.
+                            </p>
+                            <button
+                                className={`btn btn-sm ${stats.isFollowing ? 'btn-outline' : 'btn-primary'}`}
+                                onClick={handleFollowToggle}
+                                disabled={isFollowingAction || isUnfollowingAction}
                             >
-                                <ShieldCheck
-                                    size={48}
-                                    style={{ marginBottom: '1rem', opacity: 0.2 }}
-                                />
-                                <h3>Locked Profile</h3>
-                                <p>Follow this user to see their posts and interactions.</p>
-                            </div>
-                        ) : isLoading ? (
-                            [1, 2].map((i) => <PostSkeleton key={i} />)
-                        ) : userPosts?.length > 0 ? (
-                            userPosts.map((post) => <PostCard key={post.id} post={post} />)
-                        ) : (
-                            <div
-                                className="empty-state card"
-                                style={{ padding: '3rem', textAlign: 'center' }}
-                            >
-                                <p>No posts by this user yet.</p>
-                            </div>
-                        )}
-                    </div>
+                                {stats.isFollowing ? 'Following' : 'Follow'}
+                            </button>
+                        </div>
+                    ) : (
+                        <AnimatePresence mode="wait">
+                            {/* Posts tab */}
+                            {activeTab === 'posts' && (
+                                <motion.div key="posts"
+                                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
+                                    className="posts-feed"
+                                >
+                                    {postsLoading
+                                        ? [1, 2, 3].map((i) => <PostSkeleton key={i} />)
+                                        : userPosts.length > 0
+                                            ? userPosts.map((post) => <PostCard key={post.id} post={post} />)
+                                            : (
+                                                <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
+                                                    <FileText size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                                                    <h3>No posts yet</h3>
+                                                    <p style={{ color: 'var(--text-muted)' }}>
+                                                        {isOwnProfile ? "Share something with your campus!" : "This user hasn't posted yet."}
+                                                    </p>
+                                                </div>
+                                            )
+                                    }
+                                </motion.div>
+                            )}
+
+                            {/* Media tab — 3-col grid */}
+                            {activeTab === 'media' && (
+                                <motion.div key="media"
+                                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
+                                >
+                                    {mediaLoading ? (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                                            {[1,2,3,4,5,6].map((i) => (
+                                                <div key={i} className="shimmer" style={{ aspectRatio: '1', borderRadius: '6px' }} />
+                                            ))}
+                                        </div>
+                                    ) : userMedia.length > 0 ? (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                                            {userMedia.map((post) => {
+                                                const src = post.media_urls?.[0];
+                                                const isVideo = src && /\.(mp4|webm|mov)/i.test(src);
+                                                return (
+                                                    <div key={post.id}
+                                                        onClick={() => window.location.href = `/post/${post.id}`}
+                                                        style={{
+                                                            aspectRatio: '1', borderRadius: '6px',
+                                                            overflow: 'hidden', cursor: 'pointer',
+                                                            position: 'relative', background: 'rgba(var(--card-bg),0.8)',
+                                                        }}
+                                                    >
+                                                        {isVideo ? (
+                                                            <video src={src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                                                        ) : (
+                                                            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                                                        )}
+                                                        <div style={{
+                                                            position: 'absolute', inset: 0,
+                                                            background: 'rgba(0,0,0,0)',
+                                                            transition: 'background 0.2s',
+                                                        }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0)'}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
+                                            <Grid size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                                            <h3>No media yet</h3>
+                                            <p style={{ color: 'var(--text-muted)' }}>
+                                                {isOwnProfile ? "Post a photo or video to see it here." : "No photos or videos shared yet."}
+                                            </p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* Likes tab */}
+                            {activeTab === 'likes' && (
+                                <motion.div key="likes"
+                                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
+                                    className="posts-feed"
+                                >
+                                    {likesLoading
+                                        ? [1, 2, 3].map((i) => <PostSkeleton key={i} />)
+                                        : userLikes.length > 0
+                                            ? userLikes.map((post) => (
+                                                <div key={post.id}>
+                                                    <div style={{
+                                                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                        padding: '0.4rem 0.6rem 0',
+                                                        fontSize: '0.82rem', color: 'var(--text-muted)',
+                                                    }}>
+                                                        <Heart size={12} fill="currentColor" style={{ color: '#e74c3c' }} />
+                                                        Liked by @{profile?.username}
+                                                    </div>
+                                                    <PostCard post={post} />
+                                                </div>
+                                            ))
+                                            : (
+                                                <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
+                                                    <Heart size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                                                    <h3>No liked posts</h3>
+                                                    <p style={{ color: 'var(--text-muted)' }}>
+                                                        {isOwnProfile ? "Posts you like will appear here." : "No public likes yet."}
+                                                    </p>
+                                                </div>
+                                            )
+                                    }
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    )}
                 </div>
             </div>
 
-            {/* Edit Modal */}
+            {/* Edit Modal with AnimatePresence */}
+            <AnimatePresence>
             {isEditing && (
-                <div className="modal-overlay" onClick={() => setIsEditing(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <motion.div
+                    className="modal-overlay"
+                    onClick={() => setIsEditing(false)}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <motion.div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                    >
                         <div className="modal-header">
                             <h3>Edit Profile</h3>
                             <button className="close-btn" onClick={() => setIsEditing(false)}>
@@ -834,9 +1061,10 @@ const ProfilePage = () => {
                                 {isUpdating ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
         </div>
     );
 };

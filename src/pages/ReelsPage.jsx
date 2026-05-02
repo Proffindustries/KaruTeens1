@@ -5,6 +5,7 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import '../styles/ReelsPage.css';
 import { shouldBlur } from '../utils/contentFilters.js';
+import { getVariantUrl } from '../utils/mediaUtils.js';
 
 const ReelsPage = () => {
     const [reels, setReels] = useState([]);
@@ -93,7 +94,7 @@ const ReelItem = ({ reel, isActive }) => {
             >
                 <video
                     ref={videoRef}
-                    src={reel.video_url}
+                    src={getVariantUrl(reel.video_url)}
                     className="reel-video"
                     loop
                     playsInline

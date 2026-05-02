@@ -6,6 +6,7 @@ import '../styles/StatusPage.css';
 import CreateStoryModal from '../components/CreateStoryModal';
 import Avatar from '../components/Avatar';
 import { shouldBlur } from '../utils/contentFilters.js';
+import { getVariantUrl } from '../utils/mediaUtils.js';
 
 const StatusPage = () => {
     const { data: usersWithStories, isLoading } = useStories();
@@ -251,7 +252,7 @@ const StatusPage = () => {
                         >
                             {activeStory.media_type === 'video' ? (
                                 <video
-                                    src={activeStory.media_url}
+                                    src={getVariantUrl(activeStory.media_url)}
                                     className="viewer-image"
                                     style={{ objectFit: 'contain' }}
                                     autoPlay

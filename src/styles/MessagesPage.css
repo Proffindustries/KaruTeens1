@@ -2865,3 +2865,124 @@
 .msg-media-container.sticker-container:hover .sticker-save-hint {
     opacity: 1;
 }
+
+/* In-Chat Search Improvements */
+.chat-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.chat-search-results {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    width: 300px;
+    max-height: 350px;
+    background: white;
+    border: 1px solid rgba(var(--border), 0.2);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.search-results-header {
+    padding: 0.5rem 0.75rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid rgba(var(--border), 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-results-header span {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #555;
+}
+
+.search-results-header button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+}
+
+.search-results-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.25rem;
+}
+
+.search-result-item {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(var(--border), 0.03);
+}
+
+.search-result-item:hover {
+    background: rgba(var(--primary), 0.05);
+}
+
+.search-result-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.15rem;
+}
+
+.search-result-info strong {
+    font-size: 0.7rem;
+    color: rgb(var(--primary));
+}
+
+.search-result-info span {
+    font-size: 0.6rem;
+    color: #999;
+}
+
+.search-result-item p {
+    font-size: 0.7rem;
+    color: #444;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.highlight-search {
+    animation: highlightPulse 3s ease-out;
+}
+
+@keyframes highlightPulse {
+    0% { background: rgba(var(--primary), 0.2) !important; }
+    100% { background: transparent; }
+}
+
+.chat-search-input {
+    background: rgba(var(--background), 0.5);
+    border: 1px solid rgba(var(--border), 0.2);
+    border-radius: 1.5rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    width: 160px;
+    color: rgb(var(--text-main));
+    outline: none;
+    transition: all 0.25s;
+}
+
+.chat-search-input:focus {
+    border-color: rgb(var(--primary));
+    width: 220px;
+    background: rgba(var(--background), 0.8);
+}

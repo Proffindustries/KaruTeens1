@@ -101,21 +101,7 @@ async fn main() {
     // Create Router
     let app = routes::create_router(state.clone())
         .layer(axum::middleware::from_fn_with_state(state.clone(), rate_limit::rate_limit_middleware))
-        .layer(
-            tower_http::cors::CorsLayer::new()
-                .allow_origin(origins)
-                .allow_methods(tower_http::cors::Any)
-                .allow_headers([
-                    axum::http::header::AUTHORIZATION,
-                    axum::http::header::CONTENT_TYPE,
-                    axum::http::header::ACCEPT,
-                    axum::http::header::ORIGIN,
-                    axum::http::header::HeaderName::from_static("x-request-id"),
-                ])
-                .expose_headers([
-                    axum::http::header::AUTHORIZATION,
-                ])
-        )
+        .layer(tower_http::cors::CorsLayer::permissive())
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::normalize_path::NormalizePathLayer::trim_trailing_slash());
 

@@ -21,6 +21,7 @@ import { useToast } from '../context/ToastContext';
 import { useUpload } from '../context/UploadContext';
 import Avatar from '../components/Avatar';
 import { useMediaUpload } from '../hooks/useMedia';
+import { getVariantUrl } from '../utils/mediaUtils.js';
 import '../styles/StudyPlaylistsPage.css';
 
 const StudyPlaylistsPage = () => {
@@ -774,7 +775,7 @@ const StudyPlaylistsPage = () => {
                                     />
                                 ) : viewingItem.item_type === 'video' ? (
                                     <video
-                                        src={viewingItem.url}
+                                        src={getVariantUrl(viewingItem.url)}
                                         controls
                                         autoPlay
                                         style={{ maxWidth: '100%', maxHeight: '100%' }}

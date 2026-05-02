@@ -26,7 +26,7 @@ export const usePost = (postId?: string) => {
         queryKey: ['post', postId],
         queryFn: async () => {
             if (!postId) throw new Error('Post ID is required');
-            const { data } = await (api as any).get<PostResponse>(`/posts/${postId}`);
+            const { data } = await (api.get(`/posts/${postId}`) as Promise<{data: PostResponse}>);
             return data;
         },
         enabled: !!postId,
@@ -298,7 +298,7 @@ export const useSaveDraft = () => {
             is_nsfw?: boolean;
             title?: string;
         }) => {
-            const { data } = await (api as any).post<PostResponse>('/posts/drafts', draftData);
+            const { data } = await (api.post('/posts/drafts', draftData) as Promise<{data: PostResponse}>);
             return data;
         },
         onSuccess: () => {
@@ -373,9 +373,7 @@ export const useDraftPreview = (draftId?: string) => {
     return useQuery<PostResponse, Error>({
         queryKey: ['draftPreview', draftId],
         queryFn: async () => {
-            const { data } = await (api as any).get<PostResponse>(
-                `/posts/drafts/${draftId}/preview`
-            );
+            const { data } = await (api.get(`/posts/drafts/${draftId}/preview`) as Promise<{data: PostResponse}>);
             return data;
         },
         enabled: !!draftId,
@@ -466,6 +464,43 @@ export const useReportPost = () => {
         },
         onError: (err: any) => {
             showToast(err.response?.data?.error || 'Failed to report post', 'error');
+        },
+    });
+};
+export const useVotePoll = () => {
+    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+
+    return useMutation({
+        mutationFn: async ({ postId, optionIndex }: { postId: string; optionIndex: number }) => {
+            const { data } = await api.post(`/posts/${postId}/poll/vote`, { option_index: optionIndex });
+            return data;
+        },
+        onSuccess: (_, { postId }) => {
+            queryClient.invalidateQueries({ queryKey: ['feed', 'infinite'] });
+            queryClient.invalidateQueries({ queryKey: ['post', postId] });
+            showToast('Vote registered!', 'success');
+        },
+        onError: (err: any) => {
+            showToast(err.response?.data?.error || 'Failed to register vote', 'error');
+        },
+    });
+};
+export const useHidePost = () => {
+    const queryClient = useQueryClient();
+    const { showToast } = useToast();
+
+    return useMutation({
+        mutationFn: async (postId: string) => {
+            const { data } = await api.post(`/posts/${postId}/hide`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['feed', 'infinite'] });
+            showToast('Post hidden from your feed', 'info');
+        },
+        onError: (err: any) => {
+            showToast(err.response?.data?.error || 'Failed to hide post', 'error');
         },
     });
 };

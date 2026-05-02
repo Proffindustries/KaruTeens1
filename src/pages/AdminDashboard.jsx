@@ -38,6 +38,7 @@ import ReelManagementTab from './ReelManagementTab';
 import RevisionManagementTab from './RevisionManagementTab';
 import ContentModerationTab from './ContentModerationTab';
 import MediaManagementTab from './MediaManagementTab';
+import AnalyticsTab from './AnalyticsTab';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -166,7 +167,11 @@ const AdminDashboard = () => {
                             exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <TabContent activeTab={activeTab} stats={stats} />
+                            <TabContent 
+                                activeTab={activeTab} 
+                                stats={stats} 
+                                setActiveTab={setActiveTab} 
+                            />
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -175,10 +180,10 @@ const AdminDashboard = () => {
     );
 };
 
-const TabContent = ({ activeTab, stats }) => {
+const TabContent = ({ activeTab, stats, setActiveTab }) => {
     switch (activeTab) {
         case 'overview':
-            return <OverviewTab stats={stats} />;
+            return <OverviewTab stats={stats} setActiveTab={setActiveTab} />;
         case 'users':
             return <UserManagementTab />;
         case 'posts':
@@ -187,6 +192,10 @@ const TabContent = ({ activeTab, stats }) => {
             return <CommentManagementTab />;
         case 'moderation':
             return <ContentModerationTab stats={stats} />;
+        case 'analytics':
+            return <AnalyticsTab />;
+        case 'academic':
+            return <RevisionManagementTab />;
         case 'groups':
             return <GroupManagementTab />;
         case 'events':
@@ -208,7 +217,7 @@ const TabContent = ({ activeTab, stats }) => {
     }
 };
 
-const OverviewTab = ({ stats }) => (
+const OverviewTab = ({ stats, setActiveTab }) => (
     <div className="overview-tab">
         <div className="stats-grid">
             <StatCard
@@ -244,25 +253,25 @@ const OverviewTab = ({ stats }) => (
         <div className="quick-actions">
             <h3>Quick Actions</h3>
             <div className="action-grid">
-                <button className="action-card">
+                <button className="action-card" onClick={() => setActiveTab('users')}>
                     <div className="action-icon">
                         <UserCheck size={24} />
                     </div>
                     <span>Verify Users</span>
                 </button>
-                <button className="action-card">
+                <button className="action-card" onClick={() => setActiveTab('moderation')}>
                     <div className="action-icon">
                         <AlertTriangle size={24} />
                     </div>
                     <span>Review Reports</span>
                 </button>
-                <button className="action-card">
+                <button className="action-card" onClick={() => setActiveTab('broadcast')}>
                     <div className="action-icon">
                         <Bell size={24} />
                     </div>
                     <span>Send Broadcast</span>
                 </button>
-                <button className="action-card">
+                <button className="action-card" onClick={() => setActiveTab('ads')}>
                     <div className="action-icon">
                         <DollarSign size={24} />
                     </div>
@@ -414,6 +423,16 @@ const SettingsTab = () => {
             showToast('Settings updated', 'success');
         } catch (error) {
             showToast('Failed to update settings', 'error');
+        }
+    };
+
+    const handleClearCache = async () => {
+        if (!window.confirm('Are you sure? This will flush all Redis data.')) return;
+        try {
+            await api.post('/admin/cache/clear');
+            showToast('System cache cleared successfully', 'success');
+        } catch (error) {
+            showToast('Failed to clear cache', 'error');
         }
     };
 
@@ -587,6 +606,7 @@ const SettingsTab = () => {
                     <button
                         className="btn-secondary"
                         style={{ width: '100%', marginTop: '1.5rem' }}
+                        onClick={handleClearCache}
                     >
                         Clear System Cache
                     </button>

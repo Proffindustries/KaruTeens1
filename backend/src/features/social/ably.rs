@@ -98,11 +98,22 @@ pub async fn publish_to_ably(channel: &str, event_name: &str, data: serde_json::
         return;
     }
 
+    // Ably basic auth: key_name as username, key_secret as password
+    let parts: Vec<&str> = ably_api_key.trim().splitn(2, ':').collect();
+    if parts.len() != 2 {
+        tracing::error!("Invalid ABLY_API_KEY format (expected key_name:key_secret)");
+        return;
+    }
+    let key_name = parts[0];
+    let key_secret = parts[1];
+
+    // URL-encode the channel name to handle special chars like ':'
+    let encoded_channel = channel.replace(':', "%3A");
     let client = reqwest::Client::new();
-    let url = format!("https://rest.ably.io/channels/{}/messages", channel);
+    let url = format!("https://rest.ably.io/channels/{}/messages", encoded_channel);
 
     let res = client.post(&url)
-        .basic_auth(&ably_api_key, None as Option<&str>)
+        .basic_auth(key_name, Some(key_secret))
         .json(&json!({
             "name": event_name,
             "data": data

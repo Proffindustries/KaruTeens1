@@ -22,6 +22,16 @@ pub struct NotificationSettings {
     pub comments: bool,
     #[serde(default = "default_true")]
     pub follows: bool,
+    #[serde(default = "default_true")]
+    pub mentions: bool,
+    #[serde(default = "default_true")]
+    pub class_reminders: bool,
+    #[serde(default = "default_false")]
+    pub template_updates: bool,
+    #[serde(default = "default_false")]
+    pub ad_promotions: bool,
+    #[serde(default = "default_false")]
+    pub email_digest: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,4 +44,8 @@ pub struct Badge {
 
 pub fn default_true() -> bool {
     true
+}
+
+pub fn default_false() -> bool {
+    false
 }

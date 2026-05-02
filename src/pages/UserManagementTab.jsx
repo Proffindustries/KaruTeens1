@@ -59,6 +59,8 @@ const UserManagementTab = () => {
     const { mutate: verifyUser } = useVerifyUser();
     const { mutate: updateRole } = useUpdateUserRole();
     const { showToast } = useToast();
+    
+    const [editingUser, setEditingUser] = useState(null);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -209,7 +211,23 @@ const UserManagementTab = () => {
                         <Upload size={18} />
                         Import Users
                     </button>
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={async () => {
+                        try {
+                            const response = await api.get('/admin/users/export', {
+                                params: filters,
+                                responseType: 'blob'
+                            });
+                            const url = window.URL.createObjectURL(new Blob([response.data]));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', 'users_export.csv');
+                            document.body.appendChild(link);
+                            link.click();
+                            showToast('Exporting users...', 'success');
+                        } catch (err) {
+                            showToast('Failed to export users', 'error');
+                        }
+                    }}>
                         <Download size={18} />
                         Export Users
                     </button>
@@ -301,7 +319,11 @@ const UserManagementTab = () => {
                                         gap: '0.5rem',
                                     }}
                                 >
-                                    <input type="date" className="form-input" />
+                                    <input 
+                                        type="date" 
+                                        className="form-input" 
+                                        onChange={(e) => handleFilterChange('joined_after', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                    />
                                     <input
                                         type="time"
                                         className="form-input"
@@ -320,7 +342,11 @@ const UserManagementTab = () => {
                                         gap: '0.5rem',
                                     }}
                                 >
-                                    <input type="date" className="form-input" />
+                                    <input 
+                                        type="date" 
+                                        className="form-input" 
+                                        onChange={(e) => handleFilterChange('joined_before', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                    />
                                     <input
                                         type="time"
                                         className="form-input"
@@ -556,6 +582,7 @@ const UserManagementTab = () => {
                                                     <button
                                                         className="action-btn edit"
                                                         title="Edit User"
+                                                        onClick={() => setEditingUser(user)}
                                                     >
                                                         <Edit size={16} />
                                                     </button>
@@ -574,6 +601,113 @@ const UserManagementTab = () => {
                         </div>
                     </>
                 )}
+            </div>
+            {/* Edit User Modal */}
+            {editingUser && (
+                <EditUserModal 
+                    user={editingUser} 
+                    onClose={() => setEditingUser(null)} 
+                    onUpdate={() => {
+                        refetch();
+                        setEditingUser(null);
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
+const EditUserModal = ({ user, onClose, onUpdate }) => {
+    const [formData, setFormData] = useState({
+        email: user.email || '',
+        username: user.username || '',
+        role: user.role || 'user',
+        is_verified: user.is_verified || false,
+        is_premium: user.is_premium || false,
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { showToast } = useToast();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await api.put(`/admin/users/${user.id}`, formData);
+            showToast('User updated successfully', 'success');
+            onUpdate();
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Failed to update user', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                <div className="modal-header">
+                    <h3>Edit User: {user.username || user.email}</h3>
+                    <button className="icon-btn" onClick={onClose}>&times;</button>
+                </div>
+                <form onSubmit={handleSubmit} className="modal-body">
+                    <div className="form-group">
+                        <label>Email Address</label>
+                        <input 
+                            type="email" 
+                            value={formData.email} 
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Username</label>
+                        <input 
+                            type="text" 
+                            value={formData.username} 
+                            onChange={(e) => setFormData({...formData, username: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Role</label>
+                        <select 
+                            value={formData.role} 
+                            onChange={(e) => setFormData({...formData, role: e.target.value})}
+                        >
+                            <option value="user">User</option>
+                            <option value="premium">Premium</option>
+                            <option value="admin">Admin</option>
+                            <option value="superadmin">Super Admin</option>
+                        </select>
+                    </div>
+                    <div className="form-row" style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
+                        <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input 
+                                type="checkbox" 
+                                id="is_verified"
+                                checked={formData.is_verified} 
+                                onChange={(e) => setFormData({...formData, is_verified: e.target.checked})}
+                            />
+                            <label htmlFor="is_verified">Verified</label>
+                        </div>
+                        <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input 
+                                type="checkbox" 
+                                id="is_premium"
+                                checked={formData.is_premium} 
+                                onChange={(e) => setFormData({...formData, is_premium: e.target.checked})}
+                            />
+                            <label htmlFor="is_premium">Premium Member</label>
+                        </div>
+                    </div>
+                    
+                    <div className="modal-footer" style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+                            {isSubmitting ? <RefreshCw className="spin-anim" size={18} /> : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
