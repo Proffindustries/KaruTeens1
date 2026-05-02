@@ -46,9 +46,17 @@ pub async fn rate_limit_middleware(
 
     let key = format!("rl:{}:{}", client_id, path.split('/').nth(2).unwrap_or("api"));
     
-    // Use Redis ConnectionManager
+    // Use Redis ConnectionManager with timeout to prevent hanging
     let mut conn = state.redis.clone();
-    let count: i64 = conn.get(&key).await.unwrap_or(0);
+    let count_res = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        conn.get::<_, i64>(&key)
+    ).await;
+
+    let count = match count_res {
+        Ok(Ok(c)) => c,
+        _ => 0, // Fallback to 0 if Redis hangs or errors
+    };
     
     if count >= limit {
         tracing::warn!("Rate limit exceeded for {} on {}", client_id, path);
@@ -61,8 +69,14 @@ pub async fn rate_limit_middleware(
         ));
     }
 
-    let _: () = conn.incr(&key, 1).await.unwrap_or(());
-    let _: () = conn.expire(&key, window).await.unwrap_or(());
+    // Increment with timeout
+    let _ = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        async {
+            let _: () = conn.incr(&key, 1).await.unwrap_or(());
+            let _: () = conn.expire(&key, window).await.unwrap_or(());
+        }
+    ).await;
     
     Ok(next.run(request).await)
 }

@@ -13,8 +13,13 @@ impl CacheService {
 
     pub async fn get<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Option<T> {
         let mut conn = self.conn.clone();
-        match conn.get::<_, Option<String>>(key).await {
-            Ok(Some(value)) => serde_json::from_str::<T>(&value).ok(),
+        let res = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            conn.get::<_, Option<String>>(key)
+        ).await;
+
+        match res {
+            Ok(Ok(Some(value))) => serde_json::from_str::<T>(&value).ok(),
             _ => None,
         }
     }
@@ -23,9 +28,14 @@ impl CacheService {
         let mut conn = self.conn.clone();
         match serde_json::to_string(value) {
             Ok(json) => {
-                match conn.set_ex::<&str, String, ()>(key, json, ttl_seconds).await {
-                    Ok(_) => true,
-                    Err(_) => false,
+                let res = tokio::time::timeout(
+                    std::time::Duration::from_secs(2),
+                    conn.set_ex::<&str, String, ()>(key, json, ttl_seconds)
+                ).await;
+
+                match res {
+                    Ok(Ok(_)) => true,
+                    _ => false,
                 }
             }
             Err(_) => false,
