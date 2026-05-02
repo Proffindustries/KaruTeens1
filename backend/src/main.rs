@@ -102,8 +102,7 @@ async fn main() {
     let app = routes::create_router(state.clone())
         .layer(axum::middleware::from_fn_with_state(state.clone(), rate_limit::rate_limit_middleware))
         .layer(tower_http::cors::CorsLayer::permissive())
-        .layer(tower_http::trace::TraceLayer::new_for_http())
-        .layer(tower_http::normalize_path::NormalizePathLayer::trim_trailing_slash());
+        .layer(tower_http::trace::TraceLayer::new_for_http());
 
     tracing::info!("KaruTeens Backend listening on {}", addr);
 
