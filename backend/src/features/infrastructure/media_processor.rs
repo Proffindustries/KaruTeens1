@@ -26,33 +26,56 @@ pub fn spawn_media_worker(state: Arc<AppState>) {
 
     tokio::spawn(async move {
         tracing::info!("Media Worker started with concurrency limit of 8");
-        let mut conn = state.redis.clone();
-
+        let redis_url = state.redis_url.clone();
+        
         loop {
-            let result: Result<(String, String), _> = redis::Cmd::blpop("media_queue", 0.0)
-                .query_async(&mut conn)
-                .await;
+            // Use a dedicated connection for blocking BLPOP instead of the shared manager
+            let client = match redis::Client::open(redis_url.clone()) {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::error!("Failed to open Redis client for worker: {}", e);
+                    sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
+            };
 
-            match result {
-                Ok((_, job_json)) => {
-                    if let Ok(job) = serde_json::from_str::<MediaJobQueueItem>(&job_json) {
-                        let state_clone = state.clone();
-                        let permit = semaphore.clone().acquire_owned().await;
-                        
-                        tokio::spawn(async move {
-                            // The permit is held until this task finishes
-                            let _permit = permit; 
-                            if let Err(e) = process_media_job(state_clone, job).await {
-                                tracing::error!("Media job processing failed: {}", e);
-                            }
-                        });
+            let mut conn = match client.get_async_connection().await {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::error!("Failed to get Redis connection for worker: {}", e);
+                    sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
+            };
+
+            loop {
+                let result: Result<(String, String), _> = redis::Cmd::blpop("media_queue", 10.0)
+                    .query_async(&mut conn)
+                    .await;
+
+                match result {
+                    Ok((_, job_json)) => {
+                        if let Ok(job) = serde_json::from_str::<MediaJobQueueItem>(&job_json) {
+                            let state_clone = state.clone();
+                            let permit = semaphore.clone().acquire_owned().await;
+                            
+                            tokio::spawn(async move {
+                                // The permit is held until this task finishes
+                                let _permit = permit; 
+                                if let Err(e) = process_media_job(state_clone, job).await {
+                                    tracing::error!("Media job processing failed: {}", e);
+                                }
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Redis queue error: {}", e);
+                        // Break the inner loop to reconnect
+                        break;
                     }
                 }
-                Err(e) => {
-                    tracing::error!("Redis queue error: {}", e);
-                    sleep(Duration::from_secs(5)).await;
-                }
             }
+            sleep(Duration::from_secs(5)).await;
         }
     });
 }

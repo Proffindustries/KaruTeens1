@@ -44,17 +44,27 @@ impl CacheService {
 
     pub async fn delete(&self, key: &str) -> bool {
         let mut conn = self.conn.clone();
-        match conn.del::<&str, ()>(key).await {
-            Ok(_) => true,
-            Err(_) => false,
+        let res = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            conn.del::<&str, ()>(key)
+        ).await;
+
+        match res {
+            Ok(Ok(_)) => true,
+            _ => false,
         }
     }
 
     pub async fn exists(&self, key: &str) -> bool {
         let mut conn = self.conn.clone();
-        match conn.exists::<&str, bool>(key).await {
-            Ok(exists) => exists,
-            Err(_) => false,
+        let res = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            conn.exists::<&str, bool>(key)
+        ).await;
+
+        match res {
+            Ok(Ok(exists)) => exists,
+            _ => false,
         }
     }
 
@@ -93,9 +103,14 @@ impl CacheService {
 
     pub async fn increment(&self, key: &str) -> i64 {
         let mut conn = self.conn.clone();
-        match conn.incr::<&str, i64, i64>(key, 1).await {
-            Ok(count) => count,
-            Err(_) => 0,
+        let res = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            conn.incr::<&str, i64, i64>(key, 1)
+        ).await;
+
+        match res {
+            Ok(Ok(count)) => count,
+            _ => 0,
         }
     }
 
@@ -103,12 +118,17 @@ impl CacheService {
         let mut conn = self.conn.clone();
         match serde_json::to_string(message) {
             Ok(json) => {
-                let _: Result<i64, _> = redis::cmd("PUBLISH")
-                    .arg(channel)
-                    .arg(json)
-                    .query_async(&mut conn)
-                    .await;
-                true
+                let res = tokio::time::timeout(
+                    std::time::Duration::from_secs(2),
+                    async {
+                        let _: Result<i64, _> = redis::cmd("PUBLISH")
+                            .arg(channel)
+                            .arg(json)
+                            .query_async(&mut conn)
+                            .await;
+                    }
+                ).await;
+                res.is_ok()
             }
             Err(_) => false,
         }

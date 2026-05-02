@@ -632,9 +632,8 @@ const PostCard = React.memo(({ post }) => {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Post Content */}
+        {/* Post Content */}
             <div
                 className={`post-content-wrapper ${shouldBlur(post) && !isNsfwRevealed ? 'nsfw-blurred' : ''}`}
             >
