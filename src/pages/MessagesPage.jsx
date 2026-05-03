@@ -336,6 +336,7 @@ const MessagesPage = () => {
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const uploadProcessRef = useRef(null);
     const location = useLocation();
 
     const { data: chats, isLoading: isLoadingChats } = useChats();
