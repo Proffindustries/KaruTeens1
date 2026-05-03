@@ -1,0 +1,98 @@
+================================================================================
+          KARUTEENS1 ULTIMATE SCALING & OPTIMIZATION ROADMAP (10k+ USERS)
+================================================================================
+
+This document provides a highly detailed strategy to scale KaruTeens1 using the 
+principles of Facebook's "Haystack" system and Cloudflare's enterprise-grade 
+infrastructure. 
+
+--------------------------------------------------------------------------------
+1. THE CACHE LAYER: MAXIMIZING PERFORMANCE (0ms LATENCY)
+--------------------------------------------------------------------------------
+Goal: Ensure that 99% of media requests are served from Cloudflare's Edge (RAM) 
+rather than your R2 storage (Disk).
+
+A. Enable Argo Tiered Caching (Dashboard Only)
+   * Why: Prevents "Cache Storms". Instead of every global data center hitting 
+     your R2 bucket when a file is missing, they check a "Tier 1" regional hub 
+     first.
+   * Action: Cloudflare Dashboard > Caching > Tiered Cache > Enable "Argo".
+
+B. Custom Cache Keys & TTL (Dashboard + Worker)
+   * Why: Control how long files stay in cache based on popularity.
+   * Logic: Set longer TTL (e.g., 1 year) for media files since they never 
+     change once uploaded.
+
+--------------------------------------------------------------------------------
+2. THE STORAGE LAYER: COST EFFICIENCY (COLD STORAGE)
+--------------------------------------------------------------------------------
+Goal: Automatically move "Old/Cold" data to cheaper storage tiers to keep costs 
+flat as the user base grows.
+
+A. R2 Lifecycle Policies (Dashboard Only)
+   * Why: Facebook moves older photos to "Warm" and "Cold" storage. In R2, 
+     this is the "Infrequent Access" class.
+   * Action: R2 Bucket Settings > Lifecycle Rules > Add Rule.
+   * Configuration: 
+     - Transition objects with prefix `uploads/` to "Infrequent Access" 
+       after 90 days of inactivity.
+     - Note: This does NOT break your site; the URLs remain exactly the same!
+
+--------------------------------------------------------------------------------
+3. ARCHITECTURAL UPGRADES: WHAT FILES TO CHANGE
+--------------------------------------------------------------------------------
+
+A. IMPLEMENTING ON-THE-FLY IMAGE RESIZING
+Currently, you compress images in the browser. At 10k users, you should use 
+Cloudflare's server-side resizing for better quality control.
+
+* File to Change: `src/utils/mediaUtils.js`
+* What to Add: Modify the `getOptimizedUrl` function. Instead of just 
+  returning the raw R2 URL, logic should be added to append resizing 
+  parameters (e.g., `?width=600&quality=85&format=webp`).
+* Benefit: You can serve tiny thumbnails for the feed and full-resolution 
+  only when a user clicks the image, saving massive amounts of bandwidth.
+
+B. SMART VIDEO ADAPTIVE STREAMING
+* File to Change: `src/utils/mediaUtils.js`
+* What to Add: Expand the `getVariantUrl` logic. Currently, it checks screen 
+  width. At scale, you should add logic to detect network speed (navigator.connection) 
+  and serve `_480p` even on desktop if the user has a slow 3G connection.
+
+C. ENHANCING SECURITY WITH SIGNED URLS
+For private groups or messages, you shouldn't use public URLs.
+
+* File to Change: `backend/src/features/infrastructure/media.rs`
+* What to Add: Modify the URL generation logic to return "Signed URLs". 
+  Instead of a static link, the backend generates a tokenized link that 
+  expires after 2 hours.
+* Benefit: Prevents unauthorized people from "scraping" your R2 bucket or 
+  viewing private media by guessing URLs.
+
+D. METADATA SYNCHRONIZATION
+* File to Change: `backend/src/models/media.rs` (or similar)
+* What to Add: Add an `access_count` field to your Media records in MongoDB. 
+* Logic: Every time a post is viewed, increment this count. This allows 
+  you to manually trigger "cleanups" or migrations for media that is 
+  technically "new" but has zero views (spam/abandoned posts).
+
+--------------------------------------------------------------------------------
+4. MONITORING & HEALTH (The "NOC" Layer)
+--------------------------------------------------------------------------------
+* Cloudflare Analytics: Monitor your "Egress" vs "Cache Hit" ratio. 
+  Your goal is a >90% Cache Hit Ratio.
+* Health Checks: Set up Cloudflare Health Checks to monitor your Rust 
+  backend's `/health` endpoint. If the server is slow, Cloudflare can 
+  automatically show a "Still Loading" or "Maintenance" page.
+
+--------------------------------------------------------------------------------
+5. SUMMARY OF IMPROVEMENTS
+--------------------------------------------------------------------------------
+1. Use Cloudflare Workers to handle image resizing (Moves work off the user's phone).
+2. Move files to Infrequent Access after 90 days (Saves 30-50% on storage costs).
+3. Use Tiered Caching (Speeds up global delivery by ~200ms).
+4. Implement Signed URLs for private content (Protects user privacy).
+
+================================================================================
+ROADMAP COMPLETE. READY FOR 10,000 USERS.
+================================================================================

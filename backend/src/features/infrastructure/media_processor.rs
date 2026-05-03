@@ -39,7 +39,7 @@ pub fn spawn_media_worker(state: Arc<AppState>) {
                 }
             };
 
-            let mut conn = match client.get_async_connection().await {
+            let mut conn = match client.get_multiplexed_async_connection().await {
                 Ok(c) => c,
                 Err(e) => {
                     tracing::error!("Failed to get Redis connection for worker: {}", e);
