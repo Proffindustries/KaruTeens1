@@ -111,6 +111,36 @@ export const AblyProvider = ({ children }) => {
             if (msg.data?.content) showToast(msg.data.content, 'info');
         });
 
+        // Media optimization channel
+        const mediaChannel = client.channels.get(`user:${userId}:media-updated`);
+        mediaChannel.subscribe('media-optimized', (msg) => {
+            const { post_id, optimized_url, variants } = msg.data;
+            
+            // Surgically update the post in the cache
+            queryClient.setQueriesData({ queryKey: ['post', post_id] }, (old) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    media_url: optimized_url,
+                    media_variants: variants,
+                    media_optimized: true
+                };
+            });
+            
+            // Also update any feed/infinite lists containing this post
+            queryClient.setQueriesData({ queryKey: ['feed'] }, (old) => {
+                if (!old || !old.pages) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => 
+                        Array.isArray(page) 
+                            ? page.map(p => p.id === post_id ? { ...p, media_url: optimized_url, media_optimized: true } : p)
+                            : (page.posts ? { ...page, posts: page.posts.map(p => p.id === post_id ? { ...p, media_url: optimized_url, media_optimized: true } : p) } : page)
+                    )
+                };
+            });
+        });
+
         // WebRTC signaling channel
         const signalingChannel = client.channels.get(`user:${userId}:signaling`);
         signalingChannel.subscribe(['call-offer', 'call-answer', 'ice-candidate'], (msg) => {

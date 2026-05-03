@@ -99,7 +99,7 @@ export const useMediaUpload = () => {
         }
     };
 
-    // ── Videos: transcode (H.264 720p) → MP4 → R2 ───────────────────────────
+    // ── Videos: Upload raw -> Trigger async process -> Return raw URL immediately ──
     const uploadVideo = async (file, onProgress = null, cancelToken = null) => {
         const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
         const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
@@ -112,24 +112,22 @@ export const useMediaUpload = () => {
 
         setIsUploading(true);
         try {
-            // 1. Upload Raw to Temp
+            // 1. Upload Raw to R2
             const { public_url, final_public_url } = await uploadToR2(
                 file,
                 onProgress,
                 cancelToken,
             );
 
-            // 2. Trigger Server Processing
-            const { data } = await api.post('/media/process', {
+            // 2. Trigger Server Processing (Fire-and-forget)
+            // We don't await this so the user can continue immediately
+            api.post('/media/process', {
                 temp_url: public_url,
                 media_type: 'video',
                 original_name: file.name,
-            });
+            }).catch(err => console.error('Background optimization trigger failed:', err));
 
-            // 3. Poll for Completion
-            showToast('Optimizing video…', 'info');
-            await pollJobStatus(data.job_id);
-
+            // Return the raw URL immediately for the post creation
             return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
