@@ -21,7 +21,7 @@ import { useToast } from '../context/ToastContext';
 import { useUpload } from '../context/UploadContext';
 import Avatar from '../components/Avatar';
 import { useMediaUpload } from '../hooks/useMedia';
-import { getVariantUrl } from '../utils/mediaUtils.js';
+import { getVariantUrl } from '../utils/mediaUtils';
 import '../styles/StudyPlaylistsPage.css';
 
 const StudyPlaylistsPage = () => {

@@ -71,7 +71,7 @@ const getVideoThumbnail = (url) => {
     return null;
 };
 
-const PostCard = React.memo(({ post }) => {
+const PostCard = ({ post }) => {
     const postId = post.id;
     console.log('PostCard rendering for post:', postId);
     const navigate = useNavigate();
@@ -927,6 +927,7 @@ const PostCard = React.memo(({ post }) => {
                                                 alt={`Post content ${idx + 1}`}
                                                 className="post-image"
                                                 loading="lazy"
+                                                decoding="async"
                                             />
                                         ) : (
                                             // Fallback for unknown file types
@@ -1252,6 +1253,12 @@ const PostCard = React.memo(({ post }) => {
             )}
         </motion.div>
     );
-});
+};
 
-export default PostCard;
+export default React.memo(PostCard, (prev, next) => {
+    return prev.post.id === next.post.id 
+        && prev.post.likes === next.post.likes
+        && prev.post.comments === next.post.comments
+        && prev.post.is_liked === next.post.is_liked
+        && prev.post.is_saved === next.post.is_saved;
+});

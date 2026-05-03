@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import '../styles/GroupsPage.css';
 import { useGroups, useCreateGroup, useJoinGroup } from '../hooks/useGroups';
 import Avatar from '../components/Avatar.jsx';
-import { useToast } from '../context/ToastContext';
+import { useToast } from '../context/ToastContext.jsx';
 import ListPage from '../components/ListPage.jsx';
 import useDebounce from '../hooks/useDebounce';
 

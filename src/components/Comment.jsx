@@ -19,7 +19,11 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const replyInputRef = useRef(null);
 
     const { mutate: deleteComment, isPending: isDeleting } = useDeleteComment();
-    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
+    const storedUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
+    const currentUser = {
+        ...storedUser,
+        id: storedUser.id || storedUser._id || storedUser.user_id
+    };
 
     const handleReplyClick = useCallback(() => {
         setIsReplying(true);
@@ -33,7 +37,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
         }
     }, [commentId, deleteComment]);
 
-    const isOwner = currentUser?.username === comment.username;
+    const isOwner = currentUser?.username === comment.username || currentUser?.id === comment.user_id;
     const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
 
     const handleReplySubmit = useCallback(

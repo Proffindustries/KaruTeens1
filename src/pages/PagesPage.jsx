@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Search, ArrowRight, BookOpen, Globe, Users, Star, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
-import { useToast } from '../context/ToastContext';
+import { useToast } from '../context/ToastContext.jsx';
 import useDebounce from '../hooks/useDebounce';
-import CreatePageModal from '../components/CreatePageModal';
+import CreatePageModal from '../components/CreatePageModal.jsx';
 import '../styles/PagesPage.css';
 
 const PagesPage = () => {
@@ -124,7 +124,7 @@ const PagesPage = () => {
                                     <p>{page.description || 'No description available.'}</p>
                                     <div className="page-footer">
                                         <span>
-                                            <Users size={14} /> {page.followers_count || 0}{' '}
+                                            <Users size={14} /> {page.follower_count || 0}{' '}
                                             Followers
                                         </span>
                                         <ArrowRight size={16} />

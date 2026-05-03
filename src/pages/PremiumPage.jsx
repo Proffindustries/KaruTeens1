@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Check, Star, Zap, Crown, Loader, Smartphone } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
-import safeLocalStorage from '../utils/storage.js';
+import { useAuthContext } from '../context/AuthContext';
+import safeLocalStorage from '../utils/storage';
 import '../styles/DonatePage.css';
 
-import MpesaPaymentModal from '../components/MpesaPaymentModal';
+import MpesaPaymentModal from '../components/MpesaPaymentModal.jsx';
 
 const PremiumPage = () => {
     const { showToast } = useToast();
+    const { user, updateUser } = useAuthContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('monthly');
 
@@ -18,12 +20,8 @@ const PremiumPage = () => {
 
     const handleSuccess = (data) => {
         showToast('Upgrade successful!', 'success');
-        const user = JSON.parse(safeLocalStorage.getItem('user'));
         if (user) {
-            safeLocalStorage.setItem(
-                'user',
-                JSON.stringify({ ...user, is_premium: true, role: 'premium' }),
-            );
+            updateUser({ ...user, is_premium: true, role: 'premium' });
         }
         setTimeout(() => {
             window.location.href = '/feed';

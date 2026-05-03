@@ -44,7 +44,9 @@ const ActivityFeedPage = () => {
     };
 
     const formatTime = (timeStr) => {
+        if (!timeStr) return 'Unknown time';
         const date = new Date(timeStr);
+        if (isNaN(date.getTime())) return 'Invalid date';
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);

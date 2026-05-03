@@ -12,13 +12,13 @@ import {
     Image as ImageIcon,
 } from 'lucide-react';
 import api from '../api/client';
-import { useToast } from '../context/ToastContext';
+import { useToast } from '../context/ToastContext.jsx';
 import { usePage, useFollowPage, useUnfollowPage } from '../hooks/usePages';
 import { useInfinitePagePosts } from '../hooks/useInfiniteQueries';
-import PostCard from '../components/PostCard';
-import { PostSkeleton } from '../components/Skeleton';
-import Avatar from '../components/Avatar';
-import CreatePostModal from '../components/CreatePostModal';
+import PostCard from '../components/PostCard.jsx';
+import { PostSkeleton } from '../components/Skeleton.jsx';
+import Avatar from '../components/Avatar.jsx';
+import CreatePostModal from '../components/CreatePostModal.jsx';
 import '../styles/PageDetail.css';
 
 const PageDetailPage = () => {
@@ -245,12 +245,7 @@ const PageDetailPage = () => {
                                         <div className="detail-item">
                                             <Users size={18} />
                                             <span>
-                                                <strong>
-                                                    {page.followers_count ||
-                                                        page.follower_count ||
-                                                        0}
-                                                </strong>{' '}
-                                                Followers
+                                                <strong>{page.follower_count || 0}</strong> Followers
                                             </span>
                                         </div>
                                         <div className="detail-item">

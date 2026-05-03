@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CreatePostModal.css';
-import { useCreatePost, useTrendingTopics } from '../hooks/useContent.js';
+import { useCreatePost, useTrendingTopics } from '../hooks/useContent';
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useUpload } from '../context/UploadContext.jsx';
 import { useAuth } from '../hooks/useAuth.js';

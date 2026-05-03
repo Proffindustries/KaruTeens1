@@ -301,7 +301,7 @@ const MessagesPage = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [showLocationMenu, setShowLocationMenu] = useState(false);
     const [containerHeight, setContainerHeight] = useState(window.innerHeight - 250);
-    const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
+    const { user, isAuthenticated } = useAuthContext();
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -388,11 +388,11 @@ const MessagesPage = () => {
     const [chatSearchResults, setChatSearchResults] = useState([]);
 
     // WebRTC Integration
-    const currentUser = JSON.parse(safeLocalStorage.getItem('user'));
+    const { user: currentUser } = useAuthContext();
     const handleWebRTCMessage = useCallback(
         (type, data) => {
             // Ignore messages not intended for this user (multi-tab safety)
-            if (data.to && data.to !== currentUser?.user_id) {
+            if (data.to && data.to !== currentUser?.id) {
                 return;
             }
 
@@ -553,6 +553,7 @@ const MessagesPage = () => {
     }, [handleWebRTCMessage]);
 
     const webRTC = useWebRTC(signaling, currentUser?.id);
+
     webRTCRef.current = webRTC;
 
     const [activeEmojiPicker, setActiveEmojiPicker] = useState(null);

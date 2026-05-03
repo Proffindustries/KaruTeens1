@@ -163,7 +163,7 @@ const RoomLobby = () => {
                                             alignItems: 'center',
                                         }}
                                     >
-                                        {room.creator_id === user?.id && (
+                                        {(room.creator_id === user?.id || room.creator_id === user?._id) && (
                                             <button
                                                 className="icon-btn danger"
                                                 style={{ padding: '4px' }}

@@ -33,18 +33,19 @@ import safeLocalStorage from '../utils/storage.js';
 import '../styles/ProfilePage.css';
 
 import { useParams } from 'react-router-dom';
-import { useProfile, useUpdateProfile, useFollow, useUnfollow } from '../hooks/useUser.js';
-import { useMediaUpload } from '../hooks/useMedia.js';
-import { useUpload } from '../context/UploadContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
-import Avatar from '../components/Avatar.jsx';
-import { useGamification } from '../hooks/useGamification.js';
-import { useInfiniteUserContent } from '../hooks/useInfiniteQueries.ts';
+import { useProfile, useUpdateProfile, useFollow, useUnfollow } from '../hooks/useUser';
+import { useMediaUpload } from '../hooks/useMedia';
+import { useUpload } from '../context/UploadContext';
+import { useToast } from '../context/ToastContext';
+import { useAuthContext } from '../context/AuthContext';
+import Avatar from '../components/Avatar';
+import { useGamification } from '../hooks/useGamification';
+import { useInfiniteUserContent } from '../hooks/useInfiniteQueries';
 
 const ProfilePage = () => {
     const { username: urlUsername } = useParams();
-    const currentUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
-    const targetUsername = urlUsername || currentUser.username;
+    const { user: currentUser } = useAuthContext();
+    const targetUsername = urlUsername || currentUser?.username;
 
     const { data: profileRes, isLoading, error } = useProfile(targetUsername);
     const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
@@ -698,7 +699,7 @@ const ProfilePage = () => {
                                                         {isVideo ? (
                                                             <video src={src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
                                                         ) : (
-                                                            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                                                            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
                                                         )}
                                                         <div style={{
                                                             position: 'absolute', inset: 0,

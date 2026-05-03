@@ -14,6 +14,7 @@ import {
     FileText,
     MoreVertical,
 } from 'lucide-react';
+import api from '../api/client';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import { useGroup, useGroupPosts, useLeaveGroup, useUpdateGroup } from '../hooks/useGroups';
 import { useMediaUpload } from '../hooks/useMedia';

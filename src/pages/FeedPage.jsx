@@ -40,10 +40,10 @@ const FeedPage = () => {
     // Trending topics for sidebar
     const { data: trending, isLoading: isTrendingLoading } = useTrendingTopics();
 
-    // Use the correct feed hook based on active tab
-    const homeFeed = useInfiniteFeed(searchQuery);
-    const forYouFeed = useForYouFeed();
-    const trendingFeed = useTrendingPosts();
+    // Use the correct feed hook based on active tab - only enable the active one
+    const homeFeed = useInfiniteFeed(searchQuery, { enabled: feedType === 'infinite' });
+    const forYouFeed = useForYouFeed({ enabled: feedType === 'for-you' });
+    const trendingFeed = useTrendingPosts({ enabled: feedType === 'trending' });
 
     const activeFeed =
         feedType === 'for-you' ? forYouFeed : feedType === 'trending' ? trendingFeed : homeFeed;

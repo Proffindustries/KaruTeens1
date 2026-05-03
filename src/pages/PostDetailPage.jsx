@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { usePost } from '../hooks/useContent.js';
+import { usePost } from '../hooks/useContent';
 import PostCard from '../components/PostCard.jsx';
 import AdComponent from '../components/AdComponent.jsx';
 import SEO from '../components/SEO.jsx';

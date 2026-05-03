@@ -8,7 +8,7 @@ import {
     useMarkSold,
     useBoostItem,
     useDeleteItem,
-} from '../hooks/useMarketplace.js';
+} from '../hooks/useMarketplace';
 import Avatar from '../components/Avatar.jsx';
 import { useAuthContext } from '../context/AuthContext.jsx';
 

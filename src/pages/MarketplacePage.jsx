@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import '../styles/MarketplacePage.css';
 import CreateItemModal from '../components/CreateItemModal.jsx';
 import AdComponent from '../components/AdComponent.jsx';
-import { useMarketplaceItems } from '../hooks/useMarketplace.js';
+import { useMarketplaceItems } from '../hooks/useMarketplace';
 import useDebounce from '../hooks/useDebounce';
 
 const MarketplacePage = () => {

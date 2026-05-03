@@ -14,12 +14,10 @@ interface FeedQueryParams {
     limit?: number;
 }
 
-// Export the optimized infinite query hooks
-export {
-    useInfiniteFeedHook as useInfiniteFeed,
-    useInfiniteForYouFeedHook as useForYouFeed,
-    useInfiniteTrendingPostsHook as useTrendingPosts,
-};
+// Export the optimized infinite query hooks with options support
+export const useInfiniteFeed = (search?: string, options: any = {}) => useInfiniteFeedHook(search, options);
+export const useForYouFeed = (options: any = {}) => useInfiniteForYouFeedHook(options);
+export const useTrendingPosts = (options: any = {}) => useInfiniteTrendingPostsHook(options);
 
 export const usePost = (postId?: string) => {
     return useQuery<PostResponse, Error>({

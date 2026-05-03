@@ -100,6 +100,21 @@ const LiveStreamPage = () => {
             // Subscribe to streamer's signaling channel
             if (ably) {
                 const channel = ably.channels.get(`live:${user.id}:signaling`);
+                const presenceChannel = ably.channels.get(`live:${user.id}:presence`);
+
+                presenceChannel.subscribe('enter', () => {
+                    presenceChannel.presence.get((err, members) => {
+                        if (!err) setViewers(members.length);
+                    });
+                });
+
+                presenceChannel.subscribe('leave', () => {
+                    presenceChannel.presence.get((err, members) => {
+                        if (!err) setViewers(members.length);
+                    });
+                });
+
+                presenceChannel.presence.enter();
 
                 channel.subscribe('join-request', async (msg) => {
                     const viewerId = msg.data.viewerId;
@@ -161,6 +176,10 @@ const LiveStreamPage = () => {
     const stopLive = async () => {
         if (currentStream) {
             await api.post(`/live/${currentStream.id}/end`);
+            if (ably) {
+                const presenceChannel = ably.channels.get(`live:${user.id}:presence`);
+                presenceChannel.presence.leave();
+            }
         }
 
         Object.values(peerConnections.current).forEach((pc) => pc.close());
@@ -182,11 +201,26 @@ const LiveStreamPage = () => {
         setCurrentStream(stream);
         setIsLive(true);
 
-        if (ably) {
-            const signalingChannel = ably.channels.get(`live:${stream.user_id}:signaling`);
-            const chatChannel = ably.channels.get(`live:${stream.user_id}:chat`);
+            if (ably) {
+                const signalingChannel = ably.channels.get(`live:${stream.user_id}:signaling`);
+                const chatChannel = ably.channels.get(`live:${stream.user_id}:chat`);
+                const presenceChannel = ably.channels.get(`live:${stream.user_id}:presence`);
 
-            const pc = new RTCPeerConnection(ICE_SERVERS);
+                presenceChannel.subscribe('enter', () => {
+                    presenceChannel.presence.get((err, members) => {
+                        if (!err) setViewers(members.length);
+                    });
+                });
+
+                presenceChannel.subscribe('leave', () => {
+                    presenceChannel.presence.get((err, members) => {
+                        if (!err) setViewers(members.length);
+                    });
+                });
+
+                presenceChannel.presence.enter();
+
+                const pc = new RTCPeerConnection(ICE_SERVERS);
             viewerPc.current = pc;
 
             pc.ontrack = (event) => {
@@ -227,6 +261,10 @@ const LiveStreamPage = () => {
         if (viewerPc.current) {
             viewerPc.current.close();
             viewerPc.current = null;
+        }
+        if (ably && currentStream) {
+            const presenceChannel = ably.channels.get(`live:${currentStream.user_id}:presence`);
+            presenceChannel.presence.leave();
         }
         setCurrentStream(null);
         setIsLive(false);
@@ -398,10 +436,10 @@ const LiveStreamPage = () => {
                                             className="gift-animation-pill"
                                         >
                                             <div className="gift-user-avatar">
-                                                {gift.user[0].toUpperCase()}
+                                                {gift.user ? gift.user[0].toUpperCase() : '?'}
                                             </div>
                                             <div className="gift-info">
-                                                <strong>{gift.user}</strong>
+                                                <strong>{gift.user || 'Guest'}</strong>
                                                 <span>sent a {gift.type}</span>
                                             </div>
                                             <div className="gift-icon-big">

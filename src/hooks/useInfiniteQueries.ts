@@ -38,7 +38,7 @@ export const useInfinitePosts = <T = any>(
 /**
  * Infinite query for standard feed
  */
-export const useInfiniteFeed = (search?: string) => {
+export const useInfiniteFeed = (search?: string, options: any = {}) => {
     return useInfinitePosts(
         '/posts/feed',
         ['feed', 'infinite', search || ''],
@@ -49,6 +49,7 @@ export const useInfiniteFeed = (search?: string) => {
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.FEED_POSTS,
+            ...options,
         }
     );
 };
@@ -56,7 +57,7 @@ export const useInfiniteFeed = (search?: string) => {
 /**
  * Infinite query for "For You" feed
  */
-export const useInfiniteForYouFeed = () => {
+export const useInfiniteForYouFeed = (options: any = {}) => {
     return useInfinitePosts(
         '/posts/for-you',
         ['feed', 'for-you'],
@@ -64,6 +65,7 @@ export const useInfiniteForYouFeed = () => {
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.FEED_POSTS,
+            ...options,
         }
     );
 };
@@ -71,7 +73,7 @@ export const useInfiniteForYouFeed = () => {
 /**
  * Infinite query for trending posts
  */
-export const useInfiniteTrendingPosts = () => {
+export const useInfiniteTrendingPosts = (options: any = {}) => {
     return useInfinitePosts(
         '/posts/trending-posts',
         ['feed', 'trending'],
@@ -79,6 +81,7 @@ export const useInfiniteTrendingPosts = () => {
         (response) => response.posts,
         {
             staleTime: STALE_TIMES.TRENDING_POSTS,
+            ...options,
         }
     );
 };

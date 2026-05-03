@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import '../styles/ReelsPage.css';
-import { shouldBlur } from '../utils/contentFilters.js';
-import { getVariantUrl } from '../utils/mediaUtils.js';
+import { shouldBlur } from '../utils/contentFilters';
+import { getVariantUrl } from '../utils/mediaUtils';
 
 const ReelsPage = () => {
     const [reels, setReels] = useState([]);
@@ -15,6 +15,21 @@ const ReelsPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
+
+    useEffect(() => {
+        const fetchReels = async () => {
+            try {
+                setLoading(true);
+                const { data } = await api.get('/reels');
+                setReels(data);
+            } catch (error) {
+                showToast('Failed to fetch reels', 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchReels();
+    }, [showToast]);
 
     const handleScroll = useCallback(() => {
         const container = containerRef.current;
@@ -42,7 +57,12 @@ const ReelsPage = () => {
             </div>
 
             <div className="reels-container" ref={containerRef} onScroll={handleScroll}>
-                {reels.length > 0 ? (
+                {loading ? (
+                    <div className="loading-reels">
+                        <Loader className="animate-spin" size={48} />
+                        <p>Loading reels...</p>
+                    </div>
+                ) : reels.length > 0 ? (
                     reels.map((reel, index) => (
                         <ReelItem key={reel.id} reel={reel} isActive={index === currentIndex} />
                     ))

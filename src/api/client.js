@@ -2,10 +2,11 @@ import axios from 'axios';
 import { handleApiError, parseApiError } from '../utils/errorHandling.js';
 import safeLocalStorage from '../utils/storage.js';
 
-// Recursively flattens MongoDB $oid objects into strings
+// Recursively flattens MongoDB $oid objects into strings and renames _id to id
 function flattenOid(obj) {
     if (!obj || typeof obj !== 'object') return obj;
 
+    // Handle $oid directly
     if (obj.$oid && typeof obj.$oid === 'string') {
         return obj.$oid;
     }
@@ -17,7 +18,14 @@ function flattenOid(obj) {
     const flattened = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            flattened[key] = flattenOid(obj[key]);
+            const value = flattenOid(obj[key]);
+
+            if (key === '_id') {
+                flattened['id'] = value;
+                flattened['_id'] = value; // Keep _id for backward compatibility
+            } else {
+                flattened[key] = value;
+            }
         }
     }
     return flattened;

@@ -33,7 +33,7 @@ const RevisionMaterialsPage = () => {
             if (filters.category !== 'all') params.append('category', filters.category);
 
             const { data } = await api.get(`/revision-materials?${params.toString()}`);
-            const filteredData = data.filter(
+            const filteredData = (Array.isArray(data) ? data : []).filter(
                 (item) => REVISION_CATEGORIES.includes(item.category) || !item.category,
             );
             setMaterials(filteredData);

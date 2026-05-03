@@ -337,7 +337,7 @@ const TimetablePage = () => {
         // Optimistic UI update
         const updatedTimetables = timetables.map((t) => {
             if (t._id === selectedTimetable._id) {
-                const updatedClasses = t.classes.map((c) =>
+                const updatedClasses = (t.classes || []).map((c) =>
                     c.id === updatedClass.id ? updatedClass : c,
                 );
                 return { ...t, classes: updatedClasses };

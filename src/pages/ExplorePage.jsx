@@ -22,7 +22,7 @@ import {
 import '../styles/ExplorePage.css';
 import Avatar from '../components/Avatar.jsx';
 import { useAuth } from '../hooks/useAuth.js';
-import { useTrendingTopics } from '../hooks/useContent.js';
+import { useTrendingTopics } from '../hooks/useContent';
 import { Hash, TrendingUp } from 'lucide-react';
 import AdComponent from '../components/AdComponent.jsx';
 

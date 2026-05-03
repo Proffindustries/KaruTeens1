@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Avatar from '../components/Avatar.jsx';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuthContext } from '../context/AuthContext.jsx';
 import safeLocalStorage from '../utils/storage.js';
 import '../styles/ConfessionsPage.css';
 
 const ConfessionsPage = () => {
     const queryClient = useQueryClient();
     const { showToast } = useToast();
+    const { user: currentUser } = useAuthContext();
 
     const {
         data: confessions = [],
@@ -83,13 +85,12 @@ const ConfessionsPage = () => {
 
     const handlePost = () => {
         if (!newConfession.trim()) return;
-        const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
         setIsPosting(true);
         postMutation.mutate({
             content: newConfession,
             is_anonymous: isAnonymous,
-            author_id: isAnonymous ? null : user.id,
-            author_name: isAnonymous ? null : user.username,
+            author_id: isAnonymous ? null : currentUser?.id,
+            author_name: isAnonymous ? null : currentUser?.username,
         });
     };
 

@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
         // Standardize user object from backend to ensure 'id' is always present
         const normalizedUser = {
             ...updatedUser,
-            id: updatedUser.id || updatedUser.user_id,
+            id: updatedUser.id || updatedUser._id || updatedUser.user_id,
         };
         setUser(normalizedUser);
     };
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
         // Standardize user object from backend to ensure 'id' is always present
         const normalizedUser = {
             ...newUser,
-            id: newUser.id || newUser.user_id,
+            id: newUser.id || newUser._id || newUser.user_id,
         };
         
         // Synchronously set local storage so immediate requests have the token

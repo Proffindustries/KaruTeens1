@@ -5,7 +5,7 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import '../styles/DonatePage.css';
 
-import MpesaPaymentModal from '../components/MpesaPaymentModal';
+import MpesaPaymentModal from '../components/MpesaPaymentModal.jsx';
 
 const DonatePage = () => {
     const { showToast } = useToast();
