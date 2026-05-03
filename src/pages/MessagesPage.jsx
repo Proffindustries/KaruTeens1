@@ -70,6 +70,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useMediaUpload } from '../hooks/useMedia.js';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuthContext } from '../context/AuthContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import MapPreview from '../components/MapPreview.jsx';
 import safeLocalStorage from '../utils/storage.js';

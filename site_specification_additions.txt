@@ -1,0 +1,27 @@
+
+## 5. SYSTEM CONFIGURATION & SECURITY
+- **Configuration**: Managed via `.env` files. Required keys include database URIs (MongoDB), Cache (Redis), CDN/Storage (Cloudflare R2), Real-time (Ably), and Third-party APIs (M-Pesa, Cloudinary, OpenRouter, Brevo).
+- **Security Policies**:
+  - **Auth**: JWT-based session tokens with Argon2 password hashing.
+  - **CORS**: Strictly defined whitelist in `frontend_url` settings in `.env`.
+  - **Rate Limiting**: Implemented in the backend middleware (`src/features/infrastructure/rate_limit.rs`) to prevent abuse of API endpoints.
+  - **Content Moderation**: Automated NSFW filtering (`src/utils/contentFilters.js`) and admin manual review queue.
+
+## 6. MEDIA PIPELINE
+- **Storage**: Objects uploaded to Cloudflare R2.
+- **Processing**: Async background worker processes raw uploads using `ffmpeg` for video optimization and standard image transforms.
+- **CDN**: Cloudflare Workers serve optimized assets; caching managed via `CDN_CACHE_TTL`.
+- **Flow**: Upload (R2 Raw) → Processing Queue (Redis) → Transformation → Callback (Ably event).
+
+## 7. REAL-TIME ARCHITECTURE
+- **Ably Integration**: Used for:
+  - Messaging (Direct & Group channels).
+  - Presence tracking (Active study room status).
+  - Media Optimization notifications (`user:{id}:media-optimized` channel).
+  - Activity feeds (Likes, comments, system alerts).
+- **Redundancy**: Ably connection resilience handled via `AblyContext.jsx` with automatic reconnection logic.
+
+## 8. ADMIN & MODERATION
+- **Access Control**: Role-based access (SuperAdmin, Admin, Moderator) checked at the API layer.
+- **Workflow**: Automated triggers for event creation and page verification, with manual audit queues for reported content.
+- **Analytics**: Real-time aggregation of site metrics managed via Redis counters and logged to the admin panel.

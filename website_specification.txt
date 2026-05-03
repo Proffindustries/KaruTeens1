@@ -1,0 +1,149 @@
+# KARUTEENS1: DEVELOPER HANDBOOK (v4.0)
+
+This document is the definitive source for KaruTeens1 architecture, API reference, database schema, and developer onboarding.
+
+---
+
+## 1. LOCAL DEVELOPMENT SETUP
+
+### 1.1 Prerequisites
+- **Node.js**: v20+
+- **Rust**: Latest stable toolchain.
+- **Docker**: For running Redis locally (`docker-compose up -d`).
+- **FFmpeg**: Required for backend media worker.
+
+### 1.2 Step-by-Step Setup
+1. **Clone & Install**: `npm install` in root.
+2. **Infrastructure**: Start Redis via Docker. Use MongoDB Atlas or local.
+3. **Backend**: `cd backend && cp .env.example .env && cargo run`.
+4. **Frontend**: `npm run dev` from root.
+
+---
+
+## 2. DATABASE SCHEMA (FULL INVENTORY)
+
+### 2.1 Core Collections
+| Collection | Key Fields | Purpose |
+|------------|------------|---------|
+| `users` | `email`, `password_hash`, `role`, `is_verified`, `is_premium` | Auth & Permissions |
+| `profiles` | `user_id`, `username`, `points`, `level`, `onboarded` | Social Identity & Gamification |
+| `posts` | `author_id`, `content`, `post_type`, `media_urls`, `poll` | Main Feed Content |
+| `chats` | `participants`, `is_group`, `last_message`, `name` | Conversation Metadata |
+| `messages` | `chat_id`, `sender_id`, `content`, `attachment_url`, `read_at` | Message History |
+
+### 2.2 Academic & Feature Collections
+| Collection | Key Fields | Purpose |
+|------------|------------|---------|
+| `timetables` | `user_id`, `is_template`, `school`, `classes[]` | Personal & Public Schedules |
+| `attendance_logs` | `user_id`, `class_id`, `status` (attended/missed), `date` | Student Attendance Tracking |
+| `crowd_reports` | `timetable_id`, `class_id`, `report_type` (cancelled) | Crowd-sourced schedule updates |
+| `study_rooms` | `name`, `creator_id`, `participants`, `is_active` | Real-time virtual study groups |
+| `marketplace_items`| `seller_id`, `price`, `condition`, `images`, `status` | Peer-to-peer commerce |
+| `ad_campaigns` | `owner`, `budget`, `status`, `optimization_goal` | Advertiser Campaign Management |
+
+### 2.3 Management Collections
+| Collection | Key Fields | Purpose |
+|------------|------------|---------|
+| `content_moderation`| `content_id`, `content_type`, `status` (pending/approved) | Admin Moderation Queue |
+| `transactions` | `user_id`, `amount`, `status`, `mpesa_receipt` | Payment processing logs |
+
+---
+
+## 3. API REFERENCE (COMPREHENSIVE)
+
+### 3.1 Auth & User
+- `POST /api/auth/login` | `POST /api/auth/register` | `POST /api/auth/logout`
+- `GET /api/user/profile/:username` | `PUT /api/user/settings` | `POST /api/user/block`
+
+### 3.2 Social & Feed
+- `GET /api/posts` (Feed) | `POST /api/posts` (Create) | `POST /api/posts/:id/like`
+- `GET /api/stories` | `POST /api/stories` | `GET /api/reels`
+- `POST /api/polls/:id/vote`: Submit vote for a specific option.
+- `GET /api/search?q=...&type=posts|users|groups`
+
+### 3.3 Messaging
+- `GET /api/messages`: List active chats.
+- `POST /api/messages`: Create new DM/Group.
+- `GET /api/messages/:id/messages`: Chat history.
+- `DELETE /api/messages/:id/messages/:msgId`: Unsend message.
+
+### 3.4 Academic (Timetable & Study)
+- `GET /api/academic/timetables`: User's saved timetables.
+- `POST /api/academic/timetables`: Create new (can be marked `is_template`).
+- `POST /api/academic/timetables/:id/copy`: Fork a template/public schedule.
+- `POST /api/academic/attendance`: Log attendance for a class.
+- `POST /api/academic/report`: Submit a crowd-report for a schedule change.
+- `GET /api/academic/study-rooms`: List active virtual rooms.
+
+### 3.5 Monetization (Ads & Marketplace)
+- `GET /api/ads/serve`: Fetch targeted ads for injection into feed.
+- `POST /api/ads/track`: Log impressions/clicks (CreativeID + EventType).
+- `GET /api/marketplace/items`: List available products.
+- `POST /api/payments/mpesa/stk`: Trigger M-Pesa payment.
+
+### 3.6 Admin
+- `GET /api/admin/stats`: Platform-wide analytics dashboard.
+- `GET /api/admin/moderation`: Pending content for review.
+- `POST /api/admin/broadcast`: Send system-wide message to all users.
+
+---
+
+## 4. FRONTEND ARCHITECTURE
+
+### 4.1 Frontend Map (Key Pages)
+- **Feed**: `src/pages/FeedPage.jsx` (Virtualized infinite scroll)
+- **Messages**: `src/pages/MessagesPage.jsx` (Chat list + Active conversation)
+- **Timetable**: `src/pages/TimetablePage.jsx` (Grid view + Task management)
+- **Admin**: `src/pages/AdminDashboard.jsx` (Stats & Moderation)
+
+### 4.2 Custom Hook Library
+| Hook | Signature | Purpose |
+|------|-----------|---------|
+| `useAuth` | `() => { user, login, logout }` | Session management |
+| `useMedia` | `() => { upload, isUploading }` | Cloudflare R2 upload & processing |
+| `useMessages`| `(chatId) => { messages, sendMessage }` | Chat logic & Ably sync |
+| `useWebRTC` | `(signaling) => { call, endCall }` | Video/Voice calling signaling |
+| `useInfiniteFeed`| `(type) => { data, fetchNextPage }` | Standardized paginated fetching |
+
+### 4.3 Key Components
+- **PostCard**: Massive component handling polls, media, likes, and nested comments.
+- **VirtualizedFeed**: Performance-optimized wrapper for long content lists.
+- **AdComponent**: Fetches and renders ads based on current viewport.
+- **TimetableGrid**: Interactive schedule with drag-drop and task persistence.
+
+---
+
+## 5. REAL-TIME ARCHITECTURE (ABLY + WS)
+
+### 5.1 Channels
+- `user:{userId}:notifications`: System & Social alerts.
+- `chat:{chatId}`: Message updates, reactions, and **typing indicators**.
+- `presence:study-room:{id}`: Member count and online list for virtual rooms.
+
+### 5.2 Signaling
+- WebRTC signaling (offers/answers/ice) is handled via a dedicated WebSocket (`/ws`) to minimize latency compared to Ably for high-frequency signaling.
+
+---
+
+## 6. FEATURE OVERVIEWS (BUSINESS LOGIC)
+
+### 6.1 Timetable Logic
+- **Templates**: Any timetable marked `is_template` appears in public search.
+- **Forking**: Copying a template creates a personal instance and increments the `fork_count`.
+- **Reliability**: Classes have a `reliability_score`. When a user submits a `CrowdReport` (e.g., "Lecturer absent"), the score drops. High scores indicate "Confirmed" classes.
+
+### 6.2 Ad Injection
+- Ads are served via `GET /api/ads/serve`.
+- **Injection Policy**: 1 ad for every 5 posts in the feed.
+- **Hierarchy**: Campaign (Budget) -> AdGroup (Targeting) -> Creative (Media).
+
+### 6.3 Gamification
+- Users earn **Points** for: Posting (5pts), Commenting (2pts), Logging Attendance (10pts).
+- **Levels**: Level = `sqrt(points / 100)`. Levels unlock badges and premium features.
+
+---
+
+## 7. MEDIA PIPELINE (RECAP)
+- **Worker**: Redis-backed background processor.
+- **Variants**: 480p/720p H.264 for Video; Opus/MP3 for Audio.
+- **Cleanup**: Original files in `temp/` are deleted after optimized variants are pushed to `uploads/`.

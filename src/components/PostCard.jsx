@@ -688,14 +688,14 @@ const PostCard = ({ post }) => {
                             )}
 
                             {/* Image Grid */}
-                            {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
-                                <div className={`image-grid ${post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 1 ? 'grid-layout' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '4px' }}>
-                                    {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).slice(0, 3).map((url, idx) => (
+                            {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length > 0 && (
+                                <div className={`image-grid ${post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length > 1 ? 'grid-layout' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '4px' }}>
+                                    {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).slice(0, 3).map((url, idx) => (
                                         <div key={idx} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', position: 'relative' }}>
                                             <img src={getOptimizedUrl(url, 'f_auto,q_auto,w_400')} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            {idx === 2 && post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 3 && (
+                                            {idx === 2 && post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length > 3 && (
                                                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                                                    +{post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length - 3}
+                                                    +{post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length - 3}
                                                 </div>
                                             )}
                                         </div>
