@@ -33,6 +33,8 @@ import {
     BarChart2,
     MapPin,
     ArrowLeft,
+    Shield,
+    Bookmark,
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import '../styles/MessagesPage.css';
