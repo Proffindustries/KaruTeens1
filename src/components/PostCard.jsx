@@ -71,6 +71,15 @@ const getVideoThumbnail = (url) => {
     return null;
 };
 
+// Helper to get file type metadata
+const getFileMeta = (url) => {
+    if (url.match(/\.pdf$/i)) return { label: 'PDF Document', icon: FileText, color: '#dc3545', type: 'pdf' };
+    if (url.match(/\.(xls|xlsx)$/i)) return { label: 'Excel Spreadsheet', icon: FileText, color: '#217346', type: 'excel' };
+    if (url.match(/\.(doc|docx)$/i)) return { label: 'Word Document', icon: FileText, color: '#2b579a', type: 'word' };
+    if (url.match(/\.(ppt|pptx)$/i)) return { label: 'PowerPoint', icon: FileText, color: '#b7472a', type: 'ppt' };
+    return { label: 'Document', icon: FileText, color: '#6c757d', type: 'default' };
+};
+
 const PostCard = ({ post }) => {
     const postId = post.id;
     console.log('PostCard rendering for post:', postId);
@@ -473,10 +482,11 @@ const PostCard = ({ post }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="post-card card"
+            style={{ position: 'relative' }}
         >
-            {/* Post Header */}
-            <div className="post-header">
-                <div className="post-user-info">
+            {/* Post Header with Vertical Menu */}
+            <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="post-user-info" style={{ display: 'flex', gap: '10px' }}>
                     <Avatar
                         src={post.is_anonymous ? null : post.user_avatar}
                         name={post.is_anonymous ? 'Anonymous' : post.user}
@@ -499,63 +509,25 @@ const PostCard = ({ post }) => {
                             )}
                             {post.group_name && (
                                 <>
-                                    <span
-                                        style={{
-                                            fontWeight: 'normal',
-                                            color: '#636e72',
-                                            margin: '0 4px',
-                                        }}
-                                    >
-                                        ▶
-                                    </span>
-                                    <Link to={`/groups/${post.group_id}`} className="group-link">
-                                        {post.group_name}
-                                    </Link>
+                                    <span style={{ fontWeight: 'normal', color: '#636e72', margin: '0 4px' }}>▶</span>
+                                    <Link to={`/groups/${post.group_id}`} className="group-link">{post.group_name}</Link>
                                 </>
                             )}
                             {post.page_name && (
                                 <>
-                                    <span
-                                        style={{
-                                            fontWeight: 'normal',
-                                            color: '#636e72',
-                                            margin: '0 4px',
-                                        }}
-                                    >
-                                        ▶
-                                    </span>
-                                    <Link to={`/p/${post.page_id}`} className="page-link">
-                                        {post.page_name}
-                                    </Link>
+                                    <span style={{ fontWeight: 'normal', color: '#636e72', margin: '0 4px' }}>▶</span>
+                                    <Link to={`/p/${post.page_id}`} className="page-link">{post.page_name}</Link>
                                 </>
                             )}
                         </span>
-                        <span className="post-time">
+                        <span className="post-time" style={{ display: 'block', fontSize: '0.8rem', color: '#636e72' }}>
                             {new Date(post.created_at).toLocaleString()}
                         </span>
-                        {post.algorithmic_score > 0 && (
-                            <span
-                                className="post-algo-score"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    marginLeft: '12px',
-                                    fontSize: '0.8rem',
-                                    color: '#ff4757',
-                                    background: 'rgba(255, 71, 87, 0.1)',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                }}
-                            >
-                                🔥 {post.algorithmic_score}
-                            </span>
-                        )}
-                        </div>
                     </div>
                 </div>
 
-                <div className="post-options-wrapper" ref={menuRef}>
+                {/* Vertical Three-Dot Menu */}
+                <div className="post-options-wrapper" ref={menuRef} style={{ marginTop: '-4px' }}>
                     <button
                         className="post-options-btn"
                         onClick={(e) => {
@@ -563,75 +535,53 @@ const PostCard = ({ post }) => {
                             setShowMenu(!showMenu);
                         }}
                         aria-label="Post options"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                     >
                         <MoreHorizontal size={20} />
                     </button>
 
                     {showMenu && (
-                        <div className="post-options-menu">
-                            <button
-                                className="menu-item"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(
-                                        `${window.location.origin}/post/${postId}`,
-                                    );
-                                    showToast('Link copied to clipboard!', 'success');
-                                    setShowMenu(false);
-                                }}
-                            >
-                                <Link2 size={18} />
-                                Copy Link
+                        <div className="post-options-menu" style={{ 
+                            position: 'absolute', right: '0', top: '100%', 
+                            background: 'white', borderRadius: '8px', 
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 10, minWidth: '150px' 
+                        }}>
+                            <button className="menu-item" onClick={handleCopyLink}>
+                                <Link2 size={18} /> Copy Link
                             </button>
                             {!isOwner && !post.is_anonymous && (
                                 <>
-                                    <button
-                                        className="menu-item"
-                                        onClick={handleHidePost}
-                                        aria-label="Hide this post"
-                                    >
-                                        <EyeOff size={18} />
-                                        Not Interested
+                                    <button className="menu-item" onClick={handleHidePost}>
+                                        <EyeOff size={18} /> Not Interested
                                     </button>
-                                    <button
-                                        className="menu-item"
-                                        onClick={() => {
-                                            showToast(`Unfollowed @${post.user}`, 'info');
-                                            setShowMenu(false);
-                                        }}
-                                    >
-                                        <UserMinus size={18} />
-                                        Unfollow @{post.user}
+                                    <button className="menu-item" onClick={() => { showToast(`Unfollowed @${post.user}`, 'info'); setShowMenu(false); }}>
+                                        <UserMinus size={18} /> Unfollow @{post.user}
                                     </button>
                                     <button className="menu-item danger" onClick={handleBlockUser}>
-                                        <UserMinus size={18} style={{ color: '#ff4757' }} />
-                                        Block @{post.user}
+                                        <UserMinus size={18} style={{ color: '#ff4757' }} /> Block @{post.user}
                                     </button>
                                     <button className="menu-item danger" onClick={handleReportPost}>
-                                        <Flag size={18} />
-                                        Report Post
+                                        <Flag size={18} /> Report Post
                                     </button>
                                 </>
                             )}
                             {isOwner && (
                                 <>
                                     {currentUser?.role === 'admin' && (
-                                        <button
-                                            className="menu-item"
-                                            onClick={() => setShowMenu(false)}
-                                        >
-                                            <FileText size={18} />
-                                            Edit Post
+                                        <button className="menu-item" onClick={() => setShowMenu(false)}>
+                                            <FileText size={18} /> Edit Post
                                         </button>
                                     )}
                                     <button className="menu-item danger" onClick={handleDeletePost}>
-                                        <Trash2 size={18} />
-                                        Delete Post
+                                        <Trash2 size={18} /> Delete Post
                                     </button>
                                 </>
                             )}
                         </div>
                     )}
                 </div>
+            </div>
 
         {/* Post Content */}
             <div
@@ -722,244 +672,67 @@ const PostCard = ({ post }) => {
 
                     {/* Media Attachments */}
                     {post.media_urls && post.media_urls.length > 0 && (
-                        <div
-                            className={`post-media-container ${post.media_urls.length > 1 ? 'grid' : ''} ${post.media_urls.length >= 3 ? 'multi' : ''}`}
-                        >
-                            {post.media_urls.slice(0, 4).map((url, idx) => {
-                                const isVideo =
-                                    url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv)$/i) ||
-                                    url.includes('video/upload') ||
-                                    post.post_type === 'video';
-                                const isAudio =
-                                    url.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i) ||
-                                    post.post_type === 'audio';
-                                const isPDF = url.match(/\.pdf$/i);
-                                const isExcel =
-                                    url.match(/\.(xls|xlsx)$/i) || url.includes('spreadsheet');
-                                const isImage =
-                                    url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i) ||
-                                    post.post_type === 'image' ||
-                                    (!isVideo &&
-                                        !isAudio &&
-                                        !isPDF &&
-                                        !isExcel &&
-                                        url.includes('cloudinary.com'));
-                                const isLastVisible = idx === 3 && post.media_urls.length > 4;
-                                const remainingCount = post.media_urls.length - 3;
+                        <div className="post-media-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* Priority Rendering: Video first if available */}
+                            {post.media_urls.some(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video') && (
+                                <div className="video-priority-container">
+                                    {post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video') && (
+                                        <div className="video-wrapper" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+                                            <CustomVideoPlayer
+                                                src={getVariantUrl(post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video'))}
+                                                poster={getVideoThumbnail(post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video')) || post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video') + '?poster=true'}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                                // Handle navigation to post details (outside video play zone)
-                                const handleMediaClick = (e) => {
-                                    if (post.is_sponsored) {
-                                        handleAdClick(e);
-                                        return;
-                                    }
+                            {/* Image Grid */}
+                            {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
+                                <div className={`image-grid ${post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 1 ? 'grid-layout' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '4px' }}>
+                                    {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).slice(0, 3).map((url, idx) => (
+                                        <div key={idx} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', position: 'relative' }}>
+                                            <img src={getOptimizedUrl(url, 'f_auto,q_auto,w_400')} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            {idx === 2 && post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 3 && (
+                                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                                                    +{post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length - 3}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
-                                    if (shouldBlur(post) && !isNsfwRevealed) return;
-                                    // Only navigate if clicking outside the video play zone
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const x = e.clientX - rect.left;
-                                    const y = e.clientY - rect.top;
-                                    const centerZone = {
-                                        left: rect.width * 0.25,
-                                        right: rect.width * 0.75,
-                                        top: rect.height * 0.25,
-                                        bottom: rect.height * 0.75,
-                                    };
-                                    // If click is in center quadrant, play video instead
-                                    if (
-                                        x >= centerZone.left &&
-                                        x <= centerZone.right &&
-                                        y >= centerZone.top &&
-                                        y <= centerZone.bottom &&
-                                        isVideo
-                                    ) {
-                                        return; // Let video player handle it
-                                    }
-
-                                    // If it's audio, don't navigate (let the player handle it)
-                                    if (isAudio) {
-                                        return;
-                                    }
-
-                                    // Only navigate if we're not already on the post detail page
-                                    if (window.location.pathname !== `/post/${postId}`) {
-                                        navigate(`/post/${postId}`);
-                                    }
-                                };
+                            {/* Document Tile */}
+                            {post.media_urls.filter(u => u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx)$/i)).map((url, idx) => {
+                                const meta = getFileMeta(url);
+                                const Icon = meta.icon;
+                                const isPdf = meta.type === 'pdf';
 
                                 return (
-                                    <div
-                                        key={idx}
-                                        className="media-item"
-                                        onClick={handleMediaClick}
-                                        style={{ cursor: 'pointer', position: 'relative' }}
-                                    >
-                                        {isVideo ? (
-                                            <div className="video-wrapper">
-                                                <CustomVideoPlayer
-                                                    src={getVariantUrl(url)}
-                                                    poster={getVideoThumbnail(url)}
-                                                />
-                                            </div>
-                                        ) : isAudio ? (
-                                            <CustomAudioPlayer
-                                                src={url}
-                                                filename={`Audio ${idx + 1}`}
-                                            />
-                                        ) : isPDF ? (
-                                            <iframe
-                                                src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                className="post-pdf-preview"
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    border: 'none',
-                                                    pointerEvents: 'none',
-                                                    background: '#e9e9e9',
-                                                }}
-                                                title="PDF Preview"
-                                            />
-                                        ) : isExcel ? (
-                                            <div
-                                                className="file-wrapper-mini excel-bg"
-                                                style={{
-                                                    padding: '20px',
-                                                    background: '#1a1a1a',
-                                                    height: '100%',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '8px',
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        background: '#217346',
-                                                        padding: '12px',
-                                                        borderRadius: '8px',
-                                                    }}
-                                                >
-                                                    <FileText size={32} color="white" />
+                                    <div key={`doc-${idx}`} className="doc-tile" style={{ 
+                                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
+                                        background: '#ffffff', borderRadius: '12px', border: '1px solid #e0e0e0',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '8px'
+                                    }}>
+                                        {isPdf ? (
+                                            <div style={{ position: 'relative', width: '60px', height: '80px', borderRadius: '4px', overflow: 'hidden', background: '#eee' }}>
+                                                <img src={url.replace(/\.[^/.]+$/, '.jpg') + '?page=1'} alt="PDF Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 4px', borderRadius: '4px' }}>
+                                                    PDF
                                                 </div>
-                                                <span
-                                                    style={{
-                                                        color: 'white',
-                                                        fontSize: '10px',
-                                                        textAlign: 'center',
-                                                        wordBreak: 'break-all',
-                                                    }}
-                                                >
-                                                    Excel Document
-                                                </span>
                                             </div>
-                                        ) : url.match(/\.(doc|docx)$/i) ? (
-                                            <div
-                                                className="file-wrapper-mini word-bg"
-                                                style={{
-                                                    padding: '20px',
-                                                    background: '#1a1a1a',
-                                                    height: '100%',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '8px',
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        background: '#2b579a',
-                                                        padding: '12px',
-                                                        borderRadius: '8px',
-                                                    }}
-                                                >
-                                                    <FileText size={32} color="white" />
-                                                </div>
-                                                <span
-                                                    style={{
-                                                        color: 'white',
-                                                        fontSize: '10px',
-                                                        textAlign: 'center',
-                                                        wordBreak: 'break-all',
-                                                    }}
-                                                >
-                                                    Word Document
-                                                </span>
-                                            </div>
-                                        ) : url.match(/\.(ppt|pptx)$/i) ? (
-                                            <div
-                                                className="file-wrapper-mini ppt-bg"
-                                                style={{
-                                                    padding: '20px',
-                                                    background: '#1a1a1a',
-                                                    height: '100%',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '8px',
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        background: '#b7472a',
-                                                        padding: '12px',
-                                                        borderRadius: '8px',
-                                                    }}
-                                                >
-                                                    <FileText size={32} color="white" />
-                                                </div>
-                                                <span
-                                                    style={{
-                                                        color: 'white',
-                                                        fontSize: '10px',
-                                                        textAlign: 'center',
-                                                        wordBreak: 'break-all',
-                                                    }}
-                                                >
-                                                    PowerPoint
-                                                </span>
-                                            </div>
-                                        ) : isImage ? (
-                                            <img
-                                                src={getOptimizedUrl(url, 'f_auto,q_auto,w_800')}
-                                                alt={`Post content ${idx + 1}`}
-                                                className="post-image"
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
                                         ) : (
-                                            // Fallback for unknown file types
-                                            <div
-                                                className="file-wrapper-mini"
-                                                style={{
-                                                    padding: '20px',
-                                                    background: '#1a1a1a',
-                                                    height: '100%',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '8px',
-                                                }}
-                                            >
-                                                <FileText size={32} color="var(--primary-color)" />
-                                                <span style={{ color: 'white', fontSize: '10px' }}>
-                                                    File
-                                                </span>
+                                            <div style={{ background: meta.color, padding: '12px', borderRadius: '8px' }}>
+                                                <Icon size={24} color="white" />
                                             </div>
                                         )}
-
-                                        {/* Overlay ya '+ N More' kama picha ni mob */}
-                                        {isLastVisible && (
-                                            <div className="media-overlay">
-                                                <span className="overlay-count">
-                                                    +{remainingCount}
-                                                </span>
-                                                <span className="overlay-text">See More</span>
-                                            </div>
-                                        )}
+                                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {url.split('/').pop()}
+                                            </span>
+                                            <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>{meta.label}</span>
+                                        </div>
                                     </div>
                                 );
                             })}
