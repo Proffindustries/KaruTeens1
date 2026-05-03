@@ -671,73 +671,92 @@ const PostCard = ({ post }) => {
                     )}
 
                     {/* Media Attachments */}
-                    {post.media_urls && post.media_urls.length > 0 && (
-                        <div className="post-media-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {/* Priority Rendering: Video first if available */}
-                            {post.media_urls.some(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video') && (
-                                <div className="video-priority-container">
-                                    {post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video') && (
+                    {post.media_urls && post.media_urls.length > 0 && (() => {
+                        const videoRegex = /\.(mp4|webm|mov)(\?|$)/i;
+                        const imageRegex = /\.(jpg|jpeg|png|gif|webp|avif|svg)(\?|$)/i;
+                        const docRegex = /\.(pdf|xls|xlsx|doc|docx|ppt|pptx)(\?|$)/i;
+                        const audioRegex = /\.(mp3|wav|ogg|m4a|webm)(\?|$)/i;
+
+                        // 1. Identify the primary video (if any)
+                        const featuredVideo = post.media_urls.find(u => u.match(videoRegex) || (post.post_type === 'video' && post.media_urls.indexOf(u) === 0));
+                        
+                        // 2. Filter out the featured video from remaining media
+                        const remainingMedia = post.media_urls.filter(u => u !== featuredVideo);
+
+                        // 3. Categorize remaining media
+                        const images = remainingMedia.filter(u => u.match(imageRegex) || (!u.match(docRegex) && !u.match(videoRegex) && !u.match(audioRegex)));
+                        const documents = remainingMedia.filter(u => u.match(docRegex));
+
+                        return (
+                            <div className="post-media-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {/* Priority Video Rendering */}
+                                {featuredVideo && (
+                                    <div className="video-priority-container">
                                         <div className="video-wrapper" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
                                             <CustomVideoPlayer
-                                                src={getVariantUrl(post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video'))}
-                                                poster={getVideoThumbnail(post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video')) || post.media_urls.find(u => u.match(/\.(mp4|webm|mov)$/i) || post.post_type === 'video') + '?poster=true'}
+                                                src={getVariantUrl(featuredVideo)}
+                                                poster={getVideoThumbnail(featuredVideo) || featuredVideo + '?poster=true'}
                                             />
                                         </div>
-                                    )}
-                                </div>
-                            )}
+                                    </div>
+                                )}
 
-                            {/* Image Grid */}
-                            {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length > 0 && (
-                                <div className={`image-grid ${post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length > 1 ? 'grid-layout' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '4px' }}>
-                                    {post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).slice(0, 3).map((url, idx) => (
-                                        <div key={idx} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', position: 'relative' }}>
-                                            <img src={getOptimizedUrl(url, 'f_auto,q_auto,w_400')} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            {idx === 2 && post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length > 3 && (
-                                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                                                    +{post.media_urls.filter(u => u.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i) || !u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx|mp4|webm|mov|mp3|wav|ogg)$/i)).length - 3}
+                                {/* Image Grid (Only for non-featured media) */}
+                                {images.length > 0 && (
+                                    <div className={`image-grid ${images.length > 1 ? 'grid-layout' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '4px' }}>
+                                        {images.slice(0, 3).map((url, idx) => (
+                                            <div key={idx} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', position: 'relative' }}>
+                                                <img 
+                                                    src={getOptimizedUrl(url, 'f_auto,q_auto,w_400')} 
+                                                    alt="Post media" 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                />
+                                                {idx === 2 && images.length > 3 && (
+                                                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
+                                                        +{images.length - 3}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Document Tiles */}
+                                {documents.map((url, idx) => {
+                                    const meta = getFileMeta(url);
+                                    const Icon = meta.icon;
+                                    const isPdf = meta.type === 'pdf';
+
+                                    return (
+                                        <div key={`doc-${idx}`} className="doc-tile" style={{ 
+                                            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
+                                            background: '#ffffff', borderRadius: '12px', border: '1px solid #e0e0e0',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '8px'
+                                        }}>
+                                            {isPdf ? (
+                                                <div style={{ position: 'relative', width: '60px', height: '80px', borderRadius: '4px', overflow: 'hidden', background: '#eee' }}>
+                                                    <img src={url.replace(/\.[^/.]+$/, '.jpg') + '?page=1'} alt="PDF Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 4px', borderRadius: '4px' }}>
+                                                        PDF
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ background: meta.color, padding: '12px', borderRadius: '8px' }}>
+                                                    <Icon size={24} color="white" />
                                                 </div>
                                             )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Document Tile */}
-                            {post.media_urls.filter(u => u.match(/\.(pdf|xls|xlsx|doc|docx|ppt|pptx)$/i)).map((url, idx) => {
-                                const meta = getFileMeta(url);
-                                const Icon = meta.icon;
-                                const isPdf = meta.type === 'pdf';
-
-                                return (
-                                    <div key={`doc-${idx}`} className="doc-tile" style={{ 
-                                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
-                                        background: '#ffffff', borderRadius: '12px', border: '1px solid #e0e0e0',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '8px'
-                                    }}>
-                                        {isPdf ? (
-                                            <div style={{ position: 'relative', width: '60px', height: '80px', borderRadius: '4px', overflow: 'hidden', background: '#eee' }}>
-                                                <img src={url.replace(/\.[^/.]+$/, '.jpg') + '?page=1'} alt="PDF Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 4px', borderRadius: '4px' }}>
-                                                    PDF
-                                                </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                                <span style={{ fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {url.split('/').pop().split('?')[0]}
+                                                </span>
+                                                <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>{meta.label}</span>
                                             </div>
-                                        ) : (
-                                            <div style={{ background: meta.color, padding: '12px', borderRadius: '8px' }}>
-                                                <Icon size={24} color="white" />
-                                            </div>
-                                        )}
-                                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {url.split('/').pop()}
-                                            </span>
-                                            <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>{meta.label}</span>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {shouldBlur(post) && !isNsfwRevealed && (
