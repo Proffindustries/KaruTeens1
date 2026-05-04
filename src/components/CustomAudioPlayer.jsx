@@ -133,7 +133,7 @@ const CustomAudioPlayer = React.memo(({ src, filename, id }) => {
     return (
         <div className="custom-audio-player" ref={setRefs} onClick={(e) => e.stopPropagation()}>
             {inView ? (
-                <audio ref={audioRef} src={src} preload="metadata" />
+                <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
             ) : (
                 <div className="audio-placeholder">
                     <Music size={48} color="#00b894" />

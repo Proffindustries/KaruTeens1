@@ -17,6 +17,9 @@ export const AudioProvider = ({ children }) => {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const audioRef = useRef(new Audio());
+    useEffect(() => {
+        audioRef.current.crossOrigin = 'anonymous';
+    }, []);
 
     const playAudio = useCallback(
         (audioData) => {

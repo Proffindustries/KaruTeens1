@@ -678,7 +678,7 @@ const PostCard = ({ post }) => {
                         const audioRegex = /\.(mp3|wav|ogg|m4a|webm)(\?|$)/i;
 
                         // 1. Identify the primary video (if any)
-                        const featuredVideo = post.media_urls.find(u => u.match(videoRegex) || (post.post_type === 'video' && post.media_urls.indexOf(u) === 0));
+                        const featuredVideo = post.media_urls.find(u => u.match(videoRegex));
                         
                         // 2. Filter out the featured video from remaining media
                         const remainingMedia = post.media_urls.filter(u => u !== featuredVideo);
@@ -696,6 +696,7 @@ const PostCard = ({ post }) => {
                                             <CustomVideoPlayer
                                                 src={getVariantUrl(featuredVideo)}
                                                 poster={getVideoThumbnail(featuredVideo) || featuredVideo + '?poster=true'}
+                                                crossOrigin="anonymous"
                                             />
                                         </div>
                                     </div>
@@ -710,6 +711,7 @@ const PostCard = ({ post }) => {
                                                     src={getOptimizedUrl(url, 'f_auto,q_auto,w_400')} 
                                                     alt="Post media" 
                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                    crossOrigin="anonymous"
                                                 />
                                                 {idx === 2 && images.length > 3 && (
                                                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>
@@ -735,7 +737,7 @@ const PostCard = ({ post }) => {
                                         }}>
                                             {isPdf ? (
                                                 <div style={{ position: 'relative', width: '60px', height: '80px', borderRadius: '4px', overflow: 'hidden', background: '#eee' }}>
-                                                    <img src={url.replace(/\.[^/.]+$/, '.jpg') + '?page=1'} alt="PDF Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <img src={url.replace(/\.[^/.]+$/, '.jpg') + '?page=1'} alt="PDF Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                                                     <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 4px', borderRadius: '4px' }}>
                                                         PDF
                                                     </div>

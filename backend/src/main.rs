@@ -99,9 +99,40 @@ async fn main() {
     };
 
     // Create Router
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_origin(origins)
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::OPTIONS,
+            axum::http::Method::PATCH,
+        ])
+        .allow_headers([
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::ACCEPT,
+            axum::http::header::ORIGIN,
+            axum::http::HeaderName::from_static("x-requested-with"),
+            axum::http::HeaderName::from_static("x-request-id"),
+            axum::http::HeaderName::from_static("cache-control"),
+        ])
+        .expose_headers([
+            axum::http::header::CONTENT_DISPOSITION,
+        ]);
+
     let app = routes::create_router(state.clone())
         .layer(axum::middleware::from_fn_with_state(state.clone(), rate_limit::rate_limit_middleware))
-        .layer(tower_http::cors::CorsLayer::permissive())
+        .layer(cors)
+        .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+            axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
+            axum::http::HeaderValue::from_static("credentialless"),
+        ))
+        .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+            axum::http::header::HeaderName::from_static("cross-origin-opener-policy"),
+            axum::http::HeaderValue::from_static("same-origin"),
+        ))
         .layer(tower_http::trace::TraceLayer::new_for_http());
 
     tracing::info!("KaruTeens Backend listening on {}", addr);

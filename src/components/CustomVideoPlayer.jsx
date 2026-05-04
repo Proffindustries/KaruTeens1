@@ -148,6 +148,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
                     onClick={togglePlayPause}
                     playsInline
                     muted={!isPlaying}
+                    crossOrigin="anonymous"
                 />
             )}
 
