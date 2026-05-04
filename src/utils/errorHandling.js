@@ -130,6 +130,26 @@ export function parseApiError(errorResponse) {
         return new AppError('timeout_error', 'Request timed out', null, 'TIMEOUT_ERROR');
     }
 
+    // Handle CORS errors (network error with no response)
+    if (!errorResponse?.response && errorResponse?.message?.includes('Network Error')) {
+        return new AppError(
+            'cors_error',
+            'Unable to connect to the server. This may be a CORS or network issue.',
+            null,
+            'CORS_ERROR',
+        );
+    }
+
+    // Handle CORS preflight failures
+    if (errorResponse?.message?.includes('CORS') || errorResponse?.message?.includes('cross-origin')) {
+        return new AppError(
+            'cors_error',
+            'Cross-origin request blocked. Please check server configuration.',
+            null,
+            'CORS_ERROR',
+        );
+    }
+
     // Generic error fallback
     return new AppError(
         'unknown_error',

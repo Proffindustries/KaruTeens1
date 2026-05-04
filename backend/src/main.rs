@@ -1,7 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-
 use std::net::SocketAddr;
 use std::sync::Arc;
 use dotenvy::dotenv;
@@ -31,27 +27,33 @@ async fn main() {
     tracing::info!("Verifying environment variables...");
     let required_vars = ["MONGO_URI", "REDIS_URL", "JWT_SECRET"];
     let mut missing_vars = Vec::new();
-    
+
     for var in required_vars {
         if std::env::var(var).is_err() {
             missing_vars.push(var);
         }
     }
-    
+
     if !missing_vars.is_empty() {
         tracing::error!("FATAL: Missing required environment variables: {:?}", missing_vars);
         tracing::error!("Please set these variables in your deployment dashboard (e.g., Render Dashboard)");
         std::process::exit(1);
     }
 
+    // Validate FRONTEND_URL is set for production safety
+    let frontend_url = std::env::var("FRONTEND_URL").unwrap_or_else(|_| {
+        tracing::warn!("FRONTEND_URL not set, defaulting to '*' (insecure for production)");
+        "*".into()
+    });
+
     tracing::info!("Initializing Database Connection...");
     let mongo_db = db::init_mongo().await;
     let redis_client = db::init_redis().await;
     let jwt_secret = std::env::var("JWT_SECRET").unwrap();
     let brevo_api_key = std::env::var("BREVO_API_KEY").unwrap_or_default();
-    
-    let state = Arc::new(db::AppState { 
-        mongo: mongo_db, 
+
+    let state = Arc::new(db::AppState {
+        mongo: mongo_db,
         redis: redis_client.clone(),
         cache: CacheService::new(redis_client),
         redis_url: std::env::var("REDIS_URL").expect("REDIS_URL must be set"),
@@ -74,7 +76,7 @@ async fn main() {
 
     // Start AI Model Updater
     ai::spawn_model_updater(state.clone());
-    
+
     // Start Media Processing Worker
     crate::features::infrastructure::media_processor::spawn_media_worker(state.clone());
 
@@ -83,22 +85,21 @@ async fn main() {
         .unwrap_or_else(|_| "3000".to_string())
         .parse::<u16>()
         .expect("PORT must be a number");
-    
+
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    
+
     // CORS Configuration
-    let frontend_url = std::env::var("FRONTEND_URL").unwrap_or_else(|_| "*".into());
-    let origins: tower_http::cors::AllowOrigin = if frontend_url == "*" {
-        tower_http::cors::Any.into()
+    let (origins, allow_credentials) = if frontend_url == "*" {
+        (tower_http::cors::Any.into(), false)
     } else {
         let urls: Vec<axum::http::HeaderValue> = frontend_url
             .split(',')
             .map(|s| s.trim().parse::<axum::http::HeaderValue>().expect("Invalid FRONTEND_URL"))
             .collect();
-        tower_http::cors::AllowOrigin::list(urls)
+        (tower_http::cors::AllowOrigin::list(urls), true)
     };
 
-    // Create Router
+    // Create Router with CORS as outermost layer for proper preflight handling
     let cors = tower_http::cors::CorsLayer::new()
         .allow_origin(origins)
         .allow_methods([
@@ -122,16 +123,25 @@ async fn main() {
             axum::http::header::CONTENT_DISPOSITION,
         ]);
 
+    let mut cors = cors;
+    if allow_credentials {
+        cors = cors.allow_credentials(true);
+    }
+
     let app = routes::create_router(state.clone())
+        .layer(cors) // CORS as outermost middleware layer
         .layer(axum::middleware::from_fn_with_state(state.clone(), rate_limit::rate_limit_middleware))
-        .layer(cors)
         .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
             axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
-            axum::http::HeaderValue::from_static("credentialless"),
+            axum::http::HeaderValue::from_static("require-corp"),
         ))
         .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
             axum::http::header::HeaderName::from_static("cross-origin-opener-policy"),
             axum::http::HeaderValue::from_static("same-origin"),
+        ))
+        .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+            axum::http::header::HeaderName::from_static("content-security-policy"),
+            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.karuteens.site https://*.vercel.app https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.karuteens.site wss://*.karuteens.site https://api.ably.io; frame-src 'self' https://www.youtube.com; media-src 'self' https:;"),
         ))
         .layer(tower_http::trace::TraceLayer::new_for_http());
 

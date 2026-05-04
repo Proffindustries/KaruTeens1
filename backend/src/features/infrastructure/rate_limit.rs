@@ -15,9 +15,9 @@ pub async fn rate_limit_middleware(
     next: Next,
 ) -> Result<Response, impl IntoResponse> {
     let path = request.uri().path();
-    
-    // Skip rate limiting for health checks
-    if path == "/" || path == "/api/config" {
+
+    // Skip rate limiting for health checks and CORS preflight
+    if path == "/" || path == "/api/config" || request.method() == axum::http::Method::OPTIONS {
         return Ok(next.run(request).await);
     }
     

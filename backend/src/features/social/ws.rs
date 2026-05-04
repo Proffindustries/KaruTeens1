@@ -1,6 +1,7 @@
 use axum::{
     extract::{ws::{Message, WebSocket, WebSocketUpgrade}, State},
     response::IntoResponse,
+    http::HeaderMap,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use std::sync::Arc;
@@ -20,7 +21,22 @@ pub struct WsPayload {
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
+    // Validate origin for WebSocket connections
+    if let Some(origin) = headers.get("origin") {
+        let origin_str = origin.to_str().unwrap_or("");
+        let frontend_url = std::env::var("FRONTEND_URL").unwrap_or_else(|_| "*".to_string());
+
+        if frontend_url != "*" {
+            let allowed_origins: Vec<&str> = frontend_url.split(',').map(|s| s.trim()).collect();
+            if !allowed_origins.contains(&origin_str) {
+                tracing::warn!("WebSocket origin validation failed: {}", origin_str);
+                return axum::http::StatusCode::FORBIDDEN.into_response();
+            }
+        }
+    }
+
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 
