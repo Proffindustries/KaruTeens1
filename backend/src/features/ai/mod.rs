@@ -249,7 +249,7 @@ pub struct StudyHelpRequest {
 
 pub async fn study_help_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
+    _user: AuthUser,
     Json(payload): Json<StudyHelpRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let api_key = std::env::var("OPENROUTER_API_KEY").map_err(|_| {

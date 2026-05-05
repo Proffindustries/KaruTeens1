@@ -202,25 +202,3 @@ impl CacheKeys {
         format!("ratelimit:{}", key)
     }
 }
-
-#[derive(Serialize, Deserialize)]
-pub struct CachedResponse<T> {
-    pub data: T,
-    pub cached_at: i64,
-    pub ttl: u64,
-}
-
-impl<T> CachedResponse<T> {
-    pub fn new(data: T, ttl_seconds: u64) -> Self {
-        Self {
-            data,
-            cached_at: chrono::Utc::now().timestamp(),
-            ttl: ttl_seconds,
-        }
-    }
-
-    pub fn is_expired(&self) -> bool {
-        let now = chrono::Utc::now().timestamp();
-        (now - self.cached_at) > self.ttl as i64
-    }
-}

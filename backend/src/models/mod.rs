@@ -49,15 +49,15 @@ pub mod study {
 // Global re-exports for commonly used items that were in the top-level previously
 pub use social::{
     Story, StoryView, StoryReply,
-    StoryReport, StoryModeration, StorySchedule, StoryTemplate,
+    StoryReport, StoryModeration,
     UserStoryStats,
     Reel, ReelView, ReelLike, ReelComment, ReelShare, ReelDuet, ReelStitch, 
     ReelSave, ReelAnalytics, UserReelStats, ReelReport, ReelModeration, 
     ReelTranscodingJob,
     Subtitle, Caption,
-    Group, GroupPost, HookupAlias, HookupMatch, Follow
+    Group, HookupAlias, HookupMatch, Follow
 };
 
-pub use academic::{StudyRoom, Timetable, TimetableClass, TimetableTask, RevisionMaterial, RevisionMaterialPurchase, StudyPlaylist, PlaylistItem, RoomMessage, RoomFile, PhysicalRoom, RoomBooking, AttendanceLog, CrowdReport};
+pub use academic::{StudyRoom, Timetable, TimetableClass, TimetableTask, RevisionMaterial, RevisionMaterialPurchase, StudyPlaylist, PlaylistItem, RoomMessage, RoomFile, AttendanceLog, CrowdReport};
 
 // Re-export commonly used types

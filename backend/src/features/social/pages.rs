@@ -2,15 +2,14 @@ use axum::{
     extract::{State, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post, delete},
+    routing::{get, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::features::infrastructure::db::AppState;
-use crate::models::{Page, PageFollow, Post, Profile, User};
+use crate::models::{Page, PageFollow, Profile};
 use crate::features::infrastructure::dto::{PageResponse, CreatePageRequest, PageFilter};
 use crate::features::infrastructure::error::{AppResult, AppError};
 use crate::features::auth::auth_service::AuthUser;

@@ -13,7 +13,6 @@ use crate::features::infrastructure::db::AppState;
 use crate::models::{User, Profile};
 use crate::features::infrastructure::dto::{AuthResponse, UserResponse, RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest};
 use crate::features::infrastructure::error::{AppResult, AppError};
-use tracing::{info, warn, error};
 use redis::AsyncCommands;
 use argon2::{
     password_hash::{

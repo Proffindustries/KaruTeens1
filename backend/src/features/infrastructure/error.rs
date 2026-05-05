@@ -3,7 +3,6 @@ use axum::{
     response::{IntoResponse, Json},
 };
 use serde_json::json;
-use std::collections::HashMap;
 
 /// Standardized application error types
 #[derive(Debug)]

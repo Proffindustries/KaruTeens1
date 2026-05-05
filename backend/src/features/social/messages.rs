@@ -496,7 +496,7 @@ pub async fn get_messages_handler(
     let oid = ObjectId::parse_str(&chat_id).map_err(|_| (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid ID"}))))?;
     let chats_collection = state.mongo.collection::<Chat>("chats");
     let messages_collection = state.mongo.collection::<Message>("messages");
-    let profiles_collection = state.mongo.collection::<Profile>("profiles");
+    let _profiles_collection = state.mongo.collection::<Profile>("profiles");
 
     // Verify participation
     let _chat = chats_collection.find_one(doc! { "_id": oid, "participants": user.user_id }, None).await

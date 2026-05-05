@@ -5,14 +5,14 @@ use axum::{
     routing::{get, put, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
-use crate::models::{Profile, SocialLinks, Post, Comment, Follow};
+use crate::models::{Profile, Post, Comment, Follow};
 use crate::features::infrastructure::dto::{
     PostResponse, CommentResponse, ProfileResponse, UpdateProfileRequest,
-    UserGamificationResponse, ProfileResponseWrapper, FeedResponse
+    UserGamificationResponse, ProfileResponseWrapper
 };
 use crate::features::infrastructure::error::{AppResult, AppError};
 use mongodb::{bson::doc, options::FindOptions};
@@ -523,7 +523,7 @@ pub async fn follow_user_by_username_handler(
     let state_clone = state.clone();
     let follower_id = user.user_id;
     let followed_id = target_user_id;
-    let follower_name = target_profile.username; // This is actually the target username, wait...
+    let _follower_name = target_profile.username; // This is actually the target username, wait...
     
     // Get follower profile
     if let Ok(Some(follower_prof)) = profiles_collection.find_one(doc! { "user_id": follower_id }, None).await {

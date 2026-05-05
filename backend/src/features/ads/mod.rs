@@ -2,7 +2,7 @@ use axum::{
     extract::{State, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::features::infrastructure::db::AppState;
 use crate::models::{User, Profile, AdCampaign, AdGroup, AdCreative, AdAnalytics, AdReport, AdBudget, AdFrequencyCapping, AdExclusionRule};
-use crate::features::infrastructure::dto::{PostResponse, PostAnalyticsSummary};
+use crate::features::infrastructure::dto::PostResponse;
 use crate::features::auth::auth_service::AuthUser;
 use crate::features::infrastructure::error::{AppError, AppResult};
 use futures::stream::StreamExt;

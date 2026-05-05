@@ -9,9 +9,9 @@ use crate::features::{
     social::{ably, confessions, events, follows, groups, hookup, messages, notifications, pages, ws},
     academic::{revision_materials, study_rooms, timetable},
     monetization::{marketplace, payments},
-    infrastructure::{admin, stats, media},
+    infrastructure::{admin, stats, media, search},
 };
-use crate::features::content::{comments, playlist, reels, stories};
+use crate::features::content::{comments, playlist, reels};
 
 pub fn create_router(state: Arc<AppState>) -> Router<Arc<AppState>> {
     Router::new()
@@ -34,7 +34,6 @@ pub fn create_router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .nest("/api/study-rooms", study_rooms::study_room_routes())
         .nest("/api/revision-materials", revision_materials::revision_material_routes())
         .nest("/api/playlists", playlist::playlist_routes())
-        .nest("/api/stories", stories::story_routes())
         .nest("/api/reels", reels::reel_routes())
         .nest("/api/groups", groups::group_routes())
         .nest("/api/events", events::event_routes())
@@ -46,6 +45,7 @@ pub fn create_router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .nest("/api/confessions", confessions::confessions_routes())
         .nest("/api/live", crate::features::social::live::live_routes())
         .nest("/api/admin", admin::admin_routes())
+        .nest("/api/search", search::search_routes())
         .with_state(state)
 }
 

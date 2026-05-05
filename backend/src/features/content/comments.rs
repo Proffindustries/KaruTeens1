@@ -5,17 +5,14 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::features::infrastructure::db::AppState;
-use crate::models::{Comment, CommentReport, CommentModeration, UserCommentStats, SpamDetectionRule, User, Profile};
+use crate::models::{Comment, CommentReport, CommentModeration, UserCommentStats, SpamDetectionRule, Profile};
 use crate::features::infrastructure::dto::{
-    CommentResponse, CommentModerationQueueResponse, UserCommentStatsResponse,
-    UpdateCommentRequest, ReportCommentRequest, ModerateCommentRequest, 
-    CommentFilter, SpamRuleRequest, PaginatedResponse, PaginationInfo,
-    MessageResponse, IdResponse
+    CommentResponse, CommentModerationQueueResponse, UserCommentStatsResponse, ReportCommentRequest, ModerateCommentRequest, 
+    CommentFilter, SpamRuleRequest, PaginatedResponse, PaginationInfo
 };
 use crate::features::infrastructure::error::{AppResult, AppError};
 use crate::features::auth::auth_service::AuthUser;
@@ -587,7 +584,7 @@ pub async fn report_comment_handler(
     let profiles_coll = state.mongo.collection::<Profile>("profiles");
 
     // Fetch comment
-    let comment = comments_coll.find_one(doc! { "_id": comment_oid }, None).await?
+    let _comment = comments_coll.find_one(doc! { "_id": comment_oid }, None).await?
         .ok_or(AppError::NotFound("Comment not found".to_string()))?;
 
     // Fetch reporting user profile

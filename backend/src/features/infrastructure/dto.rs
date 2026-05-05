@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::models::{Location, Poll, Badge, SocialLinks, NotificationSettings};
+use crate::models::{Location, Badge, SocialLinks, NotificationSettings};
 
 // Basic DTOs needed for compilation
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -843,112 +843,8 @@ pub struct ConfessionFilter {
     pub limit: Option<i64>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct StoryModerationQueueResponse {
-    pub id: String,
-    pub story_id: String,
-    pub user_id: String,
-    pub username: String,
-    pub media_url: String,
-    pub caption: Option<String>,
-    pub media_type: String,
-    pub status: String,
-    pub spam_score: f64,
-    pub sentiment_score: f64,
-    pub reported_count: i32,
-    pub priority: i32,
-    pub assigned_to: Option<String>,
-    pub assigned_at: Option<String>,
-    pub created_at: String,
-}
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UserStoryStatsResponse {
-    pub user_id: String,
-    pub username: String,
-    pub total_stories: i32,
-    pub total_views: i32,
-    pub active_stories: i32,
-    pub expired_stories: i32,
-    pub highlights: i32,
-    pub total_replies: i32,
-    pub avg_completion_rate: f64,
-    pub avg_engagement_rate: f64,
-    pub avg_view_duration: f64,
-    pub last_story_at: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
 
-#[derive(Deserialize)]
-pub struct CreateStoryRequest {
-    pub media_url: String,
-    pub media_type: String,
-    pub caption: Option<String>,
-    pub location: Option<Location>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub is_highlight: Option<bool>,
-    pub highlight_category: Option<String>,
-    pub is_private: Option<bool>,
-    pub story_type: Option<String>,
-    pub story_data: Option<serde_json::Value>,
-    pub is_nsfw: Option<bool>,
-    pub allowed_users: Option<Vec<String>>,
-}
-
-#[derive(Deserialize)]
-pub struct UpdateStoryRequest {
-    pub caption: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryViewRequest {
-    pub story_id: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryReplyRequest {
-    pub content: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryReportRequest {
-    pub reason: String,
-}
-
-#[derive(Deserialize)]
-pub struct ModerateStoryRequest {
-    pub action: String,
-    pub reason: Option<String>,
-    pub notes: Option<String>,
-    pub after_caption: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-pub struct StoryFilter {
-    pub status: Option<String>,
-    pub media_type: Option<String>,
-    pub user_id: Option<String>,
-    pub story_type: Option<String>,
-    pub is_highlight: Option<bool>,
-    pub is_private: Option<bool>,
-    pub sort_by: Option<String>,
-    pub sort_order: Option<String>,
-    pub page: Option<i64>,
-    pub limit: Option<i64>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryScheduleRequest {
-    pub scheduled_time: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateStoryTemplateRequest {
-    pub name: String,
-    pub template_data: serde_json::Value,
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PostWorkflowResponse {

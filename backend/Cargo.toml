@@ -33,6 +33,7 @@ sha1 = "0.10.6"
 dashmap = "6.1.0"
 tokio-stream = "0.1.17"
 base64 = "0.22"
+image = "0.25"
 tower = { version = "0.5.3", features = ["full"] }
 tower-layer = "0.3.3"
 tower-service = "0.3.3"

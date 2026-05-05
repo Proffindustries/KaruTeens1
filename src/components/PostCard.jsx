@@ -707,11 +707,14 @@ const PostCard = ({ post }) => {
                                     <div className={`image-grid ${images.length > 1 ? 'grid-layout' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '4px' }}>
                                         {images.slice(0, 3).map((url, idx) => (
                                             <div key={idx} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', position: 'relative' }}>
-                                                <img 
-                                                    src={getOptimizedUrl(url, 'f_auto,q_auto,w_400')} 
-                                                    alt="Post media" 
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                <img
+                                                    src={getResponsiveImageUrl(getOptimizedUrl(url, 'f_auto,q_auto,w_400'))}
+                                                    alt="Post media"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                     crossOrigin="anonymous"
+                                                    loading="lazy"
+                                                    onLoad={(e) => e.target.style.filter = 'none'}
+                                                    onError={(e) => { e.target.src = getBlurPlaceholder(); }}
                                                 />
                                                 {idx === 2 && images.length > 3 && (
                                                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600 }}>

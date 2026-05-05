@@ -2,11 +2,10 @@ use axum::{
     extract::{State, Path, Json, Query},
     http::StatusCode,
     response::{IntoResponse},
-    routing::{get, post, put, delete},
+    routing::{get, post, put},
     Router,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
 use crate::features::auth::auth_service::AuthUser;

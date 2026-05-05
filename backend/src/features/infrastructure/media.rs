@@ -16,6 +16,8 @@ use aws_sdk_s3::Client as S3Client;
 use std::time::Duration;
 use rand::Rng;
 use rand::distributions::Alphanumeric;
+use image::{ImageFormat, ImageReader};
+use bson::doc;
 
 #[derive(Debug, Deserialize)]
 pub struct CloudinarySignatureRequest {
@@ -47,6 +49,35 @@ pub fn media_routes() -> Router<Arc<AppState>> {
         .route("/signature/r2", post(get_r2_presigned_url))
         .route("/process", post(trigger_media_processing))
         .route("/status/:job_id", axum::routing::get(get_media_status))
+        .route("/cleanup", axum::routing::post(cleanup_old_jobs))
+}
+
+// ── Cleanup old/failed jobs ──────────────────────────────────────────────
+
+async fn cleanup_old_jobs(
+    _user: AuthUser,
+    state: axum::extract::State<Arc<AppState>>,
+) -> AppResult<impl IntoResponse> {
+    let coll = state.mongo.collection::<MediaJobRecord>("media_jobs");
+    let cutoff = Utc::now().timestamp() - (30 * 24 * 60 * 60); // 30 days ago
+
+    let result = coll
+        .delete_many(
+            doc! {
+                "$or": [
+                    { "status": "failed" },
+                    { "created_at": { "$lt": cutoff } }
+                ]
+            },
+            None,
+        )
+        .await
+        .map_err(|e| AppError::InternalServerError(format!("DB error: {}", e)))?;
+
+    Ok(Json(serde_json::json!({
+        "deleted_count": result.deleted_count,
+        "message": "Old and failed jobs cleaned up"
+    })))
 }
 
 use crate::models::MediaJobRecord;
@@ -57,7 +88,7 @@ async fn get_media_status(
     axum::extract::Path(job_id): axum::extract::Path<String>,
 ) -> AppResult<impl IntoResponse> {
     let coll = state.mongo.collection::<MediaJobRecord>("media_jobs");
-    let job = coll.find_one(mongodb::bson::doc! { "_id": &job_id }, None)
+    let job = coll.find_one(doc! { "_id": &job_id }, None)
         .await
         .map_err(|e| AppError::InternalServerError(format!("DB error: {}", e)))?
         .ok_or_else(|| AppError::NotFound("Job not found".to_string()))?;
@@ -87,10 +118,15 @@ async fn trigger_media_processing(
     
     // 1. Create Job Record in MongoDB
     let coll = state.mongo.collection::<MediaJobRecord>("media_jobs");
-    let final_url = format!("{}/uploads/{}", 
-        std::env::var("R2_PUBLIC_BASE_URL").unwrap_or_default(),
-        payload.temp_url.split("/temp/").last().unwrap_or("")
-    );
+    
+    let final_url = if payload.media_type == "image" {
+        payload.temp_url.clone() // Images don't change their primary URL, just gain variants
+    } else {
+        format!("{}/uploads/{}", 
+            std::env::var("R2_PUBLIC_BASE_URL").unwrap_or_default(),
+            payload.temp_url.split("/temp/").last().unwrap_or("")
+        )
+    };
 
     let record = MediaJobRecord {
         id: job_id.clone(),
@@ -220,9 +256,12 @@ async fn get_r2_presigned_url(
     
     let key = if payload.content_type.starts_with("image/") {
         format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
-    } else {
-        // Videos, Audio, and Docs go to temp/ for processing or safe storage
+    } else if payload.content_type.starts_with("video/") {
+        // Videos go to temp/ for processing
         format!("temp/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
+    } else {
+        // Audio and Docs go to uploads/ directly
+        format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
     };
     
     let expires_in = Duration::from_secs(3600);
@@ -254,3 +293,94 @@ async fn get_r2_presigned_url(
         final_public_url,
     }))
 }
+
+// ── Image Variant Generation ──────────────────────────────────────────────
+
+/// Generates responsive image variants (thumbnail, medium) after upload
+pub async fn generate_image_variants(
+    _state: &Arc<AppState>,
+    original_key: &str,
+) -> anyhow::Result<Vec<(String, String)>> {
+    let account_id = std::env::var("R2_ACCOUNT_ID")?;
+    let access_key_id = std::env::var("R2_ACCESS_KEY_ID")?;
+    let secret_access_key = std::env::var("R2_SECRET_ACCESS_KEY")?;
+    let bucket = std::env::var("R2_BUCKET")?;
+    let public_base_url = std::env::var("R2_PUBLIC_BASE_URL")?;
+
+    let endpoint = format!("https://{}.r2.cloudflarestorage.com", account_id);
+    let credentials = aws_sdk_s3::config::Credentials::new(
+        access_key_id,
+        secret_access_key,
+        None,
+        None,
+        "Static",
+    );
+
+    let config = aws_sdk_s3::config::Builder::new()
+        .behavior_version(aws_sdk_s3::config::BehaviorVersion::latest())
+        .endpoint_url(endpoint)
+        .region(aws_sdk_s3::config::Region::new("auto"))
+        .credentials_provider(credentials)
+        .build();
+
+    let client = aws_sdk_s3::Client::from_conf(config);
+
+    // Download original image
+    let original = client
+        .get_object()
+        .bucket(&bucket)
+        .key(original_key)
+        .send()
+        .await?;
+
+    let image_data = original.body.collect().await?.to_vec();
+    let img = ImageReader::new(std::io::Cursor::new(&image_data))
+        .with_guessed_format()?
+        .decode()?;
+
+    let mut variants = Vec::new();
+
+    // Generate thumbnail (150px width)
+    let thumb = img.resize(150, 150, image::imageops::FilterType::Lanczos3);
+    let mut thumb_buf = Vec::new();
+    thumb.write_to(&mut std::io::Cursor::new(&mut thumb_buf), ImageFormat::WebP)?;
+
+    let thumb_key = format!("{}_thumb.webp", original_key.trim_end_matches(|c: char| c != '.' && c != '/'));
+    let thumb_key = thumb_key.rsplit_once('.').map(|(p, _)| format!("{}_thumb.webp", p)).unwrap_or(thumb_key);
+
+    client
+        .put_object()
+        .bucket(&bucket)
+        .key(&thumb_key)
+        .content_type("image/webp")
+        .cache_control("public, max-age=31536000, immutable")
+        .body(aws_sdk_s3::primitives::ByteStream::from(thumb_buf.clone()))
+        .send()
+        .await?;
+
+    variants.push((format!("{}/{}", public_base_url, thumb_key), thumb_key));
+
+    // Generate medium (800px width)
+    let medium = img.resize(800, 800, image::imageops::FilterType::Lanczos3);
+    let mut medium_buf = Vec::new();
+    medium.write_to(&mut std::io::Cursor::new(&mut medium_buf), ImageFormat::WebP)?;
+
+    let medium_key = original_key
+        .rsplit_once('.')
+        .map(|(p, _)| format!("{}_medium.webp", p))
+        .unwrap_or_else(|| format!("{}_medium.webp", original_key));
+
+    client
+        .put_object()
+        .bucket(&bucket)
+        .key(&medium_key)
+        .content_type("image/webp")
+        .cache_control("public, max-age=31536000, immutable")
+        .body(aws_sdk_s3::primitives::ByteStream::from(medium_buf.clone()))
+        .send()
+        .await?;
+
+    variants.push((format!("{}/{}", public_base_url, medium_key), medium_key));
+
+    Ok(variants)
+} // end of generate_image_variants

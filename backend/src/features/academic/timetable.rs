@@ -7,12 +7,11 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::HashMap;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
 use crate::features::auth::auth_service::AuthUser;
 use crate::models::{Timetable, TimetableClass, AttendanceLog, CrowdReport};
-use mongodb::bson::{doc, oid::ObjectId, DateTime, Bson};
+use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
 
 // --- DTOs ---
@@ -350,7 +349,7 @@ pub async fn update_timetable_handler(
     let collection = state.mongo.collection::<Timetable>("timetables");
 
     // Only owner can update
-    let existing = collection.find_one(doc! { "_id": oid, "user_id": user.user_id }, None).await
+    let _existing = collection.find_one(doc! { "_id": oid, "user_id": user.user_id }, None).await
         .map_err(|e: mongodb::error::Error| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({"error": "Timetable not found or unauthorized"}))))?;
 

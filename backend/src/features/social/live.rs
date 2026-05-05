@@ -12,7 +12,6 @@ use crate::models::user::Profile;
 use crate::models::social::LiveStream;
 use serde_json::json;
 use bson::{doc, oid::ObjectId, DateTime};
-use chrono::Utc;
 use futures::StreamExt;
 
 pub fn live_routes() -> Router<Arc<AppState>> {
@@ -139,8 +138,8 @@ async fn update_viewers(
 }
 
 async fn send_heart(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<String>,
+    State(_state): State<Arc<AppState>>,
+    Path(_id): Path<String>,
 ) -> impl IntoResponse {
     // Logic for sending hearts could be here, but usually it's just a real-time event.
     // For now, we'll just return success to confirm receipt.

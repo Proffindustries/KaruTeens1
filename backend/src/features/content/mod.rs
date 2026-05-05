@@ -8,7 +8,7 @@ use axum::{
     extract::{State, Path},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ use serde_json::json;
 use std::sync::Arc;
 use futures::stream::StreamExt;
 use crate::features::infrastructure::db::AppState;
-use crate::models::{Post, Profile, Location, ContentModeration};
+use crate::models::{Post, Profile, ContentModeration};
 use crate::features::infrastructure::dto::{PostResponse, FeedResponse, CommentResponse, ReportPostRequest};
 use crate::features::infrastructure::error::{AppResult, AppError};
 use crate::features::auth::auth_service::AuthUser;
@@ -24,6 +24,7 @@ use mongodb::{bson::{doc, Bson}, options::FindOptions};
 use chrono::Utc;
 use bson::oid::ObjectId;
 use crate::features::social::notifications::create_notification;
+use crate::features::infrastructure::push;
 use crate::features::ads::get_ads_for_feed;
 
 // --- DTOs ---
@@ -603,6 +604,19 @@ pub async fn like_post_handler(
             "liked your post",
             true
         ).await;
+
+        // Push Notification
+        let profiles = state.mongo.collection::<Profile>("profiles");
+        if let Ok(Some(liker_profile)) = profiles.find_one(doc! { "user_id": user.user_id }, None).await {
+            let state_push = state.clone();
+            let author_id = post.author_id;
+            let liker_id = user.user_id;
+            let liker_name = liker_profile.username.clone();
+            let post_oid = post_oid;
+            tokio::spawn(async move {
+                let _ = push::notify_like_post(&state_push, author_id, liker_id, liker_name, post_oid).await;
+            });
+        }
     }
 
     Ok((StatusCode::OK, Json(json!({"message": "Liked"}))))
@@ -676,10 +690,10 @@ pub async fn add_comment_handler(
         content_id: post_oid,
         content_type: "post".to_string(),
         user_id: user.user_id,
-        username: profile.username,
+        username: profile.username.clone(),
         user_avatar: profile.avatar_url,
         parent_id: parent_oid,
-        content: payload.content,
+        content: payload.content.clone(),
         media_url: payload.media_url,
         media_type: payload.media_type,
         status: "approved".to_string(),
@@ -725,6 +739,17 @@ pub async fn add_comment_handler(
             "commented on your post",
             true
         ).await;
+
+        // Push Notification
+        let state_push = state.clone();
+        let author_id = post.author_id;
+        let commenter_id = user.user_id;
+        let commenter_name = profile.username.clone();
+        let post_oid = post_oid;
+        let comment_preview = payload.content.clone();
+        tokio::spawn(async move {
+            let _ = push::notify_comment_post(&state_push, author_id, commenter_id, commenter_name, post_oid, comment_preview).await;
+        });
     }
 
     Ok((StatusCode::CREATED, Json(json!({"message": "Comment added"}))))

@@ -111,15 +111,61 @@ export const inferMediaType = (url) => {
 export const getVariantUrl = (url) => {
     if (!url || !url.includes('/uploads/')) return url;
     if (url.match(/\.(mp4|webm)$/i)) {
-        // Simple screen-width check as verified in Phase 4
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         const suffix = isMobile ? '_480p' : '_720p';
-        
-        // Skip if already has a variant suffix
+
         if (url.includes('_480p.') || url.includes('_720p.')) return url;
-        
-        // Insert suffix before extension
+
         return url.replace(/(\.[^.]+)$/, `${suffix}$1`);
     }
     return url;
+};
+
+/**
+ * Get responsive image URL based on display size.
+ * Returns thumbnail (150px) for mobile, medium (800px) for desktop.
+ */
+export const getResponsiveImageUrl = (url) => {
+    if (!url || !url.includes('/uploads/')) return url;
+    if (!url.match(/\.(jpg|jpeg|png|webp|avif)$/i)) return url;
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const suffix = isMobile ? '_thumb.webp' : '_medium.webp';
+
+    if (url.includes('_thumb.') || url.includes('_medium.')) return url;
+
+    // Insert variant before the file extension
+    return url.replace(/(\.[^.]+)$/, `_${suffix}$1`);
+};
+
+/**
+ * Generate blur placeholder data URL for images.
+ * Creates a tiny inline SVG as a placeholder while loading.
+ */
+export const getBlurPlaceholder = (width = 10, height = 10) =>
+    `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3C/svg%3E`;
+
+/**
+ * Custom hook for lazy loading images with blur-up effect.
+ * Returns props to spread on an <img> element.
+ */
+export const useProgressiveImage = (src, { sizes = '100vw', blurWidth = 10, blurHeight = 10 } = {}) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const placeholder = getBlurPlaceholder(blurWidth, blurHeight);
+
+    useEffect(() => {
+        if (!src) return;
+        const img = new Image();
+        img.src = src;
+        img.onload = () => setIsLoaded(true);
+        return () => { img.onload = null; };
+    }, [src]);
+
+    return {
+        src: isLoaded ? src : placeholder,
+        style: {
+            filter: isLoaded ? 'none' : 'blur(10px)',
+            transition: 'filter 0.3s ease-out',
+        },
+    };
 };

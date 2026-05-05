@@ -2,7 +2,7 @@
 
 use super::date_utils::*;
 use mongodb::bson::DateTime;
-use chrono::{Utc, TimeZone};
+use chrono::{Utc};
 
 #[cfg(test)]
 mod integration_tests {
@@ -68,7 +68,7 @@ mod integration_tests {
             
             // Should be able to convert back to BSON DateTime
             let bson_dt = DateTime::from_chrono(parsed.with_timezone(&Utc));
-            assert_eq!(date.to_rfc3339(), bson_dt.to_rfc3339());
+            assert_eq!(to_rfc3339(&date), to_rfc3339(&bson_dt));
         }
     }
 
@@ -90,7 +90,7 @@ mod integration_tests {
 /// Test helper to verify all endpoint date serialization
 #[cfg(test)]
 pub fn verify_endpoint_date_serialization() {
-    use crate::dto::*;
+    use crate::features::infrastructure::dto::*;
     use serde_json;
     
     // Test that all DTOs with date fields serialize properly

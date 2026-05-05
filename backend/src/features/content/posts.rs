@@ -2,15 +2,14 @@ use axum::{
     extract::{State, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use crate::features::infrastructure::db::AppState;
-use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, User, Profile};
+use crate::models::{Post, PostRevision, PostApproval, PostView, PostLike, PostShare, PostAnalytics, ContentModeration, Profile};
 use crate::features::infrastructure::dto::{
     PostDetailResponse, PostAnalyticsSummary, PostWorkflowResponse, 
     CreatePostRequest, UpdatePostRequest, ApprovePostRequest, PostFilter,
@@ -113,7 +112,7 @@ pub async fn list_posts_handler(
 
 pub async fn get_post_handler(
     State(state): State<Arc<AppState>>,
-    user: AuthUser,
+    _user: AuthUser,
     Path(post_id): Path<String>,
 ) -> AppResult<impl IntoResponse> {
     // Anyone logged in can try to view a post, 
@@ -142,7 +141,7 @@ pub async fn update_post_handler(
 
     let posts = state.mongo.collection::<Post>("posts");
     
-    let existing_post = posts.find_one(doc! { "_id": oid }, None).await?
+    let _existing_post = posts.find_one(doc! { "_id": oid }, None).await?
         .ok_or(AppError::NotFound("Post not found".to_string()))?;
 
     // Authorization: Admin ONLY for updates

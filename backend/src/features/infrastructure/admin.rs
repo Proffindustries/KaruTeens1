@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
-use crate::models::{User, Profile, Post, Transaction, Story, ContentModeration};
+use crate::models::{User, Profile, Post, Transaction, ContentModeration};
 use crate::features::auth::auth_service::AuthUser;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
@@ -20,7 +20,6 @@ use crate::features::social::messages::MessageResponse;
 use crate::features::content::posts::post_routes;
 use crate::features::social::events::event_routes;
 use crate::features::content::comments::comment_routes;
-use crate::features::content::stories::story_routes;
 use crate::features::content::reels::reel_routes;
 use crate::features::social::groups::group_routes;
 use crate::features::social::pages::page_routes;
@@ -185,9 +184,7 @@ pub async fn get_platform_stats_handler(
         }
     }
 
-    // Connect Stories
-    let stories_collection = state.mongo.collection::<Story>("stories");
-    let total_stories = stories_collection.count_documents(doc! {}, None).await.unwrap_or(0) as i64;
+    let total_stories = 0; // Stories feature disabled
     
     // Connect Reports (Content Moderation Queue)
     let reports_collection = state.mongo.collection::<ContentModeration>("content_moderation");
@@ -294,6 +291,14 @@ pub async fn list_users_handler(
         }
     }
 
+    if let Some(search) = filter.search {
+        if !search.is_empty() {
+            query.insert("$or", vec![
+                doc! { "email": doc! { "$regex": &search, "$options": "i" } },
+            ]);
+        }
+    }
+
     let mut cursor = users_collection.find(
         query,
         mongodb::options::FindOptions::builder()
@@ -315,7 +320,7 @@ pub async fn list_users_handler(
             let posts_collection = state.mongo.collection::<Post>("posts");
             let post_count = posts_collection.count_documents(doc! { "author_id": user_id }, None).await.unwrap_or(0) as i64;
 
-            users.push(AdminUserResponse {
+            let response = AdminUserResponse {
                 id: user_id.to_hex(),
                 email: u.email,
                 role: u.role,
@@ -326,7 +331,15 @@ pub async fn list_users_handler(
                 created_at: u.created_at.to_chrono().to_rfc3339(),
                 last_seen_at,
                 post_count,
-            });
+            };
+
+            if let Some(min_posts) = filter.min_posts {
+                if post_count < min_posts {
+                    continue;
+                }
+            }
+
+            users.push(response);
         }
     }
 
@@ -473,6 +486,14 @@ pub async fn export_users_handler(
         else if verified == "false" { query.insert("is_verified", false); }
     }
 
+    if let Some(search) = filter.search {
+        if !search.is_empty() {
+            query.insert("$or", vec![
+                doc! { "email": doc! { "$regex": &search, "$options": "i" } },
+            ]);
+        }
+    }
+
     let mut cursor = users_collection.find(query, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
@@ -483,6 +504,15 @@ pub async fn export_users_handler(
             let uid = u.id.unwrap();
             let profile = profiles_collection.find_one(doc! { "user_id": uid }, None).await.ok().flatten();
             let username = profile.map(|p| p.username).unwrap_or_else(|| "N/A".to_string());
+
+            let posts_collection = state.mongo.collection::<Post>("posts");
+            let post_count = posts_collection.count_documents(doc! { "author_id": uid }, None).await.unwrap_or(0) as i64;
+            
+            if let Some(min_posts) = filter.min_posts {
+                if post_count < min_posts {
+                    continue;
+                }
+            }
             
             csv.push_str(&format!("{},{},{},{},{},{},{},{}\n",
                 uid.to_hex(),
@@ -658,9 +688,9 @@ pub async fn broadcast_system_message_handler(
     require_admin(user.user_id, &state).await?;
 
     let users_collection = state.mongo.collection::<User>("users");
-    let chats_collection = state.mongo.collection::<crate::models::Chat>("chats");
-    let messages_collection = state.mongo.collection::<crate::models::Message>("messages");
-    let notifications_collection = state.mongo.collection::<crate::models::Notification>("notifications");
+    let _chats_collection = state.mongo.collection::<crate::models::Chat>("chats");
+    let _messages_collection = state.mongo.collection::<crate::models::Message>("messages");
+    let _notifications_collection = state.mongo.collection::<crate::models::Notification>("notifications");
 
     let mut cursor = users_collection.find(doc! { "is_banned": false }, None).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;

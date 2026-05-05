@@ -26,15 +26,12 @@ pub struct SearchQuery {
     pub date_from: Option<String>,
     pub date_to: Option<String>,
     pub sort_by: Option<String>, // relevance, recent, popular
-}
-
-#[derive(Deserialize)]
-pub struct AdvancedSearchFilters {
     pub tags: Option<Vec<String>>,
     pub post_type: Option<String>,
     pub min_likes: Option<i32>,
     pub language: Option<String>,
 }
+
 
 #[derive(Serialize)]
 pub struct SearchResults {
@@ -108,16 +105,64 @@ pub async fn search_handler(
     // --- Search Posts ---
     if search_type == "all" || search_type == "posts" {
         let posts = state.mongo.collection::<Post>("posts");
-        let mut cursor = posts.find(
-            doc! {
-                "status": "published",
-                "$or": [
-                    { "title": { "$regex": &q, "$options": "i" } },
-                    { "content": { "$regex": &q, "$options": "i" } }
-                ]
-            },
-            Some(mongodb::options::FindOptions::builder().limit(limit).build())
-        ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
+        let mut post_query = doc! {
+            "status": "published",
+            "$or": [
+                { "title": { "$regex": &q, "$options": "i" } },
+                { "content": { "$regex": &q, "$options": "i" } },
+                { "tags": { "$regex": &q, "$options": "i" } }
+            ]
+        };
+
+        if let Some(ref cat) = params.category {
+            post_query.insert("category", cat);
+        }
+
+        if let Some(has_media) = params.has_media {
+            if has_media {
+                post_query.insert("media_urls", doc! { "$exists": true, "$ne": [] });
+            } else {
+                post_query.insert("media_urls", doc! { "$in": [null, []] });
+            }
+        }
+
+        if let (Some(from), Some(to)) = (&params.date_from, &params.date_to) {
+            if let (Ok(f), Ok(t)) = (mongodb::bson::DateTime::parse_rfc3339_str(from), mongodb::bson::DateTime::parse_rfc3339_str(to)) {
+                post_query.insert("created_at", doc! { "$gte": f, "$lte": t });
+            }
+        }
+
+        if let Some(ref post_type) = params.post_type {
+            post_query.insert("post_type", post_type);
+        }
+
+        if let Some(min_likes) = params.min_likes {
+            post_query.insert("like_count", doc! { "$gte": min_likes });
+        }
+
+        if let Some(ref lang) = params.language {
+            post_query.insert("language", lang);
+        }
+
+        if let Some(ref tags) = params.tags {
+            if !tags.is_empty() {
+                post_query.insert("tags", doc! { "$in": tags });
+            }
+        }
+
+        let sort = match params.sort_by.as_deref() {
+            Some("recent") => doc! { "created_at": -1 },
+            Some("popular") => doc! { "like_count": -1 },
+            _ => doc! { "score": { "$meta": "textScore" } } // Default if text index exists, otherwise fallback
+        };
+
+        let mut find_options = mongodb::options::FindOptions::builder().limit(limit).build();
+        if params.sort_by.is_some() {
+            find_options.sort = Some(sort);
+        }
+
+        let mut cursor = posts.find(post_query, find_options)
+            .await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
         let mut posts_list = Vec::new();
         while let Some(post) = cursor.next().await {

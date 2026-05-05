@@ -7,7 +7,7 @@ use std::env;
 #[test]
 fn test_env_loading() {
     // This test verifies that .env can be loaded
-    let result = dotenvy::dotenv();
+    let _result = dotenvy::dotenv();
     // .env might not exist in test environment, so we just check it doesn't panic
     assert!(true);
 }

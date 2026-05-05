@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
-use crate::models::{StudyRoom, User, RoomMessage, RoomFile, PhysicalRoom, RoomBooking};
+use crate::models::{StudyRoom, RoomMessage, RoomFile};
 use crate::features::auth::auth_service::AuthUser;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use futures::stream::StreamExt;
