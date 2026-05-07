@@ -25,13 +25,6 @@ pub struct ChatMessage {
     pub content: String,
 }
 
-#[derive(Serialize)]
-pub struct ModelInfo {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-}
-
 pub async fn fetch_free_models(state: Arc<AppState>) {
     match state.http_client.get("https://openrouter.ai/api/v1/models").send().await {
         Ok(res) => {

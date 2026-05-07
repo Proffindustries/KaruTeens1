@@ -3,7 +3,6 @@ use tokio::time::{sleep, Duration};
 use tokio::sync::Semaphore;
 use crate::features::infrastructure::db::AppState;
 use crate::models::MediaJobRecord;
-use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::path::Path;

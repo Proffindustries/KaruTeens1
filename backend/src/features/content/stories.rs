@@ -669,10 +669,14 @@ async fn update_user_story_stats(
     Ok(())
 }
 
-fn determine_priority(spam_score: f64, reported_count: i32) -> i32 {
-    if spam_score > 0.8 || reported_count > 5 { 1 }
-    else if spam_score > 0.5 || reported_count > 2 { 2 }
-    else { 3 }
+fn determine_priority(spam_score: f64, reported_count: i32) -> String {
+    if spam_score > 0.8 || reported_count > 5 {
+        "high".to_string()
+    } else if spam_score > 0.5 || reported_count > 2 {
+        "medium".to_string()
+    } else {
+        "low".to_string()
+    }
 }
 
 pub fn story_routes() -> Router<Arc<AppState>> {

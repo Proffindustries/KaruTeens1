@@ -5,7 +5,6 @@ use axum::{
     Router,
     Json,
 };
-use serde::Serialize;
 use std::sync::Arc;
 use crate::features::infrastructure::db::AppState;
 use crate::features::auth::auth_service::AuthUser;
@@ -14,16 +13,6 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use chrono::Utc;
 use base64::Engine;
-
-#[derive(Serialize)]
-pub struct AblyTokenRequest {
-    pub key_name: String,
-    pub nonce: String,
-    pub timestamp: i64,
-    pub capability: String,
-    pub client_id: String,
-    pub mac: String,
-}
 
 pub fn ably_routes() -> Router<Arc<AppState>> {
     Router::new()

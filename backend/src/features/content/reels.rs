@@ -20,95 +20,6 @@ use futures::stream::StreamExt;
 
 // --- DTOs ---
 
-#[derive(Deserialize)]
-pub struct CreateReelRequest {
-    pub video_url: String,
-    pub thumbnail_url: String,
-    pub title: Option<String>,
-    pub description: String,
-    pub duration: f64,
-    pub video_size: i64,
-    pub video_format: String,
-    pub resolution: String,
-    pub bitrate: Option<i32>,
-    pub audio_bitrate: Option<i32>,
-    pub location: Option<Location>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub music_track: Option<String>,
-    pub effects: Option<Vec<String>>,
-    pub filters: Option<Vec<String>>,
-    pub duet_enabled: bool,
-    pub stitch_enabled: bool,
-    pub comments_enabled: bool,
-    pub shares_enabled: bool,
-    pub downloads_enabled: bool,
-    pub is_private: bool,
-    pub allowed_users: Option<Vec<String>>,
-    pub age_restriction: Option<String>,
-    pub content_warning: Option<String>,
-    pub available_qualities: Option<Vec<String>>,
-    pub subtitles: Option<Vec<Subtitle>>,
-    pub captions: Option<Vec<Caption>>,
-}
-
-#[derive(Deserialize)]
-pub struct UpdateReelRequest {
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub location: Option<Location>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub music_track: Option<String>,
-    pub effects: Option<Vec<String>>,
-    pub filters: Option<Vec<String>>,
-    pub duet_enabled: Option<bool>,
-    pub stitch_enabled: Option<bool>,
-    pub comments_enabled: Option<bool>,
-    pub shares_enabled: Option<bool>,
-    pub downloads_enabled: Option<bool>,
-    pub is_private: Option<bool>,
-    pub allowed_users: Option<Vec<String>>,
-    pub age_restriction: Option<String>,
-    pub content_warning: Option<String>,
-    pub moderation_notes: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateReelViewRequest {
-    pub viewer_id: String,
-    pub viewer_username: String,
-    pub view_duration: f64,
-    pub completion_rate: f64,
-    pub is_replay: bool,
-    pub location: Option<Location>,
-    pub device_info: Option<String>,
-    pub referrer: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateReelCommentRequest {
-    pub content: String,
-    pub parent_comment_id: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateReelShareRequest {
-    pub platform: String,
-    pub share_type: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateReelDuetRequest {
-    pub original_reel_id: String,
-    pub duet_type: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateReelStitchRequest {
-    pub original_reel_id: String,
-    pub stitch_duration: f64,
-}
 
 #[derive(Deserialize)]
 pub struct ModerateReelRequest {
@@ -261,11 +172,6 @@ pub struct UserReelStatsResponse {
     pub updated_at: String,
 }
 
-#[derive(Deserialize)]
-pub struct CreateReelTranscodingJobRequest {
-    pub reel_id: String,
-    pub target_qualities: Vec<String>,
-}
 
 #[derive(Deserialize)]
 pub struct UpdateTranscodingProgressRequest {

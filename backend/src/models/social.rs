@@ -82,34 +82,6 @@ pub struct StoryReply {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StoryHighlight {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub user_id: ObjectId,
-    pub title: String,
-    pub cover_image: Option<String>,
-    pub stories: Vec<ObjectId>,
-    pub created_at: bson::DateTime,
-    pub updated_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StoryAnalytics {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub story_id: ObjectId,
-    pub date: bson::DateTime,
-    pub views: i32,
-    pub unique_viewers: i32,
-    pub replays: i32,
-    pub replies: i32,
-    pub completion_rate: f64,
-    pub average_view_duration: f64,
-    pub engagement_rate: f64,
-    pub created_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserStoryStats {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
@@ -158,63 +130,6 @@ pub struct StoryModeration {
     pub reason: Option<String>,
     pub notes: Option<String>,
     pub created_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StorySchedule {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub user_id: ObjectId,
-    pub scheduled_for: bson::DateTime,
-    pub media_url: String,
-    pub media_type: String,
-    pub caption: Option<String>,
-    pub hashtags: Option<Vec<String>>,
-    pub mentions: Option<Vec<String>>,
-    pub is_highlight: bool,
-    pub highlight_category: Option<String>,
-    pub story_type: String,
-    pub story_data: Option<serde_json::Value>,
-    pub status: String,
-    pub published_at: Option<bson::DateTime>,
-    pub created_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StoryTemplate {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub name: String,
-    pub description: Option<String>,
-    pub background_color: Option<String>,
-    pub font_style: Option<String>,
-    pub text_color: Option<String>,
-    pub layout: Option<serde_json::Value>,
-    pub media_overlay: Option<String>,
-    pub stickers: Option<Vec<String>>,
-    pub created_by: ObjectId,
-    pub is_public: bool,
-    pub usage_count: i32,
-    pub created_at: bson::DateTime,
-    pub updated_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StoryModerationQueue {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub story_id: ObjectId,
-    pub user_id: ObjectId,
-    pub username: String,
-    pub media_url: String,
-    pub caption: Option<String>,
-    pub spam_score: f64,
-    pub sentiment_score: f64,
-    pub reported_count: i32,
-    pub created_at: bson::DateTime,
-    pub priority: String,
-    pub assigned_to: Option<ObjectId>,
-    pub assigned_at: Option<bson::DateTime>,
 }
 
 // --- Reel Models ---
@@ -486,41 +401,6 @@ pub struct ReelTranscodingJob {
     pub worker_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ReelTrending {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub reel_id: ObjectId,
-    pub trending_score: f64,
-    pub virality_score: f64,
-    pub category: String,
-    pub region: Option<String>,
-    pub trending_at: bson::DateTime,
-    pub peak_trending_at: Option<bson::DateTime>,
-    pub trending_duration: Option<i64>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ReelModerationQueue {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub reel_id: ObjectId,
-    pub user_id: ObjectId,
-    pub username: String,
-    pub video_url: String,
-    pub thumbnail_url: String,
-    pub title: Option<String>,
-    pub description: String,
-    pub spam_score: f64,
-    pub sentiment_score: f64,
-    pub reported_count: i32,
-    pub transcoding_status: String,
-    pub created_at: bson::DateTime,
-    pub priority: String,
-    pub assigned_to: Option<ObjectId>,
-    pub assigned_at: Option<bson::DateTime>,
-}
-
 // --- Hookup Models ---
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HookupAlias {
@@ -560,22 +440,6 @@ pub struct Group {
     pub members: Vec<ObjectId>,
     pub is_private: bool,
     pub max_members: Option<i32>,
-    pub created_at: bson::DateTime,
-    pub updated_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GroupPost {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub group_id: ObjectId,
-    pub user_id: ObjectId,
-    pub content: String,
-    pub media_urls: Vec<String>,
-    pub post_type: String,
-    pub location: Option<Location>,
-    pub likes_count: i32,
-    pub comments_count: i32,
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
 }

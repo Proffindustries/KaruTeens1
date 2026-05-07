@@ -9,7 +9,7 @@ use mongodb::{
     bson::{doc, oid::ObjectId, DateTime},
     options::FindOptions,
 };
-use futures::stream::{StreamExt, TryStreamExt};
+use futures::stream::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::collections::HashMap;

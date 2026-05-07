@@ -5,7 +5,6 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -15,12 +14,6 @@ use crate::models::{Profile, Follow};
 use mongodb::bson::doc;
 use bson::oid::ObjectId;
 use futures::StreamExt;
-
-// --- DTOs ---
-#[derive(Deserialize)]
-pub struct FollowRequest {
-    pub target_username: String,
-}
 
 // --- Handlers ---
 pub async fn follow_user_handler(

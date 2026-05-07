@@ -87,36 +87,6 @@ pub struct CommentModeration {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CommentLike {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub comment_id: ObjectId,
-    pub user_id: ObjectId,
-    pub username: String,
-    pub liked_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CommentAnalytics {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub content_id: ObjectId,
-    pub content_type: String,
-    pub date: bson::DateTime,
-    pub total_comments: i32,
-    pub approved_comments: i32,
-    pub pending_comments: i32,
-    pub rejected_comments: i32,
-    pub spam_comments: i32,
-    pub deleted_comments: i32,
-    pub total_likes: i32,
-    pub total_replies: i32,
-    pub avg_response_time: Option<f64>,
-    pub engagement_rate: f64,
-    pub created_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SpamDetectionRule {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
@@ -128,23 +98,4 @@ pub struct SpamDetectionRule {
     pub is_active: bool,
     pub created_at: bson::DateTime,
     pub updated_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CommentModerationQueue {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub comment_id: ObjectId,
-    pub content_id: ObjectId,
-    pub content_type: String,
-    pub user_id: ObjectId,
-    pub username: String,
-    pub content: String,
-    pub spam_score: f64,
-    pub sentiment_score: f64,
-    pub reported_count: i32,
-    pub created_at: bson::DateTime,
-    pub priority: String,
-    pub assigned_to: Option<ObjectId>,
-    pub assigned_at: Option<bson::DateTime>,
 }

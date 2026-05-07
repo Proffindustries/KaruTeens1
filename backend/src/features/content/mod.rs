@@ -63,7 +63,6 @@ pub struct CreatePostRequest {
 pub struct FeedQuery {
     pub last_id: Option<String>,
     pub limit: Option<u64>,
-    pub feed_type: Option<String>,
     pub group_id: Option<String>,
     pub page_id: Option<String>,
     pub search: Option<String>,

@@ -126,25 +126,6 @@ pub struct UpdateEventRequest {
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
     pub event_type: Option<String>,
-    pub status: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct EventUpdateRequest {
-    pub location: Option<String>,
-    pub start_datetime: Option<String>,
-    pub end_datetime: Option<String>,
-    pub registration_start: Option<String>,
-    pub registration_end: Option<String>,
-    pub category: Option<String>,
-    pub is_virtual: Option<bool>,
-    pub max_attendees: Option<i32>,
-    pub image_url: Option<String>,
-    pub banner_url: Option<String>,
-    pub ticket_price: Option<i64>,
-    pub currency: Option<String>,
-    pub rsvp_required: Option<bool>,
-    pub waitlist_enabled: Option<bool>,
 }
 
 // Post DTOs
@@ -279,7 +260,6 @@ pub struct UpdatePostRequest {
 #[derive(Deserialize)]
 pub struct ReportPostRequest {
     pub reason: String,
-    pub description: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -328,14 +308,6 @@ pub struct GroupFilter {
 }
 
 // Placeholder DTOs for other modules
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct GroupPostResponse {
-    pub id: String,
-    pub content: String,
-    pub group_id: String,
-    pub created_at: String,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GroupResponse {
     pub id: String,
@@ -391,6 +363,82 @@ pub struct StoryResponse {
     pub replies: Option<Vec<serde_json::Value>>,
     pub reports: Option<Vec<serde_json::Value>>,
     pub moderation_history: Option<Vec<serde_json::Value>>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct StoryModerationQueueResponse {
+    pub id: String,
+    pub story_id: String,
+    pub user_id: String,
+    pub username: String,
+    pub media_url: String,
+    pub caption: Option<String>,
+    pub media_type: String,
+    pub status: String,
+    pub spam_score: f64,
+    pub sentiment_score: f64,
+    pub reported_count: i32,
+    pub priority: String,
+    pub assigned_to: Option<String>,
+    pub assigned_at: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct UserStoryStatsResponse {
+    pub user_id: String,
+    pub username: String,
+    pub total_stories: i32,
+    pub active_stories: i32,
+    pub expired_stories: i32,
+    pub highlights: i32,
+    pub total_views: i32,
+    pub total_replies: i32,
+    pub avg_completion_rate: f64,
+    pub avg_engagement_rate: f64,
+    pub avg_view_duration: f64,
+    pub last_story_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreateStoryRequest {
+    pub media_url: String,
+    pub media_type: String,
+    pub caption: Option<String>,
+    pub location: Option<Location>,
+    pub hashtags: Option<Vec<String>>,
+    pub mentions: Option<Vec<String>>,
+    pub is_highlight: Option<bool>,
+    pub highlight_category: Option<String>,
+    pub is_private: Option<bool>,
+    pub allowed_users: Option<Vec<String>>,
+    pub story_type: Option<String>,
+    pub story_data: Option<serde_json::Value>,
+    pub is_nsfw: Option<bool>,
+}
+
+#[derive(Deserialize)]
+pub struct ModerateStoryRequest {
+    pub action: String,
+    pub reason: Option<String>,
+    pub notes: Option<String>,
+    pub after_caption: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct StoryFilter {
+    pub status: Option<String>,
+    pub user_id: Option<String>,
+    pub media_type: Option<String>,
+    pub story_type: Option<String>,
+    pub is_highlight: Option<bool>,
+    pub is_private: Option<bool>,
+    pub sort_by: Option<String>,
+    pub sort_order: Option<String>,
+    pub page: Option<i64>,
+    pub limit: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -532,7 +580,6 @@ pub struct AttendanceStats {
 
 #[derive(Deserialize)]
 pub struct CheckInRequest {
-    pub event_id: String,
     pub attended: bool,
 }
 
@@ -633,8 +680,6 @@ pub struct ApprovePostRequest {
     pub status: String,
     pub comments: Option<String>,
     pub rejection_reason: Option<String>,
-    pub media_urls: Option<Vec<String>>,
-    pub approved_at: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -742,11 +787,6 @@ pub struct UserCommentStatsResponse {
 }
 
 #[derive(Deserialize)]
-pub struct UpdateCommentRequest {
-    pub content: String,
-}
-
-#[derive(Deserialize)]
 pub struct ReportCommentRequest {
     pub reason: String,
     pub description: Option<String>,
@@ -780,7 +820,6 @@ pub struct CommentFilter {
 pub struct SpamRuleRequest {
     pub name: String,
     pub pattern: String,
-    pub action: String,
     pub description: Option<String>,
     pub score: Option<f64>,
     pub category: Option<String>,

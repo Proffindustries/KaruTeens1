@@ -21,7 +21,6 @@ use chrono::Utc;
 pub struct TrackAdEventRequest {
     pub creative_id: String,
     pub event_type: String, // impression, click, conversion
-    pub metadata: Option<serde_json::Value>,
 }
 
 // --- DTOs ---
@@ -36,8 +35,6 @@ pub struct CreateAdCampaignRequest {
     pub budget: AdBudgetRequest,
     pub optimization_goal: String, // clicks, conversions, impressions, reach
     pub bidding_strategy: String, // manual_cpc, automatic_cpc, cpm, cpa
-    pub daily_budget: f64,
-    pub lifetime_budget: Option<f64>,
     pub target_roas: Option<f64>, // Return on Ad Spend
     pub target_cpa: Option<f64>, // Cost per Acquisition
     pub campaign_type: String, // search, display, video, shopping, app
@@ -72,142 +69,6 @@ pub struct AdExclusionRuleRequest {
     pub rule_operator: String, // exclude, include
 }
 
-#[derive(Deserialize)]
-pub struct CreateAdGroupRequest {
-    pub campaign_id: String,
-    pub name: String,
-    pub status: String,
-    pub targeting: AdTargetingRequest,
-    pub bid_strategy: AdBidRequest,
-    pub ad_rotation: String, // optimized, rotate_forever
-    pub ad_serving_optimization: String, // balanced, optimize_for_conversions, optimize_for_clicks
-    pub start_date: Option<String>,
-    pub end_date: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct AdTargetingRequest {
-    pub locations: Option<Vec<String>>,
-    pub demographics: Option<AdDemographicsRequest>,
-    pub interests: Option<Vec<String>>,
-    pub keywords: Option<Vec<String>>,
-    pub devices: Option<Vec<String>>,
-    pub operating_systems: Option<Vec<String>>,
-    pub time_of_day: Option<AdTimeOfDayRequest>,
-    pub custom_audiences: Option<Vec<String>>,
-    pub lookalike_audiences: Option<Vec<String>>,
-    pub exclusion_audiences: Option<Vec<String>>,
-}
-
-#[derive(Deserialize)]
-pub struct AdDemographicsRequest {
-    pub age_ranges: Option<Vec<String>>,
-    pub genders: Option<Vec<String>>,
-    pub income_levels: Option<Vec<String>>,
-    pub education_levels: Option<Vec<String>>,
-    pub relationship_statuses: Option<Vec<String>>,
-    pub parental_statuses: Option<Vec<String>>,
-}
-
-#[derive(Deserialize)]
-pub struct AdTimeOfDayRequest {
-    pub start_hour: i32,
-    pub end_hour: i32,
-    pub days_of_week: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub struct AdBidRequest {
-    pub bid_type: String, // cpc, cpm, cpa, roas
-    pub bid_amount: f64,
-    pub bid_strategy: String, // manual, automatic
-    pub bid_ceiling: Option<f64>,
-    pub bid_floor: Option<f64>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateAdCreativeRequest {
-    pub ad_group_id: String,
-    pub name: String,
-    pub creative_type: String, // image, video, carousel, collection
-    pub status: String,
-    pub assets: Vec<AdCreativeAssetRequest>,
-    pub variants: Option<Vec<AdCreativeVariantRequest>>,
-    pub call_to_action: Option<String>,
-    pub headline: Option<String>,
-    pub description: Option<String>,
-    pub display_url: Option<String>,
-    pub final_url: String,
-    pub tracking_url: Option<String>,
-    pub custom_parameters: Option<Vec<AdCustomParameterRequest>>,
-    pub template_id: Option<String>,
-    pub template_fields: Option<Vec<AdTemplateFieldRequest>>,
-}
-
-#[derive(Deserialize)]
-pub struct AdCreativeAssetRequest {
-    pub asset_type: String, // image, video, headline, description
-    pub asset_url: String,
-    pub asset_text: Option<String>,
-    pub asset_dimensions: Option<AdAssetDimensionsRequest>,
-    pub asset_format: Option<String>,
-    pub asset_size: Option<i64>,
-    pub alt_text: Option<String>,
-    pub creative_id: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct AdAssetDimensionsRequest {
-    pub width: i32,
-    pub height: i32,
-    pub aspect_ratio: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct AdCreativeVariantRequest {
-    pub variant_name: String,
-    pub assets: Vec<AdCreativeAssetRequest>,
-    pub targeting: Option<AdTargetingRequest>,
-    pub bid_adjustments: Option<AdBidAdjustmentsRequest>,
-}
-
-#[derive(Deserialize)]
-pub struct AdBidAdjustmentsRequest {
-    pub device_adjustments: Option<Vec<AdDeviceAdjustmentRequest>>,
-    pub location_adjustments: Option<Vec<AdLocationAdjustmentRequest>>,
-    pub time_adjustments: Option<Vec<AdTimeAdjustmentRequest>>,
-}
-
-#[derive(Deserialize)]
-pub struct AdDeviceAdjustmentRequest {
-    pub device_type: String,
-    pub adjustment_percentage: f64,
-}
-
-#[derive(Deserialize)]
-pub struct AdLocationAdjustmentRequest {
-    pub location: String,
-    pub adjustment_percentage: f64,
-}
-
-#[derive(Deserialize)]
-pub struct AdTimeAdjustmentRequest {
-    pub time_period: String,
-    pub adjustment_percentage: f64,
-}
-
-#[derive(Deserialize)]
-pub struct AdCustomParameterRequest {
-    pub key: String,
-    pub value: String,
-}
-
-#[derive(Deserialize)]
-pub struct AdTemplateFieldRequest {
-    pub field_name: String,
-    pub field_value: String,
-    pub field_type: String,
-}
 
 #[derive(Deserialize)]
 pub struct UpdateAdCampaignRequest {
@@ -218,8 +79,6 @@ pub struct UpdateAdCampaignRequest {
     pub budget: Option<AdBudgetRequest>,
     pub optimization_goal: Option<String>,
     pub bidding_strategy: Option<String>,
-    pub daily_budget: Option<f64>,
-    pub lifetime_budget: Option<f64>,
     pub target_roas: Option<f64>,
     pub target_cpa: Option<f64>,
     pub campaign_type: Option<String>,
@@ -236,18 +95,10 @@ pub struct AdFilter {
     pub status: Option<String>,
     pub campaign_type: Option<String>,
     pub objective: Option<String>,
-    pub placement: Option<String>,
-    pub optimization_goal: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub min_budget: Option<f64>,
     pub max_budget: Option<f64>,
-    pub min_spend: Option<f64>,
-    pub max_spend: Option<f64>,
-    pub min_roas: Option<f64>,
-    pub max_roas: Option<f64>,
-    pub min_ctr: Option<f64>,
-    pub max_ctr: Option<f64>,
     pub sort_by: Option<String>,
     pub sort_order: Option<String>,
     pub page: Option<i64>,

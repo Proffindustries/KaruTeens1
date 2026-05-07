@@ -20,16 +20,6 @@ pub struct PushAction {
     pub title: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PushNotificationData {
-    pub notification_type: String,
-    pub actor_id: String,
-    pub actor_name: String,
-    pub target_id: String,
-    pub target_type: String,
-    pub thread_id: Option<String>,
-}
-
 pub async fn send_push_notification(
     _state: &Arc<AppState>,
     _user_id: ObjectId,
@@ -37,35 +27,6 @@ pub async fn send_push_notification(
 ) -> Result<(), String> {
     // Push subscription feature not implemented yet
     // This is a placeholder that does nothing but returns success
-    Ok(())
-}
-
-async fn send_webpush_notification(
-    endpoint: &str,
-    _p256dh: &str,
-    _auth: &str,
-    payload: &PushNotificationPayload,
-) -> Result<(), String> {
-    let client = reqwest::Client::new();
-    
-    let body = serde_json::to_string(payload).map_err(|e| e.to_string())?;
-
-    let vapid_key = std::env::var("VAPID_PUBLIC_KEY").unwrap_or_else(|_| "".to_string());
-    
-    let mut request = client.post(endpoint)
-        .header("Content-Type", "application/json")
-        .header("TTL", "86400")
-        .header("Authorization", format!("vapid t={}", vapid_key));
-
-    if !vapid_key.is_empty() {
-        request = request.header("Authorization", format!("vapid t={}, k={}", vapid_key, vapid_key));
-    }
-
-    request.body(body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
     Ok(())
 }
 

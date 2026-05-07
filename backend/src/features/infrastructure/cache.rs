@@ -42,32 +42,6 @@ impl CacheService {
         }
     }
 
-    pub async fn delete(&self, key: &str) -> bool {
-        let mut conn = self.conn.clone();
-        let res = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            conn.del::<&str, ()>(key)
-        ).await;
-
-        match res {
-            Ok(Ok(_)) => true,
-            _ => false,
-        }
-    }
-
-    pub async fn exists(&self, key: &str) -> bool {
-        let mut conn = self.conn.clone();
-        let res = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            conn.exists::<&str, bool>(key)
-        ).await;
-
-        match res {
-            Ok(Ok(exists)) => exists,
-            _ => false,
-        }
-    }
-
     pub async fn invalidate_pattern(&self, pattern: &str) -> bool {
         let mut conn = self.conn.clone();
         let mut cursor = 0u64;
@@ -101,19 +75,6 @@ impl CacheService {
         true
     }
 
-    pub async fn increment(&self, key: &str) -> i64 {
-        let mut conn = self.conn.clone();
-        let res = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            conn.incr::<&str, i64, i64>(key, 1)
-        ).await;
-
-        match res {
-            Ok(Ok(count)) => count,
-            _ => 0,
-        }
-    }
-
     pub async fn publish<T: Serialize>(&self, channel: &str, message: &T) -> bool {
         let mut conn = self.conn.clone();
         match serde_json::to_string(message) {
@@ -134,71 +95,13 @@ impl CacheService {
         }
     }
 
-    pub async fn get_with_ttl(&self, key: &str) -> (Option<String>, Option<i64>) {
-        let mut conn = self.conn.clone();
-        let result: (Option<String>, Option<i64>) = redis::cmd("GETEX")
-            .arg(key)
-            .arg("EX")
-            .query_async(&mut conn)
-            .await
-            .unwrap_or((None, None));
-        result
-    }
 }
 
 #[derive(Clone)]
 pub struct CacheKeys;
 
 impl CacheKeys {
-    pub fn user(id: &str) -> String {
-        format!("user:{}", id)
-    }
-
-    pub fn profile(id: &str) -> String {
-        format!("profile:{}", id)
-    }
-
-    pub fn post(id: &str) -> String {
-        format!("post:{}", id)
-    }
-
-    pub fn feed() -> String {
-        "feed:latest".to_string()
-    }
-
-    pub fn for_you_feed(user_id: &str) -> String {
-        format!("feed:for-you:{}", user_id)
-    }
-
-    pub fn trending_posts() -> String {
-        "posts:trending".to_string()
-    }
-
     pub fn trending_topics() -> String {
         "topics:trending".to_string()
-    }
-
-    pub fn group(id: &str) -> String {
-        format!("group:{}", id)
-    }
-
-    pub fn event(id: &str) -> String {
-        format!("event:{}", id)
-    }
-
-    pub fn marketplace_item(id: &str) -> String {
-        format!("marketplace:{}", id)
-    }
-
-    pub fn user_posts(user_id: &str) -> String {
-        format!("user:{}:posts", user_id)
-    }
-
-    pub fn notifications(user_id: &str) -> String {
-        format!("notifications:{}", user_id)
-    }
-
-    pub fn rate_limit(key: &str) -> String {
-        format!("ratelimit:{}", key)
     }
 }

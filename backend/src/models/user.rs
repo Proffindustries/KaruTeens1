@@ -79,35 +79,6 @@ pub struct Profile {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProfileView {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub profile_user_id: ObjectId,   // User whose profile was viewed
-    pub viewer_id: Option<ObjectId>, // User who viewed (None if anonymous/not logged in)
-    pub viewer_username: Option<String>,
-    pub viewer_avatar: Option<String>,
-    pub ip_address: String,
-    pub user_agent: Option<String>,
-    pub viewed_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProfileViewSummary {
-    pub total_views: i64,
-    pub unique_viewers: i64,
-    pub views_this_week: i64,
-    pub recent_viewers: Vec<ProfileViewerInfo>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProfileViewerInfo {
-    pub viewer_id: Option<String>,
-    pub username: Option<String>,
-    pub avatar_url: Option<String>,
-    pub viewed_at: bson::DateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserCommentStats {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
