@@ -3,7 +3,7 @@ import { Search, X, Hash, AtSign } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/SearchBar.css';
 
-const SearchBar = ({ placeholder = "Search campus..." }) => {
+const SearchBar = ({ placeholder = 'Search campus...' }) => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [query, setQuery] = useState(searchParams.get('search') || '');
@@ -30,15 +30,16 @@ const SearchBar = ({ placeholder = "Search campus..." }) => {
     const getIcon = () => {
         if (query.startsWith('#')) return <Hash size={18} className="search-icon-active" />;
         if (query.startsWith('@')) return <AtSign size={18} className="search-icon-active" />;
-        return <Search size={18} className={isFocused ? "search-icon-active" : "search-icon"} />;
+        return <Search size={18} className={isFocused ? 'search-icon-active' : 'search-icon'} />;
     };
 
     return (
-        <form className={`search-bar-container ${isFocused ? 'focused' : ''}`} onSubmit={handleSearch}>
+        <form
+            className={`search-bar-container ${isFocused ? 'focused' : ''}`}
+            onSubmit={handleSearch}
+        >
             <div className="search-input-group">
-                <div className="search-icon-wrapper">
-                    {getIcon()}
-                </div>
+                <div className="search-icon-wrapper">{getIcon()}</div>
                 <input
                     type="text"
                     value={query}

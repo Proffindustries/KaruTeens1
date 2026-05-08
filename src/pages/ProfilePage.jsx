@@ -63,13 +63,22 @@ const ProfilePage = () => {
     const [isUploadingCover, setIsUploadingCover] = useState(false);
 
     // All three tab queries (always mounted to avoid refetch on tab switch)
-    const { data: postsData, isLoading: postsLoading } = useInfiniteUserContent(targetUsername, 'posts');
-    const { data: mediaData, isLoading: mediaLoading } = useInfiniteUserContent(targetUsername, 'media');
-    const { data: likesData, isLoading: likesLoading } = useInfiniteUserContent(targetUsername, 'likes');
+    const { data: postsData, isLoading: postsLoading } = useInfiniteUserContent(
+        targetUsername,
+        'posts',
+    );
+    const { data: mediaData, isLoading: mediaLoading } = useInfiniteUserContent(
+        targetUsername,
+        'media',
+    );
+    const { data: likesData, isLoading: likesLoading } = useInfiniteUserContent(
+        targetUsername,
+        'likes',
+    );
 
-    const userPosts  = postsData?.pages?.flatMap((page) => page) || [];
-    const userMedia  = mediaData?.pages?.flatMap((page) => page) || [];
-    const userLikes  = likesData?.pages?.flatMap((page) => page) || [];
+    const userPosts = postsData?.pages?.flatMap((page) => page) || [];
+    const userMedia = mediaData?.pages?.flatMap((page) => page) || [];
+    const userLikes = likesData?.pages?.flatMap((page) => page) || [];
 
     const profile = profileRes?.profile || profileRes;
     const stats = {
@@ -251,41 +260,55 @@ const ProfilePage = () => {
             {/* Header / Cover */}
             <div className="profile-header-card">
                 <div
-                className="profile-cover"
-                style={profile?.cover_photo_url ? {
-                    backgroundImage: `url(${profile.cover_photo_url})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                } : {
-                    background: 'linear-gradient(135deg, hsl(250,60%,20%) 0%, hsl(210,70%,25%) 50%, hsl(170,60%,20%) 100%)',
-                }}
-            >
-                {isOwnProfile && (
-                    <button
-                        className="cover-edit-btn"
-                        onClick={() => coverInputRef.current.click()}
-                        disabled={isUploadingCover}
-                        style={{
-                            position: 'absolute', bottom: '0.75rem', right: '0.75rem',
-                            display: 'flex', alignItems: 'center', gap: '0.4rem',
-                            padding: '0.45rem 0.9rem', borderRadius: '20px',
-                            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
-                            border: '1px solid rgba(255,255,255,0.2)', color: '#fff',
-                            cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
-                        }}
-                    >
-                        <Camera size={14} />
-                        {isUploadingCover ? 'Uploading…' : 'Edit cover'}
-                    </button>
-                )}
-                <input
-                    type="file"
-                    ref={coverInputRef}
-                    hidden
-                    accept="image/*"
-                    onChange={handleCoverChange}
-                />
-            </div>
+                    className="profile-cover"
+                    style={
+                        profile?.cover_photo_url
+                            ? {
+                                  backgroundImage: `url(${profile.cover_photo_url})`,
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                              }
+                            : {
+                                  background:
+                                      'linear-gradient(135deg, hsl(250,60%,20%) 0%, hsl(210,70%,25%) 50%, hsl(170,60%,20%) 100%)',
+                              }
+                    }
+                >
+                    {isOwnProfile && (
+                        <button
+                            className="cover-edit-btn"
+                            onClick={() => coverInputRef.current.click()}
+                            disabled={isUploadingCover}
+                            style={{
+                                position: 'absolute',
+                                bottom: '0.75rem',
+                                right: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.45rem 0.9rem',
+                                borderRadius: '20px',
+                                background: 'rgba(0,0,0,0.55)',
+                                backdropFilter: 'blur(6px)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                color: '#fff',
+                                cursor: 'pointer',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                            }}
+                        >
+                            <Camera size={14} />
+                            {isUploadingCover ? 'Uploading…' : 'Edit cover'}
+                        </button>
+                    )}
+                    <input
+                        type="file"
+                        ref={coverInputRef}
+                        hidden
+                        accept="image/*"
+                        onChange={handleCoverChange}
+                    />
+                </div>
                 <div className="profile-main-info">
                     <div
                         className={`profile-avatar-container ${isOwnProfile ? 'editable' : ''}`}
@@ -592,12 +615,18 @@ const ProfilePage = () => {
                 <div className="main-column">
                     {/* Content tabs */}
                     {!isLocked && (
-                        <div className="profile-tabs" style={{
-                            display: 'flex', gap: 0, marginBottom: '1.25rem',
-                            borderRadius: '10px', overflow: 'hidden',
-                            border: '1px solid rgba(var(--card-border), 0.4)',
-                            background: 'rgba(var(--card-bg), 0.6)',
-                        }}>
+                        <div
+                            className="profile-tabs"
+                            style={{
+                                display: 'flex',
+                                gap: 0,
+                                marginBottom: '1.25rem',
+                                borderRadius: '10px',
+                                overflow: 'hidden',
+                                border: '1px solid rgba(var(--card-border), 0.4)',
+                                background: 'rgba(var(--card-bg), 0.6)',
+                            }}
+                        >
                             {[
                                 { id: 'posts', label: 'Posts', icon: <FileText size={15} /> },
                                 { id: 'media', label: 'Media', icon: <Grid size={15} /> },
@@ -607,19 +636,29 @@ const ProfilePage = () => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     style={{
-                                        flex: 1, padding: '0.7rem',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        gap: '0.4rem', fontWeight: 600, fontSize: '0.9rem',
-                                        border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                                        background: activeTab === tab.id
-                                            ? 'rgba(var(--primary-color), 0.15)'
-                                            : 'transparent',
-                                        color: activeTab === tab.id
-                                            ? 'rgb(var(--primary-color))'
-                                            : 'var(--text-muted)',
-                                        borderBottom: activeTab === tab.id
-                                            ? '2px solid rgb(var(--primary-color))'
-                                            : '2px solid transparent',
+                                        flex: 1,
+                                        padding: '0.7rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.4rem',
+                                        fontWeight: 600,
+                                        fontSize: '0.9rem',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        background:
+                                            activeTab === tab.id
+                                                ? 'rgba(var(--primary-color), 0.15)'
+                                                : 'transparent',
+                                        color:
+                                            activeTab === tab.id
+                                                ? 'rgb(var(--primary-color))'
+                                                : 'var(--text-muted)',
+                                        borderBottom:
+                                            activeTab === tab.id
+                                                ? '2px solid rgb(var(--primary-color))'
+                                                : '2px solid transparent',
                                     }}
                                 >
                                     {tab.icon} {tab.label}
@@ -630,7 +669,10 @@ const ProfilePage = () => {
 
                     {/* Locked state */}
                     {isLocked ? (
-                        <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
+                        <div
+                            className="empty-state card"
+                            style={{ padding: '3rem', textAlign: 'center' }}
+                        >
                             <ShieldCheck size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
                             <h3>Locked Profile</h3>
                             <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
@@ -648,77 +690,152 @@ const ProfilePage = () => {
                         <AnimatePresence mode="wait">
                             {/* Posts tab */}
                             {activeTab === 'posts' && (
-                                <motion.div key="posts"
-                                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
+                                <motion.div
+                                    key="posts"
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }}
+                                    transition={{ duration: 0.2 }}
                                     className="posts-feed"
                                 >
-                                    {postsLoading
-                                        ? [1, 2, 3].map((i) => <PostSkeleton key={i} />)
-                                        : userPosts.length > 0
-                                            ? userPosts.map((post) => <PostCard key={post.id} post={post} />)
-                                            : (
-                                                <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
-                                                    <FileText size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                                                    <h3>No posts yet</h3>
-                                                    <p style={{ color: 'var(--text-muted)' }}>
-                                                        {isOwnProfile ? "Share something with your campus!" : "This user hasn't posted yet."}
-                                                    </p>
-                                                </div>
-                                            )
-                                    }
+                                    {postsLoading ? (
+                                        [1, 2, 3].map((i) => <PostSkeleton key={i} />)
+                                    ) : userPosts.length > 0 ? (
+                                        userPosts.map((post) => (
+                                            <PostCard key={post.id} post={post} />
+                                        ))
+                                    ) : (
+                                        <div
+                                            className="empty-state card"
+                                            style={{ padding: '3rem', textAlign: 'center' }}
+                                        >
+                                            <FileText
+                                                size={40}
+                                                style={{ opacity: 0.2, marginBottom: '1rem' }}
+                                            />
+                                            <h3>No posts yet</h3>
+                                            <p style={{ color: 'var(--text-muted)' }}>
+                                                {isOwnProfile
+                                                    ? 'Share something with your campus!'
+                                                    : "This user hasn't posted yet."}
+                                            </p>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 
                             {/* Media tab — 3-col grid */}
                             {activeTab === 'media' && (
-                                <motion.div key="media"
-                                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
+                                <motion.div
+                                    key="media"
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }}
+                                    transition={{ duration: 0.2 }}
                                 >
                                     {mediaLoading ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
-                                            {[1,2,3,4,5,6].map((i) => (
-                                                <div key={i} className="shimmer" style={{ aspectRatio: '1', borderRadius: '6px' }} />
+                                        <div
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: '4px',
+                                            }}
+                                        >
+                                            {[1, 2, 3, 4, 5, 6].map((i) => (
+                                                <div
+                                                    key={i}
+                                                    className="shimmer"
+                                                    style={{
+                                                        aspectRatio: '1',
+                                                        borderRadius: '6px',
+                                                    }}
+                                                />
                                             ))}
                                         </div>
                                     ) : userMedia.length > 0 ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                                        <div
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: '4px',
+                                            }}
+                                        >
                                             {userMedia.map((post) => {
                                                 const src = post.media_urls?.[0];
-                                                const isVideo = src && /\.(mp4|webm|mov)/i.test(src);
+                                                const isVideo =
+                                                    src && /\.(mp4|webm|mov)/i.test(src);
                                                 return (
-                                                    <div key={post.id}
-                                                        onClick={() => window.location.href = `/post/${post.id}`}
+                                                    <div
+                                                        key={post.id}
+                                                        onClick={() =>
+                                                            (window.location.href = `/post/${post.id}`)
+                                                        }
                                                         style={{
-                                                            aspectRatio: '1', borderRadius: '6px',
-                                                            overflow: 'hidden', cursor: 'pointer',
-                                                            position: 'relative', background: 'rgba(var(--card-bg),0.8)',
+                                                            aspectRatio: '1',
+                                                            borderRadius: '6px',
+                                                            overflow: 'hidden',
+                                                            cursor: 'pointer',
+                                                            position: 'relative',
+                                                            background: 'rgba(var(--card-bg),0.8)',
                                                         }}
                                                     >
                                                         {isVideo ? (
-                                                            <video src={src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                                                            <video
+                                                                src={src}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    objectFit: 'cover',
+                                                                }}
+                                                                muted
+                                                            />
                                                         ) : (
-                                                            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
+                                                            <img
+                                                                src={src}
+                                                                alt=""
+                                                                style={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    objectFit: 'cover',
+                                                                }}
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                            />
                                                         )}
-                                                        <div style={{
-                                                            position: 'absolute', inset: 0,
-                                                            background: 'rgba(0,0,0,0)',
-                                                            transition: 'background 0.2s',
-                                                        }}
-                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
-                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0)'}
+                                                        <div
+                                                            style={{
+                                                                position: 'absolute',
+                                                                inset: 0,
+                                                                background: 'rgba(0,0,0,0)',
+                                                                transition: 'background 0.2s',
+                                                            }}
+                                                            onMouseEnter={(e) =>
+                                                                (e.currentTarget.style.background =
+                                                                    'rgba(0,0,0,0.3)')
+                                                            }
+                                                            onMouseLeave={(e) =>
+                                                                (e.currentTarget.style.background =
+                                                                    'rgba(0,0,0,0)')
+                                                            }
                                                         />
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     ) : (
-                                        <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
-                                            <Grid size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                                        <div
+                                            className="empty-state card"
+                                            style={{ padding: '3rem', textAlign: 'center' }}
+                                        >
+                                            <Grid
+                                                size={40}
+                                                style={{ opacity: 0.2, marginBottom: '1rem' }}
+                                            />
                                             <h3>No media yet</h3>
                                             <p style={{ color: 'var(--text-muted)' }}>
-                                                {isOwnProfile ? "Post a photo or video to see it here." : "No photos or videos shared yet."}
+                                                {isOwnProfile
+                                                    ? 'Post a photo or video to see it here.'
+                                                    : 'No photos or videos shared yet.'}
                                             </p>
                                         </div>
                                     )}
@@ -727,37 +844,56 @@ const ProfilePage = () => {
 
                             {/* Likes tab */}
                             {activeTab === 'likes' && (
-                                <motion.div key="likes"
-                                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
+                                <motion.div
+                                    key="likes"
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }}
+                                    transition={{ duration: 0.2 }}
                                     className="posts-feed"
                                 >
-                                    {likesLoading
-                                        ? [1, 2, 3].map((i) => <PostSkeleton key={i} />)
-                                        : userLikes.length > 0
-                                            ? userLikes.map((post) => (
-                                                <div key={post.id}>
-                                                    <div style={{
-                                                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                    {likesLoading ? (
+                                        [1, 2, 3].map((i) => <PostSkeleton key={i} />)
+                                    ) : userLikes.length > 0 ? (
+                                        userLikes.map((post) => (
+                                            <div key={post.id}>
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.4rem',
                                                         padding: '0.4rem 0.6rem 0',
-                                                        fontSize: '0.82rem', color: 'var(--text-muted)',
-                                                    }}>
-                                                        <Heart size={12} fill="currentColor" style={{ color: '#e74c3c' }} />
-                                                        Liked by @{profile?.username}
-                                                    </div>
-                                                    <PostCard post={post} />
+                                                        fontSize: '0.82rem',
+                                                        color: 'var(--text-muted)',
+                                                    }}
+                                                >
+                                                    <Heart
+                                                        size={12}
+                                                        fill="currentColor"
+                                                        style={{ color: '#e74c3c' }}
+                                                    />
+                                                    Liked by @{profile?.username}
                                                 </div>
-                                            ))
-                                            : (
-                                                <div className="empty-state card" style={{ padding: '3rem', textAlign: 'center' }}>
-                                                    <Heart size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                                                    <h3>No liked posts</h3>
-                                                    <p style={{ color: 'var(--text-muted)' }}>
-                                                        {isOwnProfile ? "Posts you like will appear here." : "No public likes yet."}
-                                                    </p>
-                                                </div>
-                                            )
-                                    }
+                                                <PostCard post={post} />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div
+                                            className="empty-state card"
+                                            style={{ padding: '3rem', textAlign: 'center' }}
+                                        >
+                                            <Heart
+                                                size={40}
+                                                style={{ opacity: 0.2, marginBottom: '1rem' }}
+                                            />
+                                            <h3>No liked posts</h3>
+                                            <p style={{ color: 'var(--text-muted)' }}>
+                                                {isOwnProfile
+                                                    ? 'Posts you like will appear here.'
+                                                    : 'No public likes yet.'}
+                                            </p>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -767,304 +903,310 @@ const ProfilePage = () => {
 
             {/* Edit Modal with AnimatePresence */}
             <AnimatePresence>
-            {isEditing && (
-                <motion.div
-                    className="modal-overlay"
-                    onClick={() => setIsEditing(false)}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
+                {isEditing && (
                     <motion.div
-                        className="modal-content"
-                        onClick={(e) => e.stopPropagation()}
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                        className="modal-overlay"
+                        onClick={() => setIsEditing(false)}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                     >
-                        <div className="modal-header">
-                            <h3>Edit Profile</h3>
-                            <button className="close-btn" onClick={() => setIsEditing(false)}>
-                                ×
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div
-                                className="form-group"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    marginBottom: '1rem',
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    id="is_locked"
-                                    checked={editForm.is_locked}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, is_locked: e.target.checked })
-                                    }
-                                />
-                                <label htmlFor="is_locked" style={{ margin: 0 }}>
-                                    Locked Profile (Only followers can see your details)
-                                </label>
+                        <motion.div
+                            className="modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                        >
+                            <div className="modal-header">
+                                <h3>Edit Profile</h3>
+                                <button className="close-btn" onClick={() => setIsEditing(false)}>
+                                    ×
+                                </button>
                             </div>
-                            <div className="form-group">
-                                <label>Full Name</label>
-                                <input
-                                    className="form-input"
-                                    value={editForm.full_name}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, full_name: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Bio</label>
-                                <textarea
-                                    className="form-input"
-                                    rows="3"
-                                    value={editForm.bio}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, bio: e.target.value })
-                                    }
-                                ></textarea>
-                            </div>
-                            <div className="form-group">
-                                <label>Location</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="City, Country"
-                                    value={editForm.location}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, location: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>School</label>
-                                <input
-                                    className="form-input"
-                                    value={editForm.school}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, school: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Year of Study</label>
-                                <select
-                                    className="form-input"
-                                    value={editForm.year_of_study}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, year_of_study: e.target.value })
-                                    }
+                            <div className="modal-body">
+                                <div
+                                    className="form-group"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        marginBottom: '1rem',
+                                    }}
                                 >
-                                    <option value="">Select Year</option>
-                                    <option value="1">Year 1</option>
-                                    <option value="2">Year 2</option>
-                                    <option value="3">Year 3</option>
-                                    <option value="4">Year 4</option>
-                                    <option value="5">Year 5+</option>
-                                    <option value="0">Alumni</option>
-                                </select>
-                            </div>
-                            <div
-                                className="form-row"
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: '1rem',
-                                }}
-                            >
-                                <div className="form-group">
-                                    <label>Age</label>
                                     <input
-                                        type="number"
-                                        className="form-input"
-                                        value={editForm.age}
+                                        type="checkbox"
+                                        id="is_locked"
+                                        checked={editForm.is_locked}
                                         onChange={(e) =>
-                                            setEditForm({ ...editForm, age: e.target.value })
+                                            setEditForm({
+                                                ...editForm,
+                                                is_locked: e.target.checked,
+                                            })
+                                        }
+                                    />
+                                    <label htmlFor="is_locked" style={{ margin: 0 }}>
+                                        Locked Profile (Only followers can see your details)
+                                    </label>
+                                </div>
+                                <div className="form-group">
+                                    <label>Full Name</label>
+                                    <input
+                                        className="form-input"
+                                        value={editForm.full_name}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, full_name: e.target.value })
                                         }
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Gender</label>
+                                    <label>Bio</label>
+                                    <textarea
+                                        className="form-input"
+                                        rows="3"
+                                        value={editForm.bio}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, bio: e.target.value })
+                                        }
+                                    ></textarea>
+                                </div>
+                                <div className="form-group">
+                                    <label>Location</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="City, Country"
+                                        value={editForm.location}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, location: e.target.value })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>School</label>
+                                    <input
+                                        className="form-input"
+                                        value={editForm.school}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, school: e.target.value })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Year of Study</label>
                                     <select
                                         className="form-input"
-                                        value={editForm.gender}
+                                        value={editForm.year_of_study}
                                         onChange={(e) =>
-                                            setEditForm({ ...editForm, gender: e.target.value })
+                                            setEditForm({
+                                                ...editForm,
+                                                year_of_study: e.target.value,
+                                            })
                                         }
                                     >
-                                        <option value="">Select</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Other">Other</option>
+                                        <option value="">Select Year</option>
+                                        <option value="1">Year 1</option>
+                                        <option value="2">Year 2</option>
+                                        <option value="3">Year 3</option>
+                                        <option value="4">Year 4</option>
+                                        <option value="5">Year 5+</option>
+                                        <option value="0">Alumni</option>
                                     </select>
                                 </div>
+                                <div
+                                    className="form-row"
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 1fr',
+                                        gap: '1rem',
+                                    }}
+                                >
+                                    <div className="form-group">
+                                        <label>Age</label>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            value={editForm.age}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, age: e.target.value })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Gender</label>
+                                        <select
+                                            className="form-input"
+                                            value={editForm.gender}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, gender: e.target.value })
+                                            }
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Reg No. (e.g. e101)</label>
+                                        <input
+                                            className="form-input"
+                                            maxLength={4}
+                                            value={editForm.reg}
+                                            onChange={(e) => {
+                                                const val = e.target.value.toLowerCase();
+                                                if (val.length <= 4) {
+                                                    setEditForm({ ...editForm, reg: val });
+                                                }
+                                            }}
+                                            placeholder="e.g. e101"
+                                        />
+                                        <small
+                                            style={{
+                                                fontSize: '0.7rem',
+                                                color: 'rgb(var(--text-muted))',
+                                            }}
+                                        >
+                                            Format: 1 letter + 3 digits (e.g., e101, b202)
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <h4>Social Links</h4>
                                 <div className="form-group">
-                                    <label>Reg No. (e.g. e101)</label>
+                                    <label>Instagram (username)</label>
                                     <input
                                         className="form-input"
-                                        maxLength={4}
-                                        value={editForm.reg}
-                                        onChange={(e) => {
-                                            const val = e.target.value.toLowerCase();
-                                            if (val.length <= 4) {
-                                                setEditForm({ ...editForm, reg: val });
-                                            }
-                                        }}
-                                        placeholder="e.g. e101"
+                                        placeholder="@username"
+                                        value={editForm.social_links.instagram}
+                                        onChange={(e) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                social_links: {
+                                                    ...editForm.social_links,
+                                                    instagram: e.target.value,
+                                                },
+                                            })
+                                        }
                                     />
-                                    <small
-                                        style={{
-                                            fontSize: '0.7rem',
-                                            color: 'rgb(var(--text-muted))',
-                                        }}
-                                    >
-                                        Format: 1 letter + 3 digits (e.g., e101, b202)
-                                    </small>
+                                </div>
+                                <div className="form-group">
+                                    <label>TikTok (username)</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="@username"
+                                        value={editForm.social_links.tiktok}
+                                        onChange={(e) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                social_links: {
+                                                    ...editForm.social_links,
+                                                    tiktok: e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Twitter (username)</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="@username"
+                                        value={editForm.social_links.twitter}
+                                        onChange={(e) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                social_links: {
+                                                    ...editForm.social_links,
+                                                    twitter: e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>YouTube (link or @handle)</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="@channel or URL"
+                                        value={editForm.social_links.youtube}
+                                        onChange={(e) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                social_links: {
+                                                    ...editForm.social_links,
+                                                    youtube: e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Other Website/Link</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="https://..."
+                                        value={editForm.social_links.other}
+                                        onChange={(e) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                social_links: {
+                                                    ...editForm.social_links,
+                                                    other: e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Profile Quote</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="A quote that defines you..."
+                                        value={editForm.quote}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, quote: e.target.value })
+                                        }
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Skills (comma separated)</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="Coding, Design, Public Speaking..."
+                                        value={editForm.skills}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, skills: e.target.value })
+                                        }
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Interests (comma separated)</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="Reading, Photography, Travel..."
+                                        value={editForm.interests}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, interests: e.target.value })
+                                        }
+                                    />
                                 </div>
                             </div>
-
-                            <h4>Social Links</h4>
-                            <div className="form-group">
-                                <label>Instagram (username)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="@username"
-                                    value={editForm.social_links.instagram}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                instagram: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
+                            <div className="modal-footer">
+                                <button
+                                    className="btn btn-primary btn-full"
+                                    onClick={handleUpdate}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? 'Saving...' : 'Save Changes'}
+                                </button>
                             </div>
-                            <div className="form-group">
-                                <label>TikTok (username)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="@username"
-                                    value={editForm.social_links.tiktok}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                tiktok: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Twitter (username)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="@username"
-                                    value={editForm.social_links.twitter}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                twitter: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>YouTube (link or @handle)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="@channel or URL"
-                                    value={editForm.social_links.youtube}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                youtube: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Other Website/Link</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="https://..."
-                                    value={editForm.social_links.other}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            social_links: {
-                                                ...editForm.social_links,
-                                                other: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Profile Quote</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="A quote that defines you..."
-                                    value={editForm.quote}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, quote: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Skills (comma separated)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="Coding, Design, Public Speaking..."
-                                    value={editForm.skills}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, skills: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Interests (comma separated)</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="Reading, Photography, Travel..."
-                                    value={editForm.interests}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, interests: e.target.value })
-                                    }
-                                />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button
-                                className="btn btn-primary btn-full"
-                                onClick={handleUpdate}
-                                disabled={isUpdating}
-                            >
-                                {isUpdating ? 'Saving...' : 'Save Changes'}
-                            </button>
-                        </div>
+                        </motion.div>
                     </motion.div>
-                </motion.div>
-            )}
+                )}
             </AnimatePresence>
         </div>
     );

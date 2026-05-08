@@ -22,7 +22,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
     const storedUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
     const currentUser = {
         ...storedUser,
-        id: storedUser.id || storedUser._id || storedUser.user_id
+        id: storedUser.id || storedUser._id || storedUser.user_id,
     };
 
     const handleReplyClick = useCallback(() => {
@@ -37,7 +37,8 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
         }
     }, [commentId, deleteComment]);
 
-    const isOwner = currentUser?.username === comment.username || currentUser?.id === comment.user_id;
+    const isOwner =
+        currentUser?.username === comment.username || currentUser?.id === comment.user_id;
     const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
 
     const handleReplySubmit = useCallback(

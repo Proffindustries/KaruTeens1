@@ -11,7 +11,7 @@ export const useInfinitePosts = <T = any>(
     queryKey: string[],
     paramsFactory: (pageParam: string | null) => Record<string, any>,
     dataExtractor: (response: any) => T[] = (response) => response.posts || response.data || [],
-    options: any = {}
+    options: any = {},
 ) => {
     return useInfiniteQuery({
         queryKey,
@@ -50,7 +50,7 @@ export const useInfiniteFeed = (search?: string, options: any = {}) => {
         {
             staleTime: STALE_TIMES.FEED_POSTS,
             ...options,
-        }
+        },
     );
 };
 
@@ -66,7 +66,7 @@ export const useInfiniteForYouFeed = (options: any = {}) => {
         {
             staleTime: STALE_TIMES.FEED_POSTS,
             ...options,
-        }
+        },
     );
 };
 
@@ -82,7 +82,7 @@ export const useInfiniteTrendingPosts = (options: any = {}) => {
         {
             staleTime: STALE_TIMES.TRENDING_POSTS,
             ...options,
-        }
+        },
     );
 };
 
@@ -92,14 +92,14 @@ export const useInfiniteTrendingPosts = (options: any = {}) => {
 export const useInfiniteUserContent = (
     userId: string,
     contentType: 'posts' | 'comments' | 'reactions' | 'media' | 'likes',
-    options: any = {}
+    options: any = {},
 ) => {
     return useInfiniteQuery({
         queryKey: ['user-content', userId, contentType],
         queryFn: async ({ pageParam }: { pageParam: string | null }) => {
             let endpoint = `/users/${userId}/${contentType}`;
             let queryParams: any = { last_id: pageParam, limit: 10 };
-            
+
             if (contentType === 'media' || contentType === 'likes') {
                 endpoint = `/users/${userId}/posts`;
                 queryParams.type = contentType;
@@ -108,8 +108,9 @@ export const useInfiniteUserContent = (
             const { data } = await api.get(endpoint, {
                 params: queryParams,
             });
-            
-            const responseKey = (contentType === 'media' || contentType === 'likes') ? 'posts' : contentType;
+
+            const responseKey =
+                contentType === 'media' || contentType === 'likes' ? 'posts' : contentType;
             return data[responseKey] || data.data || [];
         },
         getNextPageParam: (lastPage: any[]) => {
@@ -156,6 +157,6 @@ export const useInfinitePagePosts = (pageId: string) => {
             last_id: pageParam,
             page_id: pageId,
         }),
-        (response) => response.posts
+        (response) => response.posts,
     );
 };

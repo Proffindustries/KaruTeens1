@@ -4,37 +4,37 @@
  */
 
 export const STALE_TIMES = {
-    // User data
-    USER_PROFILE: 5 * 60 * 1000, // 5 minutes
-    USER_PREFERENCES: 10 * 60 * 1000, // 10 minutes
+    // User data (cached longer, invalidated by mutation)
+    USER_PROFILE: 10 * 60 * 1000, // 10 minutes
+    USER_PREFERENCES: 15 * 60 * 1000, // 15 minutes
     USER_SETTINGS: 30 * 60 * 1000, // 30 minutes
 
-    // Content
-    FEED_POSTS: 2 * 60 * 1000, // 2 minutes
-    FOR_YOU_FEED: 2 * 60 * 1000, // 2 minutes
-    TRENDING_POSTS: 60 * 1000, // 1 minute
-    POST_DETAIL: 5 * 60 * 1000, // 5 minutes
-    TRENDING_TOPICS: 60 * 1000, // 1 minute
+    // Content (feed is the most-hit endpoint)
+    FEED_POSTS: 3 * 60 * 1000, // 3 minutes
+    FOR_YOU_FEED: 3 * 60 * 1000, // 3 minutes
+    TRENDING_POSTS: 2 * 60 * 1000, // 2 minutes
+    POST_DETAIL: 10 * 60 * 1000, // 10 minutes
+    TRENDING_TOPICS: 2 * 60 * 1000, // 2 minutes
     SAVED_POSTS: 5 * 60 * 1000, // 5 minutes
     DRAFTS: 5 * 60 * 1000, // 5 minutes
 
-    // Messaging
-    CHAT_LIST: 30 * 1000, // 30 seconds
-    CHAT_MESSAGES: 30 * 1000, // 30 seconds
+    // Messaging (fresher needed, but use WS for realtime)
+    CHAT_LIST: 60 * 1000, // 1 minute
+    CHAT_MESSAGES: 60 * 1000, // 1 minute
 
-    // Notifications
-    NOTIFICATIONS: 10 * 1000, // 10 seconds
+    // Notifications (WS pushes updates, so we can cache longer)
+    NOTIFICATIONS: 30 * 1000, // 30 seconds
 
     // Study rooms
-    STUDY_ROOMS: 10 * 1000, // 10 seconds
-    STUDY_ROOM_DETAIL: 30 * 1000, // 30 seconds
+    STUDY_ROOMS: 30 * 1000, // 30 seconds
+    STUDY_ROOM_DETAIL: 60 * 1000, // 1 minute
 
     // Other features
-    EVENTS: 5 * 60 * 1000, // 5 minutes
-    GROUPS: 5 * 60 * 1000, // 5 minutes
-    MARKETPLACE: 2 * 60 * 1000, // 2 minutes
+    EVENTS: 10 * 60 * 1000, // 10 minutes
+    GROUPS: 10 * 60 * 1000, // 10 minutes
+    MARKETPLACE: 5 * 60 * 1000, // 5 minutes
 
-    // Static data
+    // Static data (never changes)
     STATIC_CONFIG: 60 * 60 * 1000, // 1 hour
     LEGAL_PAGES: 24 * 60 * 60 * 1000, // 24 hours
 };
@@ -81,11 +81,13 @@ export const queryKeys = {
 
 /**
  * Default query options to apply to all queries
+ * gcTime: how long inactive data stays in cache (prevents memory bloat)
  */
 export const defaultQueryOptions = {
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     refetchOnWindowFocus: false,
+    gcTime: 10 * 60 * 1000, // 10 min garbage collection (React Query v5)
 };
 
 /**
@@ -101,7 +103,7 @@ export const defaultMutationOptions = {
  */
 export const infiniteQueryConfig = {
     defaultPageSize: 10,
-    maxPages: 20, // Prevents infinite scrolling memory issues
+    maxPages: 10, // Reduced from 20 to prevent memory bloat at 10k users
     getNextPageParam: (lastPage) => {
         if (!lastPage || lastPage.length === 0) return undefined;
         const lastItem = lastPage[lastPage.length - 1];

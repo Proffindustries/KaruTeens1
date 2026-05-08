@@ -245,7 +245,8 @@ const PageDetailPage = () => {
                                         <div className="detail-item">
                                             <Users size={18} />
                                             <span>
-                                                <strong>{page.follower_count || 0}</strong> Followers
+                                                <strong>{page.follower_count || 0}</strong>{' '}
+                                                Followers
                                             </span>
                                         </div>
                                         <div className="detail-item">

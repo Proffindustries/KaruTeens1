@@ -167,10 +167,10 @@ const AdminDashboard = () => {
                             exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <TabContent 
-                                activeTab={activeTab} 
-                                stats={stats} 
-                                setActiveTab={setActiveTab} 
+                            <TabContent
+                                activeTab={activeTab}
+                                stats={stats}
+                                setActiveTab={setActiveTab}
                             />
                         </motion.div>
                     </AnimatePresence>

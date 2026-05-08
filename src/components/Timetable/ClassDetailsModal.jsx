@@ -32,11 +32,11 @@ const ClassDetailsModal = ({ classItem, onClose, onUpdate }) => {
 
     const handleAddTask = async () => {
         if (!newTaskTitle.trim()) return;
-        
+
         // Find the timetable ID from the parent context or passed prop
         // Assuming we need to find which timetable this class belongs to
         // For now, we'll try to get it from the classItem if it's there or handle it via onUpdate
-        
+
         const newTask = {
             id: Date.now().toString(),
             title: newTaskTitle,
@@ -45,7 +45,7 @@ const ClassDetailsModal = ({ classItem, onClose, onUpdate }) => {
             completed: false,
             created_at: new Date().toISOString(),
         };
-        
+
         const updatedTasks = [...tasks, newTask];
         setTasks(updatedTasks);
         setNewTaskTitle('');
@@ -53,7 +53,7 @@ const ClassDetailsModal = ({ classItem, onClose, onUpdate }) => {
         setNewTaskDate('');
 
         try {
-            // We need the timetable_id. If not in classItem, we'll have to rely on onUpdate 
+            // We need the timetable_id. If not in classItem, we'll have to rely on onUpdate
             // which handles the state in TimetablePage.
             // Let's assume classItem or the parent provides what's needed.
             onUpdate({ ...classItem, tasks: updatedTasks });

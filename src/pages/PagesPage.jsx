@@ -124,8 +124,7 @@ const PagesPage = () => {
                                     <p>{page.description || 'No description available.'}</p>
                                     <div className="page-footer">
                                         <span>
-                                            <Users size={14} /> {page.follower_count || 0}{' '}
-                                            Followers
+                                            <Users size={14} /> {page.follower_count || 0} Followers
                                         </span>
                                         <ArrowRight size={16} />
                                     </div>

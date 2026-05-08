@@ -141,7 +141,10 @@ export function parseApiError(errorResponse) {
     }
 
     // Handle CORS preflight failures
-    if (errorResponse?.message?.includes('CORS') || errorResponse?.message?.includes('cross-origin')) {
+    if (
+        errorResponse?.message?.includes('CORS') ||
+        errorResponse?.message?.includes('cross-origin')
+    ) {
         return new AppError(
             'cors_error',
             'Cross-origin request blocked. Please check server configuration.',

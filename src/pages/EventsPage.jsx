@@ -261,7 +261,9 @@ const CreateEventModal = ({ isOpen, onClose }) => {
                                         type="button"
                                         className="time-picker-btn"
                                         onClick={() =>
-                                            document.getElementById('end_time_input')?.showPicker?.()
+                                            document
+                                                .getElementById('end_time_input')
+                                                ?.showPicker?.()
                                         }
                                         title="Set Time"
                                     >

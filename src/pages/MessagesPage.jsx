@@ -671,16 +671,19 @@ const MessagesPage = () => {
         return () => clearTimeout(timer);
     }, [chatSearchQuery, searchChatMessages]);
 
-    const scrollToMessage = useCallback((msgId) => {
-        const element = document.getElementById(`msg-${msgId}`);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            element.classList.add('highlight-search');
-            setTimeout(() => element.classList.remove('highlight-search'), 3000);
-        } else {
-            showToast('Message not currently loaded in view. Scroll up to find it.', 'info');
-        }
-    }, [showToast]);
+    const scrollToMessage = useCallback(
+        (msgId) => {
+            const element = document.getElementById(`msg-${msgId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('highlight-search');
+                setTimeout(() => element.classList.remove('highlight-search'), 3000);
+            } else {
+                showToast('Message not currently loaded in view. Scroll up to find it.', 'info');
+            }
+        },
+        [showToast],
+    );
     uploadProcessRef.current = async (file) => {
         setIsUploading(true);
         try {
@@ -1329,25 +1332,39 @@ const MessagesPage = () => {
                                                 onChange={(e) => setChatSearchQuery(e.target.value)}
                                                 autoFocus
                                             />
-                                            {isSearchInChatLoading && <Loader2 size={14} className="animate-spin" />}
+                                            {isSearchInChatLoading && (
+                                                <Loader2 size={14} className="animate-spin" />
+                                            )}
                                             {chatSearchResults.length > 0 && (
                                                 <div className="chat-search-results">
                                                     <div className="search-results-header">
-                                                        <span>{chatSearchResults.length} Results</span>
-                                                        <button onClick={() => setChatSearchResults([])}>
+                                                        <span>
+                                                            {chatSearchResults.length} Results
+                                                        </span>
+                                                        <button
+                                                            onClick={() => setChatSearchResults([])}
+                                                        >
                                                             <X size={14} />
                                                         </button>
                                                     </div>
                                                     <div className="search-results-list">
-                                                        {chatSearchResults.map(res => (
-                                                            <div 
-                                                                key={res.id} 
+                                                        {chatSearchResults.map((res) => (
+                                                            <div
+                                                                key={res.id}
                                                                 className="search-result-item"
-                                                                onClick={() => scrollToMessage(res.id)}
+                                                                onClick={() =>
+                                                                    scrollToMessage(res.id)
+                                                                }
                                                             >
                                                                 <div className="search-result-info">
-                                                                    <strong>{res.sender_username}</strong>
-                                                                    <span>{new Date(res.created_at).toLocaleDateString()}</span>
+                                                                    <strong>
+                                                                        {res.sender_username}
+                                                                    </strong>
+                                                                    <span>
+                                                                        {new Date(
+                                                                            res.created_at,
+                                                                        ).toLocaleDateString()}
+                                                                    </span>
                                                                 </div>
                                                                 <p>{res.content}</p>
                                                             </div>

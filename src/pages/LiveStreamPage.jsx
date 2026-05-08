@@ -201,26 +201,26 @@ const LiveStreamPage = () => {
         setCurrentStream(stream);
         setIsLive(true);
 
-            if (ably) {
-                const signalingChannel = ably.channels.get(`live:${stream.user_id}:signaling`);
-                const chatChannel = ably.channels.get(`live:${stream.user_id}:chat`);
-                const presenceChannel = ably.channels.get(`live:${stream.user_id}:presence`);
+        if (ably) {
+            const signalingChannel = ably.channels.get(`live:${stream.user_id}:signaling`);
+            const chatChannel = ably.channels.get(`live:${stream.user_id}:chat`);
+            const presenceChannel = ably.channels.get(`live:${stream.user_id}:presence`);
 
-                presenceChannel.subscribe('enter', () => {
-                    presenceChannel.presence.get((err, members) => {
-                        if (!err) setViewers(members.length);
-                    });
+            presenceChannel.subscribe('enter', () => {
+                presenceChannel.presence.get((err, members) => {
+                    if (!err) setViewers(members.length);
                 });
+            });
 
-                presenceChannel.subscribe('leave', () => {
-                    presenceChannel.presence.get((err, members) => {
-                        if (!err) setViewers(members.length);
-                    });
+            presenceChannel.subscribe('leave', () => {
+                presenceChannel.presence.get((err, members) => {
+                    if (!err) setViewers(members.length);
                 });
+            });
 
-                presenceChannel.presence.enter();
+            presenceChannel.presence.enter();
 
-                const pc = new RTCPeerConnection(ICE_SERVERS);
+            const pc = new RTCPeerConnection(ICE_SERVERS);
             viewerPc.current = pc;
 
             pc.ontrack = (event) => {

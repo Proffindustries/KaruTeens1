@@ -115,9 +115,7 @@ const FilePreviewModal = ({
                             {(selectedUploadFile.size / 1024).toFixed(1)} KB
                         </span>
                         {(type === 'video' || type === 'image') && (
-                            <span className="optimization-hint">
-                                ✨ Will be optimized for web
-                            </span>
+                            <span className="optimization-hint">✨ Will be optimized for web</span>
                         )}
                     </div>
                     <div className="p-4">

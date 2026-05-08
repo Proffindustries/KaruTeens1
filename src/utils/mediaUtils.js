@@ -144,28 +144,3 @@ export const getResponsiveImageUrl = (url) => {
  */
 export const getBlurPlaceholder = (width = 10, height = 10) =>
     `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3C/svg%3E`;
-
-/**
- * Custom hook for lazy loading images with blur-up effect.
- * Returns props to spread on an <img> element.
- */
-export const useProgressiveImage = (src, { sizes = '100vw', blurWidth = 10, blurHeight = 10 } = {}) => {
-    const [isLoaded, setIsLoaded] = useState(false);
-    const placeholder = getBlurPlaceholder(blurWidth, blurHeight);
-
-    useEffect(() => {
-        if (!src) return;
-        const img = new Image();
-        img.src = src;
-        img.onload = () => setIsLoaded(true);
-        return () => { img.onload = null; };
-    }, [src]);
-
-    return {
-        src: isLoaded ? src : placeholder,
-        style: {
-            filter: isLoaded ? 'none' : 'blur(10px)',
-            transition: 'filter 0.3s ease-out',
-        },
-    };
-};

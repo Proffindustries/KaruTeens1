@@ -11,15 +11,14 @@ import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { STALE_TIMES } from './utils/queryConfig';
 
-console.log('Main.jsx loaded');
-
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            staleTime: STALE_TIMES.FEED_POSTS, // Use our standardized constant
-            cacheTime: 30 * 60 * 1000, // 30 minutes
+            staleTime: STALE_TIMES.FEED_POSTS,
+            gcTime: 15 * 60 * 1000, // 15 min garbage collection (React Query v5)
             refetchOnWindowFocus: false,
             retry: 1,
+            refetchOnReconnect: true,
         },
         mutations: {
             retry: 1,
@@ -27,26 +26,35 @@ const queryClient = new QueryClient({
     },
 });
 
-// Performance monitoring component
+const isProd = import.meta.env.MODE === 'production';
+
+const logVitalsToAnalytics = (metric) => {
+    if (isProd && typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        navigator.sendBeacon(
+            '/api/vitals',
+            JSON.stringify({
+                name: metric.name,
+                value: metric.value,
+                rating: metric.rating,
+                delta: metric.delta,
+                id: metric.id,
+            }),
+        );
+    }
+};
+
 const PerformanceMonitor = ({ children }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             import('web-vitals')
                 .then((webVitals) => {
-                    const sendToAnalytics = (metric) => {
-                        // In a real app, you would send this to your analytics endpoint
-                        console.log('Web Vitals:', metric.name, metric.value);
-                    };
-
-                    if (webVitals.onCLS) webVitals.onCLS(sendToAnalytics);
-                    if (webVitals.onFID) webVitals.onFID(sendToAnalytics);
-                    if (webVitals.onFCP) webVitals.onFCP(sendToAnalytics);
-                    if (webVitals.onLCP) webVitals.onLCP(sendToAnalytics);
-                    if (webVitals.onTTFB) webVitals.onTTFB(sendToAnalytics);
+                    if (webVitals.onCLS) webVitals.onCLS(logVitalsToAnalytics);
+                    if (webVitals.onFID) webVitals.onFID(logVitalsToAnalytics);
+                    if (webVitals.onFCP) webVitals.onFCP(logVitalsToAnalytics);
+                    if (webVitals.onLCP) webVitals.onLCP(logVitalsToAnalytics);
+                    if (webVitals.onTTFB) webVitals.onTTFB(logVitalsToAnalytics);
                 })
-                .catch((err) => {
-                    console.error('Failed to load web-vitals:', err);
-                });
+                .catch(() => {});
         }
     }, []);
     return children;

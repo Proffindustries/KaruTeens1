@@ -100,11 +100,11 @@ export const AuthProvider = ({ children }) => {
             ...newUser,
             id: newUser.id || newUser._id || newUser.user_id,
         };
-        
+
         // Synchronously set local storage so immediate requests have the token
         safeLocalStorage.setItem('token', newToken);
         safeLocalStorage.setItem('user', JSON.stringify(normalizedUser));
-        
+
         setToken(newToken);
         setUser(normalizedUser);
     };

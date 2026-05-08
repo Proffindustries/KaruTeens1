@@ -13,9 +13,13 @@ export default defineConfig(({ mode }) => ({
             },
         }),
 
-        // Gzip/Brotli compression for assets
+        // Gzip + Brotli compression for assets
         compression({
             algorithm: 'gzip',
+            exclude: [/\.(br)$/, /\.(gz)$/],
+        }),
+        compression({
+            algorithm: 'brotliCompress',
             exclude: [/\.(br)$/, /\.(gz)$/],
         }),
 
@@ -75,11 +79,13 @@ export default defineConfig(({ mode }) => ({
         target: 'es2020',
         outDir: 'dist',
         sourcemap: mode !== 'production',
+        cssCodeSplit: false,
+        cssMinify: 'esbuild',
         rollupOptions: {
             output: {
                 // Manual chunk splitting for optimal caching
                 manualChunks: {
-                    // Core React ecosystem
+                    // Core React ecosystem (most commonly used)
                     'vendor-react': ['react', 'react-dom', 'react-router-dom'],
 
                     // Data fetching & state management
@@ -94,8 +100,8 @@ export default defineConfig(({ mode }) => ({
                     // Math rendering (heavy, load separately)
                     'vendor-math': ['katex', 'react-katex'],
 
-                    // Intersection Observer
-                    'vendor-observer': ['react-intersection-observer'],
+                    // Charts (large, only on specific pages)
+                    'vendor-charts': ['recharts'],
                 },
                 // Ensure chunks are reasonably sized
                 chunkFileNames: 'assets/js/[name]-[hash].js',

@@ -125,7 +125,7 @@ export const useMediaUpload = () => {
                 temp_url: public_url,
                 media_type: 'video',
                 original_name: file.name,
-            }).catch(err => console.error('Background optimization trigger failed:', err));
+            }).catch((err) => console.error('Background optimization trigger failed:', err));
 
             // Return the raw URL immediately for the post creation
             return final_public_url;

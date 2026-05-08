@@ -15,7 +15,8 @@ interface FeedQueryParams {
 }
 
 // Export the optimized infinite query hooks with options support
-export const useInfiniteFeed = (search?: string, options: any = {}) => useInfiniteFeedHook(search, options);
+export const useInfiniteFeed = (search?: string, options: any = {}) =>
+    useInfiniteFeedHook(search, options);
 export const useForYouFeed = (options: any = {}) => useInfiniteForYouFeedHook(options);
 export const useTrendingPosts = (options: any = {}) => useInfiniteTrendingPostsHook(options);
 
@@ -24,7 +25,7 @@ export const usePost = (postId?: string) => {
         queryKey: ['post', postId],
         queryFn: async () => {
             if (!postId) throw new Error('Post ID is required');
-            const { data } = await (api.get(`/posts/${postId}`) as Promise<{data: PostResponse}>);
+            const { data } = await (api.get(`/posts/${postId}`) as Promise<{ data: PostResponse }>);
             return data;
         },
         enabled: !!postId,
@@ -98,7 +99,7 @@ export const useLikePost = () => {
                                 };
                             }
                             return post;
-                        })
+                        }),
                     ),
                 };
             });
@@ -145,7 +146,7 @@ export const useUnlikePost = () => {
                                 };
                             }
                             return post;
-                        })
+                        }),
                     ),
                 };
             });
@@ -245,7 +246,7 @@ export const useSavePost = () => {
                                 };
                             }
                             return post;
-                        })
+                        }),
                     ),
                 };
             });
@@ -296,7 +297,9 @@ export const useSaveDraft = () => {
             is_nsfw?: boolean;
             title?: string;
         }) => {
-            const { data } = await (api.post('/posts/drafts', draftData) as Promise<{data: PostResponse}>);
+            const { data } = await (api.post('/posts/drafts', draftData) as Promise<{
+                data: PostResponse;
+            }>);
             return data;
         },
         onSuccess: () => {
@@ -371,7 +374,9 @@ export const useDraftPreview = (draftId?: string) => {
     return useQuery<PostResponse, Error>({
         queryKey: ['draftPreview', draftId],
         queryFn: async () => {
-            const { data } = await (api.get(`/posts/drafts/${draftId}/preview`) as Promise<{data: PostResponse}>);
+            const { data } = await (api.get(`/posts/drafts/${draftId}/preview`) as Promise<{
+                data: PostResponse;
+            }>);
             return data;
         },
         enabled: !!draftId,
@@ -398,8 +403,8 @@ export const useDeletePost = () => {
                     ...old,
                     pages: old.pages.map((page: PostResponse[]) =>
                         page.filter(
-                            (post: PostResponse) => (post.id || (post as any)._id) !== postId
-                        )
+                            (post: PostResponse) => (post.id || (post as any)._id) !== postId,
+                        ),
                     ),
                 };
             });
@@ -471,7 +476,9 @@ export const useVotePoll = () => {
 
     return useMutation({
         mutationFn: async ({ postId, optionIndex }: { postId: string; optionIndex: number }) => {
-            const { data } = await api.post(`/posts/${postId}/poll/vote`, { option_index: optionIndex });
+            const { data } = await api.post(`/posts/${postId}/poll/vote`, {
+                option_index: optionIndex,
+            });
             return data;
         },
         onSuccess: (_, { postId }) => {

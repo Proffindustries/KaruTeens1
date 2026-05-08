@@ -59,7 +59,6 @@ const PagesPage = lazy(() => import('./pages/PagesPage.jsx'));
 const PageDetailPage = lazy(() => import('./pages/PageDetailPage.jsx'));
 
 function App() {
-    console.log('App component rendering');
     return (
         <AblyProvider>
             <AudioProvider>

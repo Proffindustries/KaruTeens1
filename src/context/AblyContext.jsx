@@ -115,7 +115,7 @@ export const AblyProvider = ({ children }) => {
         const mediaChannel = client.channels.get(`user:${userId}:media-updated`);
         mediaChannel.subscribe('media-optimized', (msg) => {
             const { post_id, optimized_url, variants } = msg.data;
-            
+
             // Surgically update the post in the cache
             queryClient.setQueriesData({ queryKey: ['post', post_id] }, (old) => {
                 if (!old) return old;
@@ -123,20 +123,37 @@ export const AblyProvider = ({ children }) => {
                     ...old,
                     media_url: optimized_url,
                     media_variants: variants,
-                    media_optimized: true
+                    media_optimized: true,
                 };
             });
-            
+
             // Also update any feed/infinite lists containing this post
             queryClient.setQueriesData({ queryKey: ['feed'] }, (old) => {
                 if (!old || !old.pages) return old;
                 return {
                     ...old,
-                    pages: old.pages.map(page => 
-                        Array.isArray(page) 
-                            ? page.map(p => p.id === post_id ? { ...p, media_url: optimized_url, media_optimized: true } : p)
-                            : (page.posts ? { ...page, posts: page.posts.map(p => p.id === post_id ? { ...p, media_url: optimized_url, media_optimized: true } : p) } : page)
-                    )
+                    pages: old.pages.map((page) =>
+                        Array.isArray(page)
+                            ? page.map((p) =>
+                                  p.id === post_id
+                                      ? { ...p, media_url: optimized_url, media_optimized: true }
+                                      : p,
+                              )
+                            : page.posts
+                              ? {
+                                    ...page,
+                                    posts: page.posts.map((p) =>
+                                        p.id === post_id
+                                            ? {
+                                                  ...p,
+                                                  media_url: optimized_url,
+                                                  media_optimized: true,
+                                              }
+                                            : p,
+                                    ),
+                                }
+                              : page,
+                    ),
                 };
             });
         });
@@ -167,11 +184,13 @@ export const AblyProvider = ({ children }) => {
 
         const globalChannel = ably.channels.get('campus:presence');
 
-        globalChannel.presence.enter({
-            username: user.username,
-            avatar: user.avatar_url,
-            userId: user.id,
-        }).catch((e) => console.warn('Presence enter failed:', e));
+        globalChannel.presence
+            .enter({
+                username: user.username,
+                avatar: user.avatar_url,
+                userId: user.id,
+            })
+            .catch((e) => console.warn('Presence enter failed:', e));
 
         const handler = (member) => {
             setPresenceData((prev) => {
