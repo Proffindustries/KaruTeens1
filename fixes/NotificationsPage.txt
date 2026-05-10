@@ -1,0 +1,16 @@
+# NotificationsPage.jsx
+
+## NEED TO DO
+- NotificationRow defined with useCallback but NEVER rendered — dead code
+- Error state extremely minimal — no retry button or helpful message
+- No loading/error state for individual mutation actions
+- getIcon and formatTime create new values every render
+
+## CAN DO
+- No virtualization for notifications list
+- NotificationRow (dead code) uses useCallback with empty deps — captures stale versions of markRead, deleteNotif
+
+## MAY DO
+- No pagination or infinite scroll
+- No pull-to-refresh on mobile
+- No notification grouping

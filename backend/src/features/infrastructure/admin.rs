@@ -25,6 +25,7 @@ use crate::features::content::reels::reel_routes;
 use crate::features::social::groups::group_routes;
 use crate::features::social::pages::page_routes;
 use crate::features::ads::ad_routes;
+use crate::features::social::confessions::admin_confessions_routes;
 
 // --- DTOs za Mfumo ---
 #[derive(Debug, Serialize, Deserialize)]
@@ -921,6 +922,7 @@ pub fn admin_routes() -> Router<Arc<AppState>> {
         .nest("/comments", comment_routes())
         .nest("/stories", story_routes())
         .nest("/reels", reel_routes())
+        .nest("/confessions", admin_confessions_routes())
         .nest("/groups", group_routes())
         .nest("/pages", page_routes())
         .nest("/ads", ad_routes())

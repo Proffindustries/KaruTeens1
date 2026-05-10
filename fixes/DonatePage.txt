@@ -1,0 +1,21 @@
+# DonatePage.jsx
+
+## NEED TO DO
+- No loading state during initial data fetch — blank page until API responds
+- No error handling in fetchDonationData — catch only logs
+- No cleanup in useEffect — state update on unmounted component
+- handleSuccess fires two fire-and-forget promises with no error handling
+- Array key uses index for recentDonors
+- Amount validation: empty string passes parseFloat as NaN
+
+## CAN DO
+- Raw fetch in useEffect instead of React Query — no caching, deduplication, background refetch
+- formatTime recalculates for every donor on every render
+- percentage recalculated every render
+- Stats and donors fetched via Promise.all but could be cached
+- No type validation on donation amount input
+
+## MAY DO
+- No confetti or celebration on successful donation
+- No share buttons for campaign
+- No donor leaderboard or impact metrics

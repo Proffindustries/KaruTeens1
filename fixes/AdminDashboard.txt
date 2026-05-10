@@ -1,0 +1,19 @@
+# AdminDashboard.jsx
+
+## NEED TO DO
+- SettingsTab useEffect fetches settings with NO cleanup — state update on unmounted component
+- fetchStats silently returns null on error — UI shows all-zero stats with no error banner
+- Duplicate tab cases: both 'academic' and 'revision' map to RevisionManagementTab
+- All 11 management tabs eagerly imported — huge initial bundle
+- handleClearCache catches error but does nothing with it
+
+## CAN DO
+- Lazy-load each management tab with React.lazy + Suspense
+- StatsCard and sub-components defined inside module — extract to separate files
+- toggleSidebar and toggleTheme not wrapped in useCallback
+- stats fields accessed without optional chaining — will crash if API returns undefined
+
+## MAY DO
+- Add keyboard shortcuts for tab navigation (Ctrl+1, Ctrl+2, etc.)
+- Add collapse all button for sidebar
+- Add confirmation before toggling maintenance mode

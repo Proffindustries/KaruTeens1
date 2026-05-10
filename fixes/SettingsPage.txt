@@ -1,0 +1,16 @@
+# SettingsPage.jsx
+
+## NEED TO DO
+- handleExportData creates Blob URL but NEVER revokes it — memory leak
+- useEffect depends on user object — if useAuth doesn't memoize user, effect fires on every render causing infinite loop
+- useEffect has no cleanup — state update on unmounted component
+- handleMasterPushToggle calls Notification.requestPermission — no graceful degradation for HTTP
+- toggle2FA mutation called with no try/catch — UI shows toggled state even if API fails
+
+## CAN DO
+- Replace all native confirm() calls with modals
+- Redundant message state could be removed in favor of useToast
+
+## MAY DO
+- Add preview panel for appearance changes
+- Add Change email flow in Security

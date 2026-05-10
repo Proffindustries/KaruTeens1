@@ -1,0 +1,22 @@
+# StudyPlaylistsPage.jsx
+
+## NEED TO DO
+- Array index used as key for playlist items — broken reconciliation on reorder/filter
+- Memory leak in handleAddItem: forEach with async continues setState after unmount
+- handleAddItem closes modal immediately but async upload continues — fetchPlaylistDetails may fetch wrong data
+- No error handling for uploadMedia in forEach — no user-facing toast for individual file failures
+- Race condition: first file updates selectedPlaylist, subsequent callbacks operate on stale state
+- No cleanup for in-flight API requests on unmount
+
+## CAN DO
+- No debounce on subject filter
+- fetchPlaylists/fetchPlaylistDetails in useCallback with only showToast dep — unnecessary overhead
+- No React.memo on playlist cards
+- subjects array defined inside component — should be module-level constant
+- Modal components eagerly rendered — could be lazy-loaded
+- No virtualization for playlist items
+
+## MAY DO
+- Viewer modal doesn't trap focus
+- No Escape key to close viewer
+- No visual loading state for item thumbnails

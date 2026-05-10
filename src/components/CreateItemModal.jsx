@@ -34,7 +34,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
 
     const { mutate: createItem, isPending } = useCreateItem();
     const { uploadImage, isUploading } = useMediaUpload();
-    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
+    const { uploads } = useUpload();
     const { showToast } = useToast();
     const user = JSON.parse(safeLocalStorage.getItem('user') || '{}');
 
@@ -93,21 +93,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
         if (selectedFiles.length > 0) {
             try {
                 const uploadPromises = selectedFiles.map(async (file) => {
-                    const uploadId = addUpload({
-                        fileName: file.name,
-                        fileSize: file.size,
-                        type: 'image',
-                    });
-                    try {
-                        const url = await uploadImage(file, (p, l) =>
-                            updateUploadProgress(uploadId, p, l),
-                        );
-                        completeUpload(uploadId, { url });
-                        return url;
-                    } catch (err) {
-                        failUpload(uploadId, err);
-                        throw err;
-                    }
+                    return await uploadImage(file);
                 });
                 mediaUrls = await Promise.all(uploadPromises);
             } catch (error) {
@@ -144,7 +130,7 @@ const CreateItemModal = React.memo(({ isOpen, onClose }) => {
                     >
                         <div className="modal-header">
                             <h2>Sell an Item</h2>
-                            <button className="close-btn" onClick={onClose}>
+                            <button className="close-btn" onClick={onClose} aria-label="Close">
                                 <X size={24} />
                             </button>
                         </div>

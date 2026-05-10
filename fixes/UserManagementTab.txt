@@ -1,0 +1,24 @@
+# UserManagementTab.jsx
+
+## NEED TO DO
+- CRITICAL: api is not imported but line 218 calls api.get() — ReferenceError at runtime
+- URL.createObjectURL never revoked — memory leak
+- Bulk actions use forEach with individual mutations — partial success/failure not communicated
+- No empty state when API returns empty array
+- Advanced filters rendered but values never sent to API
+- Delete user button has no onClick handler — decorative
+- View Profile button has no onClick handler — decorative
+
+## CAN DO
+- No useCallback on any handler
+- formatTimeAgo called on every render for each user
+- No React.memo on table rows
+- getRoleColor called on every user row
+- filters spread into query — shallow comparison triggers refetch on unrelated state changes
+- No pagination for users
+- No debounce on search input
+
+## MAY DO
+- Add User/Import buttons have no onClick handlers
+- Advanced filter time inputs have no onChange
+- No confirmation for Delete User button

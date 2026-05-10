@@ -1,0 +1,19 @@
+# ContactPage.jsx
+
+## NEED TO DO
+- handleSubmit only calls e.preventDefault() and setStatus('sent') — form NEVER sends data
+- No API endpoint integration — no fetch/axios call
+- Email/phone as plain text, not clickable links
+- Form inputs uncontrolled — values cannot be read on submit
+- No validation beyond browser required attribute
+
+## CAN DO
+- FAQ section hardcoded inline — extract to data file
+- No loading state (no submission exists, but will be needed when API is added)
+- Success state does not reset form inputs
+
+## MAY DO
+- Add reCAPTCHA to prevent spam
+- Add live chat widget
+- Show estimated response time
+- Add localStorage draft saving

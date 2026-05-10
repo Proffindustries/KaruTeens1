@@ -6,6 +6,8 @@ import { useToast } from '../context/ToastContext';
 import '../styles/ReelsPage.css';
 import { shouldBlur } from '../utils/contentFilters';
 import { getVariantUrl } from '../utils/mediaUtils';
+import Avatar from '../components/Avatar';
+import EmptyState from '../components/EmptyState';
 
 const ReelsPage = () => {
     const [reels, setReels] = useState([]);
@@ -58,21 +60,45 @@ const ReelsPage = () => {
 
             <div className="reels-container" ref={containerRef} onScroll={handleScroll}>
                 {loading ? (
-                    <div className="loading-reels">
-                        <Loader className="animate-spin" size={48} />
-                        <p>Loading reels...</p>
+                    <div
+                        className="loading-reels"
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1rem',
+                            padding: '2rem',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <div
+                            className="skeleton"
+                            style={{
+                                width: '100%',
+                                maxWidth: '400px',
+                                height: '500px',
+                                borderRadius: '16px',
+                            }}
+                        />
+                        <div
+                            className="skeleton"
+                            style={{ width: '60%', maxWidth: '300px', height: '1rem' }}
+                        />
+                        <div
+                            className="skeleton"
+                            style={{ width: '40%', maxWidth: '200px', height: '1rem' }}
+                        />
                     </div>
                 ) : reels.length > 0 ? (
                     reels.map((reel, index) => (
                         <ReelItem key={reel.id} reel={reel} isActive={index === currentIndex} />
                     ))
                 ) : (
-                    <div className="empty-reels">
-                        <p>No reels found. Be the first to upload!</p>
-                        <button className="btn btn-primary" onClick={() => navigate('/feed')}>
-                            Go to Feed
-                        </button>
-                    </div>
+                    <EmptyState
+                        title="No reels found"
+                        message="Be the first to upload!"
+                        actionLabel="Go to Feed"
+                        onAction={() => navigate('/feed')}
+                    />
                 )}
             </div>
         </div>
@@ -137,11 +163,7 @@ const ReelItem = ({ reel, isActive }) => {
                 <div className="reel-info">
                     <div className="reel-user">
                         <div className="user-avatar-small">
-                            {reel.user_avatar ? (
-                                <img src={reel.user_avatar} alt={reel.username} loading="lazy" />
-                            ) : (
-                                <User size={20} />
-                            )}
+                            <Avatar src={reel.user_avatar} name={reel.username} size="sm" />
                         </div>
                         <h3>@{reel.username}</h3>
                         <button className="follow-btn-small">Follow</button>

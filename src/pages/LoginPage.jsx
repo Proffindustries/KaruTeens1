@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useLogin, useVerify2FA } from '../hooks/useAuth.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -14,6 +15,14 @@ const LoginPage = () => {
     const { mutate: login, isPending: isLoginPending } = useLogin();
     const { mutate: verify2fa, isPending: isVerifyPending } = useVerify2FA();
     const [errors, setErrors] = useState({});
+    const [loginError, setLoginError] = useState('');
+    const [verifyError, setVerifyError] = useState('');
+    const { showToast } = useToast();
+    const otpRef = useRef(null);
+
+    useEffect(() => {
+        if (show2fa && otpRef.current) otpRef.current.focus();
+    }, [show2fa]);
 
     const validateEmail = (email) => {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,8 +47,22 @@ const LoginPage = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setLoginError('');
+        setVerifyError('');
         if (show2fa) {
-            verify2fa({ user_id: userIdFor2fa, code: otp });
+            if (!otp.trim()) {
+                setVerifyError('Please enter your 2FA code');
+                return;
+            }
+            verify2fa(
+                { user_id: userIdFor2fa, code: otp },
+                {
+                    onError: (err) => {
+                        const msg = err.response?.data?.error || 'Invalid verification code';
+                        setVerifyError(msg);
+                    },
+                },
+            );
         } else {
             if (!validateForm()) return;
             login(
@@ -49,7 +72,12 @@ const LoginPage = () => {
                         if (data.two_factor_required) {
                             setShow2fa(true);
                             setUserIdFor2fa(data.user_id);
+                            showToast('Enter the 2FA code from your authenticator app', 'info');
                         }
+                    },
+                    onError: (err) => {
+                        const msg = err.response?.data?.error || 'Invalid email or password';
+                        setLoginError(msg);
                     },
                 },
             );
@@ -241,6 +269,7 @@ const LoginPage = () => {
                             }}
                             placeholder="000000"
                             required
+                            ref={otpRef}
                             value={otp}
                             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                         />
@@ -260,6 +289,31 @@ const LoginPage = () => {
                             Back to Login
                         </button>
                     </div>
+                )}
+
+                {loginError && (
+                    <p
+                        style={{
+                            color: '#ff6b6b',
+                            textAlign: 'center',
+                            marginTop: '1rem',
+                            fontSize: '0.9rem',
+                        }}
+                    >
+                        {loginError}
+                    </p>
+                )}
+                {verifyError && (
+                    <p
+                        style={{
+                            color: '#ff6b6b',
+                            textAlign: 'center',
+                            marginTop: '1rem',
+                            fontSize: '0.9rem',
+                        }}
+                    >
+                        {verifyError}
+                    </p>
                 )}
 
                 <button

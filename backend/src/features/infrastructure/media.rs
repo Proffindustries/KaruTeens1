@@ -119,14 +119,7 @@ async fn trigger_media_processing(
     // 1. Create Job Record in MongoDB
     let coll = state.mongo.collection::<MediaJobRecord>("media_jobs");
     
-    let final_url = if payload.media_type == "image" {
-        payload.temp_url.clone() // Images don't change their primary URL, just gain variants
-    } else {
-        format!("{}/uploads/{}", 
-            std::env::var("R2_PUBLIC_BASE_URL").unwrap_or_default(),
-            payload.temp_url.split("/temp/").last().unwrap_or("")
-        )
-    };
+    let final_url = payload.temp_url.clone();
 
     let record = MediaJobRecord {
         id: job_id.clone(),
@@ -254,11 +247,8 @@ async fn get_r2_presigned_url(
         .map(char::from)
         .collect();
     
-    let key = if payload.content_type.starts_with("image/") {
+    let key = if payload.content_type.starts_with("image/") || payload.content_type.starts_with("video/") {
         format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
-    } else if payload.content_type.starts_with("video/") {
-        // Videos go to temp/ for processing
-        format!("temp/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
     } else {
         // Audio and Docs go to uploads/ directly
         format!("uploads/{}/{}-{}", Utc::now().timestamp(), sanitized_name, suffix)
@@ -280,17 +270,12 @@ async fn get_r2_presigned_url(
             AppError::InternalServerError("Failed to generate presigned URL".to_string())
         })?;
 
-    let final_public_url = if payload.content_type.starts_with("image/") {
-        format!("{}/{}", public_base_url, key)
-    } else {
-        // Map temp/ prefix to uploads/ for final destination
-        format!("{}/{}", public_base_url, key.replace("temp/", "uploads/"))
-    };
+    let public_url = format!("{}/{}", public_base_url, key);
 
     Ok(Json(R2PresignedUrlResponse {
         url: presigned_request.uri().to_string(),
-        public_url: format!("{}/{}", public_base_url, key),
-        final_public_url,
+        public_url: public_url.clone(),
+        final_public_url: public_url,
     }))
 }
 

@@ -1,13 +1,30 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Mail, Phone, Send } from 'lucide-react';
+import api from '../api/client';
+import { useToast } from '../context/ToastContext';
 import '../styles/ContactPage.css';
 
 const ContactPage = () => {
     const [status, setStatus] = useState('');
+    const [sending, setSending] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [subject, setSubject] = useState('General Inquiry');
+    const [message, setMessage] = useState('');
+    const { showToast } = useToast();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setStatus('sent');
+        setSending(true);
+        try {
+            await api.post('/contact', { name, email, subject, message });
+            setStatus('sent');
+            showToast('Message sent successfully!', 'success');
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Failed to send message', 'error');
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -24,28 +41,36 @@ const ContactPage = () => {
                         <Mail size={20} className="contact-icon" />
                         <div>
                             <strong>Global Support</strong>
-                            <p>support@karuteens.site</p>
+                            <p>
+                                <a href="mailto:support@karuteens.site">support@karuteens.site</a>
+                            </p>
                         </div>
                     </div>
                     <div className="contact-item">
                         <Mail size={20} className="contact-icon" />
                         <div>
                             <strong>Admin / Business</strong>
-                            <p>admin@karuteens.site</p>
+                            <p>
+                                <a href="mailto:admin@karuteens.site">admin@karuteens.site</a>
+                            </p>
                         </div>
                     </div>
                     <div className="contact-item">
                         <Phone size={20} className="contact-icon" />
                         <div>
                             <strong>WhatsApp / Call</strong>
-                            <p>+254 113729279</p>
+                            <p>
+                                <a href="tel:+254113729279">+254 113729279</a>
+                            </p>
                         </div>
                     </div>
 
                     <div className="admin-contacts">
                         <h4>Lead Developer</h4>
                         <ul>
-                            <li>Harrison: 0113 729 279</li>
+                            <li>
+                                Harrison: <a href="tel:0113729279">0113 729 279</a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -59,7 +84,16 @@ const ContactPage = () => {
                             </div>
                             <h3>Message Sent!</h3>
                             <p>We'll get back to you shortly.</p>
-                            <button className="btn btn-outline" onClick={() => setStatus('')}>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => {
+                                    setStatus('');
+                                    setName('');
+                                    setEmail('');
+                                    setSubject('General Inquiry');
+                                    setMessage('');
+                                }}
+                            >
                                 Send Another
                             </button>
                         </div>
@@ -72,6 +106,9 @@ const ContactPage = () => {
                                     className="form-input"
                                     required
                                     placeholder="Your Name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    disabled={sending}
                                 />
                             </div>
                             <div className="form-group">
@@ -81,11 +118,19 @@ const ContactPage = () => {
                                     className="form-input"
                                     required
                                     placeholder="your.email@student.karu.ac.ke"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    disabled={sending}
                                 />
                             </div>
                             <div className="form-group">
                                 <label>Subject</label>
-                                <select className="form-input">
+                                <select
+                                    className="form-input"
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    disabled={sending}
+                                >
                                     <option>General Inquiry</option>
                                     <option>Technical Support</option>
                                     <option>Report Content/User</option>
@@ -99,10 +144,17 @@ const ContactPage = () => {
                                     rows="5"
                                     required
                                     placeholder="How can we help?"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    disabled={sending}
                                 ></textarea>
                             </div>
-                            <button type="submit" className="btn btn-primary btn-full">
-                                Send Message
+                            <button
+                                type="submit"
+                                className="btn btn-primary btn-full"
+                                disabled={sending}
+                            >
+                                {sending ? 'Sending...' : 'Send Message'}
                             </button>
                         </form>
                     )}

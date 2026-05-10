@@ -18,13 +18,13 @@ import api from '../api/client';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import { useGroup, useGroupPosts, useLeaveGroup, useUpdateGroup } from '../hooks/useGroups';
 import { useMediaUpload } from '../hooks/useMedia';
-import { useUpload } from '../context/UploadContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import '../styles/GroupDetailPage.css';
 import Avatar from '../components/Avatar.jsx';
 import CustomVideoPlayer from '../components/CustomVideoPlayer.jsx';
 import CustomAudioPlayer from '../components/CustomAudioPlayer.jsx';
 import PostCard from '../components/PostCard.jsx';
+import EmptyState from '../components/EmptyState';
 import { shouldBlur } from '../utils/contentFilters.js';
 import { useAuthContext } from '../context/AuthContext.jsx';
 
@@ -57,7 +57,6 @@ const GroupDetailPage = () => {
         avatar_url: '',
     });
     const { uploadImage } = useMediaUpload();
-    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const avatarInputRef = useRef(null);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -66,19 +65,12 @@ const GroupDetailPage = () => {
         if (!file) return;
 
         setIsUploadingAvatar(true);
-        const uploadId = addUpload({
-            fileName: file.name,
-            fileSize: file.size,
-            type: 'image',
-        });
 
         try {
-            const url = await uploadImage(file, (p, l) => updateUploadProgress(uploadId, p, l));
-            completeUpload(uploadId, { url });
+            const url = await uploadImage(file);
             setEditGroupData((prev) => ({ ...prev, avatar_url: url }));
             showToast('Avatar uploaded!', 'success');
         } catch (err) {
-            failUpload(uploadId, err);
             showToast('Failed to upload avatar', 'error');
         } finally {
             setIsUploadingAvatar(false);
@@ -428,9 +420,7 @@ const GroupDetailPage = () => {
                     ) : posts && posts.length > 0 ? (
                         posts.map((post) => <PostCard key={post.id} post={post} />)
                     ) : (
-                        <div className="empty-state">
-                            <p>No posts yet. Be the first to post!</p>
-                        </div>
+                        <EmptyState title="No posts yet" message="Be the first to post!" />
                     )}
                 </div>
             ) : (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Heart, CreditCard, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -11,33 +11,57 @@ const DonatePage = () => {
     const { showToast } = useToast();
     const [amount, setAmount] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [stats, setStats] = useState({ raised: 0, goal: 50000 });
     const [recentDonors, setRecentDonors] = useState([]);
 
     useEffect(() => {
+        let mounted = true;
         const fetchDonationData = async () => {
+            setLoadError(false);
+            setIsLoading(true);
             try {
                 const [statsRes, donorsRes] = await Promise.all([
                     api.get('/payments/donations/stats'),
                     api.get('/payments/donations/recent'),
                 ]);
-                setStats(statsRes.data);
-                setRecentDonors(donorsRes.data);
+                if (mounted) setStats(statsRes.data);
+                if (mounted) setRecentDonors(donorsRes.data);
             } catch (err) {
-                console.error('Failed to fetch donation data', err);
+                if (mounted) {
+                    setLoadError(true);
+                    showToast('Failed to load donation data', 'error');
+                }
+            } finally {
+                if (mounted) setIsLoading(false);
             }
         };
 
         fetchDonationData();
-    }, []);
+        return () => {
+            mounted = false;
+        };
+    }, [showToast]);
 
-    const percentage = (stats.raised / stats.goal) * 100;
+    const percentage = Math.min(((stats.raised || 0) / (stats.goal || 1)) * 100, 100);
+
+    const refreshData = useCallback(async () => {
+        try {
+            const [statsRes, donorsRes] = await Promise.all([
+                api.get('/payments/donations/stats'),
+                api.get('/payments/donations/recent'),
+            ]);
+            setStats(statsRes.data);
+            setRecentDonors(donorsRes.data);
+        } catch (err) {
+            showToast('Failed to refresh donation data', 'error');
+        }
+    }, [showToast]);
 
     const handleSuccess = (data) => {
         showToast('Donation received! Thank you for your support.', 'success');
-        // Refresh data
-        api.get('/payments/donations/stats').then((res) => setStats(res.data));
-        api.get('/payments/donations/recent').then((res) => setRecentDonors(res.data));
+        refreshData();
         setAmount('');
     };
 
@@ -51,6 +75,35 @@ const DonatePage = () => {
         if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
         return `${Math.floor(diff / 86400)}d ago`;
     };
+
+    if (isLoading) {
+        return (
+            <div className="container donate-page">
+                <div className="donate-hero">
+                    <h1>Support KaruTeens</h1>
+                    <p>Help us keep the servers running and build new features.</p>
+                </div>
+                <div className="loading-state">Loading donation data...</div>
+            </div>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <div className="container donate-page">
+                <div className="donate-hero">
+                    <h1>Support KaruTeens</h1>
+                    <p>Help us keep the servers running and build new features.</p>
+                </div>
+                <div className="error-state">
+                    <p>Failed to load donation data. Please try again.</p>
+                    <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container donate-page">
@@ -127,8 +180,8 @@ const DonatePage = () => {
                         </h3>
                         <div className="donors-list">
                             {recentDonors.length > 0 ? (
-                                recentDonors.map((d, i) => (
-                                    <div key={i} className="donor-row">
+                                recentDonors.map((d) => (
+                                    <div key={d.id} className="donor-row">
                                         <span className="donor-name">{d.name}</span>
                                         <div className="right">
                                             <span className="donor-amount">+{d.amount}</span>

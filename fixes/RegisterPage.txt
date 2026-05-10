@@ -1,0 +1,16 @@
+# RegisterPage.jsx
+
+## NEED TO DO
+- step and totalSteps variables declared but NEVER used — no multi-step wizard implemented despite variable names
+- No inline validation errors for individual fields — only generic password-mismatch toast
+- No error state from register mutation rendered in UI — user sees nothing on API error unless useRegister shows toast internally
+- Camera icon imported but never used
+
+## CAN DO
+- Multi-step wizard not implemented -- step/totalSteps were intended for it
+
+## MAY DO
+- Implement the intended multi-step wizard
+- Add password strength indicator
+- Add username availability check (debounced)
+- Remove unused Camera icon import

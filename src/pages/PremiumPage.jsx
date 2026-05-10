@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Check, Star, Zap, Crown, Loader, Smartphone } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
@@ -13,6 +13,14 @@ const PremiumPage = () => {
     const { user, updateUser } = useAuthContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('monthly');
+    const redirectTimer = useRef(null);
+
+    useEffect(
+        () => () => {
+            if (redirectTimer.current) clearTimeout(redirectTimer.current);
+        },
+        [],
+    );
 
     const getAmount = () => {
         return selectedPlan === 'weekly' ? 10 : selectedPlan === 'monthly' ? 40 : 200;
@@ -23,8 +31,8 @@ const PremiumPage = () => {
         if (user) {
             updateUser({ ...user, is_premium: true, role: 'premium' });
         }
-        setTimeout(() => {
-            window.location.href = '/feed';
+        redirectTimer.current = setTimeout(() => {
+            window.location.href = '/';
         }, 2000);
     };
 

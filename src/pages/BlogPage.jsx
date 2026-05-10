@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, User, ArrowRight, BookOpen } from 'lucide-react';
 import SEO from '../components/SEO';
+import api from '../api/client';
+import { useToast } from '../context/ToastContext';
 import '../styles/BlogPage.css';
 
 export const BLOG_POSTS = [
@@ -77,6 +79,27 @@ export const BLOG_POSTS = [
 ];
 
 const BlogPage = () => {
+    const [email, setEmail] = useState('');
+    const [subscribing, setSubscribing] = useState(false);
+    const [subscribed, setSubscribed] = useState(false);
+    const { showToast } = useToast();
+
+    const handleSubscribe = async (e) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+        setSubscribing(true);
+        try {
+            await api.post('/newsletter/subscribe', { email });
+            setSubscribed(true);
+            setEmail('');
+            showToast('Subscribed successfully!', 'success');
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Subscription failed', 'error');
+        } finally {
+            setSubscribing(false);
+        }
+    };
+
     return (
         <div className="blog-page">
             <SEO
@@ -145,12 +168,29 @@ const BlogPage = () => {
                             Get the latest study materials and campus guides delivered to your
                             inbox.
                         </p>
-                        <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
-                            <input type="email" placeholder="Your campus email" required />
-                            <button type="submit" className="btn btn-primary">
-                                Subscribe
-                            </button>
-                        </form>
+                        {subscribed ? (
+                            <p className="success-text">
+                                Thanks for subscribing! Check your inbox.
+                            </p>
+                        ) : (
+                            <form className="newsletter-form" onSubmit={handleSubscribe}>
+                                <input
+                                    type="email"
+                                    placeholder="Your campus email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    disabled={subscribing}
+                                />
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={subscribing}
+                                >
+                                    {subscribing ? 'Subscribing...' : 'Subscribe'}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 </div>
             </section>

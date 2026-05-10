@@ -1,0 +1,20 @@
+# FeedPage.jsx
+
+## NEED TO DO
+- newPostsCount state never incremented — dead code
+- openSearch setTimeout with no cleanup — ref on unmounted component
+- All three feed hooks called unconditionally — hooks still initialize even when disabled
+- isOffline reads navigator.onLine at module evaluation time — ReferenceError if SSR
+- handleKeyDown doesn't check event target before preventDefault for '/'
+- No error boundary at FeedPage level — only per-PostCard
+
+## CAN DO
+- Three feed hooks all execute queries on mount — wastes bandwidth for inactive ones
+- Virtuoso overscan={200} aggressive — rendering overhead on low-end
+- showAds calculated inline every render — not useMemo'd
+- PostCards receive inline onReport callback — new reference each render
+
+## MAY DO
+- No scroll position restoration when switching feed types
+- No pull-to-refresh on mobile
+- No offline support beyond banner

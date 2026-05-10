@@ -48,49 +48,70 @@ const LeaderboardsPage = () => {
         const data = leaderboards[activeTab];
         return (
             <div className="leaderboard-list">
-                {data.map((user) => (
-                    <Link
-                        to={`/profile/${user.username}`}
-                        key={user.rank}
-                        className={`leaderboard-item ${user.username === currentUser.username ? 'current-user' : ''}`}
-                    >
-                        <div className="rank">{getRankIcon(user.rank)}</div>
-                        <Avatar src={user.avatar} name={user.username} size="md" />
-                        <div className="user-info">
-                            <span className="username">@{user.username}</span>
-                            <span className="stat-label">
-                                {activeTab === 'points' && `${user.points.toLocaleString()} pts`}
-                                {activeTab === 'streak' && `${user.streak} days 🔥`}
-                                {activeTab === 'posts' && `${user.posts} posts`}
-                                {activeTab === 'helpful' && `${user.helpful} helps`}
-                            </span>
-                        </div>
-                        {user.streak && activeTab !== 'streak' && (
-                            <span className="streak-badge">{user.streak}🔥</span>
-                        )}
-                    </Link>
-                ))}
+                {fetchError && (
+                    <div className="error-state" style={{ textAlign: 'center', padding: '2rem' }}>
+                        <p>Failed to load leaderboards. Pull down to retry.</p>
+                    </div>
+                )}
+                {!fetchError &&
+                    data.map((user) => (
+                        <Link
+                            to={`/profile/${user.username}`}
+                            key={user.username || user.id}
+                            className={`leaderboard-item ${user.username === currentUser.username ? 'current-user' : ''}`}
+                        >
+                            <div className="rank">{getRankIcon(user.rank)}</div>
+                            <Avatar src={user.avatar} name={user.username} size="md" />
+                            <div className="user-info">
+                                <span className="username">@{user.username}</span>
+                                <span className="stat-label">
+                                    {activeTab === 'points' &&
+                                        `${user.points.toLocaleString()} pts`}
+                                    {activeTab === 'streak' && `${user.streak} days 🔥`}
+                                    {activeTab === 'posts' && `${user.posts} posts`}
+                                    {activeTab === 'helpful' && `${user.helpful} helps`}
+                                </span>
+                            </div>
+                            {user.streak && activeTab !== 'streak' && (
+                                <span className="streak-badge">{user.streak}🔥</span>
+                            )}
+                        </Link>
+                    ))}
             </div>
         );
     };
 
     // Fetch leaderboards data from API
+    const [fetchError, setFetchError] = useState(false);
+
     useEffect(() => {
+        const controller = new AbortController();
         const fetchLeaderboards = async () => {
             setIsLoading(true);
+            setFetchError(false);
             try {
-                const { data } = await api.get('/leaderboards');
-                setLeaderboards(data);
-            } catch (error) {
-                console.error('Failed to load leaderboards:', error);
-                // Keep empty state, UI will handle loading/error states
+                const res = await api.get('/leaderboards', { signal: controller.signal });
+                if (!controller.signal.aborted) {
+                    setLeaderboards({
+                        points: res.data.points || [],
+                        streak: res.data.streak || [],
+                        posts: res.data.posts || [],
+                        helpful: res.data.helpful || [],
+                    });
+                }
+            } catch (err) {
+                if (!controller.signal.aborted) {
+                    console.error('Failed to fetch leaderboards:', err);
+                    setFetchError(true);
+                }
             } finally {
-                setIsLoading(false);
+                if (!controller.signal.aborted) setIsLoading(false);
             }
         };
 
         fetchLeaderboards();
-    }, []);
+        return () => controller.abort();
+    }, [activeTab]);
 
     return (
         <div className="container leaderboards-page">

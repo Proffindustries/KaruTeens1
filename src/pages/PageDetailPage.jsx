@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Users,
@@ -29,21 +29,20 @@ const PageDetailPage = () => {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const handleDeletePage = async () => {
-        if (
-            window.confirm(
-                'Are you sure you want to DELETE this page? This action cannot be undone.',
-            )
-        ) {
-            try {
-                await api.delete(`/pages/${page.id}`);
-                showToast('Page deleted!', 'success');
-                navigate('/pages');
-            } catch (err) {
-                showToast('Failed to delete page', 'error');
-            }
+        setIsDeleting(true);
+        try {
+            await api.delete(`/pages/${page.id}`);
+            showToast('Page deleted!', 'success');
+            navigate('/pages');
+        } catch (err) {
+            showToast('Failed to delete page', 'error');
+            setIsDeleting(false);
         }
+        setShowDeleteModal(false);
     };
     const [activeTab, setActiveTab] = useState('posts');
 
@@ -55,7 +54,7 @@ const PageDetailPage = () => {
         isFetchingNextPage,
     } = useInfinitePagePosts(page?.id);
 
-    const posts = postsData?.pages?.flatMap((page) => page) || [];
+    const posts = useMemo(() => postsData?.pages?.flatMap((page) => page) || [], [postsData]);
 
     if (isLoading) {
         return (
@@ -154,9 +153,10 @@ const PageDetailPage = () => {
                                     </button>
                                     <button
                                         className="btn btn-outline danger"
-                                        onClick={handleDeletePage}
+                                        onClick={() => setShowDeleteModal(true)}
+                                        disabled={isDeleting}
                                     >
-                                        Delete Page
+                                        {isDeleting ? 'Deleting...' : 'Delete Page'}
                                     </button>
                                 </div>
                             ) : (
@@ -302,6 +302,43 @@ const PageDetailPage = () => {
                     pageId={page.id}
                     pageName={page.name}
                 />
+            )}
+
+            {showDeleteModal && (
+                <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+                    <div
+                        className="modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '400px' }}
+                    >
+                        <h3>Delete Page</h3>
+                        <p>
+                            Are you sure you want to DELETE this page? This action cannot be undone.
+                        </p>
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: '10px',
+                                justifyContent: 'flex-end',
+                                marginTop: '1rem',
+                            }}
+                        >
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => setShowDeleteModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={handleDeletePage}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

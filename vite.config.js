@@ -32,46 +32,73 @@ export default defineConfig(({ mode }) => ({
                 filename: 'dist/stats.html',
             }),
 
-        // Progressive Web App support
-        VitePWA({
-            registerType: 'autoUpdate',
-            workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-                runtimeCaching: [
-                    {
-                        urlPattern: /^https:\/\/api\./,
-                        handler: 'NetworkFirst',
-                        options: {
-                            cacheName: 'api-cache',
-                            expiration: {
-                                maxEntries: 100,
-                                maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        // Progressive Web App support with tiered caching (production only)
+        mode !== 'development' &&
+            VitePWA({
+                registerType: 'autoUpdate',
+                workbox: {
+                    globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+                    runtimeCaching: [
+                        // Tier 1: Shell assets (cache-first, instant load)
+                        {
+                            urlPattern: /\.(?:js|css|html)$/,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'shell-cache',
+                                expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 },
                             },
                         },
-                    },
-                ],
-            },
-            manifest: {
-                name: 'KaruTeens',
-                short_name: 'KaruTeens',
-                description: 'Connect, Learn, and Grow Together',
-                theme_color: '#ff6b6b',
-                background_color: '#f7f9fc',
-                display: 'standalone',
-                icons: [
-                    {
-                        src: '/logo192.png',
-                        sizes: '192x192',
-                        type: 'image/png',
-                    },
-                    {
-                        src: '/logo512.png',
-                        sizes: '512x512',
-                        type: 'image/png',
-                    },
-                ],
-            },
-        }),
+                        // Tier 2: Media/images (cache-first, long TTL)
+                        {
+                            urlPattern: /\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$/,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'media-cache',
+                                expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                            },
+                        },
+                        // Tier 3: API data (network-first, 24h fallback for offline)
+                        {
+                            urlPattern: /^https:\/\/api\./,
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'api-cache',
+                                networkTimeoutSeconds: 5,
+                                expiration: { maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 },
+                            },
+                        },
+                        // Tier 4: Feed data (stale-while-revalidate for instant reads)
+                        {
+                            urlPattern: /\/posts\/(feed|for-you|trending)/,
+                            handler: 'StaleWhileRevalidate',
+                            options: {
+                                cacheName: 'feed-cache',
+                                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
+                            },
+                        },
+                    ],
+                },
+                manifest: {
+                    name: 'KaruTeens',
+                    short_name: 'KaruTeens',
+                    description: 'Connect, Learn, and Grow Together',
+                    theme_color: '#ff6b6b',
+                    background_color: '#f7f9fc',
+                    display: 'standalone',
+                    icons: [
+                        {
+                            src: '/logo192.png',
+                            sizes: '192x192',
+                            type: 'image/png',
+                        },
+                        {
+                            src: '/logo512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                        },
+                    ],
+                },
+            }),
     ].filter(Boolean),
 
     // Build optimization
@@ -144,7 +171,7 @@ export default defineConfig(({ mode }) => ({
         headers: {
             // Required for ffmpeg.wasm SharedArrayBuffer support
             'Cross-Origin-Opener-Policy': 'same-origin',
-            'Cross-Origin-Embedder-Policy': 'require-corp',
+            'Cross-Origin-Embedder-Policy': 'credentialless',
         },
         // Proxy API requests during development
         proxy: {
@@ -171,7 +198,7 @@ export default defineConfig(({ mode }) => ({
         open: true,
         headers: {
             'Cross-Origin-Opener-Policy': 'same-origin',
-            'Cross-Origin-Embedder-Policy': 'require-corp',
+            'Cross-Origin-Embedder-Policy': 'credentialless',
         },
     },
 
@@ -216,6 +243,8 @@ export default defineConfig(({ mode }) => ({
             'framer-motion',
             'lucide-react',
             'axios',
+            'react-fast-compare',
+            'react-helmet-async',
         ],
         exclude: [
             'katex', // Heavy, load on demand

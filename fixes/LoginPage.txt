@@ -1,0 +1,20 @@
+# LoginPage.jsx
+
+## NEED TO DO
+- CRITICAL: verify2fa mutation has NO onSuccess/onError — failed 2FA silently does nothing
+- CRITICAL: login mutation has onSuccess but NO onError — failed login shows no error message
+- Stale closure risk: setShow2fa called inside onSuccess — if component re-renders between submit and callback, wrong setShow2fa called
+- No loading state for 2FA step — isPending covers both login and verify, can't distinguish
+- 2FA OTP input has no autoFocus
+- No way to resend 2FA code
+
+## CAN DO
+- errors state spread on every field change — unnecessary re-renders
+- No useCallback on handlers
+- All styles inline — ~3KB of repeated style objects
+
+## MAY DO
+- Good field-level error messages
+- Password visibility toggle implemented
+- Could add social login buttons
+- Could add Remember me checkbox

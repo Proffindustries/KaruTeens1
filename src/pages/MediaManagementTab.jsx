@@ -69,6 +69,7 @@ const MediaManagementTab = () => {
     const [filters, setFilters] = useState({
         type: 'all',
         status: 'all',
+        search: '',
         size_min: '',
         size_max: '',
         upload_date_start: '',
@@ -329,7 +330,15 @@ const MediaManagementTab = () => {
         return () => {
             mounted = false;
         };
-    }, [filters]);
+    }, [
+        filters.type,
+        filters.status,
+        filters.search,
+        filters.storage_location,
+        filters.optimization_status,
+        filters.sort_by,
+        filters.sort_order,
+    ]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -389,6 +398,14 @@ const MediaManagementTab = () => {
         setBulkAction('');
     };
 
+    const uploadTimeoutsRef = useRef([]);
+
+    useEffect(() => {
+        return () => {
+            uploadTimeoutsRef.current.forEach(clearTimeout);
+        };
+    }, []);
+
     const handleUploadMedia = (files) => {
         Array.from(files).forEach((file) => {
             const newMedia = {
@@ -423,7 +440,7 @@ const MediaManagementTab = () => {
             setMediaFiles((prev) => [...prev, newMedia]);
 
             // Simulate upload progress
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 setMediaFiles((prev) =>
                     prev.map((f) =>
                         f.id === newMedia.id ? { ...f, optimization_status: 'pending' } : f,
@@ -455,6 +472,7 @@ const MediaManagementTab = () => {
                 };
                 setOptimizationJobs((prev) => [...prev, newJob]);
             }, 2000);
+            uploadTimeoutsRef.current.push(timeoutId);
         });
 
         showToast(`${files.length} files uploaded successfully`, 'success');

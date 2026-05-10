@@ -133,7 +133,7 @@ async fn main() {
         .layer(axum::middleware::from_fn_with_state(state.clone(), rate_limit::rate_limit_middleware))
         .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
             axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
-            axum::http::HeaderValue::from_static("require-corp"),
+            axum::http::HeaderValue::from_static("credentialless"),
         ))
         .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
             axum::http::header::HeaderName::from_static("cross-origin-opener-policy"),

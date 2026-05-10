@@ -1,0 +1,24 @@
+# MediaManagementTab.jsx
+
+## NEED TO DO
+- useEffect sets setIsLoading(true) directly in effect body — violates react-hooks/exhaustive-deps, causes extra re-render
+- No debouncing on filter/search — every keystroke triggers full re-fetch
+- filters.search used as controlled input but not initialized in filters state — undefined
+- Memory leak: handleUploadMedia setTimeout with no cleanup
+- Optimization/Storage/CDN tabs have NO loading states — use mock data
+- Refresh buttons are no-ops
+- No empty state for optimization jobs — empty table renders
+- All modals are UI shells with no API submit logic
+
+## CAN DO
+- 47+ lucide-react icons imported, many unused (Battery, Network, etc.)
+- No useCallback on any handler
+- No useMemo on computed data — getFileIcon, getStatusBadge create new elements every render
+- formatFileSize runs on every render for every file
+- No virtualization for media files table
+
+## MAY DO
+- Upload modal has drag-and-drop area but no actual drag handlers
+- No upload progress indicators
+- No pagination
+- CDN/Storage analytics entirely mock

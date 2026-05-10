@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import safeLocalStorage from '../utils/storage.js';
 import {
@@ -120,9 +120,43 @@ const OnboardingPage = () => {
         follows: true,
     });
     const [loading, setLoading] = useState(false);
+    const [skipLoading, setSkipLoading] = useState(false);
+
+    const avatarUrlRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (avatarUrlRef.current) {
+                URL.revokeObjectURL(avatarUrlRef.current);
+            }
+        };
+    }, []);
 
     const isLastStep = currentStep === steps.length - 1;
     const isFirstStep = currentStep === 0;
+
+    const validateStep = useCallback(() => {
+        if (currentStep === 1) {
+            if (!profileData.full_name.trim()) {
+                showToast('Please enter your full name', 'error');
+                return false;
+            }
+            if (profileData.age < 13) {
+                showToast('You must be at least 13 years old', 'error');
+                return false;
+            }
+        }
+        if (currentStep === 3) {
+            if (profileData.reg && !/^[a-z]\d{3}$/i.test(profileData.reg)) {
+                showToast(
+                    'Registration number should be 1 letter + 3 digits (e.g., e101)',
+                    'error',
+                );
+                return false;
+            }
+        }
+        return true;
+    }, [currentStep, profileData, showToast]);
 
     const completeOnboarding = useCallback(async () => {
         setLoading(true);
@@ -138,21 +172,20 @@ const OnboardingPage = () => {
             safeLocalStorage.setItem('user', JSON.stringify(storedUser));
             showToast('Welcome to KaruTeens! 🎉', 'success');
             navigate('/feed', { replace: true });
-            window.location.reload();
         } catch (err) {
-            console.error('Onboarding failed:', err);
             showToast('Please complete all required fields', 'error');
             setLoading(false);
         }
     }, [profileData, selectedInterests, notifications, updateProfile, showToast, navigate]);
 
     const handleNext = useCallback(async () => {
+        if (!validateStep()) return;
         if (isLastStep) {
             await completeOnboarding();
         } else {
             setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
         }
-    }, [isLastStep, completeOnboarding]);
+    }, [isLastStep, completeOnboarding, validateStep]);
 
     const handleBack = useCallback(() => {
         setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -171,17 +204,30 @@ const OnboardingPage = () => {
     }, []);
 
     const handleSkip = async () => {
+        setSkipLoading(true);
         try {
             await updateProfile.mutateAsync({ onboarded: true });
             const storedUser = JSON.parse(safeLocalStorage.getItem('user') || '{}');
             storedUser.onboarded = true;
             safeLocalStorage.setItem('user', JSON.stringify(storedUser));
+            navigate('/feed', { replace: true });
         } catch (err) {
-            console.error('Skip onboarding failed:', err);
-            return;
+            showToast('Failed to skip onboarding', 'error');
+        } finally {
+            setSkipLoading(false);
         }
-        navigate('/feed', { replace: true });
-        window.location.reload();
+    };
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (avatarUrlRef.current) {
+                URL.revokeObjectURL(avatarUrlRef.current);
+            }
+            const previewUrl = URL.createObjectURL(file);
+            avatarUrlRef.current = previewUrl;
+            setProfileData({ ...profileData, avatar_url: previewUrl });
+        }
     };
 
     const renderStep = () => {
@@ -256,6 +302,7 @@ const OnboardingPage = () => {
                                 <label>Age</label>
                                 <input
                                     type="number"
+                                    min={13}
                                     value={profileData.age}
                                     onChange={(e) =>
                                         setProfileData({
@@ -309,18 +356,7 @@ const OnboardingPage = () => {
                                         type="file"
                                         accept="image/*"
                                         className="hidden-input"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file) {
-                                                // Normally we'd upload to Cloudinary here
-                                                // For now, let's simulate with a temporary preview URL
-                                                const previewUrl = URL.createObjectURL(file);
-                                                setProfileData({
-                                                    ...profileData,
-                                                    avatar_url: previewUrl,
-                                                });
-                                            }
-                                        }}
+                                        onChange={handleAvatarChange}
                                     />
                                 </label>
                             </div>
@@ -539,8 +575,12 @@ const OnboardingPage = () => {
                         )}
 
                         {isFirstStep && (
-                            <button className="btn btn-outline" onClick={handleSkip}>
-                                Skip for now
+                            <button
+                                className="btn btn-outline"
+                                onClick={handleSkip}
+                                disabled={skipLoading}
+                            >
+                                {skipLoading ? 'Skipping...' : 'Skip for now'}
                             </button>
                         )}
 

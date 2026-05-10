@@ -511,3 +511,22 @@
     align-items: center;
     justify-content: center;
 }
+
+.stats-error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--admin-danger);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.tab-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--admin-text-muted);
+    font-size: 0.95rem;
+}

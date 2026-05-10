@@ -1,0 +1,19 @@
+# OnboardingPage.jsx
+
+## NEED TO DO
+- Memory leak: URL.createObjectURL(file) NEVER revoked with URL.revokeObjectURL
+- completeOnboarding and handleSkip call window.location.reload() after navigate — redundant, clears React state
+- No form validation on any step — full_name empty, age negative/zero, reg format not validated
+- completeOnboarding doesn't set loading=false on success path
+- Avatar upload never actually uploads — comment says 'Normally we'd upload to Cloudinary' but never implemented
+- No loading state for Skip button — can press multiple times
+
+## CAN DO
+- renderStep is large switch recreating all step JSX every render
+- handleNext depends on completeOnboarding which depends on profileData — recreated on every input change
+- 22+ lucide-react icons imported
+
+## MAY DO
+- No progress persistence — refresh restarts onboarding
+- No skip confirmation dialog
+- Accessibility: progress dots lack aria-labels

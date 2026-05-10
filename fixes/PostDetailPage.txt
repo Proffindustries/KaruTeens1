@@ -1,0 +1,16 @@
+# PostDetailPage.jsx
+
+## NEED TO DO
+- No React error boundary
+- handleBack uses navigate(-1) — could navigate away from app entirely if no browser history
+- postUrl uses window.location.href — incompatible with SSR
+- No loading/error state for AdComponent
+
+## CAN DO
+- PostCard not wrapped in React.memo — re-renders on every parent state change
+- SEO component may update head on every render
+
+## MAY DO
+- No related posts shown
+- No comments section on detail page
+- No share functionality

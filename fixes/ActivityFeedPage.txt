@@ -1,0 +1,17 @@
+# ActivityFeedPage.jsx
+
+## NEED TO DO
+- Dead code: ActivityRow component defined but never rendered — remove or actually use
+- handleActivityClick not wrapped in useCallback
+- Loading state is plain text — needs proper skeleton
+- Error state uses window.location.reload() — use refetch() instead
+
+## CAN DO
+- formatTime and getActivityIcon recreated every render — lift outside component
+- framer-motion for simple animations — use CSS transitions to reduce bundle
+- Grouped activities recalculation is properly memoized
+
+## MAY DO
+- Add infinite scroll for large feeds
+- Add sound/vibration for new real-time activities
+- Add undo toast when deleting activity

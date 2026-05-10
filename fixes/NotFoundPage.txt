@@ -1,0 +1,12 @@
+# NotFoundPage.jsx
+
+## NEED TO DO
+_None identified_
+
+## CAN DO
+- framer-motion import for single infinite-bounce animation — adds bundle weight for 404 page
+
+## MAY DO
+- No Go Back button — only Back to Home
+- Could auto-redirect after timeout
+- Could show different illustrations for different errors

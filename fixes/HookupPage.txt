@@ -1,0 +1,20 @@
+# HookupPage.jsx
+
+## NEED TO DO
+- window.location.reload() after payment — kills all React state, full page reload
+- handleSwipe onSuccess references discovery from stale closure — out-of-bounds access risk
+- showToast in payment polling useEffect deps — if showToast not wrapped in useCallback, interval re-created every render
+- discovery[currentMatchIndex] can be undefined if data refetched with fewer items — no guardrail
+- No error state rendered for aliasError
+- sendHeartLocally setTimeout has no cleanup
+- handleSwipe does not guard against double-swipes
+
+## CAN DO
+- Alias form uses object spread on every keystroke — batch updates
+- No useCallback on handlers
+- Payment polling interval at 10s — reasonable but could use exponential backoff
+
+## MAY DO
+- Good use of AnimatePresence for swipe transitions
+- Could add 'undo pass' feature
+- Age input accepts negative numbers — add min attribute

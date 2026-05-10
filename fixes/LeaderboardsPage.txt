@@ -1,0 +1,19 @@
+# LeaderboardsPage.jsx
+
+## NEED TO DO
+- useEffect fetching has NO abort controller — state update on unmounted component
+- No error UI when API fails — console.error only, user sees empty leaderboard
+- key prop on items uses user.rank — if two users have same rank, React misidentifies rows
+- Data fetched once, never refreshed — stale for entire session
+- Switching tabs does NOT refetch data
+
+## CAN DO
+- renderLeaderboard function redefined inline every render
+- All four datasets fetched regardless of active tab — could lazy-load per tab
+- Skeleton loading is implemented — good
+- No useCallback on setActiveTab
+
+## MAY DO
+- Rank icons with crown colors for top 3
+- Current user highlighted
+- Could add week-over-week rank change indicators

@@ -9,7 +9,7 @@ import { shouldBlur } from '../utils/contentFilters.js';
 import { getVariantUrl } from '../utils/mediaUtils.js';
 
 const StatusPage = () => {
-    const { data: usersWithStories, isLoading } = useStories();
+    const { data: usersWithStories, isLoading, error: storiesError } = useStories();
     const { user: currentUser } = useAuth();
     const { mutate: markViewed } = useMarkStoryViewed();
 
@@ -18,7 +18,9 @@ const StatusPage = () => {
     const [progress, setProgress] = useState(0);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
-    const [revealedNsfwStories, setRevealedNsfwStories] = useState(new Set());
+    const [revealedNsfwStories, setRevealedNsfwStories] = useState({});
+
+    const markViewedRef = useRef(null);
 
     const myStoriesData = usersWithStories?.find(
         (u) => u.user_id === currentUser?.id || u.user_id === currentUser?.user_id,
@@ -34,16 +36,21 @@ const StatusPage = () => {
         setProgress(0);
     }, []);
 
-    const openViewer = (userId) => {
-        const index = usersWithStories.findIndex((u) => u.user_id === userId);
-        if (index !== -1) {
-            setViewingUserIndex(index);
-            const firstUnviewed = usersWithStories[index].stories.findIndex((s) => !s.is_viewed);
-            setCurrentStoryIndex(firstUnviewed !== -1 ? firstUnviewed : 0);
-        }
-    };
+    const openViewer = useCallback(
+        (userId) => {
+            const index = usersWithStories?.findIndex((u) => u.user_id === userId);
+            if (index !== -1) {
+                setViewingUserIndex(index);
+                const firstUnviewed = usersWithStories[index].stories.findIndex(
+                    (s) => !s.is_viewed,
+                );
+                setCurrentStoryIndex(firstUnviewed !== -1 ? firstUnviewed : 0);
+            }
+        },
+        [usersWithStories],
+    );
 
-    const handlePrevStory = () => {
+    const handlePrevStory = useCallback(() => {
         if (viewingUserIndex === null) return;
 
         if (currentStoryIndex > 0) {
@@ -56,7 +63,7 @@ const StatusPage = () => {
                 setProgress(0);
             }
         }
-    };
+    }, [viewingUserIndex, currentStoryIndex]);
 
     const handleNextStory = useCallback(() => {
         if (viewingUserIndex === null) return;
@@ -76,14 +83,15 @@ const StatusPage = () => {
         }
     }, [viewingUserIndex, currentStoryIndex, usersWithStories, closeViewer]);
 
-    // Effect to reset progress and mark story as viewed when current story changes
     useEffect(() => {
         if (viewingUserIndex !== null && usersWithStories && usersWithStories[viewingUserIndex]) {
             const userStories = usersWithStories[viewingUserIndex].stories;
             const currentStory = userStories[currentStoryIndex];
 
             if (currentStory && !currentStory.is_viewed) {
-                markViewed(currentStory.id);
+                markViewed(currentStory.id, {
+                    onError: (err) => console.error('Failed to mark story viewed:', err),
+                });
             }
         }
     }, [viewingUserIndex, currentStoryIndex, usersWithStories, markViewed]);
@@ -91,16 +99,14 @@ const StatusPage = () => {
     const viewingUser = viewingUserIndex !== null ? usersWithStories[viewingUserIndex] : null;
     const activeStory = viewingUser ? viewingUser.stories[currentStoryIndex] : null;
 
-    // Ref to always have access to latest handleNextStory without causing effect re-runs
     const handleNextStoryRef = useRef(handleNextStory);
     useEffect(() => {
         handleNextStoryRef.current = handleNextStory;
     }, [handleNextStory]);
 
-    // Effect to manage the progress bar interval
     useEffect(() => {
         let interval;
-        const isNsfwAndHidden = activeStory?.is_nsfw && !revealedNsfwStories.has(activeStory.id);
+        const isNsfwAndHidden = activeStory?.is_nsfw && !revealedNsfwStories[activeStory.id];
 
         if (viewingUserIndex !== null && !isPaused && !isNsfwAndHidden) {
             const duration = 5000;
@@ -122,6 +128,33 @@ const StatusPage = () => {
     }, [viewingUserIndex, currentStoryIndex, isPaused, activeStory, revealedNsfwStories]);
 
     if (isLoading) return <div className="p-4 text-center">Loading updates...</div>;
+    if (storiesError)
+        return (
+            <div className="p-4 text-center">Failed to load updates. Please try again later.</div>
+        );
+    if (!usersWithStories || usersWithStories.length === 0) {
+        return (
+            <div className="status-page container mx-auto px-4 pb-20">
+                <div className="status-header">
+                    <h1>Updates</h1>
+                </div>
+                <div className="p-4 text-center" style={{ opacity: 0.6, marginTop: '2rem' }}>
+                    <Shield size={48} style={{ margin: '0 auto 1rem' }} />
+                    <p>No updates yet. Create your first story!</p>
+                    <button
+                        className="btn btn-primary mt-4"
+                        onClick={() => setIsCreateModalOpen(true)}
+                    >
+                        <Plus size={18} /> Create Story
+                    </button>
+                </div>
+                <CreateStoryModal
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setIsCreateModalOpen(false)}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="status-page container mx-auto px-4 pb-20">
@@ -248,7 +281,7 @@ const StatusPage = () => {
 
                         {/* Content */}
                         <div
-                            className={`viewer-media-wrapper ${shouldBlur(activeStory) && !revealedNsfwStories.has(activeStory.id) ? 'nsfw-story-blurred' : ''}`}
+                            className={`viewer-media-wrapper ${shouldBlur(activeStory) && !revealedNsfwStories[activeStory.id] ? 'nsfw-story-blurred' : ''}`}
                         >
                             {activeStory.media_type === 'video' ? (
                                 <video
@@ -268,22 +301,22 @@ const StatusPage = () => {
                                 />
                             )}
 
-                            {shouldBlur(activeStory) &&
-                                !revealedNsfwStories.has(activeStory.id) && (
-                                    <div
-                                        className="nsfw-story-overlay"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setRevealedNsfwStories((prev) =>
-                                                new Set(prev).add(activeStory.id),
-                                            );
-                                        }}
-                                    >
-                                        <Shield size={48} color="white" />
-                                        <p>Sensitive Content</p>
-                                        <button className="reveal-btn-story">Tap to Reveal</button>
-                                    </div>
-                                )}
+                            {shouldBlur(activeStory) && !revealedNsfwStories[activeStory.id] && (
+                                <div
+                                    className="nsfw-story-overlay"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRevealedNsfwStories((prev) => ({
+                                            ...prev,
+                                            [activeStory.id]: true,
+                                        }));
+                                    }}
+                                >
+                                    <Shield size={48} color="white" />
+                                    <p>Sensitive Content</p>
+                                    <button className="reveal-btn-story">Tap to Reveal</button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer / Reply */}

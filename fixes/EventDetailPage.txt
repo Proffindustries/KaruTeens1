@@ -1,0 +1,19 @@
+# EventDetailPage.jsx
+
+## NEED TO DO
+- No error state for network failures — 'Event not found' shown even for 500 errors
+- currentRSVP initialized to null — doesn't reflect user's existing RSVP status from server
+- handleRemoveRSVP has no onError handler
+- RSVP buttons' onClick handlers create new functions each render
+- No suspense boundary
+
+## CAN DO
+- startDate and endDate recreated every render — wrap in useMemo
+- Inline arrow functions in JSX create new references each render
+- Hero image has no loading='lazy'
+
+## MAY DO
+- No Add to Calendar buttons
+- No share event button
+- No map view for physical location
+- No attendee list

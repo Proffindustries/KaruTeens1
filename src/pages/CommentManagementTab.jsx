@@ -85,20 +85,35 @@ const CommentManagementTab = () => {
 
     // User stats data will be fetched from API
 
+    const [loadError, setLoadError] = useState(null);
+
     // Fetch comments from API
     useEffect(() => {
         let isMounted = true;
+        setLoadError(null);
 
         const loadComments = async () => {
             setIsLoading(true);
             try {
-                const { data } = await api.get('/comments');
+                const params = {};
+                if (filters.status !== 'all') params.status = filters.status;
+                if (filters.content_type !== 'all') params.content_type = filters.content_type;
+                if (filters.user_id) params.user_id = filters.user_id;
+                if (filters.reported_count_min)
+                    params.reported_count_min = filters.reported_count_min;
+                if (filters.date_from) params.date_from = filters.date_from;
+                if (filters.date_to) params.date_to = filters.date_to;
+                params.sort_by = filters.sort_by;
+                params.sort_order = filters.sort_order;
+                const { data } = await api.get('/comments', { params });
                 if (isMounted) {
                     setComments(data);
                 }
             } catch (error) {
-                console.error('Failed to load comments:', error);
-                // Keep empty state, UI will handle loading/error states
+                if (isMounted) {
+                    console.error('Failed to load comments:', error);
+                    setLoadError('Failed to load comments');
+                }
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
@@ -111,7 +126,16 @@ const CommentManagementTab = () => {
         return () => {
             isMounted = false;
         };
-    }, [filters]);
+    }, [
+        filters.status,
+        filters.content_type,
+        filters.user_id,
+        filters.reported_count_min,
+        filters.date_from,
+        filters.date_to,
+        filters.sort_by,
+        filters.sort_order,
+    ]);
 
     // Fetch user stats from API
     useEffect(() => {
@@ -125,7 +149,6 @@ const CommentManagementTab = () => {
                 }
             } catch (error) {
                 console.error('Failed to load user stats:', error);
-                // Keep empty state
             }
         };
 
@@ -140,46 +163,62 @@ const CommentManagementTab = () => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedComments.length === 0) {
             showToast('Please select comments first', 'warning');
             return;
         }
 
-        if (bulkAction === 'approve') {
-            setComments((prev) =>
-                prev.map((c) =>
-                    selectedComments.includes(c.id) ? { ...c, status: 'approved' } : c,
-                ),
-            );
-            setSelectedComments([]);
-            setBulkAction('');
-            showToast('Comments approved', 'success');
-        } else if (bulkAction === 'reject') {
-            setComments((prev) =>
-                prev.map((c) =>
-                    selectedComments.includes(c.id) ? { ...c, status: 'rejected' } : c,
-                ),
-            );
-            setSelectedComments([]);
-            setBulkAction('');
-            showToast('Comments rejected', 'info');
-        } else if (bulkAction === 'delete') {
-            if (
-                confirm(`Delete ${selectedComments.length} comments? This action cannot be undone.`)
-            ) {
+        try {
+            if (bulkAction === 'approve') {
+                await Promise.all(
+                    selectedComments.map((id) =>
+                        api.put(`/comments/${id}`, { status: 'approved' }),
+                    ),
+                );
+                setComments((prev) =>
+                    prev.map((c) =>
+                        selectedComments.includes(c.id) ? { ...c, status: 'approved' } : c,
+                    ),
+                );
+                showToast('Comments approved', 'success');
+            } else if (bulkAction === 'reject') {
+                await Promise.all(
+                    selectedComments.map((id) =>
+                        api.put(`/comments/${id}`, { status: 'rejected' }),
+                    ),
+                );
+                setComments((prev) =>
+                    prev.map((c) =>
+                        selectedComments.includes(c.id) ? { ...c, status: 'rejected' } : c,
+                    ),
+                );
+                showToast('Comments rejected', 'info');
+            } else if (bulkAction === 'delete') {
+                if (
+                    !confirm(
+                        `Delete ${selectedComments.length} comments? This action cannot be undone.`,
+                    )
+                )
+                    return;
+                await Promise.all(selectedComments.map((id) => api.delete(`/comments/${id}`)));
                 setComments((prev) => prev.filter((c) => !selectedComments.includes(c.id)));
-                setSelectedComments([]);
-                setBulkAction('');
                 showToast('Comments deleted', 'success');
+            } else if (bulkAction === 'mark_spam') {
+                await Promise.all(
+                    selectedComments.map((id) => api.put(`/comments/${id}`, { status: 'spam' })),
+                );
+                setComments((prev) =>
+                    prev.map((c) =>
+                        selectedComments.includes(c.id) ? { ...c, status: 'spam' } : c,
+                    ),
+                );
+                showToast('Comments marked as spam', 'info');
             }
-        } else if (bulkAction === 'mark_spam') {
-            setComments((prev) =>
-                prev.map((c) => (selectedComments.includes(c.id) ? { ...c, status: 'spam' } : c)),
-            );
             setSelectedComments([]);
             setBulkAction('');
-            showToast('Comments marked as spam', 'info');
+        } catch (err) {
+            showToast('Failed to perform bulk action', 'error');
         }
     };
 
@@ -188,44 +227,54 @@ const CommentManagementTab = () => {
         setShowModerationModal(true);
     };
 
-    const confirmModeration = () => {
+    const confirmModeration = async () => {
         if (!moderatingComment || !moderationAction) return;
 
-        setComments((prev) =>
-            prev.map((c) =>
-                c.id === moderatingComment.id
-                    ? {
-                          ...c,
-                          status:
-                              moderationAction === 'approve'
-                                  ? 'approved'
-                                  : moderationAction === 'reject'
-                                    ? 'rejected'
-                                    : moderationAction === 'delete'
-                                      ? 'deleted'
-                                      : moderationAction === 'spam'
-                                        ? 'spam'
-                                        : c.status,
-                          moderation_notes: moderationReason,
-                          updated_at: new Date().toISOString(),
-                      }
-                    : c,
-            ),
-        );
+        try {
+            const status =
+                moderationAction === 'approve'
+                    ? 'approved'
+                    : moderationAction === 'reject'
+                      ? 'rejected'
+                      : moderationAction === 'delete'
+                        ? 'deleted'
+                        : 'spam';
+            await api.put(`/comments/${moderatingComment.id}`, {
+                status,
+                moderation_notes: moderationReason,
+            });
+            setComments((prev) =>
+                prev.map((c) =>
+                    c.id === moderatingComment.id
+                        ? {
+                              ...c,
+                              status,
+                              moderation_notes: moderationReason,
+                              updated_at: new Date().toISOString(),
+                          }
+                        : c,
+                ),
+            );
+            showToast(`Comment ${moderationAction}ed successfully`, 'success');
+        } catch (err) {
+            showToast('Failed to moderate comment', 'error');
+        }
 
         setShowModerationModal(false);
         setModeratingComment(null);
         setModerationAction('approve');
         setModerationReason('');
-        showToast(`Comment ${moderationAction}ed successfully`, 'success');
     };
 
-    const handleDeleteComment = (commentId) => {
-        if (
-            confirm('Are you sure you want to delete this comment? This action cannot be undone.')
-        ) {
+    const handleDeleteComment = async (commentId) => {
+        if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.'))
+            return;
+        try {
+            await api.delete(`/comments/${commentId}`);
             setComments((prev) => prev.filter((c) => c.id !== commentId));
             showToast('Comment deleted', 'success');
+        } catch (err) {
+            showToast('Failed to delete comment', 'error');
         }
     };
 

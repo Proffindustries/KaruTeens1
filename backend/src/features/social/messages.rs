@@ -393,20 +393,48 @@ pub async fn get_chats_handler(
     let user_profile = profile_map.get(&user.user_id);
     let muted_chat_ids = user_profile.and_then(|p| p.muted_chats.as_ref()).cloned().unwrap_or_default();
 
-    // 4. Batch fetch unread counts (optimization: only for chats with recent unread messages)
-    // For now, we'll still do a count per chat but we could optimize this with an aggregation if needed.
-    // However, the main N+1 issue was the profiles.
+    // 4. Batch fetch unread counts using aggregation
+    let chat_ids: Vec<ObjectId> = chats.iter().filter_map(|c| c.id).collect();
+    let unread_pipeline = vec![
+        doc! { "$match": { 
+            "chat_id": { "$in": &chat_ids }, 
+            "sender_id": { "$ne": user.user_id }, 
+            "read_at": null 
+        }},
+        doc! { "$group": { "_id": "$chat_id", "count": { "$sum": 1 } } }
+    ];
+    
+    let mut unread_map = HashMap::new();
+    if let Ok(mut cursor) = messages_collection.aggregate(unread_pipeline, None).await {
+        while let Some(Ok(result)) = cursor.next().await {
+            if let (Ok(cid), Ok(count)) = (result.get_object_id("_id"), result.get_i64("count")) {
+                unread_map.insert(cid, count as i32);
+            }
+        }
+    }
+
+    // 5. Batch fetch presence from Redis
+    let mut presence_map = HashMap::new();
+    let mut redis_conn = state.redis.clone();
+    let profile_ids: Vec<ObjectId> = profile_map.keys().cloned().collect();
+    let presence_keys: Vec<String> = profile_ids.iter()
+        .map(|uid| format!("user:presence:{}", uid.to_hex()))
+        .collect();
+    
+    if !presence_keys.is_empty() {
+        if let Ok(values) = redis_conn.mget::<_, Vec<Option<String>>>(&presence_keys).await {
+            for (i, val) in values.iter().enumerate() {
+                presence_map.insert(profile_ids[i], val.is_some());
+            }
+        }
+    }
 
     let mut response_chats = Vec::new();
     for chat in chats {
         let chat_id = chat.id.unwrap();
         let is_muted = muted_chat_ids.contains(&chat_id);
+        let unread_count = unread_map.get(&chat_id).cloned().unwrap_or(0);
         
-        let unread_count = messages_collection.count_documents(
-            doc! { "chat_id": chat_id, "sender_id": { "$ne": user.user_id }, "read_at": null },
-            None
-        ).await.unwrap_or(0);
-
         if chat.is_group {
             let group_p = chat.participants.iter().filter_map(|pid| {
                 profile_map.get(pid).map(|p| ChatParticipant {
@@ -424,7 +452,7 @@ pub async fn get_chats_handler(
                 participant: None,
                 last_message: chat.last_message,
                 last_message_time: chat.last_message_time.to_chrono().to_rfc3339(),
-                unread_count: unread_count as i32,
+                unread_count,
                 group_participants: Some(group_p),
                 admins: Some(chat.admins.iter().map(|id| id.to_hex()).collect()),
                 is_muted,
@@ -433,9 +461,7 @@ pub async fn get_chats_handler(
         } else {
             let other_id = chat.participants.iter().find(|&&id| id != user.user_id).unwrap_or(&user.user_id);
             let profile_summary = if let Some(p) = profile_map.get(other_id) {
-                let presence_key = format!("user:presence:{}", p.user_id.to_hex());
-                let mut conn = state.redis.clone();
-                let is_online: bool = conn.exists(&presence_key).await.unwrap_or(false);
+                let is_online = presence_map.get(other_id).cloned().unwrap_or(false);
 
                 Some(ProfileSummary {
                     user_id: p.user_id.to_hex(),
@@ -453,7 +479,7 @@ pub async fn get_chats_handler(
                     }),
                 })
             } else {
-                // Fallback for missing profile (e.g. System Admin or deleted user)
+                // Fallback for missing profile
                 Some(ProfileSummary {
                     user_id: other_id.to_hex(),
                     username: if chat.name.as_deref() == Some("System") { "System Admin".to_string() } else { "Unknown User".to_string() },
@@ -474,7 +500,7 @@ pub async fn get_chats_handler(
                     participant: Some(ps),
                     last_message: chat.last_message,
                     last_message_time: chat.last_message_time.to_chrono().to_rfc3339(),
-                    unread_count: unread_count as i32, 
+                    unread_count, 
                     group_participants: None,
                     admins: None,
                     is_muted,
@@ -511,6 +537,7 @@ pub async fn get_messages_handler(
     while let Some(Ok(msg)) = cursor.next().await {
         raw_messages.push(msg);
     }
+    raw_messages.reverse();
 
     if raw_messages.is_empty() {
         return Ok((StatusCode::OK, Json(json!([]))));
@@ -869,6 +896,7 @@ pub async fn send_message_handler(
     let chat_name = chat.name.clone().unwrap_or_else(|| "group".to_string());
     let msg_id = result.inserted_id.as_object_id().unwrap();
 
+    let chat_for_task = chat.clone();
     tokio::spawn(async move {
         // Get sender username (with caching)
         let sender_username = if let Some(cached_profile) = state_clone.cache.get::<Profile>(&format!("profile:{}", sender_id.to_hex())).await {
@@ -915,42 +943,38 @@ pub async fn send_message_handler(
             data: json!(res),
         };
 
-        // Get chat participants
-        if let Ok(Some(full_chat)) = state_clone.mongo.collection::<Chat>("chats")
-            .find_one(doc! { "_id": oid }, None).await {
-            
-            for pid in full_chat.participants {
-                if pid != sender_id {
-                    // Create notification (fire and forget)
-                    let notification_text = if is_group {
-                        format!("sent a message to {}", chat_name)
-                    } else {
-                        "sent you a message".to_string()
-                    };
+        // Use the chat we already have
+        for pid in chat_for_task.participants {
+            if pid != sender_id {
+                // Create notification (fire and forget)
+                let notification_text = if is_group {
+                    format!("sent a message to {}", chat_name)
+                } else {
+                    "sent you a message".to_string()
+                };
 
-                    let _ = create_notification(
-                        &state_clone,
-                        pid,
-                        sender_id,
-                        "message",
-                        Some(oid),
-                        &notification_text,
-                        false
-                    ).await;
+                let _ = create_notification(
+                    &state_clone,
+                    pid,
+                    sender_id,
+                    "message",
+                    Some(oid),
+                    &notification_text,
+                    false
+                ).await;
 
-                    // Send WebSocket message
-                    let _ = send_to_user(&state_clone, &pid, &ws_payload).await;
+                // Send WebSocket message
+                let _ = send_to_user(&state_clone, &pid, &ws_payload).await;
 
-                    // Publish to Ably for real-time chat list update (sidebar)
-                    let chat_update_channel = format!("user:{}:chats", pid.to_hex());
-                    publish_to_ably(&chat_update_channel, "update", json!({})).await;
-                }
+                // Publish to Ably for real-time chat list update (sidebar)
+                let chat_update_channel = format!("user:{}:chats", pid.to_hex());
+                publish_to_ably(&chat_update_channel, "update", json!({})).await;
             }
-            
-            // Publish to Ably for the specific chat channel (main area)
-            let chat_channel = format!("chat:{}", oid.to_hex());
-            publish_to_ably(&chat_channel, "new_message", json!(res)).await;
         }
+        
+        // Publish to Ably for the specific chat channel (main area)
+        let chat_channel = format!("chat:{}", oid.to_hex());
+        publish_to_ably(&chat_channel, "new_message", json!(res)).await;
     });
 
     Ok((StatusCode::CREATED, Json(json!({ 
@@ -1138,21 +1162,18 @@ pub async fn vote_poll_handler(
 
 // Get Link Preview
 pub async fn get_link_preview_handler(
+    State(state): State<Arc<AppState>>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let url = params.get("url").ok_or((StatusCode::BAD_REQUEST, Json(json!({"error": "Missing URL"}))))?;
     
-    let client = reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (compatible; KaruTeensBot/1.0)")
+    let res = state.http_client.get(url)
+        .header("User-Agent", "Mozilla/5.0 (compatible; KaruTeensBot/1.0)")
         .timeout(std::time::Duration::from_secs(5))
-        .build()
+        .send().await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
 
-    let res = client.get(url).send().await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))))?;
-
-    let body = res.text().await
-        .unwrap_or_default();
+    let body = res.text().await.unwrap_or_default();
 
     let mut preview = LinkPreviewResponse {
         title: None,
@@ -1161,11 +1182,10 @@ pub async fn get_link_preview_handler(
         url: url.clone(),
     };
 
-    // Very simple extraction without scraper
-    if let Some(t_start) = body.find("<title>") {
-        if let Some(t_end) = body[t_start..].find("</title>") {
-            preview.title = Some(body[t_start+7..t_start+t_end].trim().to_string());
-        }
+    // Regex for title
+    let title_re = regex::Regex::new(r#"(?i)<title[^>]*>(.*?)</title>"#).unwrap();
+    if let Some(caps) = title_re.captures(&body) {
+        preview.title = Some(caps.get(1).unwrap().as_str().trim().to_string());
     }
 
     // Look for OG tags
@@ -1181,17 +1201,20 @@ pub async fn get_link_preview_handler(
 }
 
 fn extract_meta(body: &str, property: &str) -> Option<String> {
-    let patterns = [
-        format!("property=\"{}\" content=\"", property),
-        format!("name=\"{}\" content=\"", property),
-    ];
+    // Regex to match <meta ... property="og:title" ... content="Value" ...>
+    // or <meta ... content="Value" ... property="og:title" ...>
+    // It handles: property/name, single/double quotes, and attribute order.
+    
+    let re_str = format!(
+        r#"(?i)<meta\s+[^>]*?(?:(?:property|name)\s*=\s*['"]{}['"]|content\s*=\s*['"]([^'"]*?)['"])[^>]*?(?:(?:property|name)\s*=\s*['"]{}['"]|content\s*=\s*['"]([^'"]*?)['"])[^>]*?>"#,
+        regex::escape(property),
+        regex::escape(property)
+    );
 
-    for p in patterns.iter() {
-        if let Some(start) = body.find(p) {
-            let offset = start + p.len();
-            if let Some(end) = body[offset..].find("\"") {
-                return Some(body[offset..offset+end].to_string());
-            }
+    if let Ok(re) = regex::Regex::new(&re_str) {
+        if let Some(caps) = re.captures(body) {
+            // One of the captures will be the content, depending on order
+            return caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str().to_string());
         }
     }
     None

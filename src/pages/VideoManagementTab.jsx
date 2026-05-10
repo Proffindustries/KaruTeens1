@@ -81,7 +81,14 @@ const VideoManagementTab = () => {
     const [currentTab, setCurrentTab] = useState('videos');
 
     const fileInputRef = useRef(null);
+    const uploadTimeoutsRef = useRef([]);
     const { showToast } = useToast();
+
+    useEffect(() => {
+        return () => {
+            uploadTimeoutsRef.current.forEach(clearTimeout);
+        };
+    }, []);
 
     // Videos data will be fetched from API
 
@@ -102,7 +109,7 @@ const VideoManagementTab = () => {
             })
             .catch((error) => {
                 console.error('Failed to load video management data:', error);
-                // Keep empty states, UI will show loading/error states appropriately
+                showToast('Failed to load video management data', 'error');
             })
             .finally(() => {
                 if (mounted) setIsLoading(false);
@@ -110,7 +117,7 @@ const VideoManagementTab = () => {
         return () => {
             mounted = false;
         };
-    }, [filters]);
+    }, [filters.status, filters.quality, filters.format, filters.sort_by, filters.sort_order]);
 
     const mockStorageStats = {
         transcoding_stats: {
@@ -125,74 +132,43 @@ const VideoManagementTab = () => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const [actionError, setActionError] = useState(null);
+
+    const handleBulkAction = async () => {
         if (selectedVideos.length === 0) {
             showToast('Please select videos first', 'warning');
             return;
         }
 
-        if (bulkAction === 'transcode') {
-            const selectedVideoObjects = videos.filter((v) => selectedVideos.includes(v.id));
-            selectedVideoObjects.forEach((video) => {
-                // Simulate transcoding job creation
-                const newJob = {
-                    id: `job_${Date.now()}`,
-                    video_id: video.id,
-                    video_title: video.title,
-                    status: 'pending',
-                    progress: 0,
-                    created_at: new Date().toISOString(),
-                    started_at: null,
-                    completed_at: null,
-                    duration: null,
-                    input_format: video.format,
-                    input_resolution: video.resolution,
-                    output_formats: ['mp4'],
-                    output_qualities: ['high', 'medium', 'low'],
-                    output_resolutions: ['1920x1080', '1280x720', '640x480'],
-                    error_message: null,
-                    worker_node: `transcode-worker-${Math.floor(Math.random() * 5) + 1}`,
-                    priority: 'normal',
-                };
-                setTranscodingJobs((prev) => [...prev, newJob]);
-            });
-            showToast(`${selectedVideos.length} videos added to transcoding queue`, 'success');
-        } else if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedVideos.length} videos? This action cannot be undone.`)) {
-                setVideos((prev) => prev.filter((v) => !selectedVideos.includes(v.id)));
+        try {
+            if (bulkAction === 'transcode') {
+                await Promise.all(selectedVideos.map((id) => api.post(`/videos/${id}/transcode`)));
+                showToast(`${selectedVideos.length} videos added to transcoding queue`, 'success');
+            } else if (bulkAction === 'delete') {
+                if (
+                    !confirm(
+                        `Delete ${selectedVideos.length} videos? This action cannot be undone.`,
+                    )
+                )
+                    return;
+                await Promise.all(selectedVideos.map((id) => api.delete(`/videos/${id}`)));
                 setSelectedVideos([]);
                 showToast('Videos deleted', 'success');
+            } else if (bulkAction === 'retry_failed') {
+                const failedVideos = videos.filter(
+                    (v) => selectedVideos.includes(v.id) && v.status === 'error',
+                );
+                await Promise.all(
+                    failedVideos.map((v) => api.post(`/videos/${v.id}/transcode/retry`)),
+                );
+                showToast(`${failedVideos.length} failed videos queued for retry`, 'success');
             }
-        } else if (bulkAction === 'retry_failed') {
-            const failedVideos = videos.filter(
-                (v) => selectedVideos.includes(v.id) && v.status === 'error',
-            );
-            failedVideos.forEach((video) => {
-                // Simulate retrying transcoding
-                const newJob = {
-                    id: `job_${Date.now()}_${video.id}`,
-                    video_id: video.id,
-                    video_title: video.title,
-                    status: 'pending',
-                    progress: 0,
-                    created_at: new Date().toISOString(),
-                    started_at: null,
-                    completed_at: null,
-                    duration: null,
-                    input_format: video.format,
-                    input_resolution: video.resolution,
-                    output_formats: ['mp4'],
-                    output_qualities: ['high'],
-                    output_resolutions: [video.resolution],
-                    error_message: null,
-                    worker_node: `transcode-worker-${Math.floor(Math.random() * 5) + 1}`,
-                    priority: 'high',
-                };
-                setTranscodingJobs((prev) => [...prev, newJob]);
-            });
-            showToast(`${failedVideos.length} failed videos queued for retry`, 'success');
+            setBulkAction('');
+            setActionError(null);
+        } catch (err) {
+            setActionError('Failed to perform bulk action');
+            showToast('Failed to perform bulk action', 'error');
         }
-        setBulkAction('');
     };
 
     const handleUploadVideo = (files) => {
@@ -237,7 +213,7 @@ const VideoManagementTab = () => {
             setVideos((prev) => [...prev, newVideo]);
 
             // Simulate upload progress
-            setTimeout(() => {
+            const tid = setTimeout(() => {
                 setVideos((prev) =>
                     prev.map((v) =>
                         v.id === newVideo.id
@@ -268,16 +244,22 @@ const VideoManagementTab = () => {
                 };
                 setTranscodingJobs((prev) => [...prev, newJob]);
             }, 2000);
+            uploadTimeoutsRef.current.push(tid);
         });
 
         showToast(`${files.length} videos uploaded successfully`, 'success');
     };
 
-    const handleDeleteVideo = (videoId) => {
-        if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+    const handleDeleteVideo = async (videoId) => {
+        if (!confirm('Are you sure you want to delete this video? This action cannot be undone.'))
+            return;
+        try {
+            await api.delete(`/videos/${videoId}`);
             setVideos((prev) => prev.filter((v) => v.id !== videoId));
             setTranscodingJobs((prev) => prev.filter((j) => j.video_id !== videoId));
             showToast('Video deleted', 'success');
+        } catch (err) {
+            showToast('Failed to delete video', 'error');
         }
     };
 

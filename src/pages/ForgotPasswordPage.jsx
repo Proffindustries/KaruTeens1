@@ -5,7 +5,7 @@ import AuthLayout from '../layouts/AuthLayout.jsx';
 import { useForgotPassword, useResetPassword } from '../hooks/useAuth.js';
 
 const ForgotPasswordPage = () => {
-    const [step, setStep] = useState(1); // 1: request code, 2: reset password
+    const [step, setStep] = useState(1); // 1: request code, 2: reset password, 3: success
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -22,7 +22,10 @@ const ForgotPasswordPage = () => {
 
     const handleResetPassword = (e) => {
         e.preventDefault();
-        resetPassword.mutate({ email, code, new_password: newPassword });
+        resetPassword.mutate(
+            { email, code, new_password: newPassword },
+            { onSuccess: () => setStep(3) },
+        );
     };
 
     return (
@@ -35,7 +38,19 @@ const ForgotPasswordPage = () => {
             }
         >
             <div className="forgot-password-container">
-                {step === 1 ? (
+                {step === 3 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                        <h3>Password Reset Successful</h3>
+                        <p>Your password has been updated. You can now log in.</p>
+                        <Link
+                            to="/login"
+                            className="btn btn-primary"
+                            style={{ marginTop: '1rem', display: 'inline-block' }}
+                        >
+                            Back to Login
+                        </Link>
+                    </div>
+                ) : step === 1 ? (
                     <form onSubmit={handleRequestCode}>
                         <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                             <label htmlFor="email">University Email</label>
@@ -62,6 +77,16 @@ const ForgotPasswordPage = () => {
                                 />
                             </div>
                         </div>
+
+                        {forgotPassword.isError && (
+                            <p
+                                className="error-text"
+                                style={{ color: '#ff4757', marginBottom: '1rem' }}
+                            >
+                                {forgotPassword.error?.response?.data?.error ||
+                                    'Failed to send reset code'}
+                            </p>
+                        )}
 
                         <button
                             type="submit"
@@ -100,7 +125,7 @@ const ForgotPasswordPage = () => {
                                     maxLength={6}
                                     style={{ paddingLeft: '40px' }}
                                     value={code}
-                                    onChange={(e) => setCode(e.target.value)}
+                                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                                 />
                             </div>
                         </div>
@@ -124,12 +149,23 @@ const ForgotPasswordPage = () => {
                                     className="form-input"
                                     placeholder="Enter new password"
                                     required
+                                    minLength={8}
                                     style={{ paddingLeft: '40px' }}
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                 />
                             </div>
                         </div>
+
+                        {resetPassword.isError && (
+                            <p
+                                className="error-text"
+                                style={{ color: '#ff4757', marginBottom: '1rem' }}
+                            >
+                                {resetPassword.error?.response?.data?.error ||
+                                    'Failed to reset password'}
+                            </p>
+                        )}
 
                         <button
                             type="submit"

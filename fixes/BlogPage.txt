@@ -1,0 +1,15 @@
+# BlogPage.jsx
+
+## NEED TO DO
+- Newsletter form has onSubmit with e.preventDefault() and NO submission logic — decorative
+
+## CAN DO
+- All blog data hardcoded in JS bundle — should fetch from CMS
+- Newsletter input uncontrolled — always empty on re-render
+- BLOG_POSTS exported and consumed by BlogDetailPage — couples both pages
+
+## MAY DO
+- Add search/filter by category
+- Add featured post carousel
+- Add pagination or Load More
+- Add RSS feed link

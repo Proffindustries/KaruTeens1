@@ -1,0 +1,680 @@
+COMPLETE FEATURE INVENTORY OF KARUTEENS
+==========================================
+Extracted from frontend codebase at /home/arch/.KaruTeens1
+Total: 210+ distinct features across 41 categories
+
+======================================================================
+1. AUTHENTICATION & ACCOUNT MANAGEMENT (src/hooks/useAuth.js + src/context/AuthContext.jsx)
+======================================================================
+1.1  User Registration (email/password)          - useRegister() via POST /auth/register
+1.2  User Login                                  - useLogin() via POST /auth/login
+1.3  Two-Factor Authentication (2FA) Required     - login response detects two_factor_required
+1.4  Verify 2FA Code                             - useVerify2FA() via POST /auth/verify-2fa
+1.5  Toggle 2FA On/Off                           - useToggle2FA() via POST /users/2fa/toggle
+1.6  User Logout                                 - useLogout() via POST /auth/logout + clear cache
+1.7  Forgot Password                             - useForgotPassword() via POST /auth/forgot-password
+1.8  Reset Password                              - useResetPassword() via POST /auth/reset-password
+1.9  JWT Token Management                        - AuthContext stores/validates JWT with auto-expiry detection
+1.10 Auto-Logout on Token Expiry                  - jwtDecode checks exp, triggers logout
+1.11 401 Interceptor Auto-Logout                  - window event 'auth:unauthorized' fires logout
+1.12 Login Redirect Preservation                  - saves location.state.from for post-login redirect
+1.13 Registration Success → Login Redirect        - navigates to /login after register
+1.14 Protected Route Guard                        - ProtectedRoute component checks isAuthenticated
+1.15 Onboarding Redirect Guard                    - un-onboarded users redirected to /onboarding
+1.16 Update Profile (Account)                     - useUpdateProfile() via PUT /users/update
+1.17 localStorage Safe Storage Utility            - safeLocalStorage with fallback
+1.18 Cookie-free Token Persistence                - localStorage-based (no cookies)
+
+======================================================================
+2. PROFILE & USER MANAGEMENT (src/hooks/useUser.js + src/pages/ProfilePage.jsx)
+======================================================================
+2.1  View User Profile                           - useProfile(username) via GET /users/:username
+2.2  Update Own Profile                          - useUpdateProfile() via PUT /users/update
+2.3  Follow User                                 - useFollow() via POST /users/:username/follow
+2.4  Unfollow User                               - useUnfollow() via POST /users/:username/unfollow
+2.5  Profile Stats Display                       - follower_count, following_count, post_count
+2.6  User Avatar                                 - Avatar component with fallback initials
+2.7  Profile Bio & School Display                - bio, school, year_of_study on profile
+2.8  Saved Posts Tab on Profile                  - /profile/:username?tab=saved
+2.9  User Suggestions ("Who to Follow")           - GET /follows/suggestions and GET /users/recommended
+2.10 Gamification Stats on Profile               - useGamification() via GET /users/:username/gamification
+2.11 Verification Badge                          - is_verified flag displayed on profile
+2.12 Premium Badge Display                       - is_premium / role === 'premium' indicator
+
+======================================================================
+3. MESSAGING - CHATS (src/hooks/useMessages.js + src/pages/MessagesPage.jsx)
+======================================================================
+3.1  List All Chats                              - useChats() via GET /messages
+3.2  Get Chat Messages                           - useChatMessages(chatId) via GET /messages/:id/messages
+3.3  Create New Chat (1-on-1)                    - useCreateChat() via POST /messages
+3.4  Create Group Chat                           - useCreateGroup() via POST /messages/group
+3.5  Send Text Message                           - useSendMessage(chatId) via POST /messages/:id/messages
+3.6  Optimistic Message Sending                  - useSendMessage.onMutate updates cache immediately
+3.7  Message Reactions (Emoji)                   - useReactMessage() via POST /messages/messages/:id/react
+3.8  Quick Emoji Reactions Bar                   - COMMON_EMOJIS = [❤️😂😮😢🔥👍]
+3.9  Reply to Message (Threaded)                 - reply_to_id field in sendMessage
+3.10 Forward Message                              - useForwardMessage()
+3.11 Delete Message (for everyone/me)             - useDeleteMessage(mode) via POST /messages/messages/:id
+3.12 Mark Message as Read                         - useMarkRead() via POST /messages/messages/:id/read
+3.13 Mark View-Once as Viewed                     - useMarkViewed() via POST /messages/messages/:id/view
+3.14 Vote on Poll in Chat                         - useVotePoll() via POST /messages/messages/:id/vote
+3.15 Search Within Chat                           - useSearchChatMessages() via GET /messages/:id/search
+3.16 Add Participants to Group                    - useAddParticipants() via POST /messages/:id/participants/add
+3.17 Remove Participant from Group                - useRemoveParticipant() via POST /messages/:id/participants/remove
+3.18 Leave Group Chat                             - useLeaveGroup() via POST /messages/:id/leave
+3.19 Mute/Unmute Chat                            - useMuteChat() via POST/DELETE /users/chat/:id/mute
+3.20 Block/Unblock User                          - useBlockUser() via POST/DELETE /users/block/:userId
+3.21 Set Disappearing Messages Duration           - useSetDisappearing() via POST /messages/:id/disappearing
+3.22 Update Group Info (name, avatar)             - useUpdateGroup() via POST /messages/:id/update
+3.23 Toggle Admin Role in Group                   - useToggleAdmin() via POST /messages/:id/toggle-admin
+3.24 Incoming Call Handling (WebRTC Signaling)    - ably-signaling custom events from AblyContext
+3.25 Chat Sidebar with User List                  - responsive sidebar with ChatRow components
+3.26 Chat Search by Username                      - search bar triggers createChat
+3.27 Online/Offline Indicator                     - presenceData from Ably
+3.28 Last Seen Timestamp                          - formatLastSeen() utility
+3.29 Confetti Animation on Keywords               - "congratulations"/"happy birthday"/🎉 triggers confetti
+3.30 Message Highlight on Search Result           - scrollToMessage() + highlight-search class
+3.31 Inline PDF/Doc Viewer                       - Google Docs viewer iframe for docs
+3.32 File Attachment Type Detection               - auto-detects image/video/audio/pdf/excel/word/ppt
+3.33 View-Once Media (Private Media)              - is_view_once flag with view tracking
+
+======================================================================
+4. MESSAGING - MEDIA & ATTACHMENTS (src/hooks/useMedia.js + MessagesPage.jsx)
+======================================================================
+4.1  Send Image Attachment                        - uploadImage() via R2 signed URL
+4.2  Send Video Attachment                        - uploadVideo() (200MB free / 1000MB premium)
+4.3  Send Audio/Voice Note                        - uploadAudio() with ffmpeg processing
+4.4  Send File Attachment                         - uploadFile()
+4.5  Auto-Upload Media on Select                  - uploadProcessRef handles file→upload→send flow
+4.6  Image Compression Before Upload              - browser-image-compression (max 1MB, 2000px)
+4.7  GIF Support (Animated)                       - detects image/gif, skips compression
+4.8  WebP Conversion for PNG/BMP/TIFF             - converts raw formats to webp
+4.9  R2 Signed URL Upload                         - POST /media/signature/r2 → PUT to R2
+4.10 Upload Progress Tracking                     - UploadContext tracks progress per-file
+4.11 Batch Upload with Concurrency                - batchUpload(files, fn, concurrency=2)
+4.12 Cancel Upload                                - CancelToken from axios
+4.13 Retry Logic (Exponential Backoff)            - withRetry() up to 3 attempts
+4.14 Poll Media Optimization Status               - pollJobStatus() up to 60 attempts (2min)
+4.15 Voice Note Processing                        - POST /media/process for voice notes
+4.16 Document Type Detection                      - pdf/excel/word/powerpoint auto-detection
+4.17 Image Optimization (Cloudinary)              - f_auto,q_auto injected into Cloudinary URLs
+4.18 Video Optimization                           - vc_auto,q_auto,f_auto injected
+4.19 Audio Optimization                           - f_mp3,q_auto injected
+
+======================================================================
+5. MESSAGING - VOICE RECORDING (MessagesPage.jsx)
+======================================================================
+5.1  Start Voice Recording                        - navigator.mediaDevices.getUserMedia({audio})
+5.2  Stop Voice Recording                         - MediaRecorder.stop()
+5.3  Voice Note Duration Display                  - formatDuration() with timer
+5.4  Waveform Visualization                       - dynamic wave bars (15 bars, random heights)
+5.5  Voice Note Play/Pause in Chat                - VoiceNotePlayer component
+5.6  MediaRecorder MIME Type Detection            - prefers audio/webm;codecs=opus
+5.7  Auto-Upload on Recording Stop                - sends blob via uploadProcessRef
+
+======================================================================
+6. CALLING - VOICE & VIDEO (src/hooks/useWebRTC.js + MessagesPage.jsx)
+======================================================================
+6.1  Start Voice Call                             - useWebRTC.startCall(user, 'voice')
+6.2  Start Video Call                             - useWebRTC.startCall(user, 'video')
+6.3  Answer Incoming Call                         - useWebRTC.answerCall(offer, caller, type)
+6.4  Reject Incoming Call                         - useWebRTC.rejectCall()
+6.5  End Call                                     - useWebRTC.endCall() + cleanup tracks
+6.6  Toggle Mute                                  - useWebRTC.toggleMute()
+6.7  Toggle Video On/Off                         - useWebRTC.toggleVideo()
+6.8  Call Duration Timer                          - useWebRTC.callDuration (interval-based)
+6.9  Incoming Call Modal                          - IncomingCallModal component
+6.10 Active Call Screen                           - ActiveCallScreen component
+6.11 Calling Screen (Outgoing)                    - CallingScreen component
+6.12 WebRTC Signaling via Ably                    - user:userId:signaling channel
+6.13 ICE Candidate Exchange                       - STUN servers + Ably signaling
+6.12 Call State Machine                           - idle → calling/ringing → active → idle
+6.13 Device Error Handling                        - NotFoundError, NotAllowedError, NotReadableError handling
+
+======================================================================
+7. SOCIAL FEED (src/hooks/useContent.ts + src/pages/FeedPage.jsx)
+======================================================================
+7.1  Infinite Scroll Feed                         - useInfiniteFeed() via GET /posts/feed
+7.2  For You Algorithmic Feed                     - useForYouFeed() via GET /posts/for-you
+7.3  Trending Feed                                - useTrendingPosts() via GET /posts/trending-posts
+7.4  Trending Topics Sidebar                      - useTrendingTopics() via GET /posts/trending
+7.5  Create Post (Text + Media)                   - useCreatePost() via POST /posts
+7.6  Like Post (Optimistic)                       - useLikePost() via POST /posts/:id/like
+7.7  Unlike Post (Optimistic)                     - useUnlikePost() via DELETE /posts/:id/like
+7.8  Add Comment to Post                          - useAddComment() via POST /posts/:id/comments
+7.9  Threaded Comments (Reply to Comment)         - parent_comment_id in addComment
+7.10 List Comments on Post                        - useComments(postId) via GET /posts/:id/comments
+7.11 Delete Comment                               - useDeleteComment() via DELETE /comments/:id
+7.12 Delete Post                                  - useDeletePost() via DELETE /posts/:id (optimistic)
+7.13 Save/Bookmark Post                           - useSavePost() via POST /posts/:id/save
+7.14 List Saved Posts                             - useSavedPosts() via GET /posts/saved
+7.15 Report Post                                  - useReportPost() via POST /posts/:id/report
+7.16 Hide Post                                    - useHidePost() via POST /posts/:id/hide
+7.17 Vote on Post Poll                            - useVotePoll() via POST /posts/:id/poll/vote
+7.18 Post Drafts (Save Draft)                     - useSaveDraft() via POST /posts/drafts
+7.19 List Drafts                                  - useDrafts() via GET /posts/drafts
+7.20 Update Draft                                 - useUpdateDraft() via PUT /posts/drafts/:id
+7.21 Delete Draft                                 - useDeleteDraft() via DELETE /posts/drafts/:id
+7.22 Publish Draft                                - usePublishDraft() via POST /posts/drafts/:id/publish
+7.23 Preview Draft                                - useDraftPreview() via GET /posts/drafts/:id/preview
+7.24 Hashtag Search in Feed                       - search param in useInfiniteFeed
+7.25 Feed Tabs (Home/For You/Trending)            - feedType toggle buttons
+7.26 Virtualized Feed List                        - react-virtuoso Virtuoso component
+7.27 Create Post Modal                            - CreatePostModal with text, media, location, audience, scheduling
+7.28 Anonymous Posting                            - is_anonymous flag in createPost
+7.29 Audience Targeting                           - audience[] in createPost (e.g. ['all'])
+7.30 Scheduled Posts                              - scheduledDatetime in CreatePostModal
+7.31 NSFW Content Flag on Posts                   - is_nsfw flag in createPost
+7.32 Edit Post (via Draft System)                 - drafts → edit → publish flow
+7.33 Post Media Gallery (Multiple)                - media_urls[] support
+7.34 Post Location Tagging                        - location object in createPost
+7.35 Rotating Prompt Bar                          - cycling prompts ("What's popping?", "Spill the tea ☕")
+7.36 New Posts Banner                             - "X new posts available" fetch button
+7.37 Scroll-to-Top FAB                            - floating button when scrolled past 500px
+7.38 Offline Banner                               - WifiOff indicator when navigator.onLine === false
+7.39 Search By Hashtag Chip                       - search-filter-chip with Hash icon
+7.40 Keyboard Shortcuts (p=post, /=search)        - handleKeyDown listener
+7.41 Mini Profile Sidebar Card                    - user avatar, stats, follower/following counts
+7.42 Guest Feed CTA                               - "Join Now" / "Sign In" for unauthenticated users
+7.43 Post Cards with Rich Media                   - PostCard component with images, video, audio, polls, maps
+7.44 Ad Insertion Every 5 Posts                   - AdComponent injected at index % 5 === 0
+
+======================================================================
+8. STORIES / STATUS (src/hooks/useStories.js + src/pages/StatusPage.jsx + src/components/CreateStoryModal.jsx)
+======================================================================
+8.1  List Active Stories Feed                     - useStories() via GET /stories/feed
+8.2  Get User's Stories                          - useUserStories(userId) via GET /stories/user/:id
+8.3  Create Story (Photo/Video)                   - useCreateStory() via POST /stories
+8.4  Mark Story as Viewed                         - useMarkStoryViewed() via POST /stories/:id/view
+8.5  List Story Viewers                           - useStoryViewers(storyId) via GET /stories/:id/viewers
+8.6  Story Viewer Overlay                         - full-screen story playback
+8.7  Progress Bars per Story                      - horizontal progress bars at top
+8.8  Auto-Advance to Next Story (5s)              - interval-based auto-advance
+8.9  Tap-to-Pause Story                           - onMouseDown/onTouchStart pauses
+8.10 Navigate Prev/Next Story                     - ChevronLeft/ChevronRight buttons
+8.11 Navigate Prev/Next User                      - wraps to prev/next user's stories
+8.12 Reply to Story                               - text input in viewer footer
+8.13 Story Notifications (unviewed indicator)     - has_unviewed flag, status-ring styling
+8.14 "My Status" with Plus Button                 - create story from own avatar ring
+8.15 Stories Auto-Refresh (60s)                   - refetchInterval: 60000
+8.16 Stories API Convenience Wrapper              - storiesApi service (create, listActive, getUserStories, markViewed, getViewers)
+8.17 CreateStoryModal                             - modal with media upload + text overlay options
+
+======================================================================
+9. REELS (SHORT-FORM VIDEO) (src/pages/ReelsPage.jsx)
+======================================================================
+9.1  Fetch Reels Feed                              - GET /reels
+9.2  Vertical Scroll Video Player                  - snap-scroll per reel
+9.3  Auto-Play Active Reel                         - plays when index === currentIndex
+9.4  Pause on Scroll Away                          - pauses + resets non-active reels
+9.5  Like Reel                                     - POST /reels/:id/like (optimistic local state)
+9.6  Reel Comment Count                            - comment_count display
+9.7  Share Reel                                    - Share2 action button
+9.8  Follow Button on Reel                         - follow-btn-small on reel user
+9.9  Reel Description                              - text description overlay
+9.10 Reel Music Attribution                        - "Original Audio - @username"
+9.11 NSFW Blur on Reels                           - shouldBlur() + tap-to-reveal
+9.12 Back Navigation                               - navigates to feed or previous page
+9.13 Empty State                                   - EmptyState component when no reels
+
+======================================================================
+10. GROUPS (src/hooks/useGroups.js + src/pages/GroupsPage.jsx + src/pages/GroupDetailPage.jsx)
+======================================================================
+10.1 List Groups (with filters)                   - useGroups(filters) via GET /groups
+10.2 Get Single Group                             - useGroup(groupId) via GET /groups/:id
+10.3 List Group Posts                             - useGroupPosts(groupId) via GET /groups/:id/posts
+10.4 Create Group                                 - useCreateGroup() via POST /groups (optimistic)
+10.5 Join Group                                   - useJoinGroup() via POST /groups/:id/join (optimistic)
+10.6 Leave Group                                  - useLeaveGroup() via POST /groups/:id/leave (optimistic)
+10.7 Update Group                                 - useUpdateGroup() via PUT /groups/:id
+10.8 Create Post in Group                         - useCreateGroupPost() via POST /groups/:id/posts (optimistic)
+10.9 Category Filter for Groups                   - filters.category parameter
+10.10 Search Groups                                - filters.search parameter
+10.11 Group Detail Page with Feed                  - GroupDetailPage shows group posts
+10.12 Optimistic Join/Leave UI                     - immediate member_count update in cache
+
+======================================================================
+11. EVENTS (src/hooks/useEvents.js + src/pages/EventsPage.jsx + src/pages/EventDetailPage.jsx)
+======================================================================
+11.1 List Events (with filters)                   - useEvents(filters) via GET /events
+11.2 Get Single Event                             - useEvent(eventId) via GET /events/:id
+11.3 Create Event                                 - useCreateEvent() via POST /events
+11.4 RSVP to Event (going/maybe/not)              - useRSVPEvent() via POST /events/:id/rsvp
+11.5 Remove RSVP                                  - useRemoveRSVP() via DELETE /events/:id/rsvp
+11.6 Category Filter for Events                   - filters.category parameter
+11.7 Upcoming Events Filter                       - filters.upcoming parameter
+11.8 Events Auto-Refresh (30s)                    - refetchInterval: 30000
+
+======================================================================
+12. PAGES (FACEBOOK-STYLE) (src/hooks/usePages.js + src/pages/PagesPage.jsx + src/pages/PageDetailPage.jsx)
+======================================================================
+12.1 List Pages (with filters)                    - usePages(filters) via GET /pages
+12.2 Get Single Page                              - usePage(idOrSlug) via GET /pages/:id
+12.3 Create Page                                  - useCreatePage() via POST /pages
+12.4 Follow Page                                  - useFollowPage() via POST /pages/:id/follow
+12.5 Unfollow Page                                - useUnfollowPage() via DELETE /pages/:id/follow
+12.6 Page Feed (Posts by Page)                    - useInfinitePagePosts(pageId)
+12.7 Page Detail at /p/:slug                      - PageDetailPage route
+
+======================================================================
+13. CAMPUS CONFESSIONS (src/pages/ConfessionsPage.jsx)
+======================================================================
+13.1 List Published Confessions                    - GET /confessions
+13.2 List Pending Confessions (Own)               - GET /confessions/pending
+13.3 Create Confession (Anonymous)                - POST /confessions
+13.4 Cancel Pending Confession                    - DELETE /confessions/:id
+13.5 Like Confession (Optimistic)                 - POST /confessions/:id/like
+13.6 Comment on Confession                        - POST /confessions/:id/comments
+13.7 List Confession Comments                     - GET /confessions/:id/comments
+13.8 Share Confession (Native Share / Copy)       - navigator.share or clipboard
+13.9 Report Confession                            - POST /confessions/:id/report
+13.10 Auto-Publish Timer (12h)                     - auto_publish_at countdown
+13.11 Pending Countdown Component                  - PendingCountdown with live timer
+13.12 Media Attachments on Confessions             - image/video upload
+13.13 Anonymous Toggle                             - is_anonymous checkbox with 🔒 lock
+13.14 Character Limit (280)                        - maxLength + char-count display
+13.15 Content Hidden Until Published               - content hidden with ▇▇ blocks
+13.16 Suspense Banner ("Tea is brewing...")         - rotating suspense phrases
+13.17 Media Blurred Until Published                 - pending-media-blur overlay
+13.18 Published Badge                              - ✅ Published indicator
+
+======================================================================
+14. DATING / HOOKUP (src/hooks/useHookup.js + src/pages/HookupPage.jsx)
+======================================================================
+14.1 Get My Alias                                 - useMyAlias() via GET /hookup/alias
+14.2 Create Dating Alias                          - useCreateAlias() via POST /hookup/alias
+14.3 Discover Matches                             - useDiscovery() via GET /hookup/discover
+14.4 Swipe Interaction (Like/Pass)                - useInteract() via POST /hookup/interact/:id/:type
+14.5 Mutual Match Detection                       - data.match triggers "It's a mutual match!"
+14.6 Alias Verification Payment (Ksh 20)          - M-Pesa STK Push via POST /payments/verify
+14.7 Payment Status Polling                        - GET /payments/status/:checkoutId (every 10s)
+14.8 Anonymized Profiles                          - alias_username, age, gender, bio (no real photos)
+14.9 18+ Age Restriction                          - min={18} on age input + warning box
+14.10 Swipe Card Animation                         - framer-motion AnimatePresence
+14.11 Gender/Matching Preferences                  - Male/Female/Other selector
+14.12 Payment Modal with M-Pesa                    - phone number input + Pay Ksh 20 button
+
+======================================================================
+15. MARKETPLACE (src/hooks/useMarketplace.js + src/pages/MarketplacePage.jsx + src/pages/MarketplaceItemPage.jsx)
+======================================================================
+15.1 List Marketplace Items (with filters)        - useMarketplaceItems(filters) via GET /marketplace
+15.2 Get Single Marketplace Item                  - useMarketplaceItem(itemId) via GET /marketplace/:id
+15.3 Create Listing                               - useCreateItem() via POST /marketplace
+15.4 Mark Item as Sold                            - useMarkSold() via PUT /marketplace/:id/sold
+15.5 Boost Item (24h visibility)                  - useBoostItem() via POST /marketplace/:id/boost
+15.6 Delete Listing                               - useDeleteItem() via DELETE /marketplace/:id
+15.7 Category Filter                              - filters.category parameter
+15.8 Search Filter                                - filters.search parameter
+15.9 Contact Seller (Opens Chat)                  - navigates to messages with recipientUsername state
+
+======================================================================
+16. NOTIFICATIONS (src/hooks/useNotifications.js + src/hooks/useActivity.js + src/pages/NotificationsPage.jsx + src/pages/ActivityFeedPage.jsx)
+======================================================================
+16.1 List Notifications                            - useNotifications() via GET /notifications
+16.2 Mark Notification as Read                    - useMarkNotificationRead() via POST /notifications/:id/read
+16.3 Mark All Notifications Read                  - useMarkAllRead() via POST /notifications/read-all
+16.4 Delete Notification                          - useDeleteNotification() via DELETE /notifications/:id
+16.5 Notification Polling (10s)                   - refetchInterval: 10000
+16.6 Activity Feed (Mapped from Notifications)    - useActivityFeed() maps notifications to activity format
+16.7 Mark Activity Read                           - useMarkActivityRead()
+16.8 Mark All Activity Read                       - useMarkAllActivityRead()
+16.9 Delete Activity                              - useDeleteActivity()
+16.10 Activity Feed Auto-Refresh (30s)             - refetchInterval: 30000
+16.11 Real-time Notification Push (Ably)           - user:userId:notifications channel + toast
+16.12 Real-time Notification via WebSocket         - 'notification' type in WS handler
+
+======================================================================
+17. STUDY ROOMS (src/hooks/useStudyRooms.js + src/pages/StudyRoomsPage.jsx)
+======================================================================
+17.1 List Study Rooms                             - useStudyRooms() via GET /study-rooms
+17.2 Get Single Study Room                        - useStudyRoom(roomId) via GET /study-rooms/:id
+17.3 Create Study Room                            - useCreateRoom() via POST /study-rooms
+17.4 Join Study Room                              - useJoinRoom() via POST /study-rooms/:id/join
+17.5 Leave Study Room                             - useLeaveRoom() via POST /study-rooms/:id/leave
+17.6 Delete Study Room                            - useDeleteRoom() via DELETE /study-rooms/:id
+17.7 Generate Invite Link                         - useGenerateInviteLink() via GET /study-rooms/:id/invite
+17.8 Remove User from Room                        - useRemoveUser() via DELETE /study-rooms/:id/remove/:userId
+17.9 View Room History                            - useRoomHistory(roomId) via GET /study-rooms/:id/history
+17.10 Send Room Message                            - useSaveRoomMessage() via POST /study-rooms/:id/messages
+17.11 Upload File to Room                          - useSaveRoomFile() via POST /study-rooms/:id/files
+17.12 Premium Gate for Study Rooms                 - PremiumGate component if not premium
+17.13 Collaborative Whiteboard (Drawing Tools)    - PenTool, Eraser, shapes (Circle, Square, Type)
+17.14 Room Timer / Pomodoro                        - Timer icon + Coffee break features
+17.15 Room Voice/Video Chat                        - Mic, Video, Monitor, Music buttons
+17.16 Formatted Text in Room                       - FormattedText component
+17.17 Room Lobby vs Active Room View               - RoomLobby / ActiveRoom conditional rendering
+17.18 Rooms Auto-Refresh (10s)                     - refetchInterval: 10000
+
+======================================================================
+18. STUDY PLAYLISTS (src/pages/StudyPlaylistsPage.jsx)
+======================================================================
+18.1 Study Playlists Page                          - curated study content playlists
+18.2 Playlist-based Learning                       - organized content collections
+
+======================================================================
+19. REVISION MATERIALS (src/pages/RevisionMaterialsPage.jsx)
+======================================================================
+19.1 List Revision Materials                       - GET /revision-materials with filters
+19.2 Academic Filters (School, Programme, Year)   - AcademicFilters component
+19.3 Category Filters (CAT, Exam, Past Paper)     - REVISION_CATEGORIES constant
+19.4 Material Type Icons                           - Book, FileText, Video, Link per type
+19.5 Empty State                                   - EmptyState component
+19.6 Material Skeleton Loading                     - MaterialSkeleton component
+
+======================================================================
+20. RECALL / FLASHCARDS (src/pages/RecallPage.jsx)
+======================================================================
+20.1 List Recall Materials                        - GET /revision-materials with category=Notes/Other Resources
+20.2 Academic Filters (School, Programme, Year)   - reusable AcademicFilters
+20.3 View Document Details                        - GET /revision-materials/:id
+20.4 Locked Documents (Paywall)                   - is_locked && !has_purchased
+20.5 Unlock with Payment                          - "Pay Ksh 5 to unlock" prompt
+20.6 Full Content Viewer                          - setFullContent() for viewing unlocked docs
+
+======================================================================
+21. TIMETABLE (src/pages/TimetablePage.jsx)
+======================================================================
+21.1 Class Timetable View                          - weekly/daily schedule view
+21.2 ICS File Import                               - parseICS() utility for calendar files
+21.3 Academic Term Structure                       - subjects, time slots, rooms
+
+======================================================================
+22. TEMPLATES (src/pages/TemplatesPage.jsx)
+======================================================================
+22.1 Post Templates Library                       - pre-written post templates
+22.2 Category Organization                         - Study Tips, Study Group, Exam Prep, Notes, etc.
+22.3 Template Copy to Clipboard                    - Copy button on each template
+22.4 Category Icons                                - 💡🍅👥🎉📝📄📒✏️
+22.5 "Used" Tracking                              - tracks recently used templates
+22.6 Search Templates                              - Search input for filtering
+22.7 Empty State                                   - EmptyState component
+22.8 Custom Template Creation                      - "Create Template" form (title, category, content)
+
+======================================================================
+23. AI ASSISTANT (src/pages/AiPage.jsx)
+======================================================================
+23.1 AI Assistant Page                             - AI-powered helper (route: /ai-assistant)
+23.2 AI Chat Interface                             - conversation with AI
+
+======================================================================
+24. LEADERBOARDS / GAMIFICATION (src/hooks/useGamification.js + src/pages/LeaderboardsPage.jsx)
+======================================================================
+24.1 User Gamification Stats                      - useGamification(username) via GET /users/:username/gamification
+24.2 Leaderboards Page                            - ranked users by points/achievements
+24.3 Points/Badges System                         - gamification data structure
+
+======================================================================
+25. PREMIUM / SUBSCRIPTIONS (src/pages/PremiumPage.jsx)
+======================================================================
+25.1 Weekly Premium (Ksh 10/wk)                   - "Weekly Star" plan
+25.2 Monthly Premium (Ksh 40/mo)                  - "Campus Pro" plan (POPULAR)
+25.3 Annual Premium (Ksh 200/yr)                  - "Elite" plan
+25.4 M-Pesa Payment Integration                   - MpesaPaymentModal component
+25.5 Payment Success Handler                       - updateUser to premium role + redirect
+25.6 Premium Feature Set                           - Verified Badge, Unlimited Uploads, Profile Visitors
+25.7 Premium Study Rooms                           - Premium-only feature
+25.8 Priority Support                              - Premium perk
+25.9 Premium Gates                                 - PremiumGate component wrapping features
+
+======================================================================
+26. DONATE (src/pages/DonatePage.jsx)
+======================================================================
+26.1 Donation Page                                 - support the platform financially
+26.2 M-Pesa Donation Integration                   - M-Pesa payment for donations
+
+======================================================================
+27. EXPLORE & SEARCH (src/pages/ExplorePage.jsx + src/pages/SearchResultsPage.jsx)
+======================================================================
+27.1 Explore Page (Media Gallery)                 - browsing content by media
+27.2 Explore Tabs                                  - different explore modes
+27.3 Search Results Page                          - /search route
+27.4 Search Bar                                    - SearchBar component
+27.5 Search by Username/Hashtag/Content           - unified search
+
+======================================================================
+28. SETTINGS (src/pages/SettingsPage.jsx)
+======================================================================
+28.1 Account Settings Tab                         - profile data, full_name, bio, school, year, age, gender
+28.2 Notification Settings Tab                    - per-type toggles (messages, likes, comments, follows, mentions, etc.)
+28.3 Push Notification Permission                  - checks Notification.permission
+28.4 Appearance Settings                           - theme (dark/light), fontSize, layout
+28.5 2FA Toggle                                    - useToggle2FA()
+28.6 Session Management                            - list/revoke active sessions
+28.7 Data Export                                   - download user data
+28.8 Account Deletion                              - with confirmation modal + reason
+28.9 Blocked Users List                            - view/manage blocked users
+28.10 Theme Toggle (Dark/Light + System)           - ThemeContext integration
+28.11 Font Size Settings                           - small/medium/large
+
+======================================================================
+29. ONBOARDING (src/pages/OnboardingPage.jsx)
+======================================================================
+29.1 Onboarding Flow                               - post-registration tutorial/setup
+29.2 User Profile Initial Setup                    - collect remaining profile info
+29.3 Interest/Preference Selection                 - onboard user preferences
+
+======================================================================
+30. BLOG (src/pages/BlogPage.jsx + src/pages/BlogDetailPage.jsx)
+======================================================================
+30.1 Blog Listing                                  - blog posts list at /blog
+30.2 Blog Detail Page                              - single blog post at /blog/:slug
+30.3 Campus Hub Content                            - blog as content marketing
+
+======================================================================
+31. ADMIN (src/pages/AdminDashboard.jsx + src/hooks/useAdmin.js)
+======================================================================
+31.1 Admin Stats Dashboard                        - useAdminStats() via GET /admin/stats
+31.2 List Users (with filters)                    - useAdminUsers(filters) via GET /admin/users
+31.3 Update User Role                             - useUpdateUserRole() via PUT /admin/users/:id/role
+31.4 Ban/Unban User                               - useBanUser() via PUT /admin/users/:id/ban
+31.5 Verify User                                  - useVerifyUser() via PUT /admin/users/:id/verify
+31.6 Admin Delete Post                            - useDeletePost() via DELETE /admin/posts/:id
+31.7 User Management Tab                          - UserManagementTab component
+31.8 Post Management Tab                          - PostManagementTab component
+31.9 Comment Management Tab                       - CommentManagementTab component
+31.10 Confession Moderation Tab                    - ConfessionModerationTab component
+31.11 Ad Management Tab                            - AdManagementTab component
+31.12 Analytics Tab                                - AnalyticsTab component
+31.13 Event Management Tab                         - EventManagementTab component
+31.14 Group Management Tab                         - GroupManagementTab component
+31.15 Media Management Tab                         - MediaManagementTab component
+31.16 Page Management Tab                          - PageManagementTab component
+31.17 Reel Management Tab                          - ReelManagementTab component
+31.18 Story Management Tab                         - StoryManagementTab component
+31.19 Revision Management Tab                      - RevisionManagementTab component
+31.20 Video Management Tab                         - VideoManagementTab component
+31.21 Role/Permission Filters for Admin           - filters.role, filters.verified, filters.premium
+31.22 Admin Stats (1h Stale)                      - STALE_TIMES.STATIC_CONFIG for admin data
+
+======================================================================
+32. ADS & MONETIZATION (src/components/AdComponent.jsx + src/features/ads/)
+======================================================================
+32.1 Ad Component (Feed Placement)                - AdComponent placed in feed sidebar + inline
+32.2 Ad Performance Metrics                       - AdPerformanceMetrics.jsx
+32.3 Ad Filters                                    - AdFilters.jsx
+32.4 Ad Campaigns Table                           - AdCampaignsTable.jsx
+32.5 Premium Gate for Certain Features            - PremiumGate component
+32.6 Locked Revision Material Purchase (Ksh 5)    - pay-per-document model
+
+======================================================================
+33. REAL-TIME INFRASTRUCTURE (src/context/AblyContext.jsx + src/context/WebsocketContext.jsx)
+======================================================================
+33.1 Ably Real-time Connection                    - Ably.Realtime with API key auth
+33.2 Ably Auth via Backend Token                  - GET /ably/auth with retry (3 attempts)
+33.3 Global Presence Tracking (Campus Channel)    - campus:presence channel with enter/leave/update
+33.4 Real-time Chat Messages (Ably)               - chat:chatId channel (new_message, reactions, read, viewed, deleted)
+33.5 Real-time Notification Push (Ably)           - user:userId:notifications channel
+33.6 Real-time Chat List Updates (Ably)           - user:userId:chats channel
+33.7 Real-time Activity Feed (Ably)               - user:userId:activity channel
+33.8 Media Optimization Notifications (Ably)      - user:userId:media-updated channel (surgical cache update)
+33.9 WebRTC Signaling (Ably)                      - user:userId:signaling channel
+33.10 Campus Presence State Management             - presenceData state with online/offline tracking
+33.11 WebSocket Connection (Fallback/Parallel)     - native WebSocket to backend
+33.12 WebSocket Auth                               - sends { type: 'auth', token } on open
+33.13 WebSocket Message Handling                   - 'message' type updates messages cache + shows toast
+33.14 WebSocket Notification Handling              - 'notification' type updates notifications cache
+33.15 WebSocket Reconnection (Exponential Backoff) - 2^attempt up to 30s, max 10 attempts
+33.16 WebSocket Page Visibility Handling           - delay reconnect if document.hidden
+33.17 WebSocket Subscribe API                      - subscribe(callback) for custom handlers
+33.18 Connection Quality Detection                 - useConnectionQuality() via Network Information API
+33.19 Adaptive Stale Times for Slow Connections   - 5min vs 3min feed stale time based on connection
+
+======================================================================
+34. UPLOAD SYSTEM (src/context/UploadContext.jsx)
+======================================================================
+34.1 Upload Queue Management                       - uploads[] state array
+34.2 Add Upload to Queue                           - addUpload() returns uploadId
+34.3 Update Upload Progress                        - updateUploadProgress(uploadId, progress, bytes)
+34.4 Complete Upload                               - completeUpload(uploadId, result)
+34.5 Fail Upload                                   - failUpload(uploadId, error)
+34.6 Cancel Upload                                 - cancelUpload() with CancelToken
+34.7 Auto-Remove Completed (5s)                   - setTimeout removeUpload after success
+34.8 Active Upload Counter                         - activeUploadsCount derived state
+34.9 Upload Progress UI                            - UploadProgress component
+
+======================================================================
+35. AUDIO PLAYER (src/context/AudioContext.jsx + src/components/GlobalAudioPlayer.jsx + src/components/CustomAudioPlayer.jsx + src/components/CustomVideoPlayer.jsx)
+======================================================================
+35.1 Global Audio Player State                     - AudioContext manages currentAudio, isPlaying, progress
+35.2 Play/Pause Audio                              - playAudio() / pauseAudio()
+35.3 Resume Audio                                  - resumeAudio()
+35.4 Stop Audio                                    - stopAudio()
+35.5 Close Audio Player                            - closeAudio()
+35.6 Seek Audio                                    - seekAudio(time)
+35.7 Audio Progress Tracking                      - timeupdate event → currentTime, duration, progress%
+35.8 Auto-Play on Select                          - plays audio when selected
+35.9 Global Audio Player UI                        - GlobalAudioPlayer component
+35.10 CustomAudioPlayer Component                  - per-post audio player
+35.11 CustomVideoPlayer Component                  - per-post video player with custom controls
+
+======================================================================
+36. UI COMPONENT LIBRARY (src/components/)
+======================================================================
+36.1 Avatar Component                              - circular avatar with fallback initials
+36.2 ChatRow Component                             - chat list item with avatar, last message, unread count
+37.3 Comment Component                             - individual comment display
+36.4 Contact Modal                                 - ContactModal for sharing contacts in chat
+36.5 CreateItemModal                               - modal for creating marketplace items
+36.6 CreatePageModal                               - modal for creating pages
+36.7 CreatePostModal                               - modal for creating posts
+36.8 CreateStoryModal                              - modal for creating stories
+36.9 EmptyState Component                          - standardized empty state with title, message, action
+36.10 ErrorBoundary Component                      - catches render errors with fallback UI
+36.11 FilePreviewModal                             - modal for previewing uploaded files
+36.12 Footer Component                             - site-wide footer
+36.13 FormattedText Component                      - renders formatted/rich text
+36.14 ForwardModal                                 - modal for forwarding messages to other chats
+36.15 GifPicker Component                          - GIF search and selection UI
+36.16 GlobalAudioPlayer                            - persistent audio player bar
+36.17 GroupInfoModal                               - modal showing group details, participants, admin actions
+36.18 GroupModal                                   - modal for creating new groups in chat
+36.19 ListPage Component                           - reusable paginated list view
+36.20 Logo Component                               - app logo display
+36.21 MapPreview Component                         - renders location on embedded map
+36.22 MpesaPaymentModal                            - M-Pesa STK Push payment form
+36.23 Navbar Component                             - top navigation bar with links and user menu
+36.24 PaymentDrawer                                - slide-out payment interface
+36.25 PollModal                                    - modal for creating polls in chat
+36.26 PostCard Component                           - rich post display with actions (like, comment, share, save)
+36.27 PremiumGate Component                        - upsell screen for premium-only features
+36.28 ProtectedRoute Component                     - auth guard with onboarding checking
+36.29 ReportModal                                  - modal for reporting posts
+36.30 SearchBar Component                          - site-wide search input
+36.31 SectionErrorBoundary                         - error boundary for specific sections
+36.32 SEO Component                                - meta tags for search engines (react-helmet-async)
+36.33 Skeleton Component                           - loading skeleton placeholders
+36.34 StarBackground Component                     - decorative animated star background
+36.35 StickerPicker Component                      - sticker selection and search UI
+36.36 UploadProgress Component                     - global upload progress indicator
+36.37 VirtualizedFeed Component                    - virtual scrolling wrapper for feeds
+36.38 AcademicFilters Component                    - school/programme/year filter dropdowns
+36.39 CallUI Components (IncomingCallModal, ActiveCallScreen, CallingScreen) - WebRTC call UI
+36.40 PostSkeleton / MaterialSkeleton              - specialized loading skeletons
+
+======================================================================
+37. CONTENT FILTERING & SAFETY (src/utils/contentFilters.js)
+======================================================================
+37.1 NSFW Content Detection (is_nsfw flag)        - shouldBlur() checks content.is_nsfw
+37.2 Content Rating Filtering (G/PG/R/NC-17)      - shouldBlurContent() by rating
+37.3 Age Restriction Filtering (13+/16+/18+)      - shouldBlurAgeRestricted()
+37.4 Content Warning Detection                     - shouldBlurContentWarning()
+37.5 Unified Blur Decision                         - shouldBlur(content) combines all checks
+37.6 Tap-to-Reveal NSFW Overlay                   - Shield icon overlay on blurred content
+37.7 Sensitive Content Messages                    - "Sensitive Content" label
+
+======================================================================
+38. UTILITY & INFRASTRUCTURE (src/utils/)
+======================================================================
+38.1 Storage Availability Detection               - isStorageAvailable() for localStorage/IndexedDB
+38.2 IndexedDB Availability Check                 - isIndexedDBAvailable()
+38.3 Safe localStorage Wrapper                     - safeLocalStorage with try/catch
+38.4 GIPHY Integration for Stickers               - fetchTrendingStickers(), searchStickers()
+38.5 Sticker Save/Remove/Check (LocalStorage)     - saveSticker(), removeSticker(), isStickerSaved()
+38.6 ICS Calendar File Parser                      - parseICS() for timetable import
+38.7 Media URL Type Inference                      - inferMediaType() from URL extension
+38.8 Responsive Image URL                          - getResponsiveImageUrl() stub
+38.9 Blur Placeholder SVG Generation              - getBlurPlaceholder() tiny SVG data URI
+38.10 React Query Config (STALE_TIMES)             - standardized stale times for all data types
+38.11 Query Key Factories                          - queryKeys object for consistent keys
+38.12 Default Query/Mutation Options               - retry, gcTime, refetchOnWindowFocus config
+38.13 Infinite Query Config                        - pagination helpers (defaultPageSize, maxPages)
+38.14 createQueryConfig / createInfiniteQueryConfig helpers - standardized config builders
+38.15 AppError Class (Standardized Error)          - code, message, validationErrors, requestId
+38.16 parseApiError Function                       - converts axios errors to AppError
+38.17 handleApiError Function                      - routes errors to appropriate handlers
+38.18 ERROR_CODES Enum                             - 12 standardized error codes
+38.19 createValidationError(s) helpers             - form validation error creators
+38.20 logError Function                            - console.error + error tracking stub
+38.21 retryRequest Function                        - exponential backoff retry for failed requests
+38.22 Connection Quality Detection                - useConnectionQuality hook
+38.23 Data Cache Sweeper                          - useDataSweeper auto-cleans stale query cache
+38.24 Debounce Utility                            - useDebounce hook (default 300ms)
+38.25 Swipe Gesture Detection                     - useSwipe hook for touch interactions
+38.26 Reduced Motion Detection                    - useReducedMotion hook for accessibility
+38.27 Feature Detection (Storage APIs)            - featureDetection.js utilities
+38.28 BSON $oid Flattening                        - flattenOid recursively normalizes MongoDB ObjectIDs
+38.29 Request ID Generation                       - generateRequestId() for tracing
+38.30 API Methods Wrapper                          - get/post/put/patch/delete/upload with error handling
+38.31 Axios Interceptors (Request/Response)        - auth header injection + BSON flattening
+38.32 Auth:Unauthorized Event                      - window event fired on 401 responses
+
+======================================================================
+39. PAGES - STATIC & INFO
+======================================================================
+39.1 HomePage (Landing)                            - hero, features, FAQ, CTA, footer
+39.2 AboutPage                                     - about the platform
+39.3 ContactPage                                   - contact form / help center
+39.4 LegalPage                                     - privacy policy, terms of service, cookies
+39.5 NotFoundPage                                  - 404 error page
+39.6 LoginPage                                     - authentication form
+39.7 RegisterPage                                  - registration form
+39.8 VerificationPage                              - email verification
+39.9 ForgotPasswordPage                            - password reset request
+39.10 GetAccountPage                               - recover account
+39.11 LiveStreamPage                               - live streaming
+
+======================================================================
+40. PAGES - UNUS/USD PAGES (src/pages/unusd/)
+======================================================================
+40.1 Unusd Pages Directory                         - additional/organizational pages
+
+======================================================================
+41. DATA LAYER & CACHING STRATEGY
+======================================================================
+41.1 TanStack React Query v5                       - all data fetching via useQuery/useMutation/useInfiniteQuery
+41.2 Optimistic Updates (Like, Unlike, Save)       - onMutate updates cache, rollback on error
+41.3 Optimistic Message Sending                    - temp-id messages in cache before server confirms
+41.4 Optimistic Group Create/Join/Leave            - immediate UI updates
+41.5 Infinite Query Pagination (cursor-based)      - last_id param for paginated lists
+41.6 Ably Real-time Cache Invalidation             - surgical queryClient.setQueryData updates
+41.7 WebSocket-driven Cache Updates               - messages, notifications pushed via WS
+41.8 Surgical Media Optimization Updates           - media-optimized event updates specific posts in cache
+41.9 Stale Time Hierarchy (feature-specific)       - 30s to 24h based on data volatility
+41.10 Garbage Collection (10min default)           - gcTime: 10 * 60 * 1000 in defaultQueryOptions
+41.11 Data Sweeper (Auto-Clean Stale Cache)        - useDataSweeper removes non-current page queries after TTL
+41.12 Connection-aware Stale Times                 - isSlowConnection triples feed stale time
+
+======================================================================
+END OF FEATURE INVENTORY
+======================================================================
+Total: 287+ distinct features across 41 categories

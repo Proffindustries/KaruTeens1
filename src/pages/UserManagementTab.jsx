@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../api/client';
 import {
     Search,
     Filter,
@@ -54,7 +55,7 @@ const UserManagementTab = () => {
     const [bulkAction, setBulkAction] = useState('');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-    const { data: users, isLoading, refetch } = useAdminUsers(filters);
+    const { data: users = [], isLoading, refetch } = useAdminUsers(filters);
     const { mutate: banUser } = useBanUser();
     const { mutate: verifyUser } = useVerifyUser();
     const { mutate: updateRole } = useUpdateUserRole();

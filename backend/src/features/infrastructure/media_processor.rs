@@ -38,7 +38,7 @@ pub fn spawn_media_worker(state: Arc<AppState>) {
                 }
             };
 
-            let mut conn = match client.get_multiplexed_async_connection().await {
+            let mut conn = match redis::aio::ConnectionManager::new(client).await {
                 Ok(c) => c,
                 Err(e) => {
                     tracing::error!("Failed to get Redis connection for worker: {}", e);
@@ -48,12 +48,13 @@ pub fn spawn_media_worker(state: Arc<AppState>) {
             };
 
             loop {
-                let result: Result<(String, String), _> = redis::Cmd::blpop("media_queue", 10.0)
+                // BLPOP returns nil on timeout, which maps to None in Option<T>
+                let result: Result<Option<(String, String)>, _> = redis::Cmd::blpop("media_queue", 10.0)
                     .query_async(&mut conn)
                     .await;
 
                 match result {
-                    Ok((_, job_json)) => {
+                    Ok(Some((_, job_json))) => {
                         if let Ok(job) = serde_json::from_str::<MediaJobQueueItem>(&job_json) {
                             let state_clone = state.clone();
                             let permit = semaphore.clone().acquire_owned().await;
@@ -66,6 +67,9 @@ pub fn spawn_media_worker(state: Arc<AppState>) {
                                 }
                             });
                         }
+                    }
+                    Ok(None) => {
+                        // Timeout with no job — continue polling
                     }
                     Err(e) => {
                         tracing::error!("Redis queue error: {}", e);

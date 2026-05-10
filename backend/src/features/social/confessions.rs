@@ -12,7 +12,7 @@ use crate::features::auth::auth_service::AuthUser;
 use crate::features::infrastructure::dto::{
     ConfessionResponse, ConfessionCommentResponse, CreateConfessionRequest, 
     CreateConfessionCommentRequest, ReportConfessionRequest, 
-    UpdateConfessionRequest, ConfessionFilter, IdResponse, MessageResponse
+    UpdateConfessionRequest, UpdateConfessionStatusRequest, ConfessionFilter, IdResponse, MessageResponse
 };
 use crate::features::infrastructure::error::{AppResult, AppError};
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
@@ -33,6 +33,32 @@ pub struct Confession {
     pub comments: u64,
     pub created_at: DateTime,
     pub updated_at: DateTime,
+    #[serde(default)]
+    pub media_url: Option<String>,
+    #[serde(default)]
+    pub media_type: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub auto_publish_at: Option<DateTime>,
+}
+
+fn confession_to_response(c: Confession) -> ConfessionResponse {
+    ConfessionResponse {
+        id: c.id.unwrap_or_default().to_hex(),
+        content: c.content,
+        is_anonymous: c.is_anonymous,
+        author_id: c.author_id.map(|oid| oid.to_hex()).unwrap_or_else(|| "anonymous".to_string()),
+        author_name: c.author_name.unwrap_or_else(|| "Anonymous".to_string()),
+        likes: c.likes as i32,
+        comments: c.comments as i32,
+        created_at: c.created_at.to_chrono().to_rfc3339(),
+        updated_at: c.updated_at.to_chrono().to_rfc3339(),
+        media_url: c.media_url,
+        media_type: c.media_type,
+        status: c.status,
+        auto_publish_at: c.auto_publish_at.map(|dt| dt.to_chrono().to_rfc3339()),
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -59,28 +85,46 @@ pub async fn list_confessions_handler(
     let limit = params.limit.unwrap_or(50).min(100);
     let skip = (page - 1) * limit;
 
+    // Only return non-pending confessions (approved or no status field)
+    let filter = doc! { "status": { "$ne": "pending" } };
     let find_options = mongodb::options::FindOptions::builder()
         .sort(doc! { "created_at": -1 })
         .skip(Some(skip as u64))
         .limit(Some(limit))
         .build();
     
-    let mut cursor = confessions.find(doc! {}, find_options).await?;
+    let mut cursor = confessions.find(filter, find_options).await?;
     
     let mut confessions_list = Vec::new();
     while let Some(confession_res) = cursor.next().await {
         if let Ok(c) = confession_res {
-            confessions_list.push(ConfessionResponse {
-                id: c.id.unwrap().to_hex(),
-                content: c.content,
-                is_anonymous: c.is_anonymous,
-                author_id: c.author_id.map(|oid| oid.to_hex()).unwrap_or_else(|| "anonymous".to_string()),
-                author_name: c.author_name.unwrap_or_else(|| "Anonymous".to_string()),
-                likes: c.likes as i32,
-                comments: c.comments as i32,
-                created_at: c.created_at.to_chrono().to_rfc3339(),
-                updated_at: c.updated_at.to_chrono().to_rfc3339(),
-            });
+            confessions_list.push(confession_to_response(c));
+        }
+    }
+    
+    Ok((StatusCode::OK, Json(confessions_list)))
+}
+
+pub async fn list_pending_confessions_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+) -> AppResult<impl IntoResponse> {
+    let confessions = state.mongo.collection::<Confession>("confessions");
+    
+    let filter = doc! {
+        "author_id": user.user_id,
+        "status": "pending"
+    };
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .build();
+    
+    let mut cursor = confessions.find(filter, find_options).await?;
+    
+    let mut confessions_list = Vec::new();
+    while let Some(confession_res) = cursor.next().await {
+        if let Ok(c) = confession_res {
+            confessions_list.push(confession_to_response(c));
         }
     }
     
@@ -93,6 +137,8 @@ pub async fn create_confession_handler(
     Json(payload): Json<CreateConfessionRequest>,
 ) -> AppResult<impl IntoResponse> {
     let now = DateTime::now();
+    let has_media = payload.media_url.is_some();
+    let auto_publish_at = DateTime::from_millis(now.timestamp_millis() + 12 * 3600 * 1000);
     
     let author_id = if !payload.is_anonymous.unwrap_or(false) {
         payload.author_id.and_then(|id| ObjectId::parse_str(id).ok()).unwrap_or(user.user_id)
@@ -110,6 +156,10 @@ pub async fn create_confession_handler(
         comments: 0,
         created_at: now,
         updated_at: now,
+        media_url: payload.media_url,
+        media_type: payload.media_type,
+        status: if has_media { Some("pending".to_string()) } else { None },
+        auto_publish_at: if has_media { Some(auto_publish_at) } else { None },
     };
     
     let result = state.mongo.collection::<Confession>("confessions")
@@ -300,13 +350,91 @@ pub async fn report_confession_handler(
     Ok(StatusCode::OK)
 }
 
+// --- Admin Handlers ---
+
+pub async fn admin_list_confessions_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Query(params): Query<ConfessionFilter>,
+) -> AppResult<impl IntoResponse> {
+    // Require admin
+    crate::utils::check_admin(user.user_id, &state).await?;
+
+    let confessions = state.mongo.collection::<Confession>("confessions");
+    
+    let page = params.page.unwrap_or(1);
+    let limit = params.limit.unwrap_or(50).min(100);
+    let skip = (page - 1) * limit;
+
+    let filter = match params.status {
+        Some(ref s) if s != "all" => doc! { "status": s },
+        _ => doc! {},
+    };
+
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .skip(Some(skip as u64))
+        .limit(Some(limit))
+        .build();
+    
+    let mut cursor = confessions.find(filter, find_options).await?;
+    
+    let mut confessions_list = Vec::new();
+    while let Some(confession_res) = cursor.next().await {
+        if let Ok(c) = confession_res {
+            confessions_list.push(confession_to_response(c));
+        }
+    }
+    
+    Ok((StatusCode::OK, Json(confessions_list)))
+}
+
+pub async fn admin_update_confession_handler(
+    State(state): State<Arc<AppState>>,
+    user: AuthUser,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdateConfessionStatusRequest>,
+) -> AppResult<impl IntoResponse> {
+    crate::utils::check_admin(user.user_id, &state).await?;
+
+    let oid = ObjectId::parse_str(&id)
+        .map_err(|_| AppError::BadRequest("Invalid confession ID".to_string()))?;
+
+    let now = DateTime::now();
+    let mut update = doc! { "status": &payload.status, "updated_at": now };
+
+    // If approving, clear auto_publish_at
+    if payload.status == "approved" {
+        update.insert("auto_publish_at", mongodb::bson::Bson::Null);
+    }
+
+    state.mongo.collection::<Confession>("confessions")
+        .update_one(
+            doc! { "_id": oid },
+            doc! { "$set": update },
+            None,
+        )
+        .await?;
+
+    Ok((StatusCode::OK, Json(MessageResponse {
+        message: format!("Confession status set to {}", payload.status),
+    })))
+}
+
 // --- Routes ---
 
 pub fn confessions_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(list_confessions_handler).post(create_confession_handler))
+        .route("/pending", get(list_pending_confessions_handler))
         .route("/:id", put(update_confession_handler).delete(delete_confession_handler))
         .route("/:id/like", post(like_confession_handler))
         .route("/:id/comments", get(list_confession_comments_handler).post(add_confession_comment_handler))
         .route("/:id/report", post(report_confession_handler))
+}
+
+pub fn admin_confessions_routes() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/", get(admin_list_confessions_handler))
+        .route("/:id", put(admin_update_confession_handler))
 }

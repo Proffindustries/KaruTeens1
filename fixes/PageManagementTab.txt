@@ -1,0 +1,22 @@
+# PageManagementTab.jsx
+
+## NEED TO DO
+- useEffect depends on filters which is new object every render — refetch on every state change even on keystroke
+- filters.search triggers API calls on every keystroke with no debounce
+- All modals have forms with no onSubmit connected to API — decorative only
+- Refresh buttons are no-ops
+- No pagination — fetches ALL pages at once
+- No loading state for individual row actions
+- Bulk delete uses browser confirm()
+
+## CAN DO
+- No useCallback on any handler
+- Large lucide-react imports with many unused icons
+- All modals rendered in main bundle — cannot be lazy-loaded
+- No table virtualization
+- Analytics modal shows hardcoded mock text
+
+## MAY DO
+- Import/Export buttons have no click handlers
+- No rich text editor for page content
+- No revision history or draft preview

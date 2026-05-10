@@ -61,7 +61,7 @@ const BlogDetailPage = () => {
                         className="post-content card"
                     >
                         {post.content.split('\n\n').map((paragraph, i) => (
-                            <p key={i}>{paragraph}</p>
+                            <p key={`${slug}-p-${i}`}>{paragraph}</p>
                         ))}
 
                         <div className="post-footer">
@@ -71,7 +71,19 @@ const BlogDetailPage = () => {
                                 <span>Education</span>
                                 <span>Guide</span>
                             </div>
-                            <button className="share-btn">
+                            <button
+                                className="share-btn"
+                                onClick={() => {
+                                    if (navigator.share) {
+                                        navigator.share({
+                                            title: post.title,
+                                            url: window.location.href,
+                                        });
+                                    } else {
+                                        navigator.clipboard.writeText(window.location.href);
+                                    }
+                                }}
+                            >
                                 <Share2 size={18} /> Share Article
                             </button>
                         </div>

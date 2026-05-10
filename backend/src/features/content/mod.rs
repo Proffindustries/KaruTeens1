@@ -24,6 +24,7 @@ use mongodb::{bson::{doc, Bson}, options::FindOptions};
 use chrono::Utc;
 use bson::oid::ObjectId;
 use crate::features::social::notifications::create_notification;
+use crate::features::content::posts::{delete_post_handler, update_post_handler};
 use crate::features::infrastructure::push;
 use crate::features::ads::get_ads_for_feed;
 
@@ -1080,7 +1081,7 @@ pub fn content_routes() -> Router<Arc<AppState>> {
     Router::new()
         // Post CRUD – nested at /api/posts -> these become /api/posts/, /api/posts/:id etc.
         .route("/", post(create_post_handler))
-        .route("/:id", get(get_post_handler))
+        .route("/:id", get(get_post_handler).put(update_post_handler).delete(delete_post_handler))
         .route("/:id/like", post(like_post_handler).delete(unlike_post_handler))
         .route("/:id/save", post(save_post_handler))
         .route("/:id/report", post(report_post_handler))

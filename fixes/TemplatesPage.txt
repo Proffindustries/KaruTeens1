@@ -1,0 +1,17 @@
+# TemplatesPage.jsx
+
+## NEED TO DO
+- navigator.clipboard.writeText called without checking API availability — throws in non-HTTPS
+- No error boundary — JSON.parse crash would take down entire page
+- JSON.parse(saved) has no try/catch — malformed localStorage crashes on mount
+
+## CAN DO
+- filteredTemplates recomputed on every render — should useMemo
+- allTemplates array spread creates new array every render
+- No useCallback on copyTemplate, handleCreateTemplate, deleteTemplate
+- framer-motion for simple fade/scale adds ~30KB+ for CSS transitions
+
+## MAY DO
+- Category tabs lack horizontal scroll for mobile overflow
+- No animation when text copied to clipboard
+- No popularity indicator on templates

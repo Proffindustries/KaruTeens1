@@ -1,17 +1,51 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Flag, Send } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    Heart,
+    MessageCircle,
+    Share2,
+    Flag,
+    Send,
+    Image,
+    Video,
+    X,
+    Clock,
+    Trash2,
+    Eye,
+    EyeOff,
+} from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Avatar from '../components/Avatar.jsx';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
 import { useAuthContext } from '../context/AuthContext.jsx';
+import { useMediaUpload } from '../hooks/useMedia.js';
 import safeLocalStorage from '../utils/storage.js';
+import { PostSkeleton } from '../components/Skeleton.jsx';
 import '../styles/ConfessionsPage.css';
+
+const AUTO_PUBLISH_HOURS = 12;
 
 const ConfessionsPage = () => {
     const queryClient = useQueryClient();
     const { showToast } = useToast();
     const { user: currentUser } = useAuthContext();
+    const { uploadMedia, isUploading } = useMediaUpload();
+
+    const [newConfession, setNewConfession] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(true);
+    const [isPosting, setIsPosting] = useState(false);
+    const [mediaFile, setMediaFile] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+    const [showPending, setShowPending] = useState(true);
+    const mediaInputRef = useRef(null);
+
+    const [activeConfessionId, setActiveConfessionId] = useState(null);
+    const [newComment, setNewComment] = useState('');
+    const [isCommenting, setIsCommenting] = useState(false);
+    const [reportingId, setReportingId] = useState(null);
+    const [reportReason, setReportReason] = useState('');
+    const [likingIds, setLikingIds] = useState(new Set());
+    const [cancellingId, setCancellingId] = useState(null);
 
     const {
         data: confessions = [],
@@ -24,14 +58,16 @@ const ConfessionsPage = () => {
             return data;
         },
     });
-    const [newConfession, setNewConfession] = useState('');
-    const [isAnonymous, setIsAnonymous] = useState(true);
-    const [isPosting, setIsPosting] = useState(false);
 
-    // Comments State
-    const [activeConfessionId, setActiveConfessionId] = useState(null);
-    const [newComment, setNewComment] = useState('');
-    const [isCommenting, setIsCommenting] = useState(false);
+    const { data: pendingConfessions = [], isLoading: isPendingLoading } = useQuery({
+        queryKey: ['confessions', 'pending', currentUser?.id],
+        queryFn: async () => {
+            const { data } = await api.get('/confessions/pending');
+            return data;
+        },
+        enabled: !!currentUser?.id,
+        refetchInterval: 30000,
+    });
 
     const { data: activeComments = [], isLoading: isCommentsLoading } = useQuery({
         queryKey: ['confession_comments', activeConfessionId],
@@ -44,25 +80,42 @@ const ConfessionsPage = () => {
     });
 
     const postMutation = useMutation({
-        mutationFn: async (newConfessionObj) => {
-            const { data } = await api.post('/confessions', newConfessionObj);
-            return {
-                ...newConfessionObj,
-                id: data.id,
-                likes: 0,
-                comments: 0,
-                created_at: new Date().toISOString(),
-            };
+        mutationFn: async (payload) => {
+            const { data } = await api.post('/confessions', payload);
+            return data;
         },
-        onSuccess: (savedConfession) => {
-            queryClient.setQueryData(['confessions'], (old) => [savedConfession, ...(old || [])]);
+        onSuccess: (saved) => {
+            queryClient.invalidateQueries({
+                queryKey: ['confessions', 'pending', currentUser?.id],
+            });
             setNewConfession('');
-            showToast('Confession posted!', 'success');
+            setMediaFile(null);
+            setMediaPreview(null);
+            showToast(
+                'Confession submitted for review! It will be visible once approved.',
+                'success',
+            );
         },
         onError: (err) => {
             showToast(err.response?.data?.error || 'Failed to post', 'error');
         },
         onSettled: () => setIsPosting(false),
+    });
+
+    const cancelMutation = useMutation({
+        mutationFn: async (id) => {
+            await api.delete(`/confessions/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ['confessions', 'pending', currentUser?.id],
+            });
+            showToast('Confession cancelled.', 'info');
+        },
+        onError: () => {
+            showToast('Failed to cancel', 'error');
+        },
+        onSettled: () => setCancellingId(null),
     });
 
     const commentMutation = useMutation({
@@ -83,25 +136,85 @@ const ConfessionsPage = () => {
         onSettled: () => setIsCommenting(false),
     });
 
-    const handlePost = () => {
-        if (!newConfession.trim()) return;
+    useEffect(() => {
+        return () => {
+            if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+        };
+    }, [mediaPreview]);
+
+    const handleMediaSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        if (!isImage && !isVideo) {
+            showToast('Only images and videos are allowed', 'error');
+            return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            showToast('File too large (Max 50MB)', 'error');
+            return;
+        }
+        if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+        setMediaFile(file);
+        setMediaPreview(URL.createObjectURL(file));
+    };
+
+    const removeMedia = () => {
+        if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+        setMediaFile(null);
+        setMediaPreview(null);
+        if (mediaInputRef.current) mediaInputRef.current.value = '';
+    };
+
+    const handlePost = async () => {
+        if (!newConfession.trim() && !mediaFile) return;
         setIsPosting(true);
+        let mediaUrl = null;
+        let mediaType = null;
+        if (mediaFile) {
+            try {
+                mediaUrl = await uploadMedia(mediaFile);
+                mediaType = mediaFile.type.startsWith('video/') ? 'video' : 'image';
+            } catch {
+                showToast('Media upload failed', 'error');
+                setIsPosting(false);
+                return;
+            }
+        }
         postMutation.mutate({
-            content: newConfession,
+            content: newConfession.trim(),
             is_anonymous: isAnonymous,
             author_id: isAnonymous ? null : currentUser?.id,
             author_name: isAnonymous ? null : currentUser?.username,
+            media_url: mediaUrl,
+            media_type: mediaType,
         });
     };
 
+    const handleCancel = (id) => {
+        setCancellingId(id);
+        cancelMutation.mutate(id);
+    };
+
     const handleLike = async (id) => {
+        if (likingIds.has(id)) return;
+        setLikingIds((prev) => new Set(prev).add(id));
+        const prev = queryClient.getQueryData(['confessions']);
+        queryClient.setQueryData(['confessions'], (old) =>
+            old?.map((c) => (c.id === id ? { ...c, likes: (c.likes || 0) + 1 } : c)),
+        );
         try {
             await api.post(`/confessions/${id}/like`);
-            queryClient.setQueryData(['confessions'], (old) =>
-                old?.map((c) => (c.id === id ? { ...c, likes: (c.likes || 0) + 1 } : c)),
-            );
         } catch (err) {
-            showToast('Failed to like confession', 'error');
+            queryClient.setQueryData(['confessions'], () => prev);
+            showToast('Failed to like', 'error');
+        } finally {
+            setLikingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
         }
     };
 
@@ -121,90 +234,295 @@ const ConfessionsPage = () => {
         commentMutation.mutate({ id: activeConfessionId, content: newComment });
     };
 
-    const handleReport = async (id) => {
-        const reason = window.prompt('Why are you reporting this confession?');
-        if (!reason || !reason.trim()) return;
+    const handleReport = (id) => {
+        setReportingId(id);
+        setReportReason('');
+    };
 
+    const submitReport = async () => {
+        if (!reportReason.trim()) return;
         try {
-            await api.post(`/confessions/${id}/report`, { reason });
-            showToast(
-                'Report submitted to admins. Thank you for keeping KaruTeens safe.',
-                'success',
-            );
+            await api.post(`/confessions/${reportingId}/report`, { reason: reportReason });
+            showToast('Report submitted. Thank you.', 'success');
+            setReportingId(null);
+            setReportReason('');
         } catch (err) {
             showToast('Failed to submit report', 'error');
         }
     };
 
     const handleShare = (confession) => {
+        const text = `🗣️ Campus Confession\n\n"${confession.content}"`;
         if (navigator.share) {
             navigator
-                .share({
-                    title: 'Campus Confession',
-                    text: confession.content,
-                    url: window.location.href,
-                })
+                .share({ title: 'Campus Confession', text, url: window.location.href })
                 .catch(() => {});
         } else {
-            navigator.clipboard.writeText(confession.content);
-            showToast('Confession copied to clipboard!', 'success');
+            navigator.clipboard.writeText(text);
+            showToast('Confession copied!', 'success');
         }
+    };
+
+    const getTimeRemaining = (autoPublishAt) => {
+        const diff = new Date(autoPublishAt) - Date.now();
+        if (diff <= 0) return { total: 0, hours: 0, minutes: 0, seconds: 0 };
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        return { total: diff, hours, minutes, seconds };
+    };
+
+    const PendingCountdown = ({ confession }) => {
+        const [timeLeft, setTimeLeft] = useState(() =>
+            getTimeRemaining(confession.auto_publish_at),
+        );
+        const published = timeLeft.total <= 0;
+
+        useEffect(() => {
+            const interval = setInterval(() => {
+                setTimeLeft(getTimeRemaining(confession.auto_publish_at));
+            }, 1000);
+            return () => clearInterval(interval);
+        }, [confession.auto_publish_at]);
+
+        const suspensePhrases = [
+            '☕ Tea is brewing...',
+            '👀 Someone is about to spill...',
+            '🤫 The walls have ears...',
+            '🔥 Tea loading...',
+            '🎭 Drama incoming...',
+            '⏳ The clock is ticking...',
+            '🍵 Your tea is almost ready...',
+            '👁️👁️ We see everything...',
+        ];
+        const phrase =
+            suspensePhrases[confession.id?.length % suspensePhrases.length] || suspensePhrases[0];
+
+        return (
+            <div className={`pending-card ${published ? 'published' : ''}`}>
+                <div className="pending-header">
+                    <span className="pending-badge">
+                        {published ? '✅ Published' : '⏳ Pending Review'}
+                    </span>
+                    {confession.media_url && (
+                        <span className="media-badge">
+                            {confession.media_type === 'video' ? '🎬' : '📸'} Media
+                        </span>
+                    )}
+                </div>
+
+                {!published && (
+                    <div className="suspense-banner">
+                        <div className="suspense-stars">{'✦'.repeat(8)}</div>
+                        <p className="suspense-text">{phrase}</p>
+                        <p className="suspense-sub">
+                            What could it be? The anticipation is real...
+                        </p>
+                    </div>
+                )}
+
+                {confession.media_url && !published && (
+                    <div className="pending-media-blur">
+                        {confession.media_type === 'video' ? (
+                            <Video size={32} />
+                        ) : (
+                            <Image size={32} />
+                        )}
+                        <span>Media hidden until published</span>
+                    </div>
+                )}
+
+                {confession.media_url && published && (
+                    <div className="confession-media">
+                        {confession.media_type === 'video' ? (
+                            <video src={confession.media_url} controls preload="metadata" />
+                        ) : (
+                            <img src={confession.media_url} alt="Confession media" loading="lazy" />
+                        )}
+                    </div>
+                )}
+
+                <div className="pending-content">
+                    {published ? (
+                        <p>{confession.content}</p>
+                    ) : (
+                        <p className="content-hidden">
+                            {confession.content
+                                ? confession.content
+                                      .split(' ')
+                                      .map(() => '▇▇')
+                                      .join(' ')
+                                : '▇▇ ▇▇▇ ▇▇▇▇ ▇▇ ▇▇▇▇'}
+                        </p>
+                    )}
+                </div>
+
+                <div className="pending-footer">
+                    {!published ? (
+                        <>
+                            <div className="countdown">
+                                <Clock size={14} />
+                                <span>
+                                    Auto-publishes in {timeLeft.hours}h {timeLeft.minutes}m{' '}
+                                    {timeLeft.seconds}s
+                                </span>
+                            </div>
+                            <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleCancel(confession.id)}
+                                disabled={cancellingId === confession.id}
+                            >
+                                <Trash2 size={14} />
+                                {cancellingId === confession.id ? 'Cancelling...' : 'Cancel'}
+                            </button>
+                        </>
+                    ) : (
+                        <span className="published-label">Live on the feed</span>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     return (
         <div className="container confessions-page">
             <div className="confessions-header">
                 <h1>🔮 Campus Confessions</h1>
-                <p>Share anonymously. No judgment. No holds barred.</p>
+                <p>Spill the tea. Anonymously. Your secrets are safe here.</p>
             </div>
 
-            {/* Create Confession */}
             <div className="create-confession card">
                 <div className="create-header">
                     <Avatar src={null} name={isAnonymous ? 'Anonymous' : 'You'} size="md" />
-                    <div className="anonymous-toggle">
-                        <input
-                            type="checkbox"
-                            id="anon"
-                            checked={isAnonymous}
-                            onChange={(e) => setIsAnonymous(e.target.checked)}
-                        />
-                        <label htmlFor="anon">
-                            <span>🔒</span> Post anonymously
-                        </label>
+                    <div className="create-options">
+                        <div className="anonymous-toggle">
+                            <input
+                                type="checkbox"
+                                id="anon"
+                                checked={isAnonymous}
+                                onChange={(e) => setIsAnonymous(e.target.checked)}
+                            />
+                            <label htmlFor="anon">
+                                <span>🔒</span> Anonymous
+                            </label>
+                        </div>
                     </div>
                 </div>
+
                 <textarea
-                    placeholder="What's your confession? (Your identity will be hidden)"
+                    placeholder="What's your confession? Spill the tea... (optional if adding media)"
                     value={newConfession}
                     onChange={(e) => setNewConfession(e.target.value)}
                     rows={3}
+                    maxLength={280}
                     disabled={isPosting}
                 />
+
+                {mediaPreview && (
+                    <div className="media-preview">
+                        {mediaFile?.type.startsWith('video/') ? (
+                            <video src={mediaPreview} controls />
+                        ) : (
+                            <img src={mediaPreview} alt="Preview" />
+                        )}
+                        <button className="remove-media" onClick={removeMedia}>
+                            <X size={18} />
+                        </button>
+                    </div>
+                )}
+
                 <div className="create-actions">
-                    <span className="char-count">{newConfession.length}/280</span>
+                    <div className="create-left">
+                        <input
+                            type="file"
+                            accept="image/*,video/*"
+                            ref={mediaInputRef}
+                            onChange={handleMediaSelect}
+                            hidden
+                        />
+                        <button
+                            className="btn btn-sm btn-outline"
+                            onClick={() => mediaInputRef.current?.click()}
+                            disabled={isPosting}
+                        >
+                            {mediaFile?.type.startsWith('video/') ? (
+                                <Video size={16} />
+                            ) : (
+                                <Image size={16} />
+                            )}
+                            {mediaFile ? 'Change Media' : 'Add Media'}
+                        </button>
+                        <span className="char-count">{newConfession.length}/280</span>
+                    </div>
                     <button
                         className="btn btn-primary"
                         onClick={handlePost}
-                        disabled={!newConfession.trim() || isPosting}
+                        disabled={(!newConfession.trim() && !mediaFile) || isPosting || isUploading}
                     >
-                        <span>{isPosting ? '⏳' : '📤'}</span> {isPosting ? 'Posting...' : 'Post'}
+                        {isPosting || isUploading ? (
+                            <>⏳ Submitting...</>
+                        ) : (
+                            <>📤 Submit Confession</>
+                        )}
                     </button>
                 </div>
             </div>
 
-            {/* Rules Banner */}
             <div className="rules-banner">
                 <span>📜</span>
-                <p>Keep it clean, kind, and anonymous. No hate speech or harassment.</p>
+                <p>
+                    Keep it clean, kind, and anonymous. All submissions are reviewed before going
+                    live.
+                </p>
             </div>
 
-            {/* Confessions Feed */}
+            {pendingConfessions.length > 0 && (
+                <div className="pending-section">
+                    <div
+                        className="pending-section-header"
+                        onClick={() => setShowPending(!showPending)}
+                    >
+                        <h2>
+                            🕵️ Your Pending Submissions
+                            <span className="pending-count">{pendingConfessions.length}</span>
+                        </h2>
+                        <span className="toggle-indicator">{showPending ? '▲' : '▼'}</span>
+                    </div>
+                    {showPending && (
+                        <div className="pending-list">
+                            {pendingConfessions.map((c) => (
+                                <PendingCountdown key={c.id} confession={c} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="confessions-feed">
-                {isLoading ? (
-                    <div className="loading">Loading confessions...</div>
+                {isError ? (
+                    <div className="error-state">
+                        <p>Failed to load confessions. Try again?</p>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() =>
+                                queryClient.invalidateQueries({ queryKey: ['confessions'] })
+                            }
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : isLoading ? (
+                    <div className="confessions-list">
+                        {[...Array(3)].map((_, i) => (
+                            <PostSkeleton key={i} />
+                        ))}
+                    </div>
                 ) : confessions.length === 0 ? (
-                    <div className="empty">No confessions yet. Be the first!</div>
+                    <div className="empty-state">
+                        <span className="empty-icon">🗣️</span>
+                        <h3>No confessions yet</h3>
+                        <p>Be the first to spill the tea!</p>
+                    </div>
                 ) : (
                     confessions.map((confession) => (
                         <div key={confession.id} className="confession-card card">
@@ -236,6 +554,24 @@ const ConfessionsPage = () => {
                                     <span className="anon-badge">🔮</span>
                                 )}
                             </div>
+
+                            {confession.media_url && (
+                                <div className="confession-media">
+                                    {confession.media_type === 'video' ? (
+                                        <video
+                                            src={confession.media_url}
+                                            controls
+                                            preload="metadata"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={confession.media_url}
+                                            alt="Confession media"
+                                            loading="lazy"
+                                        />
+                                    )}
+                                </div>
+                            )}
 
                             <p className="confession-content">{confession.content}</p>
 
@@ -273,7 +609,6 @@ const ConfessionsPage = () => {
                                 </button>
                             </div>
 
-                            {/* Comments Section */}
                             {activeConfessionId === confession.id && (
                                 <div className="comments-section">
                                     <div className="comments-list">
@@ -282,8 +617,8 @@ const ConfessionsPage = () => {
                                         ) : activeComments.length === 0 ? (
                                             <div className="empty-small">No comments yet.</div>
                                         ) : (
-                                            activeComments.map((comment, idx) => (
-                                                <div key={idx} className="comment-item">
+                                            activeComments.map((comment) => (
+                                                <div key={comment.id} className="comment-item">
                                                     <Avatar
                                                         name={comment.author_username}
                                                         size="xs"
@@ -323,6 +658,41 @@ const ConfessionsPage = () => {
                                             <Send size={18} />
                                         </button>
                                     </form>
+                                </div>
+                            )}
+
+                            {reportingId === confession.id && (
+                                <div
+                                    className="report-overlay"
+                                    onClick={() => setReportingId(null)}
+                                >
+                                    <div
+                                        className="report-modal"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <h4>Report Confession</h4>
+                                        <textarea
+                                            placeholder="Why are you reporting this?"
+                                            value={reportReason}
+                                            onChange={(e) => setReportReason(e.target.value)}
+                                            rows={3}
+                                        />
+                                        <div className="report-actions">
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={() => setReportingId(null)}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={submitReport}
+                                                disabled={!reportReason.trim()}
+                                            >
+                                                Submit Report
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>

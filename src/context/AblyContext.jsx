@@ -174,7 +174,10 @@ export const AblyProvider = ({ children }) => {
                 ablyRef.current = null;
                 setAbly(null);
             }
-            client.close();
+            const closePromise = client.close();
+            if (closePromise && typeof closePromise.catch === 'function') {
+                closePromise.catch(() => {});
+            }
         };
     }, [token, userId]); // intentionally minimal deps — queryClient and showToast are stable refs
 

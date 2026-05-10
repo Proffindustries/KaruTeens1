@@ -1,0 +1,20 @@
+# ReelManagementTab.jsx
+
+## NEED TO DO
+- MASSIVE: 87 named icon imports from lucide-react — half the entire icon set
+- No empty state when reels array empty — table body renders nothing
+- Bulk actions only update local state — NEVER call API
+- filters object in useEffect deps — new reference every render causes Promise.all to re-fire every render
+- No error toast when API calls fail
+- Promise.all has no AbortController
+- Mock data (~150 lines) never rendered — dead code
+
+## CAN DO
+- Wrap all handlers in useCallback
+- Replace 87-icon import with dynamic import or subset
+- Add confirmation modals instead of native confirm()
+- Add pagination or virtual scrolling
+- currentMonth declared but never used
+
+## MAY DO
+- Collapse advanced filters behind toggle

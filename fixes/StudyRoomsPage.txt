@@ -1,0 +1,23 @@
+# StudyRoomsPage.jsx
+
+## NEED TO DO
+- Array index used as key for onlineUsers and messages — broken reconciliation, security risk
+- setTimeout in scrollToBottom never cleaned up
+- Stale closure in Ably subscription effect — updatePresence captured when effect ran, may be stale
+- Race condition in Ably effect cleanup — new subscriptions before old fully clean up
+- No cleanup for media streams when unmounting — localStream, screenStream not stopped
+- AI Study Buddy sends 'undefined' as room name if room still loading
+
+## CAN DO
+- 37 lucide-react icons imported
+- No React.memo on RoomLobby, ActiveRoom, message bubbles, participant items
+- formatTime recreated every render
+- Whiteboard draw event publishes on every mousemove — no throttle for remote collaborators
+- undoStack stores full canvas data URLs — could consume gigabytes
+- No virtualization for messages list
+
+## MAY DO
+- No WebRTC cleanup when navigating away while video sharing
+- Lofi audio player toggle logic disconnected from audio element
+- No error recovery for Ably connection loss
+- Whiteboard cursor offset not accounting for scroll

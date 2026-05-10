@@ -1,0 +1,13 @@
+# PremiumPage.jsx
+
+## NEED TO DO
+- setTimeout in handleSuccess no cleanup — redirect fires on unmounted component
+- No loading/submitting state when payment processing — user can click Upgrade multiple times
+- No error handling around MpesaPaymentModal onSuccess/onError flow
+
+## CAN DO
+- getAmount recreated every render — minor, pure computation
+
+## MAY DO
+- Add current plan indicator
+- Use React Router navigate() instead of window.location.href

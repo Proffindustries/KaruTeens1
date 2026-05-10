@@ -1,3 +1,13 @@
+/* ── Entrance Animations ───────────────────────────────────────────────── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
 /* About Page */
 .about-page {
     padding: 3rem 1rem;
@@ -7,6 +17,7 @@
 .about-hero {
     text-align: center;
     margin-bottom: 4rem;
+    animation: fadeInUp 0.6s ease-out;
 }
 
 .about-hero h1 {
@@ -32,7 +43,12 @@
     text-align: center;
     border: 1px solid rgba(var(--border), 0.5);
     transition: transform 0.2s;
+    animation: fadeInUp 0.5s ease-out both;
 }
+
+.about-card:nth-child(1) { animation-delay: 0.1s; }
+.about-card:nth-child(2) { animation-delay: 0.2s; }
+.about-card:nth-child(3) { animation-delay: 0.3s; }
 
 .about-card:hover {
     transform: translateY(-5px);

@@ -30,8 +30,12 @@ const SearchResultsPage = () => {
         verified: false,
     });
 
-    const { data: results, isLoading } = useQuery({
-        queryKey: ['search', query, activeTab],
+    const {
+        data: results,
+        isLoading,
+        error: searchError,
+    } = useQuery({
+        queryKey: ['search', query, activeTab, filters],
         queryFn: async () => {
             if (!query) return null;
             const type =
@@ -42,7 +46,12 @@ const SearchResultsPage = () => {
                       : activeTab === 'market'
                         ? 'marketplace'
                         : activeTab;
-            const { data } = await api.get(`/search?q=${query}&search_type=${type}`);
+            const params = new URLSearchParams({ q: query, search_type: type });
+            if (filters.dateRange) params.append('date_range', filters.dateRange);
+            if (filters.school) params.append('school', filters.school);
+            if (filters.year) params.append('year', filters.year);
+            if (filters.verified) params.append('verified', 'true');
+            const { data } = await api.get(`/search?${params}`);
             return data;
         },
         enabled: !!query,
@@ -124,7 +133,7 @@ const SearchResultsPage = () => {
                                     <option value="">All schools</option>
                                     <option value="KU">Kenyatta University</option>
                                     <option value="UON">University of Nairobi</option>
-                                    <option value="KU">Kenyatta University</option>
+                                    <option value="JKUAT">JKUAT</option>
                                     <option value="Moi">Moi University</option>
                                     <option value="Egerton">Egerton University</option>
                                 </select>
@@ -175,7 +184,12 @@ const SearchResultsPage = () => {
                 </div>
 
                 <div className="results-content">
-                    {isLoading ? (
+                    {searchError ? (
+                        <div className="text-center py-20">
+                            <h3 className="text-xl font-medium text-gray-500">Search failed</h3>
+                            <p className="text-gray-400 mt-2">Please try again later.</p>
+                        </div>
+                    ) : isLoading ? (
                         <div className="space-y-8">
                             {[1, 2, 3].map((i) => (
                                 <Skeleton key={i} height="200px" className="rounded-xl" />
@@ -247,6 +261,43 @@ const SearchResultsPage = () => {
                                                             post.created_at,
                                                         ).toLocaleDateString()}
                                                     </span>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* Marketplace Results */}
+                            {results?.marketplace?.length > 0 && (
+                                <section className="result-section">
+                                    <h3 className="flex items-center gap-2 text-xl font-bold mb-6 text-gray-900">
+                                        <ShoppingBag size={20} className="text-primary" />{' '}
+                                        Marketplace
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {results.marketplace.map((item) => (
+                                            <Link
+                                                to={`/marketplace/${item.id}`}
+                                                key={item.id}
+                                                className="flex items-center p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 mr-4 overflow-hidden">
+                                                    {item.image_url && (
+                                                        <img
+                                                            src={item.image_url}
+                                                            alt={item.title}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-gray-900 truncate">
+                                                        {item.title}
+                                                    </h4>
+                                                    <p className="text-sm font-semibold text-primary">
+                                                        Ksh {item.price}
+                                                    </p>
                                                 </div>
                                             </Link>
                                         ))}

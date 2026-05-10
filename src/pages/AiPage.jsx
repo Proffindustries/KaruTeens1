@@ -1,25 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-    Send,
-    Bot,
-    Sparkles,
-    BookOpen,
-    Brain,
-    Zap,
-    Loader,
-    Copy,
-    Check,
-    Menu,
-    X,
-} from 'lucide-react';
+import { Send, Bot, Sparkles, BookOpen, Zap, Loader, Copy, Check, Menu, X } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import FormattedText from '../components/FormattedText';
 import '../styles/AiPage.css';
 
+let msgId = 1;
+
 const AiPage = () => {
     const [messages, setMessages] = useState([
         {
+            id: 0,
             sender: 'ai',
             text: "Hello! I'm your KaruTeens Academic Assistant. I've been optimized with the latest free models to help you study. How can I assist you today?",
         },
@@ -32,12 +23,27 @@ const AiPage = () => {
     const [copiedId, setCopiedId] = useState(null);
     const { showToast } = useToast();
     const chatEndRef = useRef(null);
+    const messagesRef = useRef(messages);
+    const copyTimerRef = useRef(null);
+    const pingTimerRef = useRef(null);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
+
+    useEffect(
+        () => () => {
+            if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+            if (pingTimerRef.current) clearTimeout(pingTimerRef.current);
+        },
+        [],
+    );
 
     const fetchModels = useCallback(async () => {
         try {
             const { data } = await api.get('/ai/models');
             setModels(data);
-            setSelectedModel(data[0]);
+            setSelectedModel((prev) => prev || data[0]);
         } catch (err) {
             showToast('Failed to load AI models', 'error');
         }
@@ -51,23 +57,25 @@ const AiPage = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleCopy = (text, index) => {
+    const handleCopy = (text, id) => {
         navigator.clipboard.writeText(text);
-        setCopiedId(index);
+        setCopiedId(id);
         showToast('Copied to clipboard', 'success');
-        setTimeout(() => setCopiedId(null), 2000);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopiedId(null), 2000);
     };
 
     const handleSend = async () => {
         if (!input.trim() || loading) return;
 
-        const userMessage = { sender: 'user', text: input };
+        const id = msgId++;
+        const userMessage = { id, sender: 'user', text: input };
         setMessages((prev) => [...prev, userMessage]);
         setInput('');
         setLoading(true);
 
         try {
-            const history = messages.slice(-10).map((m) => ({
+            const history = messagesRef.current.slice(-10).map((m) => ({
                 role: m.sender === 'ai' ? 'assistant' : 'user',
                 content: m.text,
             }));
@@ -81,18 +89,12 @@ const AiPage = () => {
             setMessages((prev) => [
                 ...prev,
                 {
+                    id: msgId++,
                     sender: 'ai',
                     text: data.reply,
                     modelUsed: data.model_used,
                 },
             ]);
-
-            if (data.model_used && selectedModel && data.model_used !== selectedModel.id) {
-                showToast(
-                    `Venice was busy, used ${data.model_used.split('/').pop()} instead`,
-                    'info',
-                );
-            }
         } catch (err) {
             showToast(err.response?.data?.error || 'AI Failed to respond', 'error');
         } finally {
@@ -104,8 +106,8 @@ const AiPage = () => {
         try {
             await api.post('/ai/models/ping');
             showToast('Diagnostic ping started. Status will update shortly.', 'info');
-            // Wait a bit then refresh list
-            setTimeout(fetchModels, 5000);
+            if (pingTimerRef.current) clearTimeout(pingTimerRef.current);
+            pingTimerRef.current = setTimeout(fetchModels, 5000);
         } catch (err) {
             showToast('Failed to trigger diagnostic', 'error');
         }
@@ -238,8 +240,8 @@ const AiPage = () => {
                 </header>
 
                 <div className="ai-chat-feed">
-                    {messages.map((msg, idx) => (
-                        <div key={idx} className={`ai-message ${msg.sender}`}>
+                    {messages.slice(-50).map((msg) => (
+                        <div key={msg.id} className={`ai-message ${msg.sender}`}>
                             <div className="ai-avatar">
                                 {msg.sender === 'ai' ? (
                                     <Bot size={22} />
@@ -252,14 +254,14 @@ const AiPage = () => {
                                 {msg.sender === 'ai' && (
                                     <button
                                         className="copy-btn"
-                                        onClick={() => handleCopy(msg.text, idx)}
+                                        onClick={() => handleCopy(msg.text, msg.id)}
                                     >
-                                        {copiedId === idx ? (
+                                        {copiedId === msg.id ? (
                                             <Check size={14} />
                                         ) : (
                                             <Copy size={14} />
                                         )}
-                                        {copiedId === idx ? 'Copied' : 'Copy'}
+                                        {copiedId === msg.id ? 'Copied' : 'Copy'}
                                     </button>
                                 )}
                             </div>

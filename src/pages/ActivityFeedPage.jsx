@@ -1,89 +1,75 @@
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Heart,
-    MessageCircle,
-    UserPlus,
-    Share2,
-    AtSign,
-    Trash2,
-    Bell,
-    User,
-    Clock,
-    Check,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from '../context/ToastContext.jsx';
+import { Heart, MessageCircle, UserPlus, Share2, AtSign, Trash2, Bell, Clock } from 'lucide-react';
 import {
     useActivityFeed,
     useMarkActivityRead,
     useDeleteActivity,
     useMarkAllActivityRead,
 } from '../hooks/useActivity';
-import Avatar from '../components/Avatar.jsx';
+import EmptyState from '../components/EmptyState';
+import Avatar from '../components/Avatar';
 import '../styles/ActivityFeedPage.css';
+
+const ACTIVITY_ICONS = {
+    like: <Heart size={18} fill="#ff4757" color="#ff4757" />,
+    comment: <MessageCircle size={18} color="#3742fa" />,
+    follow: <UserPlus size={18} color="#2ed573" />,
+    share: <Share2 size={18} color="#ffa502" />,
+    mention: <AtSign size={18} color="#9b59b6" />,
+    post: <Bell size={18} color="#e84393" />,
+};
+
+const getActivityIcon = (type) => ACTIVITY_ICONS[type] || <Bell size={18} color="#666" />;
+
+const formatTime = (timeStr) => {
+    if (!timeStr) return 'Unknown time';
+    const date = new Date(timeStr);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+};
 
 const ActivityFeedPage = () => {
     const navigate = useNavigate();
-    const { data: activities, isLoading, error } = useActivityFeed();
+    const { data: activities, isLoading, error, refetch } = useActivityFeed();
     const { mutate: markRead } = useMarkActivityRead();
     const { mutate: deleteActivity } = useDeleteActivity();
     const { mutate: markAllRead } = useMarkAllActivityRead();
-    const { showToast } = useToast();
+    const handleActivityClick = useCallback(
+        (activity) => {
+            if (!activity.read) {
+                markRead(activity.id);
+            }
 
-    const getActivityIcon = (type) => {
-        const icons = {
-            like: <Heart size={18} fill="#ff4757" color="#ff4757" />,
-            comment: <MessageCircle size={18} color="#3742fa" />,
-            follow: <UserPlus size={18} color="#2ed573" />,
-            share: <Share2 size={18} color="#ffa502" />,
-            mention: <AtSign size={18} color="#9b59b6" />,
-            post: <Bell size={18} color="#e84393" />,
-        };
-        return icons[type] || <Bell size={18} color="#666" />;
-    };
-
-    const formatTime = (timeStr) => {
-        if (!timeStr) return 'Unknown time';
-        const date = new Date(timeStr);
-        if (isNaN(date.getTime())) return 'Invalid date';
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return date.toLocaleDateString();
-    };
-
-    const handleActivityClick = (activity) => {
-        // Mark as read
-        if (!activity.read) {
-            markRead(activity.id);
-        }
-
-        // Navigate based on activity type
-        switch (activity.type) {
-            case 'post':
-            case 'like':
-            case 'comment':
-            case 'share':
-            case 'mention':
-                if (activity.target?.id) {
-                    navigate(`/post/${activity.target.id}`);
-                }
-                break;
-            case 'follow':
-                navigate(`/profile/${activity.actor.username}`);
-                break;
-            default:
-                break;
-        }
-    };
+            switch (activity.type) {
+                case 'post':
+                case 'like':
+                case 'comment':
+                case 'share':
+                case 'mention':
+                    if (activity.target?.id) {
+                        navigate(`/post/${activity.target.id}`);
+                    }
+                    break;
+                case 'follow':
+                    navigate(`/profile/${activity.actor.username}`);
+                    break;
+                default:
+                    break;
+            }
+        },
+        [markRead, navigate],
+    );
 
     const handleDelete = useCallback(
         (e, activityId) => {
@@ -91,65 +77,6 @@ const ActivityFeedPage = () => {
             deleteActivity(activityId);
         },
         [deleteActivity],
-    );
-
-    const ActivityRow = useCallback(
-        ({ index, style, data }) => {
-            const {
-                activities,
-                markRead,
-                deleteActivity,
-                getActivityIcon,
-                formatTime,
-                handleActivityClick,
-            } = data;
-            const activity = activities[index];
-
-            if (!activity) return null;
-
-            const actorName = activity.actor?.username || 'Unknown';
-
-            return (
-                <motion.div
-                    style={style}
-                    key={activity.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={`activity-item ${!activity.read ? 'unread' : ''}`}
-                    onClick={() => handleActivityClick(activity)}
-                >
-                    <div className="activity-avatar">
-                        {activity.actor?.avatar_url ? (
-                            <img src={activity.actor.avatar_url} alt={actorName} loading="lazy" />
-                        ) : (
-                            <div className="avatar-placeholder">{actorName[0].toUpperCase()}</div>
-                        )}
-                        <div className="type-badge">{getActivityIcon(activity.type)}</div>
-                    </div>
-                    <div className="activity-content">
-                        <p className="activity-text">
-                            <strong>{actorName}</strong> {activity.content}
-                        </p>
-                        <div className="activity-meta">
-                            <Clock size={12} />
-                            <span>{formatTime(activity.created_at)}</span>
-                        </div>
-                    </div>
-                    <div className="activity-actions">
-                        <button
-                            className="delete-btn"
-                            onClick={(e) => handleDelete(e, activity.id)}
-                            title="Delete activity"
-                        >
-                            <Trash2 size={14} />
-                        </button>
-                        {!activity.read && <div className="unread-dot"></div>}
-                    </div>
-                </motion.div>
-            );
-        },
-        [handleDelete],
     );
 
     const groupedActivities = React.useMemo(() => {
@@ -193,7 +120,17 @@ const ActivityFeedPage = () => {
             <div className="container activity-feed-page">
                 <div className="page-header">
                     <h1>Activity</h1>
-                    <div className="loading-skeleton">Loading...</div>
+                </div>
+                <div className="activity-feed card">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="activity-item-skeleton">
+                            <div className="skeleton-avatar" />
+                            <div className="skeleton-content">
+                                <div className="skeleton-line skeleton-line--title" />
+                                <div className="skeleton-line skeleton-line--meta" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
@@ -207,11 +144,8 @@ const ActivityFeedPage = () => {
                     <p className="error-text">
                         Failed to load activity feed. Please check your connection and try again.
                     </p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="btn btn-primary btn-sm mt-2"
-                    >
-                        Refresh Page
+                    <button onClick={() => refetch()} className="btn btn-primary btn-sm mt-2">
+                        Retry
                     </button>
                 </div>
             </div>
@@ -236,11 +170,11 @@ const ActivityFeedPage = () => {
 
             <div className="activity-feed card">
                 {activities?.length === 0 ? (
-                    <div className="empty-activity">
-                        <Bell size={48} color="#ddd" />
-                        <p>No activity yet.</p>
-                        <p className="hint">When people interact with you, you'll see it here.</p>
-                    </div>
+                    <EmptyState
+                        icon={Bell}
+                        title="No activity yet"
+                        message="When people interact with you, you'll see it here."
+                    />
                 ) : (
                     <div className="activity-list">
                         {Object.entries(groupedActivities).map(([groupTitle, groupActivities]) => (
@@ -255,18 +189,11 @@ const ActivityFeedPage = () => {
                                         onClick={() => handleActivityClick(activity)}
                                     >
                                         <div className="activity-avatar">
-                                            {activity.actor?.avatar_url ? (
-                                                <img
-                                                    src={activity.actor.avatar_url}
-                                                    alt={activity.actor.username}
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div className="avatar-placeholder">
-                                                    {activity.actor?.username?.[0]?.toUpperCase() ||
-                                                        '?'}
-                                                </div>
-                                            )}
+                                            <Avatar
+                                                src={activity.actor?.avatar_url}
+                                                name={activity.actor?.username}
+                                                size="md"
+                                            />
                                             <div className="type-badge">
                                                 {getActivityIcon(activity.type)}
                                             </div>

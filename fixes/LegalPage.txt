@@ -1,0 +1,13 @@
+# LegalPage.jsx
+
+## NEED TO DO
+_None identified_
+
+## CAN DO
+- activeTab state — use URL search params instead for deep-linking
+- Content hardcoded — fetch from CMS for updates without redeploy
+
+## MAY DO
+- Add anchor/jump links for each section
+- Add print-friendly stylesheet
+- Add 'Last Updated' dynamic date

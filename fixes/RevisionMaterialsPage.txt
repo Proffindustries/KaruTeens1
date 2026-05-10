@@ -1,0 +1,15 @@
+# RevisionMaterialsPage.jsx
+
+## NEED TO DO
+- On API error, silently falls back to mock data with console.log — user never notified seeing fake content
+- No cleanup on useEffect — state update on unmounted component
+- Filter logic inconsistent: sends filters to API AND filters client-side — redundant
+- fetchMaterials reference changes on every filter change — useEffect re-fires every render even if values unchanged
+
+## CAN DO
+- Use React Query instead of manual useEffect/useState
+
+## MAY DO
+- Show error state banner with Retry button
+- Add search result highlighting
+- Add Submit Your Materials flow

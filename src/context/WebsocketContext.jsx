@@ -4,6 +4,9 @@ import { api } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from './ToastContext';
 
+const MAX_RECONNECT_DELAY = 30000;
+const MAX_RECONNECT_ATTEMPTS = 10;
+
 const WebsocketContext = createContext(null);
 
 export const WebsocketProvider = ({ children }) => {
@@ -14,6 +17,7 @@ export const WebsocketProvider = ({ children }) => {
     const reconnectTimeout = useRef(null);
     const [subscribers] = useState(new Set());
     const connectRef = useRef(null);
+    const reconnectAttempts = useRef(0);
 
     const handleWsMessage = useCallback(
         (payload) => {
@@ -55,6 +59,17 @@ export const WebsocketProvider = ({ children }) => {
 
     const connect = useCallback(() => {
         if (!token) return;
+        // Stop reconnecting if we've exceeded max attempts
+        if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
+            console.warn('WS: Max reconnection attempts reached, stopping.');
+            return;
+        }
+        // Don't reconnect if page is hidden (background tab)
+        if (document.hidden && reconnectAttempts.current > 0) {
+            reconnectTimeout.current = setTimeout(connectRef.current, 5000);
+            return;
+        }
+
         const apiUrl = api.defaults.baseURL;
         const wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '') + '/ws';
 
@@ -69,6 +84,7 @@ export const WebsocketProvider = ({ children }) => {
 
         ws.current.onopen = () => {
             console.log('WS Connected');
+            reconnectAttempts.current = 0;
             if (ws.current.readyState === WebSocket.OPEN) {
                 ws.current.send(JSON.stringify({ type: 'auth', token }));
             }
@@ -84,12 +100,15 @@ export const WebsocketProvider = ({ children }) => {
         };
 
         ws.current.onclose = () => {
-            console.log('WS Disconnected, reconnecting...');
-            reconnectTimeout.current = setTimeout(connectRef.current, 3000);
+            const delay = Math.min(1000 * 2 ** reconnectAttempts.current, MAX_RECONNECT_DELAY);
+            reconnectAttempts.current += 1;
+            console.log(
+                `WS Disconnected, reconnecting in ${delay / 1000}s (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})...`,
+            );
+            reconnectTimeout.current = setTimeout(connectRef.current, delay);
         };
 
-        ws.current.onerror = (err) => {
-            console.error('WS Error', err);
+        ws.current.onerror = () => {
             ws.current.close();
         };
     }, [token, handleWsMessage]);
@@ -99,6 +118,7 @@ export const WebsocketProvider = ({ children }) => {
     }, [connect]);
 
     useEffect(() => {
+        reconnectAttempts.current = 0;
         connect();
         return () => {
             if (ws.current) ws.current.close();

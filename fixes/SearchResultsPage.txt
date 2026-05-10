@@ -1,0 +1,16 @@
+# SearchResultsPage.jsx
+
+## NEED TO DO
+- filters state NEVER passed to API query — all filter controls have zero effect
+- No error state UI when useQuery fails — isError destructured but no error message or retry button
+- School filter has duplicate value: KU appears twice — copy-paste bug
+- activeTab 'market' has NO results section rendered — user sees nothing
+- Results for Groups/Events always rendered regardless of activeTab — defeats tab filtering
+
+## CAN DO
+- Add debounced search input (300ms)
+
+## MAY DO
+- Add search suggestions/autocomplete
+- Add pagination or load more
+- Add Clear filters button

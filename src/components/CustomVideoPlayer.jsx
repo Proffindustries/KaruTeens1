@@ -16,6 +16,7 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showCaptions, setShowCaptions] = useState(false);
     const [aspectRatioClass, setAspectRatioClass] = useState('');
+    const [hasError, setHasError] = useState(false);
     const { stopAudio } = useAudio();
     const { showToast } = useToast();
     const videoRef = useRef(null);
@@ -139,20 +140,30 @@ const CustomVideoPlayer = React.memo(({ src, poster = '/placeholder-video.jpg' }
                 />
             )}
 
-            {inView && (
-                <video
-                    ref={videoRef}
-                    src={getVariantUrl(src)}
-                    preload="metadata"
-                    className="video-element"
-                    onClick={togglePlayPause}
-                    playsInline
-                    muted={!isPlaying}
-                    crossOrigin="anonymous"
-                />
+            {hasError ? (
+                <div
+                    className="video-error-fallback"
+                    style={{ padding: '3rem', textAlign: 'center', color: '#999' }}
+                >
+                    <div>Video unavailable</div>
+                </div>
+            ) : (
+                inView && (
+                    <video
+                        ref={videoRef}
+                        src={getVariantUrl(src)}
+                        preload="metadata"
+                        className="video-element"
+                        onClick={togglePlayPause}
+                        playsInline
+                        muted={!isPlaying}
+                        crossOrigin="anonymous"
+                        onError={() => setHasError(true)}
+                    />
+                )
             )}
 
-            {!isPlaying && (
+            {!isPlaying && !hasError && (
                 <div className="play-overlay" onClick={togglePlayPause}>
                     <div className="play-button">
                         <Play size={44} fill="currentColor" />

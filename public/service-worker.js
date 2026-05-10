@@ -6,6 +6,12 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // Skip API calls, WebSocket upgrades, and external origins — let them go directly
+    if (event.request.method !== 'GET' ||
+        event.request.url.includes('/api/') ||
+        !event.request.url.startsWith(self.location.origin)) {
+        return;
+    }
     event.respondWith(
         caches.match(event.request).then((response) => response || fetch(event.request))
     );

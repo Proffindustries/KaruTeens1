@@ -79,6 +79,7 @@ const HomePage = () => {
                                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800"
                                 alt="Happy University Students"
                                 className="main-img"
+                                crossOrigin="anonymous"
                             />
                             <div className="floating-card card-1">
                                 <div className="icon-box">💬</div>
@@ -210,13 +211,23 @@ const HomePage = () => {
                         <Link to="/help">Help Center</Link>
                     </div>
                     <div className="footer-social">
-                        <a href="#" className="social-icon">
+                        <a
+                            href="https://twitter.com/karuteens"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="social-icon"
+                        >
                             <Twitter size={20} />
                         </a>
-                        <a href="#" className="social-icon">
+                        <a
+                            href="https://instagram.com/karuteens"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="social-icon"
+                        >
                             <Instagram size={20} />
                         </a>
-                        <a href="mailto:support@karuteens.com" className="social-icon">
+                        <a href="mailto:support@karuteens.site" className="social-icon">
                             <Mail size={20} />
                         </a>
                     </div>

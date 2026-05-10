@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Heart,
     X,
@@ -34,6 +34,17 @@ const HookupPage = () => {
         age: '',
         bio: '',
     });
+
+    const swipingRef = useRef(false);
+    const heartTimeoutsRef = useRef([]);
+    const mountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+            heartTimeoutsRef.current.forEach(clearTimeout);
+        };
+    }, []);
 
     const hasAlias = myAlias && !aliasError;
     const isAliasVerified = myAlias?.is_verified;
@@ -100,7 +111,8 @@ const HookupPage = () => {
                         clearInterval(interval);
                         showToast('Alias activated! Start discovering.', 'success');
                         setShowPaymentModal(false);
-                        window.location.reload();
+                        setPaymentStep('pending');
+                        setCheckoutId(null);
                     } else if (data.status === 'failed') {
                         setPaymentStep('pending');
                         setCheckoutId(null);
@@ -115,25 +127,36 @@ const HookupPage = () => {
         return () => clearInterval(interval);
     }, [paymentStep, checkoutId, showToast]);
 
-    const handleSwipe = (direction, targetId) => {
-        const type = direction === 'right' ? 'like' : 'pass';
+    const handleSwipe = useCallback(
+        (direction, targetId) => {
+            if (swipingRef.current) return;
+            swipingRef.current = true;
 
-        interact(
-            { id: targetId, type },
-            {
-                onSuccess: (data) => {
-                    if (data.match) {
-                        showToast("🎉 It's a mutual match!", 'success');
-                    }
-                    if (currentMatchIndex < discovery.length - 1) {
-                        setCurrentMatchIndex((prev) => prev + 1);
-                    } else {
-                        showToast('No more matches nearby!', 'info');
-                    }
+            const type = direction === 'right' ? 'like' : 'pass';
+
+            interact(
+                { id: targetId, type },
+                {
+                    onSuccess: (data) => {
+                        if (data.match) {
+                            showToast("🎉 It's a mutual match!", 'success');
+                        }
+                        setCurrentMatchIndex((prev) => {
+                            if (prev < discovery.length - 1) {
+                                return prev + 1;
+                            }
+                            showToast('No more matches nearby!', 'info');
+                            return prev;
+                        });
+                    },
+                    onSettled: () => {
+                        swipingRef.current = false;
+                    },
                 },
-            },
-        );
-    };
+            );
+        },
+        [discovery, interact, showToast],
+    );
 
     if (aliasLoading || discoveryLoading) {
         return (
@@ -162,6 +185,15 @@ const HookupPage = () => {
                         <span>Strict 18+ Only. Respectful behavior required.</span>
                     </div>
 
+                    {aliasError && (
+                        <div
+                            className="error-box"
+                            style={{ color: '#ff4757', marginBottom: '1rem', textAlign: 'center' }}
+                        >
+                            Failed to load alias. Please try again later.
+                        </div>
+                    )}
+
                     {!hasAlias ? (
                         <form className="alias-form" onSubmit={handleCreateAlias}>
                             <input
@@ -188,6 +220,7 @@ const HookupPage = () => {
                                 <input
                                     type="number"
                                     placeholder="Age"
+                                    min={18}
                                     className="form-input"
                                     value={aliasForm.age}
                                     onChange={(e) =>
@@ -233,7 +266,14 @@ const HookupPage = () => {
 
                 {/* Payment Modal */}
                 {showPaymentModal && (
-                    <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
+                    <div
+                        className="modal-overlay"
+                        onClick={() => {
+                            setShowPaymentModal(false);
+                            setPaymentStep('pending');
+                            setCheckoutId(null);
+                        }}
+                    >
                         <div
                             className="modal-content"
                             onClick={(e) => e.stopPropagation()}
@@ -243,7 +283,11 @@ const HookupPage = () => {
                                 <h3>Activate Hookup Alias</h3>
                                 <button
                                     className="close-btn"
-                                    onClick={() => setShowPaymentModal(false)}
+                                    onClick={() => {
+                                        setShowPaymentModal(false);
+                                        setPaymentStep('pending');
+                                        setCheckoutId(null);
+                                    }}
                                 >
                                     ×
                                 </button>
@@ -321,6 +365,8 @@ const HookupPage = () => {
     }
 
     const currentProfile = discovery[currentMatchIndex];
+
+    if (!currentProfile) return null;
 
     return (
         <div className="container hookup-page">

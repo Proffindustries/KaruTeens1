@@ -1,0 +1,20 @@
+# EventsPage.jsx
+
+## NEED TO DO
+- No error state handling — useEvents fails silently, shows empty state on server errors
+- EmptyState and CreateModal recreated as JSX variables every render
+- EventCard receives navigate prop recreated every render
+- CreateEventModal formData has no validation (negative max_attendees, missing dates)
+- imageInputRef onChange has no isMounted check
+- No form reset on successful submission
+
+## CAN DO
+- CreateEventModal uses individual useState for each field — 8+ re-renders per keystroke
+- No lazy loading for CreateEventModal — always imported
+- categoryFilter changes trigger new API fetch with no cache
+- EventCard motion.div creates intersection observers for all cards simultaneously
+
+## MAY DO
+- No search bar for events
+- No My Events tab
+- No calendar view toggle

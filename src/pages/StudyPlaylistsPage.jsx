@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import EmptyState from '../components/EmptyState';
 import {
     Plus,
     Play,
@@ -14,6 +15,7 @@ import {
     Trash2,
     UserPlus,
     Upload,
+    Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/client';
@@ -34,7 +36,7 @@ const StudyPlaylistsPage = () => {
     const [showAddItemModal, setShowAddItemModal] = useState(false);
     const [viewingItem, setViewingItem] = useState(null);
 
-    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
+    const { uploads } = useUpload();
 
     // Add Item states
     const { uploadMedia, isUploading } = useMediaUpload();
@@ -138,19 +140,11 @@ const StudyPlaylistsPage = () => {
         if (uploadMode === 'file' && selectedFiles.length > 0) {
             selectedFiles.forEach(async (file) => {
                 const itemType = getFileType(file);
-                const uploadId = addUpload({
-                    fileName: file.name,
-                    fileSize: file.size,
-                    type: itemType,
-                });
-
                 try {
-                    const uploadedUrl = await uploadMedia(file, (p, l) =>
-                        updateUploadProgress(uploadId, p, l),
-                    );
-                    completeUpload(uploadId, { url: uploadedUrl });
+                    const uploadedUrl = await uploadMedia(file);
 
-                    const effectiveTitle = selectedFiles.length === 1 && title ? title : file.name;
+                    const removeExtension = (filename) => filename.replace(/\.[^/.]+$/, "");
+                    const effectiveTitle = selectedFiles.length === 1 && title ? title : removeExtension(file.name);
 
                     await api.post(`/playlists/${playlistId}/items`, {
                         item_type: itemType,
@@ -160,11 +154,12 @@ const StudyPlaylistsPage = () => {
                     });
                     if (selectedPlaylist?.id === playlistId) fetchPlaylistDetails(playlistId);
                 } catch (err) {
-                    failUpload(uploadId, err);
+                    console.error('Item upload failed', err);
                 }
             });
             showToast('Items uploading...', 'success');
-        } else if (uploadMode === 'url') {
+        }
+ else if (uploadMode === 'url') {
             const currentUrl = formData.get('url') || finalUrl;
             const itemType = getUrlType(currentUrl);
             try {
@@ -233,11 +228,11 @@ const StudyPlaylistsPage = () => {
             {loading ? (
                 <div className="loading">Loading playlists...</div>
             ) : playlists.length === 0 ? (
-                <div className="empty-state">
-                    <BookOpen size={48} />
-                    <h3>No playlists yet</h3>
-                    <p>Create your first study playlist to get started!</p>
-                </div>
+                <EmptyState
+                    icon={BookOpen}
+                    title="No playlists yet"
+                    message="Create your first study playlist to get started!"
+                />
             ) : (
                 <div className="playlists-grid">
                     {playlists.map((playlist) => (
@@ -408,6 +403,7 @@ const StudyPlaylistsPage = () => {
                                                     {item.item_type === 'image' ? (
                                                         <img
                                                             src={item.url}
+                                                            crossOrigin="anonymous"
                                                             style={{
                                                                 width: '100%',
                                                                 height: '100%',
@@ -419,6 +415,7 @@ const StudyPlaylistsPage = () => {
                                                     ) : item.item_type === 'video' ? (
                                                         <video
                                                             src={item.url}
+                                                            crossOrigin="anonymous"
                                                             style={{
                                                                 width: '100%',
                                                                 height: '100%',
@@ -494,9 +491,19 @@ const StudyPlaylistsPage = () => {
                                                         setViewingItem(item);
                                                     }}
                                                     className="play-btn"
-                                                    style={{ border: 'none', cursor: 'pointer' }}
+                                                    style={{ 
+                                                        border: 'none', 
+                                                        cursor: 'pointer',
+                                                        background: item.item_type === 'video' || item.item_type === 'audio' ? 'var(--primary)' : 'rgba(0,0,0,0.05)',
+                                                        color: item.item_type === 'video' || item.item_type === 'audio' ? '#fff' : 'var(--text-main)'
+                                                    }}
+                                                    title={item.item_type === 'video' || item.item_type === 'audio' ? 'Play' : 'View'}
                                                 >
-                                                    <Play size={16} />
+                                                    {item.item_type === 'video' || item.item_type === 'audio' ? (
+                                                        <Play size={16} />
+                                                    ) : (
+                                                        <Eye size={16} />
+                                                    )}
                                                 </button>
                                             </li>
                                         ))}
@@ -767,6 +774,7 @@ const StudyPlaylistsPage = () => {
                                     <img
                                         src={viewingItem.url}
                                         alt={viewingItem.title}
+                                        crossOrigin="anonymous"
                                         style={{
                                             maxWidth: '100%',
                                             maxHeight: '100%',
@@ -778,6 +786,7 @@ const StudyPlaylistsPage = () => {
                                         src={getVariantUrl(viewingItem.url)}
                                         controls
                                         autoPlay
+                                        crossOrigin="anonymous"
                                         style={{ maxWidth: '100%', maxHeight: '100%' }}
                                     />
                                 ) : viewingItem.item_type === 'audio' ? (
@@ -785,6 +794,7 @@ const StudyPlaylistsPage = () => {
                                         src={viewingItem.url}
                                         controls
                                         autoPlay
+                                        crossOrigin="anonymous"
                                         style={{ width: '100%', maxWidth: '600px' }}
                                     />
                                 ) : (

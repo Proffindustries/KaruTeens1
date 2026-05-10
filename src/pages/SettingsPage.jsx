@@ -27,6 +27,7 @@ import {
     Layout,
 } from 'lucide-react';
 import { useAuth, useLogout, useUpdateProfile, useToggle2FA } from '../hooks/useAuth';
+import Avatar from '../components/Avatar';
 import '../styles/SettingsPage.css';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext';
@@ -37,6 +38,7 @@ const SettingsPage = () => {
     const logout = useLogout();
     const updateProfile = useUpdateProfile();
     const toggle2FA = useToggle2FA();
+    const [toggle2FAError, setToggle2FAError] = useState(null);
     const { showToast } = useToast();
     const { theme, setTheme } = useTheme();
     const [activeTab, setActiveTab] = useState('account');
@@ -100,14 +102,22 @@ const SettingsPage = () => {
     }, []);
 
     useEffect(() => {
+        let mounted = true;
         const saved = localStorage.getItem('karuteens_appearance');
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                setAppearanceSettings(parsed);
-                applyAppearance(parsed);
-            } catch (e) { /* ignore parse errors */ }
+                if (mounted) {
+                    setAppearanceSettings(parsed);
+                    applyAppearance(parsed);
+                }
+            } catch (e) {
+                /* ignore parse errors */
+            }
         }
+        return () => {
+            mounted = false;
+        };
     }, [applyAppearance]);
 
     const handleAppearanceChange = (key, value) => {
@@ -152,13 +162,17 @@ const SettingsPage = () => {
     }, [user?.username]);
 
     useEffect(() => {
+        let mounted = true;
         if (user?.username) {
             fetchProfile();
         }
         if (activeTab === 'security') {
             fetchSessions();
         }
-    }, [user, activeTab, fetchProfile, fetchSessions]);
+        return () => {
+            mounted = false;
+        };
+    }, [user?.username, user?.id, activeTab, fetchProfile, fetchSessions]);
 
     const handleRevokeSession = async (sessionId) => {
         if (!confirm('Are you sure you want to log out from this device?')) return;
@@ -218,6 +232,7 @@ const SettingsPage = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
             showToast('Your data is being prepared for download', 'success');
         } catch (err) {
             showToast('Failed to export data', 'error');
@@ -280,8 +295,19 @@ const SettingsPage = () => {
 
     const handleMasterPushToggle = async (e) => {
         if (e.target.checked) {
-            const perm = await Notification.requestPermission();
-            setPushEnabled(perm === 'granted');
+            if (!('Notification' in window)) {
+                showToast('Push notifications are not supported in this browser', 'error');
+                return;
+            }
+            try {
+                const perm = await Notification.requestPermission();
+                setPushEnabled(perm === 'granted');
+                if (perm !== 'granted') {
+                    showToast('Please allow notifications in your browser settings', 'error');
+                }
+            } catch (err) {
+                showToast('Notifications require a secure connection (HTTPS)', 'error');
+            }
         } else {
             setPushEnabled(false);
         }
@@ -516,11 +542,32 @@ const SettingsPage = () => {
                                         <input
                                             type="checkbox"
                                             checked={user?.is_2fa_enabled}
-                                            onChange={() => toggle2FA.mutate()}
+                                            onChange={() => {
+                                                setToggle2FAError(null);
+                                                toggle2FA.mutate(undefined, {
+                                                    onError: () => {
+                                                        setToggle2FAError(
+                                                            'Failed to update 2FA setting. Please try again.',
+                                                        );
+                                                        showToast('Failed to update 2FA', 'error');
+                                                    },
+                                                });
+                                            }}
                                             disabled={toggle2FA.isPending}
                                         />
                                         <span className="slider"></span>
                                     </label>
+                                    {toggle2FAError && (
+                                        <p
+                                            style={{
+                                                color: '#ef4444',
+                                                fontSize: '0.85rem',
+                                                marginTop: '0.5rem',
+                                            }}
+                                        >
+                                            {toggle2FAError}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -567,18 +614,10 @@ const SettingsPage = () => {
                                                     gap: '1rem',
                                                 }}
                                             >
-                                                <img
-                                                    src={
-                                                        u.avatar_url ||
-                                                        'https://ui-avatars.com/api/?name=' +
-                                                            u.username
-                                                    }
-                                                    alt={u.username}
-                                                    style={{
-                                                        width: '40px',
-                                                        height: '40px',
-                                                        borderRadius: '50%',
-                                                    }}
+                                                <Avatar
+                                                    src={u.avatar_url}
+                                                    name={u.username}
+                                                    size="md"
                                                 />
                                                 <div>
                                                     <strong style={{ display: 'block' }}>

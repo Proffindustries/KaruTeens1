@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../context/ToastContext';
 import safeLocalStorage from '../utils/storage.js';
+import EmptyState from '../components/EmptyState';
 import '../styles/TemplatesPage.css';
 
 const TEMPLATES = [
@@ -157,7 +158,12 @@ const TemplatesPage = () => {
     });
     const [personalTemplates, setPersonalTemplates] = useState(() => {
         const saved = safeLocalStorage.getItem('personal_templates');
-        return saved ? JSON.parse(saved) : [];
+        if (!saved) return [];
+        try {
+            return JSON.parse(saved);
+        } catch {
+            return [];
+        }
     });
     const { showToast } = useToast();
 
@@ -171,9 +177,17 @@ const TemplatesPage = () => {
         return matchesSearch && matchesCategory;
     });
 
-    const copyTemplate = (content) => {
-        navigator.clipboard.writeText(content);
-        showToast('Template copied to clipboard!', 'success');
+    const copyTemplate = async (content) => {
+        if (!navigator?.clipboard?.writeText) {
+            showToast('Clipboard API not available', 'error');
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(content);
+            showToast('Template copied to clipboard!', 'success');
+        } catch {
+            showToast('Failed to copy to clipboard', 'error');
+        }
     };
 
     const handleCreateTemplate = () => {
@@ -307,11 +321,11 @@ const TemplatesPage = () => {
             </div>
 
             {filteredTemplates.length === 0 && (
-                <div className="empty-state">
-                    <FileText size={48} />
-                    <h3>No templates found</h3>
-                    <p>Try a different search term or category</p>
-                </div>
+                <EmptyState
+                    icon={FileText}
+                    title="No templates found"
+                    message="Try a different search term or category"
+                />
             )}
 
             <AnimatePresence>

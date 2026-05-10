@@ -1,0 +1,25 @@
+# VideoManagementTab.jsx
+
+## NEED TO DO
+- setTimeout in handleUploadVideo never cleaned up — state update on unmounted component
+- Bulk actions (transcode, delete, retry_failed) only mutate local state — NO actual API calls
+- Initial data fetch has empty catch with no user-facing error state — empty table indefinitely
+- All uploads/transcoding simulated client-side — data disappears on refresh
+- Storage stats show mock data instead of real storageStats state
+- Retry button creates local job object but never retries on server
+- storageStats is empty object — accessing .total_videos etc. renders undefined
+
+## CAN DO
+- 47 lucide-react icons imported
+- No useCallback on any handler
+- No React.memo on table rows
+- formatFileSize and formatDuration defined inside component
+- No debounce on filter inputs
+- No pagination for videos table
+- 1646-line component — no sub-component extraction
+- videos.sort() mutates original array in place — modifies state directly
+
+## MAY DO
+- Upload settings checkboxes have no state management
+- Transcoding Settings modal inputs uncontrolled
+- No drag-and-drop file upload despite UI text saying so

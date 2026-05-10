@@ -35,6 +35,7 @@ import {
     ArrowLeft,
     Shield,
     Bookmark,
+    Clock,
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import '../styles/MessagesPage.css';
@@ -113,17 +114,21 @@ const LinkPreview = ({ url }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let cancelled = false;
         const fetchPreview = async () => {
             try {
                 const { data } = await api.get(`/messages/preview?url=${encodeURIComponent(url)}`);
-                setPreview(data);
+                if (!cancelled) setPreview(data);
             } catch (err) {
-                setPreview(null);
+                if (!cancelled) setPreview(null);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
         fetchPreview();
+        return () => {
+            cancelled = true;
+        };
     }, [url]);
 
     if (loading) return null;
@@ -168,7 +173,9 @@ const VoiceNotePlayer = ({ url }) => {
         if (isPlaying) {
             audioRef.current.pause();
         } else {
-            audioRef.current.play();
+            audioRef.current.play().catch(() => {
+                setIsPlaying(false);
+            });
         }
         setIsPlaying(!isPlaying);
     };
@@ -196,6 +203,7 @@ const VoiceNotePlayer = ({ url }) => {
                 onTimeUpdate={onTimeUpdate}
                 onLoadedMetadata={onLoadedMetadata}
                 onEnded={() => setIsPlaying(false)}
+                crossOrigin="anonymous"
             />
             <button
                 className="play-pause-btn"
@@ -338,6 +346,14 @@ const MessagesPage = () => {
     }, []);
 
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+        }
+    }, [messageInput]);
     const fileInputRef = useRef(null);
     const uploadProcessRef = useRef(null);
     const location = useLocation();
@@ -345,32 +361,7 @@ const MessagesPage = () => {
     const { data: chats, isLoading: isLoadingChats } = useChats();
     const { data: messages, isLoading: isLoadingMessages } = useChatMessages(selectedChatId);
 
-    useEffect(() => {
-        console.log('MessagesPage Debug - Initialized');
-        console.log('MessagesPage Debug - user:', user?.username);
-        console.log('MessagesPage Debug - isMobile:', isMobile);
-    }, []);
-
-    useEffect(() => {
-        console.log('MessagesPage Debug - selectedChatId changed:', selectedChatId);
-        if (selectedChatId) {
-            const chat = chats?.find((c) => c.id === selectedChatId);
-            console.log('MessagesPage Debug - selected chat info:', chat);
-        }
-    }, [selectedChatId, chats]);
-
-    useEffect(() => {
-        if (selectedChatId) {
-            console.log(`MessagesPage Debug - Loading messages for ${selectedChatId}...`);
-            console.log('MessagesPage Debug - messages state:', {
-                count: messages?.length,
-                isLoading: isLoadingMessages,
-                data: messages,
-            });
-        }
-    }, [selectedChatId, messages, isLoadingMessages]);
-
-    const { mutate: sendMessage } = useSendMessage(selectedChatId);
+    const { mutate: sendMessage } = useSendMessage();
     const { mutate: reactMessage } = useReactMessage(selectedChatId);
     const { mutate: markRead } = useMarkRead(selectedChatId);
     const { mutate: deleteMessage } = useDeleteMessage(selectedChatId);
@@ -438,7 +429,23 @@ const MessagesPage = () => {
             if (msg.name === 'new_message') {
                 queryClient.setQueryData(['messages', selectedChatId], (old) => {
                     const messages = old || [];
+                    // Check if we already have this real message
                     if (messages.find((m) => m.id === msg.data.id)) return messages;
+
+                    // Optimistic update cleanup: if it's from me, find the temp message and replace it
+                    if (msg.data.sender_id === currentUser?.user_id) {
+                        const tempIdx = messages.findIndex(
+                            (m) =>
+                                m.id.toString().startsWith('temp-') &&
+                                m.content?.trim() === msg.data.content?.trim(),
+                        );
+                        if (tempIdx > -1) {
+                            const newMsgs = [...messages];
+                            newMsgs[tempIdx] = msg.data;
+                            return newMsgs;
+                        }
+                    }
+
                     return [...messages, msg.data];
                 });
             } else if (msg.name === 'reaction_updated') {
@@ -584,6 +591,7 @@ const MessagesPage = () => {
     const [isEditingGroup, setIsEditingGroup] = useState(false);
     const [newParticipants, setNewParticipants] = useState('');
     const [selectedUploadFile, setSelectedUploadFile] = useState(null);
+    const [selectedUploadFileChatId, setSelectedUploadFileChatId] = useState(null);
     const [isViewOnceUpload, setIsViewOnceUpload] = useState(false);
     const [viewedMediaUrl, setViewedMediaUrl] = useState(null);
     const { uploadMedia } = useMediaUpload();
@@ -685,6 +693,7 @@ const MessagesPage = () => {
         [showToast],
     );
     uploadProcessRef.current = async (file) => {
+        const targetChatId = selectedChatId;
         setIsUploading(true);
         try {
             let type = 'file';
@@ -706,10 +715,26 @@ const MessagesPage = () => {
             )
                 type = 'powerpoint';
 
+            const localUrl = URL.createObjectURL(file);
+            // Optimistic update for files
+            queryClient.setQueryData(['messages', targetChatId], (old) => [
+                ...(old || []),
+                {
+                    id: `temp-${Date.now()}`,
+                    content: type === 'audio' ? '🎤 Voice note' : file.name,
+                    attachment_url: localUrl,
+                    attachment_type: type,
+                    created_at: new Date().toISOString(),
+                    is_me: true,
+                    reactions: [],
+                },
+            ]);
+
             const url = await uploadMedia(file, (p) => setUploadProgress(p));
 
             sendMessage({
-                content: file.name,
+                chatId: targetChatId,
+                content: type === 'audio' ? '🎤 Voice note' : file.name,
                 attachment_url: url,
                 attachment_type: type,
                 reply_to_id: replyingTo?.id,
@@ -729,11 +754,13 @@ const MessagesPage = () => {
         const file = e.target.files[0];
         if (!file) return;
         setSelectedUploadFile(file);
+        setSelectedUploadFileChatId(selectedChatId);
     };
 
     const confirmUpload = async () => {
         if (!selectedUploadFile) return;
         const file = selectedUploadFile;
+        const targetChatId = selectedChatId;
         setSelectedUploadFile(null);
         setIsUploading(true);
         try {
@@ -759,7 +786,8 @@ const MessagesPage = () => {
             const url = await uploadMedia(file, (p) => setUploadProgress(p));
 
             sendMessage({
-                content: file.name,
+                chatId: targetChatId,
+                content: type === 'audio' ? '🎤 Voice note' : file.name,
                 attachment_url: url,
                 attachment_type: type,
                 reply_to_id: replyingTo?.id,
@@ -778,7 +806,7 @@ const MessagesPage = () => {
     };
 
     const handleSend = async () => {
-        if (!messageInput.trim() || isSending) return;
+        if (!messageInput.trim()) return;
         setIsSending(true);
 
         if (
@@ -793,12 +821,16 @@ const MessagesPage = () => {
         const selectedChat = chats?.find((c) => c.id === selectedChatId);
 
         const cleanup = () => {
-            setMessageInput('');
             setReplyingTo(null);
             setIsSending(false);
         };
 
-        sendMessage({ content: messageInput, reply_to_id: replyingTo?.id }, { onSettled: cleanup });
+        setMessageInput('');
+        sendMessage({ 
+            chatId: selectedChatId,
+            content: messageInput, 
+            reply_to_id: replyingTo?.id 
+        }, { onSettled: cleanup });
     };
 
     const handleForwardSelect = (targetChatId) => {
@@ -834,6 +866,7 @@ const MessagesPage = () => {
 
     const handleGifSelect = (gifUrl) => {
         sendMessage({
+            chatId: selectedChatId,
             content: 'Sent a GIF',
             attachment_url: gifUrl,
             attachment_type: 'gif',
@@ -867,6 +900,7 @@ const MessagesPage = () => {
             (position) => {
                 const { latitude, longitude } = position.coords;
                 sendMessage({
+                    chatId: selectedChatId,
                     content: isLive ? '📡 Shared live location' : '📍 Shared a location',
                     location: {
                         latitude,
@@ -888,6 +922,7 @@ const MessagesPage = () => {
 
     const handleShareContact = (targetUser) => {
         sendMessage({
+            chatId: selectedChatId,
             content: `👤 Contact: ${targetUser.username}`,
             contact: {
                 username: targetUser.username,
@@ -1063,6 +1098,7 @@ const MessagesPage = () => {
                         src={url}
                         alt="Sticker"
                         style={{ width: '120px', height: '120px', objectFit: 'contain' }}
+                        crossOrigin="anonymous"
                     />
                     {!isSaved && (
                         <div className="sticker-save-hint">
@@ -1084,7 +1120,7 @@ const MessagesPage = () => {
         if (isImage) {
             return (
                 <div className={`msg-media-container ${isNsfw ? 'nsfw-blurred' : ''}`}>
-                    <img src={getOptimizedUrl(url)} alt="attachment" />
+                    <img src={getOptimizedUrl(url)} alt="attachment" crossOrigin="anonymous" />
                     {isNsfw && (
                         <div
                             className="nsfw-overlay"
@@ -1103,7 +1139,7 @@ const MessagesPage = () => {
         if (isVideo)
             return (
                 <div className={`msg-media-container ${isNsfw ? 'nsfw-blurred' : ''}`}>
-                    <video src={getVariantUrl(url)} controls={!isNsfw} />
+                    <video src={getVariantUrl(url)} controls={!isNsfw} crossOrigin="anonymous" />
                     {isNsfw && (
                         <div
                             className="nsfw-overlay"
@@ -1239,7 +1275,20 @@ const MessagesPage = () => {
                     </div>
                     <div className="chat-list">
                         {isLoadingChats ? (
-                            <div style={{ padding: '1rem', textAlign: 'center' }}>Loading...</div>
+                            <div style={{ padding: '1rem' }}>
+                                {[...Array(5)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="skeleton"
+                                        style={{
+                                            width: '100%',
+                                            height: '60px',
+                                            marginBottom: '0.5rem',
+                                            borderRadius: '8px',
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         ) : chats?.length === 0 ? (
                             <div style={{ padding: '1.5rem', textAlign: 'center', color: '#666' }}>
                                 <p>No chats found.</p>
@@ -1469,7 +1518,30 @@ const MessagesPage = () => {
 
                             <div className="chat-messages">
                                 {isLoadingMessages ? (
-                                    <div style={{ textAlign: 'center' }}>Loading...</div>
+                                    <div style={{ padding: '1rem' }}>
+                                        {[...Array(4)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                style={{
+                                                    display: 'flex',
+                                                    gap: '0.75rem',
+                                                    marginBottom: '1rem',
+                                                    justifyContent:
+                                                        i % 2 === 0 ? 'flex-start' : 'flex-end',
+                                                }}
+                                            >
+                                                <div
+                                                    className="skeleton"
+                                                    style={{
+                                                        width: '60%',
+                                                        maxWidth: '300px',
+                                                        height: '40px',
+                                                        borderRadius: '12px',
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : (
                                     messages
                                         ?.filter(
@@ -1655,9 +1727,11 @@ const MessagesPage = () => {
                                                         </span>
                                                         {msg.is_me && (
                                                             <span
-                                                                className={`msg-status ${msg.read_at ? 'read' : ''}`}
+                                                                className={`msg-status ${msg.read_at ? 'read' : ''} ${msg.id?.toString().startsWith('temp-') ? 'pending' : ''}`}
                                                             >
-                                                                {msg.read_at ? (
+                                                                {msg.id?.toString().startsWith('temp-') ? (
+                                                                    <Clock size={12} className="status-pending" />
+                                                                ) : msg.read_at ? (
                                                                     <CheckCheck size={12} />
                                                                 ) : (
                                                                     <Check size={12} />
@@ -1861,35 +1935,28 @@ const MessagesPage = () => {
                                                             <Mic size={20} />
                                                         </button>
                                                     </div>
-                                                    <input
-                                                        type="text"
+                                                    <textarea
+                                                        ref={textareaRef}
                                                         placeholder="Type message..."
                                                         value={messageInput}
+                                                        rows={1}
                                                         onChange={(e) =>
                                                             setMessageInput(e.target.value)
                                                         }
-                                                        onKeyDown={(e) =>
-                                                            e.key === 'Enter' && handleSend()
-                                                        }
-                                                        disabled={isUploading}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                e.preventDefault();
+                                                                handleSend();
+                                                            }
+                                                        }}
+                                                        className="chat-textarea"
                                                     />
                                                     <button
                                                         className="send-btn"
                                                         onClick={handleSend}
-                                                        disabled={
-                                                            isUploading ||
-                                                            isSending ||
-                                                            !messageInput.trim()
-                                                        }
+                                                        disabled={!messageInput.trim()}
                                                     >
-                                                        {isSending ? (
-                                                            <Loader2
-                                                                className="animate-spin"
-                                                                size={20}
-                                                            />
-                                                        ) : (
-                                                            <Send size={20} />
-                                                        )}
+                                                        <Send size={20} />
                                                     </button>
                                                 </>
                                             )}
@@ -1961,8 +2028,13 @@ const MessagesPage = () => {
             />
 
             <FilePreviewModal
-                selectedUploadFile={selectedUploadFile}
-                setSelectedUploadFile={setSelectedUploadFile}
+                selectedUploadFile={
+                    selectedUploadFileChatId === selectedChatId ? selectedUploadFile : null
+                }
+                setSelectedUploadFile={(val) => {
+                    setSelectedUploadFile(val);
+                    if (!val) setSelectedUploadFileChatId(null);
+                }}
                 isViewOnceUpload={isViewOnceUpload}
                 setIsViewOnceUpload={setIsViewOnceUpload}
                 confirmUpload={confirmUpload}

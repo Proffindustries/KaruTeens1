@@ -75,23 +75,26 @@ const PostManagementTab = () => {
     const { showToast } = useToast();
     const [isProcessing, setIsProcessing] = useState(null); // Track post ID being processed
 
-    const fetchData = React.useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const res = await api.get('/posts', { params: { ...filters } });
-            setPosts(res.data.posts || res.data || []);
-        } catch (error) {
-            console.error('Failed to load posts:', error);
-            setPosts([]);
-            showToast('Failed to load posts', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [filters, showToast]);
+    const fetchData = React.useCallback(
+        async (searchParams) => {
+            setIsLoading(true);
+            try {
+                const res = await api.get('/posts', { params: searchParams });
+                setPosts(res.data.posts || res.data || []);
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+                setPosts([]);
+                showToast('Failed to load posts', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [showToast],
+    );
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchData(filters);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -303,6 +306,7 @@ const PostManagementTab = () => {
     };
 
     const formatEngagementRate = (rate) => {
+        if (rate == null || isNaN(rate)) return '0.0%';
         return `${rate.toFixed(1)}%`;
     };
 

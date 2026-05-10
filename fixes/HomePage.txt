@@ -1,0 +1,16 @@
+# HomePage.jsx
+
+## NEED TO DO
+- useEffect has location in deps but only uses location.state — effect re-runs on EVERY location change, causing redirect loop
+- Social media icon links use href='#' — navigate to current page
+- Redirect logic forces authenticated users away from Home — explicitHome workaround is fragile
+- No lazy loading for hero image — blocks render on slow connections
+
+## CAN DO
+- framer-motion imported for two simple animations — use CSS keyframes instead to save bundle
+- Hero stats are hardcoded decorative text — not driven by real data
+- FAQ content hardcoded — fetch from CMS
+
+## MAY DO
+- Add scroll-triggered animations for feature cards
+- Social links should point to real profiles

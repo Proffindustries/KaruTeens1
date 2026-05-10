@@ -71,17 +71,26 @@ export const useCreateGroup = () => {
 };
 
 // Send a message
-export const useSendMessage = (chatId) => {
+export const useSendMessage = () => {
     const queryClient = useQueryClient();
     const { showToast } = useToast();
     const { user } = useAuthContext();
 
     return useMutation({
-        mutationFn: async (messageData) => {
-            const { data } = await api.post(`/messages/${chatId}/messages`, messageData);
-            return data;
+        mutationFn: async ({ chatId, content, attachment_url, attachment_type, reply_to_id, is_view_once, location, contact }) => {
+            const { data } = await api.post(`/messages/${chatId}/messages`, {
+                content,
+                attachment_url,
+                attachment_type,
+                reply_to_id,
+                is_view_once,
+                location,
+                contact
+            });
+            return { ...data, chatId };
         },
-        onMutate: async (newMessage) => {
+        onMutate: async (variables) => {
+            const { chatId } = variables;
             // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
             await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
 
@@ -91,15 +100,17 @@ export const useSendMessage = (chatId) => {
             // Optimistically update to the new value
             const optimisticMessage = {
                 id: `temp-${Date.now()}`,
-                content: newMessage.content,
-                attachment_url: newMessage.attachment_url,
-                attachment_type: newMessage.attachment_type,
+                content: variables.content,
+                attachment_url: variables.attachment_url,
+                attachment_type: variables.attachment_type,
+                location: variables.location,
+                contact: variables.contact,
                 created_at: new Date().toISOString(),
                 is_me: true,
                 is_deleted: false,
                 reactions: [],
-                reply_to: newMessage.reply_to_id
-                    ? { id: newMessage.reply_to_id, username: user?.username || 'Unknown' }
+                reply_to: variables.reply_to_id
+                    ? { id: variables.reply_to_id, username: user?.username || 'Unknown' }
                     : null,
                 read_at: null,
                 viewed_at: null,
@@ -111,14 +122,15 @@ export const useSendMessage = (chatId) => {
             });
 
             // Return a context object with the snapshotted value
-            return { previousMessages };
+            return { previousMessages, chatId };
         },
-        onError: (err, newMessage, context) => {
+        onError: (err, variables, context) => {
             // If the mutation fails, use the context returned from onMutate to roll back
-            queryClient.setQueryData(['messages', chatId], context.previousMessages);
+            queryClient.setQueryData(['messages', context.chatId], context.previousMessages);
             showToast(err.response?.data?.error || 'Failed to send message', 'error');
         },
-        onSettled: () => {
+        onSettled: (data, error, variables, context) => {
+            const chatId = context?.chatId || variables.chatId;
             // Always refetch after error or success:
             queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
             queryClient.invalidateQueries({ queryKey: ['chats'] }); // Update last message in chat list

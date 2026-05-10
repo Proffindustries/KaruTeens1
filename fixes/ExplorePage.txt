@@ -1,0 +1,18 @@
+# ExplorePage.jsx
+
+## NEED TO DO
+- Array index used as key in nested maps
+- No loading state for trending topics — no indicator shown to user
+- No error handling for useTrendingTopics — undefined silently dropped
+- Static 270+ line categories/links data structure recreated every render
+
+## CAN DO
+- 20 individual lucide-react icon imports
+- Component re-renders on every state change — no memoization
+- Link components have no prefetching
+- Avatar with size='3xl' has no lazy loading
+
+## MAY DO
+- No search/filter bar
+- No recently visited section
+- No keyboard navigation shortcuts

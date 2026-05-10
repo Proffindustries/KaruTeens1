@@ -43,6 +43,13 @@ const Avatar = React.memo(({ src, name, size = 'md', className = '', onClick }) 
         minHeight: `${dimension}px`,
     };
 
+    const cacheBustedSrc =
+        src && src.startsWith('http')
+            ? src.includes('?')
+                ? `${src}&_a=${Date.now()}`
+                : `${src}?_a=${Date.now()}`
+            : src;
+
     if (!src || imgError) {
         return (
             <div
@@ -57,14 +64,15 @@ const Avatar = React.memo(({ src, name, size = 'md', className = '', onClick }) 
 
     return (
         <img
-            src={src}
+            src={cacheBustedSrc}
             alt={name || 'Avatar'}
             className={`avatar-img ${className}`}
             style={style}
+            crossOrigin="anonymous"
             onError={() => setImgError(true)}
             onLoad={() => setImgError(false)}
             onClick={onClick}
-            loading="lazy" // Add native lazy loading
+            loading="lazy"
         />
     );
 });

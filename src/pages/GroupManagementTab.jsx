@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/client';
 
 import {
@@ -46,122 +46,127 @@ const GroupManagementTab = () => {
 
     const { showToast } = useToast();
 
+    const loadGroups = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const groupsRes = await api.get('/groups');
+            setGroups(groupsRes.data);
+        } catch (error) {
+            console.error('Failed to load groups:', error);
+            setGroups([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         let isMounted = true;
 
-        const loadGroups = async () => {
-            setIsLoading(true);
-            try {
-                // Fetch real data from API
-                const groupsRes = await api.get('/groups');
-                if (isMounted) {
-                    setGroups(groupsRes.data);
-                }
-            } catch (error) {
-                console.error('Failed to load groups:', error);
-                if (isMounted) {
-                    setGroups([]); // Empty state on error
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        loadGroups();
+        loadGroups()
+            .then(() => {})
+            .catch(() => {});
 
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [loadGroups]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedGroups.length === 0) {
             showToast('Please select groups first', 'warning');
             return;
         }
 
         if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedGroups.length} groups? This action cannot be undone.`)) {
-                // Simulate bulk delete
+            if (!confirm(`Delete ${selectedGroups.length} groups? This action cannot be undone.`))
+                return;
+            try {
+                await Promise.all(selectedGroups.map((id) => api.delete(`/groups/${id}`)));
                 setGroups((prev) => prev.filter((g) => !selectedGroups.includes(g.id)));
                 setSelectedGroups([]);
                 setBulkAction('');
                 showToast('Groups deleted', 'success');
+            } catch (err) {
+                showToast('Failed to delete some groups', 'error');
             }
         } else if (bulkAction === 'make_public') {
-            setGroups((prev) =>
-                prev.map((g) => (selectedGroups.includes(g.id) ? { ...g, is_private: false } : g)),
-            );
-            setSelectedGroups([]);
-            setBulkAction('');
-            showToast('Groups made public', 'success');
+            try {
+                await Promise.all(
+                    selectedGroups.map((id) => api.put(`/groups/${id}`, { is_private: false })),
+                );
+                setGroups((prev) =>
+                    prev.map((g) =>
+                        selectedGroups.includes(g.id) ? { ...g, is_private: false } : g,
+                    ),
+                );
+                setSelectedGroups([]);
+                setBulkAction('');
+                showToast('Groups made public', 'success');
+            } catch (err) {
+                showToast('Failed to update some groups', 'error');
+            }
         } else if (bulkAction === 'make_private') {
-            setGroups((prev) =>
-                prev.map((g) => (selectedGroups.includes(g.id) ? { ...g, is_private: true } : g)),
-            );
-            setSelectedGroups([]);
-            setBulkAction('');
-            showToast('Groups made private', 'success');
+            try {
+                await Promise.all(
+                    selectedGroups.map((id) => api.put(`/groups/${id}`, { is_private: true })),
+                );
+                setGroups((prev) =>
+                    prev.map((g) =>
+                        selectedGroups.includes(g.id) ? { ...g, is_private: true } : g,
+                    ),
+                );
+                setSelectedGroups([]);
+                setBulkAction('');
+                showToast('Groups made private', 'success');
+            } catch (err) {
+                showToast('Failed to update some groups', 'error');
+            }
         }
     };
 
-    const handleAddMember = (groupId, username) => {
-        setGroups((prev) =>
-            prev.map((g) => {
-                if (g.id === groupId) {
-                    return {
-                        ...g,
-                        members: [...g.members, `user_${Math.random().toString(36).substr(2, 9)}`],
-                        member_count: g.member_count + 1,
-                    };
-                }
-                return g;
-            }),
-        );
-        showToast(`Added ${username} to group`, 'success');
+    const handleAddMember = async (groupId, username) => {
+        try {
+            await api.post(`/groups/${groupId}/members`, { username });
+            showToast(`Added ${username} to group`, 'success');
+            loadGroups();
+        } catch (err) {
+            showToast('Failed to add member', 'error');
+        }
     };
 
-    const handleRemoveMember = (groupId, memberId) => {
-        setGroups((prev) =>
-            prev.map((g) => {
-                if (g.id === groupId) {
-                    return {
-                        ...g,
-                        members: g.members.filter((id) => id !== memberId),
-                        member_count: g.member_count - 1,
-                    };
-                }
-                return g;
-            }),
-        );
-        showToast('Member removed from group', 'info');
+    const handleRemoveMember = async (groupId, memberId) => {
+        try {
+            await api.delete(`/groups/${groupId}/members/${memberId}`);
+            showToast('Member removed from group', 'info');
+            loadGroups();
+        } catch (err) {
+            showToast('Failed to remove member', 'error');
+        }
     };
 
-    const handleMakeAdmin = (groupId, memberId) => {
-        setGroups((prev) =>
-            prev.map((g) => {
-                if (g.id === groupId) {
-                    return {
-                        ...g,
-                        admins: [...g.admins, memberId],
-                    };
-                }
-                return g;
-            }),
-        );
-        showToast('User promoted to admin', 'success');
+    const handleMakeAdmin = async (groupId, memberId) => {
+        try {
+            await api.put(`/groups/${groupId}/members/${memberId}`, { role: 'admin' });
+            showToast('User promoted to admin', 'success');
+            loadGroups();
+        } catch (err) {
+            showToast('Failed to promote user', 'error');
+        }
     };
 
-    const handleDeleteGroup = (groupId) => {
-        if (confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+    const handleDeleteGroup = async (groupId) => {
+        if (!confirm('Are you sure you want to delete this group? This action cannot be undone.'))
+            return;
+        try {
+            await api.delete(`/groups/${groupId}`);
             setGroups((prev) => prev.filter((g) => g.id !== groupId));
             showToast('Group deleted', 'success');
+        } catch (err) {
+            showToast('Failed to delete group', 'error');
         }
     };
 
@@ -179,19 +184,15 @@ const GroupManagementTab = () => {
         }
     };
 
-    const [userCache, setUserCache] = useState({});
+    const userCacheRef = useRef({});
 
-    const getMemberInfo = async (groupId, memberId) => {
-        // Check cache first
-        if (userCache[memberId]) {
-            return userCache[memberId];
+    const getMemberInfo = async (memberId) => {
+        if (userCacheRef.current[memberId]) {
+            return userCacheRef.current[memberId];
         }
-
-        // Fetch from API if not in cache
         try {
             const { data } = await api.get(`/users/${memberId}`);
-            // Update cache
-            setUserCache((prev) => ({ ...prev, [memberId]: data }));
+            userCacheRef.current[memberId] = data;
             return data;
         } catch (error) {
             console.error(`Failed to fetch user ${memberId}:`, error);
@@ -261,7 +262,7 @@ const GroupManagementTab = () => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => {}}>
+                    <button className="refresh-btn" onClick={() => loadGroups()}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>

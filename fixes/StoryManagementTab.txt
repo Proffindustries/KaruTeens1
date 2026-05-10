@@ -1,0 +1,21 @@
+# StoryManagementTab.jsx
+
+## NEED TO DO
+- Bulk actions only update local state — NO actual API calls
+- No error boundary for confirmModeration — if throws, modal stays open with no feedback
+- Individual story deletion also only mutates local state
+- Quick approve/reject in table calls confirmModeration directly with hardcoded reasons — bypasses modal
+- Stale closure in useEffect — filters object compared by reference, re-fetches on every filter change
+- User Stats/Highlights/Templates modals render empty mock arrays — not real data
+
+## CAN DO
+- 57 lucide-react icons imported — massive bundle overhead
+- No React.memo on table rows
+- handleFilterChange creates new filter object on every keystroke — re-fetch on every character
+- Refresh button onClick is no-op
+- No useCallback on any handler
+- selectAllStories doesn't guard against stories.length === 0
+
+## MAY DO
+- Import/Export buttons have no onClick handlers
+- No confirmation dialog for inline approve/reject

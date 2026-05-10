@@ -1,97 +1,107 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
+import { useUpload } from '../context/UploadContext.jsx';
 import safeLocalStorage from '../utils/storage.js';
 import imageCompression from 'browser-image-compression';
+
+const withRetry = async (fn, retries = 3, delay = 1000) => {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (axios.isCancel(err)) throw err;
+            if (i >= retries) throw err;
+            await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, i)));
+        }
+    }
+};
+
+const pollJobStatus = async (jobId, maxAttempts = 60) => {
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            const { data } = await api.get(`/media/status/${jobId}`);
+            if (data.status === 'completed') return data;
+            if (data.status === 'failed') throw new Error(data.error || 'Optimization failed');
+        } catch (err) {
+            if (err.message.includes('failed')) throw err;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+    }
+    throw new Error('Optimization timed out');
+};
+
+const uploadToR2 = async (file, onProgress = null, cancelToken = null) => {
+    const { data } = await withRetry(() =>
+        api.post(
+            '/media/signature/r2',
+            { file_name: file.name, content_type: file.type },
+            { cancelToken },
+        ),
+    );
+    await withRetry(() =>
+        axios.put(data.url, file, {
+            headers: { 'Content-Type': file.type },
+            onUploadProgress: onProgress
+                ? (pe) =>
+                      pe.total && onProgress(Math.round((pe.loaded * 100) / pe.total), pe.loaded)
+                : undefined,
+            cancelToken,
+        }),
+    );
+    return { public_url: data.public_url, final_public_url: data.final_public_url };
+};
 
 export const useMediaUpload = () => {
     const [isUploading, setIsUploading] = useState(false);
     const { showToast } = useToast();
+    const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } =
+        useUpload();
 
-    // ── Retry helper ─────────────────────────────────────────────────────────
-    const withRetry = async (fn, retries = 3, delay = 1000) => {
-        try {
-            return await fn();
-        } catch (err) {
-            if (retries <= 0 || axios.isCancel(err)) throw err;
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            return withRetry(fn, retries - 1, delay * 2);
-        }
-    };
-
-    const pollJobStatus = async (jobId, maxAttempts = 60) => {
-        for (let i = 0; i < maxAttempts; i++) {
-            try {
-                const { data } = await api.get(`/media/status/${jobId}`);
-                if (data.status === 'completed') return data;
-                if (data.status === 'failed') throw new Error(data.error || 'Optimization failed');
-            } catch (err) {
-                if (err.message.includes('failed')) throw err;
-                // Job might not be in DB yet, ignore and continue
-            }
-            await new Promise((r) => setTimeout(r, 2000)); // Poll every 2s
-        }
-        throw new Error('Optimization timed out');
-    };
-
-    // ── Upload a (possibly transformed) file to R2 via presigned URL ─────────
-    const uploadToR2 = async (file, onProgress = null, cancelToken = null) => {
-        const {
-            data: { url, public_url, final_public_url },
-        } = await withRetry(() =>
-            api.post(
-                '/media/signature/r2',
-                { file_name: file.name, content_type: file.type },
-                { cancelToken },
-            ),
-        );
-
-        await withRetry(() =>
-            axios.put(url, file, {
-                headers: { 'Content-Type': file.type },
-                onUploadProgress: (progressEvent) => {
-                    if (onProgress && progressEvent.total) {
-                        onProgress(
-                            Math.round((progressEvent.loaded * 100) / progressEvent.total),
-                            progressEvent.loaded,
-                        );
-                    }
-                },
-                cancelToken,
-            }),
-        );
-
-        return { public_url, final_public_url };
-    };
-
-    // ── Images: compress → WebP → R2 ─────────────────────────────────────────
     const uploadImage = async (file, onProgress = null, cancelToken = null) => {
+        if (!file.type || !file.type.startsWith('image/')) {
+            showToast('Invalid file type. Only images are allowed.', 'error');
+            throw new Error('Invalid file type');
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            showToast('Image too large (Max 50MB)', 'error');
+            throw new Error('File too large');
+        }
         setIsUploading(true);
+        const uploadId = addUpload({ fileName: file.name, fileSize: file.size, type: 'image' });
         try {
-            const options = {
-                maxSizeMB: 0.5,
-                maxWidthOrHeight: 1600,
-                useWebWorker: true,
-                fileType: 'image/webp',
-                onProgress: (p) => onProgress && onProgress(Math.round(p * 0.5), 0),
-            };
+            let finalFile = file;
+            let finalName = file.name;
 
-            const compressed = await imageCompression(file, options);
-            const fileName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
-            const finalFile = new File([compressed], fileName, { type: 'image/webp' });
+            const isGif = file.type === 'image/gif' || file.name.match(/\.gif$/i);
+            const isWebp = file.type === 'image/webp' || file.name.match(/\.webp$/i);
+            const isSmall = file.size <= 1 * 1024 * 1024;
 
-            // Progress 50–100%: upload
+            if (!isGif && !isWebp && !isSmall) {
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 2000,
+                    useWebWorker: true,
+                    fileType: file.type === 'image/png' ? 'image/webp' : file.type,
+                };
+                const compressed = await imageCompression(file, options);
+                finalFile = compressed;
+            }
+
             const { final_public_url } = await uploadToR2(
                 finalFile,
-                onProgress ? (p, l) => onProgress(50 + Math.round(p / 2), l) : null,
+                (p, l) => {
+                    updateUploadProgress(uploadId, p, l);
+                    if (onProgress) onProgress(p, l);
+                },
                 cancelToken,
             );
-
+            completeUpload(uploadId, final_public_url);
             return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
-            console.error('Image upload error:', err);
+            failUpload(uploadId, err);
             showToast('Image upload failed', 'error');
             throw err;
         } finally {
@@ -99,39 +109,29 @@ export const useMediaUpload = () => {
         }
     };
 
-    // ── Videos: Upload raw -> Trigger async process -> Return raw URL immediately ──
     const uploadVideo = async (file, onProgress = null, cancelToken = null) => {
         const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
-        const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
-        const maxSizeMB = isPremium ? 1000 : 200;
-
+        const maxSizeMB = currentUser?.is_premium || currentUser?.role === 'premium' ? 1000 : 200;
         if (file.size > maxSizeMB * 1024 * 1024) {
             showToast(`Video too large (Max ${maxSizeMB}MB)`, 'error');
             throw new Error('File too large');
         }
-
         setIsUploading(true);
+        const uploadId = addUpload({ fileName: file.name, fileSize: file.size, type: 'video' });
         try {
-            // 1. Upload Raw to R2
-            const { public_url, final_public_url } = await uploadToR2(
+            const { final_public_url } = await uploadToR2(
                 file,
-                onProgress,
+                (p, l) => {
+                    updateUploadProgress(uploadId, p, l);
+                    if (onProgress) onProgress(p, l);
+                },
                 cancelToken,
             );
-
-            // 2. Trigger Server Processing (Fire-and-forget)
-            // We don't await this so the user can continue immediately
-            api.post('/media/process', {
-                temp_url: public_url,
-                media_type: 'video',
-                original_name: file.name,
-            }).catch((err) => console.error('Background optimization trigger failed:', err));
-
-            // Return the raw URL immediately for the post creation
+            completeUpload(uploadId, final_public_url);
             return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
-            console.error('Video upload error:', err);
+            failUpload(uploadId, err);
             showToast('Video upload failed', 'error');
             throw err;
         } finally {
@@ -139,39 +139,35 @@ export const useMediaUpload = () => {
         }
     };
 
-    // ── Audio: transcode (MP3 128kbps) → R2 ─────────────────────────────────
     const uploadAudio = async (file, onProgress = null, cancelToken = null) => {
         const currentUser = JSON.parse(safeLocalStorage.getItem('user') || 'null');
-        const isPremium = currentUser?.is_premium || currentUser?.role === 'premium';
-        const maxSizeMB = isPremium ? 200 : 50;
-
+        const maxSizeMB = currentUser?.is_premium || currentUser?.role === 'premium' ? 200 : 50;
         if (file.size > maxSizeMB * 1024 * 1024) {
             showToast(`Audio too large (Max ${maxSizeMB}MB)`, 'error');
             throw new Error('File too large');
         }
-
         setIsUploading(true);
+        const uploadId = addUpload({ fileName: file.name, fileSize: file.size, type: 'audio' });
         try {
             const { public_url, final_public_url } = await uploadToR2(
                 file,
-                onProgress,
+                (p, l) => {
+                    updateUploadProgress(uploadId, p, l);
+                    if (onProgress) onProgress(p, l);
+                },
                 cancelToken,
             );
-
             const { data } = await api.post('/media/process', {
                 temp_url: public_url,
                 media_type: file.name.includes('voice_note') ? 'voice_note' : 'audio',
                 original_name: file.name,
             });
-
-            if (file.name.includes('voice_note')) {
-                await pollJobStatus(data.job_id);
-            }
-
+            if (file.name.includes('voice_note')) await pollJobStatus(data.job_id);
+            completeUpload(uploadId, final_public_url);
             return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
-            console.error('Audio upload error:', err);
+            failUpload(uploadId, err);
             showToast('Audio upload failed', 'error');
             throw err;
         } finally {
@@ -179,15 +175,23 @@ export const useMediaUpload = () => {
         }
     };
 
-    // ── Documents / other files: straight to R2 (no transform) ──────────────
     const uploadFile = async (file, onProgress = null, cancelToken = null) => {
         setIsUploading(true);
+        const uploadId = addUpload({ fileName: file.name, fileSize: file.size, type: 'file' });
         try {
-            const { final_public_url } = await uploadToR2(file, onProgress, cancelToken);
+            const { final_public_url } = await uploadToR2(
+                file,
+                (p, l) => {
+                    updateUploadProgress(uploadId, p, l);
+                    if (onProgress) onProgress(p, l);
+                },
+                cancelToken,
+            );
+            completeUpload(uploadId, final_public_url);
             return final_public_url;
         } catch (err) {
             if (axios.isCancel(err)) throw err;
-            console.error('File upload error:', err);
+            failUpload(uploadId, err);
             showToast('File upload failed', 'error');
             throw err;
         } finally {
@@ -195,7 +199,6 @@ export const useMediaUpload = () => {
         }
     };
 
-    // ── Smart router: pick the right upload function by MIME type ───────────
     const uploadMedia = async (file, onProgress = null, cancelToken = null) => {
         if (file.type.startsWith('image/')) return uploadImage(file, onProgress, cancelToken);
         if (file.type.startsWith('video/')) return uploadVideo(file, onProgress, cancelToken);
@@ -203,32 +206,23 @@ export const useMediaUpload = () => {
         return uploadFile(file, onProgress, cancelToken);
     };
 
-    // ── Batch upload with concurrency control ────────────────────────────────
     const batchUpload = async (files, uploadFn, concurrency = 2) => {
-        const results = [];
-        const queue = [...files];
-
-        const processQueue = async () => {
+        const results = new Array(files.length).fill(null);
+        const queue = files.map((f, i) => ({ file: f, index: i }));
+        const next = async () => {
             if (queue.length === 0) return;
-            const item = queue.shift();
-            const promise = (async () => {
-                try {
-                    const result = await uploadFn(item);
-                    return { status: 'fulfilled', value: result, item };
-                } catch (reason) {
-                    return { status: 'rejected', reason, item };
-                }
-            })();
-            results.push(promise);
-            await promise;
-            if (queue.length > 0) await processQueue();
+            const { file, index } = queue.shift();
+            try {
+                const url = await uploadFn(file);
+                results[index] = { status: 'fulfilled', value: url, file };
+            } catch (reason) {
+                results[index] = { status: 'rejected', reason, file };
+            }
+            await next();
         };
-
-        const workers = Array.from({ length: Math.min(concurrency, files.length) }, () =>
-            processQueue(),
-        );
+        const workers = Array.from({ length: Math.min(concurrency, files.length) }, () => next());
         await Promise.all(workers);
-        return Promise.all(results);
+        return results;
     };
 
     return {
@@ -236,7 +230,7 @@ export const useMediaUpload = () => {
         uploadVideo,
         uploadAudio,
         uploadFile,
-        uploadMedia, // ← smart router, use this for new code
+        uploadMedia,
         isUploading,
         batchUpload,
     };

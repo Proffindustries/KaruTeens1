@@ -1,0 +1,17 @@
+# PagesPage.jsx
+
+## NEED TO DO
+- No dedicated error UI — failed fetch shows empty grid with no error message (only brief toast)
+- Empty state reads 'No pages found matching your search.' even when there are simply NO pages — misleading
+- CreatePageModal calls fetchPages on close even if create failed — unnecessary API call
+- No loading state for individual page cards — only text 'Loading pages...'
+
+## CAN DO
+- filteredPages runs .filter and .toLowerCase on every render for every page — memoize with useMemo
+- No pagination or infinite scroll
+- No React.memo on page card Link elements
+
+## MAY DO
+- No category-based filtering beyond search
+- No sorting options
+- No My Pages section

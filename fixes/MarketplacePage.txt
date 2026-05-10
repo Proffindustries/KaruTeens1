@@ -1,0 +1,19 @@
+# MarketplacePage.jsx
+
+## NEED TO DO
+- error from useMarketplaceItems destructured but NEVER used — API failure shows infinite loading or empty state with NO error
+- No error state UI at all
+- Ad insertion relies on index — ad position shifts when items change
+- loading state is plain text — no skeleton grid
+
+## CAN DO
+- CreateItemModal eagerly imported — lazy-load with React.lazy
+- No useCallback on category filter or search handlers
+- items.map re-computes entire grid every render — no memoization
+- AdComponent inserted at fixed index — may not be optimal for all screens
+
+## MAY DO
+- Search has 300ms debounce — good
+- Images use loading='lazy' — good
+- Could add price range filter
+- Could add infinite scroll

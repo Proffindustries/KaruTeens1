@@ -43,20 +43,64 @@ const RevisionManagementTab = () => {
         loadMaterials();
     }, [loadMaterials]);
 
+    const [editingMaterial, setEditingMaterial] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/revision-materials', {
-                ...formData,
-                year: Number(formData.year),
-                price: Number(formData.price),
-            });
-            showToast('Material uploaded successfully!', 'success');
+            if (editingMaterial) {
+                await api.put(`/revision-materials/${editingMaterial.id}`, {
+                    ...formData,
+                    year: Number(formData.year),
+                    price: Number(formData.price),
+                });
+                showToast('Material updated successfully!', 'success');
+            } else {
+                await api.post('/revision-materials', {
+                    ...formData,
+                    year: Number(formData.year),
+                    price: Number(formData.price),
+                });
+                showToast('Material uploaded successfully!', 'success');
+            }
             setShowAddModal(false);
+            setEditingMaterial(null);
             loadMaterials();
         } catch (error) {
-            showToast('Failed to upload material', 'error');
+            showToast(
+                editingMaterial ? 'Failed to update material' : 'Failed to upload material',
+                'error',
+            );
         }
+    };
+
+    const handleEdit = (material) => {
+        setEditingMaterial(material);
+        setFormData({
+            title: material.title,
+            course_code: material.course_code,
+            category: material.category,
+            material_type: material.material_type || 'document',
+            school: material.school,
+            programme: material.programme || '',
+            year: material.year,
+            file_url: material.file_url,
+            price: material.price,
+            is_locked: material.is_locked,
+        });
+        setShowAddModal(true);
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            await api.delete(`/revision-materials/${id}`);
+            showToast('Material deleted', 'success');
+            loadMaterials();
+        } catch (error) {
+            showToast('Failed to delete material', 'error');
+        }
+        setShowDeleteConfirm(null);
     };
 
     return (
@@ -132,32 +176,83 @@ const RevisionManagementTab = () => {
                                 <th style={{ padding: '1rem', textAlign: 'left' }}>School</th>
                                 <th style={{ padding: '1rem', textAlign: 'left' }}>Price</th>
                                 <th style={{ padding: '1rem', textAlign: 'center' }}>Locked</th>
+                                <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {materials
-                                .filter((m) =>
-                                    m.title.toLowerCase().includes(filters.search.toLowerCase()),
-                                )
-                                .map((material) => (
-                                    <tr
-                                        key={material.id}
-                                        style={{ borderBottom: '1px solid #eee' }}
+                            {materials.filter((m) =>
+                                m.title.toLowerCase().includes(filters.search.toLowerCase()),
+                            ).length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={7}
+                                        style={{
+                                            padding: '2rem',
+                                            textAlign: 'center',
+                                            color: '#888',
+                                        }}
                                     >
-                                        <td style={{ padding: '1rem' }}>{material.title}</td>
-                                        <td style={{ padding: '1rem' }}>{material.course_code}</td>
-                                        <td style={{ padding: '1rem' }}>{material.category}</td>
-                                        <td style={{ padding: '1rem' }}>{material.school}</td>
-                                        <td style={{ padding: '1rem' }}>Ksh {material.price}</td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                            {material.is_locked ? (
-                                                <CheckSquare size={16} color="green" />
-                                            ) : (
-                                                <Square size={16} color="gray" />
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                        No materials found.
+                                    </td>
+                                </tr>
+                            ) : (
+                                materials
+                                    .filter((m) =>
+                                        m.title
+                                            .toLowerCase()
+                                            .includes(filters.search.toLowerCase()),
+                                    )
+                                    .map((material) => (
+                                        <tr
+                                            key={material.id}
+                                            style={{ borderBottom: '1px solid #eee' }}
+                                        >
+                                            <td style={{ padding: '1rem' }}>{material.title}</td>
+                                            <td style={{ padding: '1rem' }}>
+                                                {material.course_code}
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>{material.category}</td>
+                                            <td style={{ padding: '1rem' }}>{material.school}</td>
+                                            <td style={{ padding: '1rem' }}>
+                                                Ksh {material.price}
+                                            </td>
+                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                {material.is_locked ? (
+                                                    <CheckSquare size={16} color="green" />
+                                                ) : (
+                                                    <Square size={16} color="gray" />
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                <button
+                                                    onClick={() => handleEdit(material)}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        marginRight: '8px',
+                                                        color: '#3742fa',
+                                                    }}
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        setShowDeleteConfirm(material.id)
+                                                    }
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        color: '#ff4757',
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                            )}
                         </tbody>
                     </table>
                 )}
@@ -191,7 +286,11 @@ const RevisionManagementTab = () => {
                             overflowY: 'auto',
                         }}
                     >
-                        <h3 style={{ marginBottom: '1.5rem' }}>Upload Revision Material</h3>
+                        <h3 style={{ marginBottom: '1.5rem' }}>
+                            {editingMaterial
+                                ? 'Edit Revision Material'
+                                : 'Upload Revision Material'}
+                        </h3>
                         <form onSubmit={handleCreate}>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>
@@ -427,7 +526,10 @@ const RevisionManagementTab = () => {
                             >
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={() => {
+                                        setShowAddModal(false);
+                                        setEditingMaterial(null);
+                                    }}
                                     style={{
                                         padding: '0.5rem 1rem',
                                         background: '#ccc',
@@ -453,6 +555,69 @@ const RevisionManagementTab = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation */}
+            {showDeleteConfirm && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1001,
+                    }}
+                    onClick={() => setShowDeleteConfirm(null)}
+                >
+                    <div
+                        style={{
+                            background: 'white',
+                            padding: '2rem',
+                            borderRadius: '8px',
+                            maxWidth: '400px',
+                            textAlign: 'center',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 style={{ marginBottom: '1rem' }}>Delete Material</h3>
+                        <p style={{ marginBottom: '1.5rem', color: '#666' }}>
+                            Are you sure you want to delete this material? This action cannot be
+                            undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button
+                                onClick={() => setShowDeleteConfirm(null)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    background: '#ccc',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDelete(showDeleteConfirm)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    background: '#ff4757',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

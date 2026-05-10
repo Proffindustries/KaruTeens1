@@ -14,6 +14,8 @@ import {
     Shield,
     Image,
     X,
+    Repeat2,
+    Calendar,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
@@ -52,7 +54,7 @@ const getVideoThumbnail = (url) => {
             let thumbUrl = url.replace(partToRepl, `${partToRepl}f_auto,q_auto,so_1,w_1080/`);
             thumbUrl = thumbUrl.replace(/\.[^/.]+$/, '.jpg');
             return thumbUrl;
-        } catch (e) {
+        } catch {
             return null;
         }
     }
@@ -71,10 +73,10 @@ const getFileMeta = (url) => {
     return { label: 'Document', icon: FileText, color: '#6c757d', type: 'default' };
 };
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, onReport, defaultOpen = false }) => {
     const postId = post.id;
     const navigate = useNavigate();
-    const [showComments, setShowComments] = useState(false);
+    const [showComments, setShowComments] = useState(defaultOpen);
     const [commentText, setCommentText] = useState('');
     const [commentMedia, setCommentMedia] = useState(null);
     const [showStickerPicker, setShowStickerPicker] = useState(false);
@@ -89,16 +91,17 @@ const PostCard = ({ post }) => {
     const commentInputRef = useRef(null);
 
     const isOwner = currentUser?.id === post.author_id || currentUser?.username === post.user;
-    const cardRef = React.useRef(null);
-    const menuRef = React.useRef(null);
+    const cardRef = useRef(null);
+    const menuRef = useRef(null);
 
     const [isLiked, setIsLiked] = useState(post.is_liked);
     const [likesCount, setLikesCount] = useState(post.likes || 0);
     const [commentsCount, setCommentsCount] = useState(post.comments || 0);
+    const [shareCount, setShareCount] = useState(post.share_count || 0);
 
-    const [impressionLogged, setImpressionLogged] = React.useState(false);
+    const [impressionLogged, setImpressionLogged] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (post.is_sponsored && !impressionLogged && cardRef.current) {
             const observer = new IntersectionObserver(
                 ([entry]) => {
@@ -124,19 +127,20 @@ const PostCard = ({ post }) => {
                 creative_id: post.ad_id,
                 event_type: 'click',
             });
-        } catch (err) {
-            console.error('Failed to log ad click:', err);
+        } catch (e) {
+            console.warn('Ad tracker failed:', e);
         }
         if (post.cta_url) {
             window.open(post.cta_url, '_blank');
         }
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         setIsLiked(post.is_liked);
         setLikesCount(post.likes);
         setCommentsCount(post.comments);
-    }, [post.is_liked, post.likes, post.comments]);
+        setShareCount(post.share_count || 0);
+    }, [post.is_liked, post.likes, post.comments, post.share_count]);
 
     const { mutate: likePost } = useLikePost();
     const { mutate: unlikePost } = useUnlikePost();
@@ -174,7 +178,7 @@ const PostCard = ({ post }) => {
         }
     }, [isLiked, likesCount, postId, likePost, unlikePost, showToast]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!showComments) return;
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -186,7 +190,7 @@ const PostCard = ({ post }) => {
         return () => observer.disconnect();
     }, [showComments]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleClickOutside = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
         };
@@ -201,12 +205,11 @@ const PostCard = ({ post }) => {
     }, [postId, hidePostPersistently]);
 
     const handleReportPost = useCallback(() => {
-        const reason = prompt(
-            'Why are you reporting this post? (spam, harassment, inappropriate, abuse, violence, misinformation, other)',
-        );
-        if (reason) reportPost({ postId, reason, description: null });
         setShowMenu(false);
-    }, [postId, reportPost]);
+        if (onReport) {
+            onReport(post);
+        }
+    }, [onReport, post]);
 
     const handleDeletePost = useCallback(() => {
         if (window.confirm('Are you sure you want to delete this post?')) deletePost(postId);
@@ -234,6 +237,7 @@ const PostCard = ({ post }) => {
         if (navigator.share) {
             try {
                 await navigator.share(shareData);
+                setShareCount((c) => c + 1);
             } catch (err) {
                 if (err.name !== 'AbortError') handleCopyLink();
             }
@@ -252,8 +256,6 @@ const PostCard = ({ post }) => {
         async (e, customStickerUrl = null) => {
             if (e?.preventDefault) e.preventDefault();
             if (!commentText.trim() && !commentMedia && !customStickerUrl) return;
-            const previousCount = commentsCount;
-            setCommentsCount(previousCount + 1);
             setIsSubmittingComment(true);
             try {
                 let uploadedUrl = customStickerUrl;
@@ -277,13 +279,12 @@ const PostCard = ({ post }) => {
                 setShowStickerPicker(false);
                 if (commentInputRef.current) commentInputRef.current.style.height = 'inherit';
             } catch (error) {
-                setCommentsCount(previousCount);
                 showToast('Failed to post comment', 'error');
             } finally {
                 setIsSubmittingComment(false);
             }
         },
-        [commentText, commentMedia, commentsCount, postId, addCommentAsync, uploadMedia, showToast],
+        [commentText, commentMedia, postId, addCommentAsync, uploadMedia, showToast],
     );
 
     const handleMediaSelect = useCallback((e) => {
@@ -317,10 +318,9 @@ const PostCard = ({ post }) => {
                     mediaUrl: uploadedUrl,
                     mediaType,
                 });
-            } catch (error) {
+            } catch {
                 setCommentsCount(previousCount);
                 showToast('Failed to post reply', 'error');
-                throw error;
             }
         },
         [commentsCount, postId, addCommentAsync, uploadMedia, showToast],
@@ -397,6 +397,8 @@ const PostCard = ({ post }) => {
         [comments, organizeComments],
     );
 
+    const isScheduled = post.status === 'scheduled';
+
     if (isHidden) {
         return (
             <div className="post-card card post-hidden-overlay">
@@ -433,6 +435,11 @@ const PostCard = ({ post }) => {
                                 <Link to={`/profile/${post.user}`} className="username-link">
                                     {post.user}
                                 </Link>
+                            )}
+                            {isScheduled && (
+                                <span className="scheduled-chip">
+                                    <Calendar size={12} /> Scheduled
+                                </span>
                             )}
                             {post.group_name && (
                                 <>
@@ -600,22 +607,34 @@ const PostCard = ({ post }) => {
                     {post.media_urls &&
                         post.media_urls.length > 0 &&
                         (() => {
-                            const videoRegex = /\.(mp4|webm|mov)(\?|$)/i;
-                            const imageRegex = /\.(jpg|jpeg|png|gif|webp|avif|svg)(\?|$)/i;
-                            const docRegex = /\.(pdf|xls|xlsx|doc|docx|ppt|pptx)(\?|$)/i;
-                            const audioRegex = /\.(mp3|wav|ogg|m4a|webm)(\?|$)/i;
-                            const featuredVideo = post.media_urls.find((u) => u.match(videoRegex));
+                            const videoRegex = /\.(mp4|webm|mov|avi|mkv|3gp|ts|mts|flv)([?&-]|$)/i;
+                            const imageRegex = /\.(jpg|jpeg|png|gif|webp|avif|svg)([?&-]|$)/i;
+                            const docRegex = /\.(pdf|xls|xlsx|doc|docx|ppt|pptx)([?&-]|$)/i;
+                            const audioRegex = /\.(mp3|wav|ogg|m4a)([?&-]|$)/i;
+                            const featuredVideo = post.media_urls.find(
+                                (u) => u.match(videoRegex) || post.post_type === 'video',
+                            );
                             const remainingMedia = post.media_urls.filter(
                                 (u) => u !== featuredVideo,
                             );
-                            const images = remainingMedia.filter(
-                                (u) =>
-                                    u.match(imageRegex) ||
-                                    (!u.match(docRegex) &&
-                                        !u.match(videoRegex) &&
-                                        !u.match(audioRegex)),
+                            const featuredAudio = remainingMedia.find(
+                                (u) => u.match(audioRegex) || post.post_type === 'audio',
                             );
-                            const documents = remainingMedia.filter((u) => u.match(docRegex));
+                            const remainingMedia2 = remainingMedia.filter(
+                                (u) => u !== featuredAudio,
+                            );
+                            const documents = remainingMedia2.filter(
+                                (u) => u.match(docRegex) || post.post_type === 'file',
+                            );
+                            const images = remainingMedia2.filter(
+                                (u) =>
+                                    !documents.includes(u) &&
+                                    (u.match(imageRegex) ||
+                                        (!u.match(videoRegex) &&
+                                            !u.match(audioRegex) &&
+                                            post.post_type !== 'video' &&
+                                            post.post_type !== 'audio')),
+                            );
 
                             return (
                                 <div className="post-media-container">
@@ -633,6 +652,21 @@ const PostCard = ({ post }) => {
                                             </div>
                                         </div>
                                     )}
+                                    {featuredAudio && (
+                                        <div
+                                            className="audio-container"
+                                            style={{ padding: '1rem' }}
+                                        >
+                                            <CustomAudioPlayer
+                                                src={featuredAudio}
+                                                filename={
+                                                    featuredAudio.split('/').pop()?.split('?')[0] ||
+                                                    'Audio'
+                                                }
+                                                id={featuredAudio}
+                                            />
+                                        </div>
+                                    )}
                                     {images.length > 0 && (
                                         <div
                                             className={`image-grid ${images.length > 1 ? 'grid-layout' : ''}`}
@@ -648,6 +682,7 @@ const PostCard = ({ post }) => {
                                                         )}
                                                         alt="Post media"
                                                         loading="lazy"
+                                                        crossOrigin="anonymous"
                                                         className="image-grid-img"
                                                     />
                                                     {idx === 2 && images.length > 3 && (
@@ -673,6 +708,7 @@ const PostCard = ({ post }) => {
                                                                 '?page=1'
                                                             }
                                                             alt="PDF Preview"
+                                                            crossOrigin="anonymous"
                                                             className="pdf-thumb-img"
                                                         />
                                                         <span className="pdf-badge">PDF</span>
@@ -721,6 +757,7 @@ const PostCard = ({ post }) => {
                         <span onClick={() => setShowComments(!showComments)}>
                             {commentsCount} Comments
                         </span>
+                        <span>{shareCount} Shares</span>
                     </div>
                     <div className="post-actions-divider" />
                     <div className="post-actions">
@@ -880,16 +917,22 @@ const PostCard = ({ post }) => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
 
 export default React.memo(PostCard, (prev, next) => {
+    const p = prev.post;
+    const n = next.post;
     return (
-        prev.post.id === next.post.id &&
-        prev.post.likes === next.post.likes &&
-        prev.post.comments === next.post.comments &&
-        prev.post.is_liked === next.post.is_liked &&
-        prev.post.is_saved === next.post.is_saved
+        p.id === n.id &&
+        p.likes === n.likes &&
+        p.comments === n.comments &&
+        p.share_count === n.share_count &&
+        p.is_liked === n.is_liked &&
+        p.is_saved === n.is_saved &&
+        p.content === n.content &&
+        p.status === n.status
     );
 });

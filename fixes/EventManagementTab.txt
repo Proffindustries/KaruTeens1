@@ -1,0 +1,23 @@
+# EventManagementTab.jsx
+
+## NEED TO DO
+- Calendar view is placeholder with empty grid — dead feature
+- handleAddEvent and handleEditEvent duplicate ~80 lines of date/time logic
+- handleBulkAction calls events.find inside Promise.all.map — O(n*m) with no hash map
+- No confirmation dialog for bulk publish/cancel/visibility changes (only delete has confirm)
+- No pagination — all events loaded at once
+- getDaysUntilEvent called 4 times per event row
+- Export/Import/Analytics buttons have no onClick handlers — dead UI
+
+## CAN DO
+- 42 lucide-react icons imported — massive bundle impact
+- 1486-line component — split into smaller components
+- No virtualization in event table
+- No debounce on search filter
+- confirm() blocks main thread
+- handleBulkAction uses Promise.all with no partial-failure handling
+
+## MAY DO
+- No drag-and-drop for event reordering
+- No inline editing
+- No ability to duplicate events

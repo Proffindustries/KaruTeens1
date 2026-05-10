@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
     X,
@@ -15,13 +15,16 @@ import {
     Check,
     Calendar,
     AlertCircle,
+    Bold,
+    Italic,
+    List,
+    Link2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CreatePostModal.css';
 import { useCreatePost, useTrendingTopics } from '../hooks/useContent';
 import { useMediaUpload } from '../hooks/useMedia.js';
-import { useUpload } from '../context/UploadContext.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from './Avatar.jsx';
@@ -46,6 +49,79 @@ const CreatePostModal = React.memo(
         const videoInputRef = useRef(null);
         const audioInputRef = useRef(null);
         const documentInputRef = useRef(null);
+
+        // Draft auto-save to localStorage
+        const DRAFT_KEY = 'createPostDraft';
+        const saveDraft = useCallback(() => {
+            try {
+                const draft = { text, audience, isAnonymous, isNsfw, scheduledDatetime };
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+            } catch {
+                /* localStorage unavailable */
+            }
+        }, [text, audience, isAnonymous, isNsfw, scheduledDatetime]);
+
+        useEffect(() => {
+            const timer = setTimeout(saveDraft, 2000);
+            return () => clearTimeout(timer);
+        }, [saveDraft]);
+
+        useEffect(() => {
+            if (isOpen && !text && !initialText) {
+                try {
+                    const saved = localStorage.getItem(DRAFT_KEY);
+                    if (saved) {
+                        const draft = JSON.parse(saved);
+                        if (draft.text) setText(draft.text);
+                        if (draft.audience) setAudience(draft.audience);
+                        if (draft.isAnonymous) setIsAnonymous(draft.isAnonymous);
+                        if (draft.isNsfw) setIsNsfw(draft.isNsfw);
+                        if (draft.scheduledDatetime) setScheduledDatetime(draft.scheduledDatetime);
+                    }
+                } catch {
+                    /* localStorage unavailable */
+                }
+            }
+        }, [isOpen, initialText, text]);
+
+        const clearDraft = useCallback(() => {
+            try {
+                localStorage.removeItem(DRAFT_KEY);
+            } catch {
+                /* localStorage unavailable */
+            }
+        }, []);
+
+        // Wrap resetForm to also clear draft
+        const originalResetForm = () => {
+            setText('');
+            setLocation(null);
+            setFiles([]);
+            setAudience(['all']);
+            setIsAnonymous(false);
+            setIsNsfw(false);
+            setScheduledDatetime('');
+            clearDraft();
+            onClose();
+        };
+
+        // Insert formatting around selected text
+        const insertFormatting = (prefix, suffix = '') => {
+            const textarea = document.querySelector('.post-textarea');
+            if (!textarea) return;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selected = text.substring(start, end);
+            const formatted = prefix + selected + (suffix || prefix);
+            setText(text.substring(0, start) + formatted + text.substring(end));
+            setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(
+                    start + prefix.length,
+                    start + prefix.length + selected.length,
+                );
+            }, 0);
+        };
 
         // Cleanup object URLs on unmount
         useEffect(() => {
@@ -73,8 +149,6 @@ const CreatePostModal = React.memo(
             });
         };
 
-        const { addUpload, updateUploadProgress, completeUpload, failUpload, setCancelToken } =
-            useUpload();
         const { uploadMedia, batchUpload } = useMediaUpload();
 
         const createPost = groupId
@@ -133,14 +207,6 @@ const CreatePostModal = React.memo(
 
             const cancelTokenSource = axios.CancelToken.source();
 
-            const uploadId = addUpload({
-                fileName: fileObj.name,
-                fileSize: fileObj.file.size,
-                type: fileObj.type === 'image' ? 'image' : 'file',
-            });
-
-            setCancelToken(uploadId, cancelTokenSource);
-
             setFiles((prev) =>
                 prev.map((f) =>
                     f.id === fileObj.id
@@ -150,17 +216,14 @@ const CreatePostModal = React.memo(
             );
 
             try {
-                let url;
                 const onProgress = (p, l) => {
-                    updateUploadProgress(uploadId, p, l);
                     setFiles((prev) =>
                         prev.map((f) => (f.id === fileObj.id ? { ...f, progress: p } : f)),
                     );
                 };
 
-                url = await uploadMedia(fileObj.file, onProgress, cancelTokenSource.token);
+                const url = await uploadMedia(fileObj.file, onProgress, cancelTokenSource.token);
 
-                completeUpload(uploadId, { url });
                 setFiles((prev) =>
                     prev.map((f) =>
                         f.id === fileObj.id
@@ -178,10 +241,8 @@ const CreatePostModal = React.memo(
             } catch (err) {
                 if (axios.isCancel(err)) {
                     console.log('Upload cancelled for file:', fileObj.name);
-                    // Don't fail the upload in context if it was explicitly cancelled
                     return null;
                 }
-                failUpload(uploadId, err);
                 setFiles((prev) =>
                     prev.map((f) =>
                         f.id === fileObj.id
@@ -219,16 +280,7 @@ const CreatePostModal = React.memo(
                 else postType = 'file';
             }
 
-            const resetForm = () => {
-                setText('');
-                setLocation(null);
-                setFiles([]);
-                setAudience(['all']);
-                setIsAnonymous(false);
-                setIsNsfw(false);
-                setScheduledDatetime('');
-                onClose();
-            };
+            const resetForm = originalResetForm;
 
             // Upload files with concurrency control and individual state tracking
             if (files.length > 0) {
@@ -535,6 +587,43 @@ const CreatePostModal = React.memo(
                                             disabled={isPosting}
                                             autoFocus
                                         ></textarea>
+                                        <div className="text-formatting-toolbar">
+                                            <button
+                                                type="button"
+                                                className="fmt-btn"
+                                                onClick={() => insertFormatting('**', '**')}
+                                                title="Bold"
+                                            >
+                                                <Bold size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="fmt-btn"
+                                                onClick={() => insertFormatting('*', '*')}
+                                                title="Italic"
+                                            >
+                                                <Italic size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="fmt-btn"
+                                                onClick={() => insertFormatting('- ')}
+                                                title="Bullet List"
+                                            >
+                                                <List size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="fmt-btn"
+                                                onClick={() => {
+                                                    const url = prompt('Enter URL:');
+                                                    if (url) insertFormatting('[', `](${url})`);
+                                                }}
+                                                title="Link"
+                                            >
+                                                <Link2 size={16} />
+                                            </button>
+                                        </div>
 
                                         {trending && trending.length > 0 && (
                                             <div className="trending-suggestions-mini">

@@ -1,0 +1,18 @@
+# GroupsPage.jsx
+
+## NEED TO DO
+- getGroupColor falls back to Math.random() for falsy groupId — random color every render causes flickering
+- No error state for useGroups hook failure — no error UI shown
+- EmptyState and CreateModal recreated as JSX variables every render
+- renderItem receives GroupCard as new React element every render — ListPage can't optimize
+- No React.memo on GroupCard
+- handleJoinGroup not wrapped in useCallback
+
+## CAN DO
+- GroupCard accepts navigate and handleJoinGroup as props — change every render
+- No lazy loading for CreateGroupModal
+- categories array recreated every render — hoist to module scope
+
+## MAY DO
+- Search input has 300ms debounce — good
+- Create modal auto-closes on success — good

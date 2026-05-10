@@ -8,7 +8,7 @@ import '../styles/EventDetailPage.css';
 const EventDetailPage = () => {
     const { eventId } = useParams();
     const navigate = useNavigate();
-    const { data: event, isLoading } = useEvent(eventId);
+    const { data: event, isLoading, isError } = useEvent(eventId);
     const { mutate: rsvpEvent } = useRSVPEvent();
     const { mutate: removeRSVP } = useRemoveRSVP();
     const { showToast } = useToast();
@@ -19,6 +19,18 @@ const EventDetailPage = () => {
             <div className="container" style={{ textAlign: 'center', paddingTop: '4rem' }}>
                 <Loader size={48} className="spin-anim" />
                 <p>Loading event...</p>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="container" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+                <h2>Failed to load event</h2>
+                <p>A network error occurred. Please try again.</p>
+                <button className="btn btn-outline" onClick={() => navigate('/events')}>
+                    Back to Events
+                </button>
             </div>
         );
     }
@@ -54,6 +66,9 @@ const EventDetailPage = () => {
             onSuccess: () => {
                 setCurrentRSVP(null);
                 showToast('RSVP removed', 'info');
+            },
+            onError: (err) => {
+                showToast(err.response?.data?.error || 'Failed to remove RSVP', 'error');
             },
         });
     };

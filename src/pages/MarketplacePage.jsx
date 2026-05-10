@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Search, Filter, PlusCircle, Tag, CheckCircle, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import '../styles/MarketplacePage.css';
-import CreateItemModal from '../components/CreateItemModal.jsx';
+
+const CreateItemModal = React.lazy(() => import('../components/CreateItemModal.jsx'));
 import AdComponent from '../components/AdComponent.jsx';
+import EmptyState from '../components/EmptyState';
 import { useMarketplaceItems } from '../hooks/useMarketplace';
 import useDebounce from '../hooks/useDebounce';
 
@@ -64,8 +66,28 @@ const MarketplacePage = () => {
 
             {/* Items Grid */}
             <div className="market-grid">
-                {isLoading ? (
-                    <div className="loading-state">Loading items...</div>
+                {error ? (
+                    <div className="error-state">
+                        <p>Failed to load marketplace items.</p>
+                        <button
+                            className="btn btn-primary btn-sm mt-2"
+                            onClick={() => window.location.reload()}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : isLoading ? (
+                    <div className="loading-state">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="market-item-card skeleton-card">
+                                <div className="item-image-container skeleton-image" />
+                                <div className="item-details">
+                                    <div className="skeleton-line skeleton-title" />
+                                    <div className="skeleton-line skeleton-meta" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : items?.length > 0 ? (
                     items.map((item, index) => (
                         <React.Fragment key={item.id}>
@@ -148,14 +170,17 @@ const MarketplacePage = () => {
                         </React.Fragment>
                     ))
                 ) : (
-                    <div className="empty-state">
-                        <Tag size={48} color="#ccc" />
-                        <p>No items found related to your search.</p>
-                    </div>
+                    <EmptyState
+                        icon={Tag}
+                        title="No items found"
+                        message="No items found related to your search."
+                    />
                 )}
             </div>
 
-            <CreateItemModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <Suspense fallback={null}>
+                <CreateItemModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            </Suspense>
         </div>
     );
 };

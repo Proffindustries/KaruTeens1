@@ -9,6 +9,7 @@ import { AudioProvider } from './context/AudioContext.jsx';
 import GlobalAudioPlayer from './components/GlobalAudioPlayer.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import StarBackground from './components/StarBackground.jsx';
 
 // Dynamically imported components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage.jsx'));
@@ -64,6 +65,7 @@ function App() {
             <AudioProvider>
                 <WebsocketProvider>
                     <ErrorBoundary>
+                        <StarBackground />
                         <Suspense
                             fallback={
                                 <div

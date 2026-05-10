@@ -1,10 +1,20 @@
-import React from 'react';
-import { Users, Target, Shield, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Target, Shield, Heart, ArrowUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../styles/AboutPage.css';
 import SEO from '../components/SEO';
 
 const AboutPage = () => {
+    const [showScrollTop, setShowScrollTop] = useState(false);
+
+    useEffect(() => {
+        const onScroll = () => setShowScrollTop(window.scrollY > 400);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
     return (
         <div className="container about-page">
             <SEO
@@ -136,6 +146,12 @@ const AboutPage = () => {
                     <span>The KaruTeens Development Team</span>
                 </div>
             </div>
+
+            {showScrollTop && (
+                <button className="scroll-top-fab" onClick={scrollToTop} aria-label="Scroll to top">
+                    <ArrowUp size={24} />
+                </button>
+            )}
         </div>
     );
 };

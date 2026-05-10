@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { Book, FileText, Video, Link as LinkIcon, Loader } from 'lucide-react';
 import AcademicFilters from '../components/AcademicFilters';
 import { MaterialSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 import '../styles/RevisionMaterialsPage.css';
 
 const REVISION_CATEGORIES = ['CAT', 'Exam', 'Past Paper'];
@@ -137,11 +138,11 @@ const RevisionMaterialsPage = () => {
                     ))}
                 </div>
             ) : materials.length === 0 ? (
-                <div className="empty-state card">
-                    <Book size={48} color="rgba(var(--primary), 0.3)" />
-                    <h3>No materials found</h3>
-                    <p>Try refining your search or filter criteria.</p>
-                </div>
+                <EmptyState
+                    icon={Book}
+                    title="No materials found"
+                    message="Try refining your search or filter criteria."
+                />
             ) : (
                 <div className="materials-grid">
                     {materials.map((material) => (

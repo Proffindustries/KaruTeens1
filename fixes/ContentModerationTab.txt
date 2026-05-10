@@ -1,0 +1,22 @@
+# ContentModerationTab.jsx
+
+## NEED TO DO
+- Filters object recreated on every keystroke — triggers API refetch on every filter change with no debounce
+- Refresh button onClick is empty function — dead UI
+- No empty state for moderation queue — blank list with '0 items'
+- No error boundary — API failure shows only toast
+- handleBulkAction has stale closure risk
+- getPercent uses Object.values.reduce every render
+
+## CAN DO
+- 30 lucide-react icons imported — consider tree-shaking or dynamic imports
+- No debounce on search — API call on every keystroke
+- Handlers recreated every render — should use useCallback
+- getPercent called repeatedly per render — memoize with useMemo
+- No client-side filtering — API refetched on every filter change
+- No pagination — all items loaded at once
+
+## MAY DO
+- No keyboard navigation for queue items
+- No batch select via shift-click
+- No sort options (newest, oldest, severity)

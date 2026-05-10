@@ -29,23 +29,32 @@ import { useToast } from '../context/ToastContext';
 const AnalyticsTab = () => {
     const [data, setData] = useState({ growth: [], content: [], reports: [] });
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(false);
     const [timeRange, setTimeRange] = useState('30d');
     const { showToast } = useToast();
 
     useEffect(() => {
-        const fetchAnalytics = async () => {
+        let mounted = true;
+        const load = async () => {
             setIsLoading(true);
+            setError(false);
             try {
-                const { data: analyticsData } = await api.get('/admin/analytics');
-                setData(analyticsData);
-            } catch (error) {
-                showToast('Failed to load analytics data', 'error');
+                const { data: analyticsData } = await api.get('/admin/analytics', {
+                    params: { range: timeRange },
+                });
+                if (mounted) setData(analyticsData);
+            } catch (err) {
+                if (mounted) setError(true);
+                if (mounted) showToast('Failed to load analytics data', 'error');
             } finally {
-                setIsLoading(false);
+                if (mounted) setIsLoading(false);
             }
         };
-        fetchAnalytics();
-    }, [showToast]);
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [showToast, timeRange]);
 
     if (isLoading) {
         return (
@@ -62,6 +71,48 @@ const AnalyticsTab = () => {
             >
                 <RefreshCw className="spin-anim" size={32} />
                 <p>Aggregating platform metrics...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '400px',
+                    gap: '1rem',
+                    color: 'var(--admin-text-muted)',
+                }}
+            >
+                <AlertTriangle size={32} color="var(--admin-danger)" />
+                <p>Failed to load analytics. Please try again.</p>
+                <button
+                    className="btn-primary"
+                    onClick={() => {
+                        const fetchAnalytics = async () => {
+                            setIsLoading(true);
+                            setError(false);
+                            try {
+                                const { data: analyticsData } = await api.get('/admin/analytics', {
+                                    params: { range: timeRange },
+                                });
+                                setData(analyticsData);
+                            } catch (err) {
+                                setError(true);
+                                showToast('Failed to load analytics data', 'error');
+                            } finally {
+                                setIsLoading(false);
+                            }
+                        };
+                        fetchAnalytics();
+                    }}
+                >
+                    <RefreshCw size={18} /> Retry
+                </button>
             </div>
         );
     }

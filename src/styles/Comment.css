@@ -254,3 +254,29 @@
 .reply-actions {
     position: relative;
 }
+
+/* ── Dark Mode: higher contrast comments ── */
+.dark .comment-main {
+    background: rgba(var(--surface), 0.9);
+    border: 1px solid rgba(var(--border), 0.4);
+}
+
+.dark .comment-text {
+    color: rgb(var(--text-main));
+}
+
+.dark .comment-time {
+    color: rgb(var(--text-muted));
+}
+
+.dark .reply-form {
+    background: rgb(var(--surface));
+    border: 1px solid rgba(var(--border), 0.4);
+}
+
+.dark .reply-input,
+.dark .reply-textarea {
+    background: rgb(var(--input-bg));
+    color: rgb(var(--text-main));
+    border: 1px solid rgba(var(--border), 0.5);
+}

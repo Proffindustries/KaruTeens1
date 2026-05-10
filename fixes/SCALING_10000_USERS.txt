@@ -1,0 +1,408 @@
+# SCALING KARUTEENS TO 10,000 SIMULTANEOUS USERS
+
+## Overview
+This document outlines a comprehensive strategy to handle 10,000 concurrent users on KaruTeens without degradation. The current architecture uses React + Vite frontend with a Rust (Axum) backend, MongoDB, Redis, R2 storage, and Ably for real-time.
+
+---
+
+## 1. DATABASE LAYER (MongoDB)
+
+### Current Issues
+- No explicit index strategy visible in codebase
+- Queries like `/posts/feed`, `/notifications`, `/activity` likely scan collections
+- Polling intervals (10s for notifications, 30s for activity) create constant read pressure
+
+### Solutions
+
+a) **Add Compound Indexes**
+```
+posts:       { user_id: 1, created_at: -1 }
+notifications: { user_id: 1, read: 1, created_at: -1 }
+messages:    { conversation_id: 1, created_at: 1 }
+activity:    { user_id: 1, created_at: -1 }
+users:       { username: 1 } unique
+```
+
+b) **Implement MongoDB Connection Pooling**
+```rust
+// In main.rs — already using mongodb::Client which has built-in pooling
+// Verify pool max_size is set appropriately (50-100 connections)
+let client_options = ClientOptions::parse(&uri)
+    .await
+    .unwrap()
+    .max_pool_size(100);
+```
+
+c) **Read from Secondaries**
+- Deploy MongoDB replica set (at least 3 nodes: 1 primary, 2 secondaries)
+- Route read queries to secondaries, writes only to primary
+```rust
+let collection = db.collection::<Document>("posts")
+    .read_preference(ReadPreference::SecondaryPreferred);
+```
+
+d) **Implement TTL Indexes for Expiry**
+```rust
+// Auto-delete old notifications after 30 days
+coll.create_index(
+    Index::builder()
+        .keys(doc! { "created_at": 1 })
+        .options(IndexOptions::builder().expire_after(Duration::from_secs(30 * 86400)).build())
+).await?;
+```
+
+### Expected Throughput
+- With proper indexes: 10,000 reads/sec and 2,000 writes/sec on a single replica set
+- With read secondaries: 30,000 reads/sec distributed across 3 nodes
+
+---
+
+## 2. CACHING LAYER (Redis)
+
+### Current Setup
+Redis is used for: rate limiting, media queue, WebSocket presence. NOT used for: API response caching, feed caching, session caching.
+
+### Solutions
+
+a) **Cache Expensive Queries**
+```
+Key: feed:{user_id}:{page}
+Value: JSON array of post IDs
+TTL: 60 seconds
+Invalidate on: new post, like, comment
+```
+
+b) **Cache Trending/Aggregated Data**
+```
+Key: trending:posts
+Value: JSON array of trending post IDs with scores
+TTL: 300 seconds
+```
+
+c) **Session Caching (if JWT verification is expensive)**
+```
+Key: session:{token_hash}
+Value: { user_id, role, expiry }
+TTL: Same as JWT expiry
+```
+
+d) **Rate Limiting (already implemented but needs tuning)**
+```rust
+// Per-endpoint rate limits for 10K users
+// Auth endpoints: 10 req/min per IP
+// Feed endpoints: 60 req/min per user  
+// Post creation: 5 req/min per user
+// API general: 300 req/min per user
+```
+
+### Memory Requirements
+- 10,000 users * 100 cached items * 1KB = ~1GB
+- Redis can handle this on a single t3.medium instance (2GB RAM, ~$30/month)
+
+---
+
+## 3. API GATEWAY & LOAD BALANCING
+
+### Architecture
+```
+Cloudflare (CDN + DDoS protection)
+  └─ Nginx/HAProxy (Load Balancer)
+       ├─ Backend Instance 1 (Port 3000)
+       ├─ Backend Instance 2 (Port 3000)
+       ├─ Backend Instance 3 (Port 3000)
+       └─ Backend Instance N (Port 3000)
+```
+
+a) **Nginx Configuration for 10K Users**
+```nginx
+upstream backend {
+    least_connections;  # Route to least loaded instance
+    server 10.0.1.1:3000 max_fails=3 fail_timeout=30s;
+    server 10.0.2.1:3000 max_fails=3 fail_timeout=30s;
+    server 10.0.3.1:3000 max_fails=3 fail_timeout=30s;
+    keepalive 64;  # Connection pooling
+}
+
+# Rate limiting zones
+limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+limit_req_zone $http_x_user_id zone=api:10m rate=300r/m;
+
+server {
+    listen 443 ssl http2;
+    # SSL termination at load balancer (Cloudflare or Nginx)
+    
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        # Enable response buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+    }
+    
+    location /ws/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        # WebSocket timeout
+        proxy_read_timeout 86400s;
+    }
+}
+```
+
+b) **Horizontal Scaling: Number of Instances**
+```
+Formula: (Total Requests per Second) / (Requests per Second per Instance)
+RPS estimate: 10,000 users * 0.5 requests/second = 5,000 RPS
+Rust/Axum handles: ~50,000 RPS per instance (with keepalive)
+Required instances: 5,000 / 50,000 ≈ 1 (but need at least 3 for HA)
+```
+
+**Recommended:** 3-5 backend instances behind load balancer
+
+---
+
+## 4. FRONTEND OPTIMIZATIONS
+
+### Current Issues Impacting Scale
+- All 46 pages lazy-loaded (good), but vendor chunks not optimized for cache
+- Polling intervals create constant backend load: notifications (10s), activity (30s), events (30s), study rooms (10s), stories (60s), campus pulse (30s)
+
+### Solutions
+
+a) **Replace Polling with WebSocket/Ably**
+```
+Notifications:  10s poll → Ably channel push
+Activity Feed:  30s poll → Ably channel push
+Events:         30s poll → Ably channel push
+Study Rooms:    10s poll → Ably channel push
+Stories:        60s poll → Ably channel push
+Campus Pulse:   30s poll → Ably channel push
+```
+This reduces backend load by ~95% for polling endpoints.
+
+b) **Implement Request Deduplication**
+```javascript
+// In api/client.js or a custom hook
+const pendingRequests = new Map();
+async function deduplicatedRequest(key, fetcher) {
+    if (pendingRequests.has(key)) return pendingRequests.get(key);
+    const promise = fetcher().finally(() => pendingRequests.delete(key));
+    pendingRequests.set(key, promise);
+    return promise;
+}
+```
+
+c) **Optimistic Updates for All Mutations**
+All mutations (like, comment, follow, post) should immediately update the UI cache and rollback on failure. This reduces perceived latency to zero and reduces backend pressure since users see instant feedback.
+
+d) **Bundle Splitting: Dynamic Import of Heavy Dependencies**
+```javascript
+// Instead of static imports:
+import { CustomVideoPlayer } from './CustomVideoPlayer'; // Eager
+
+// Use dynamic import:
+const CustomVideoPlayer = React.lazy(() => import('./CustomVideoPlayer'));
+```
+
+Heavy components to lazy-load:
+- CustomVideoPlayer (ffmpeg.wasm dependency)
+- CustomAudioPlayer
+- KaTeX math rendering
+- Recharts (admin only)
+- Markdown editors
+
+---
+
+## 5. CDN & ASSET DELIVERY
+
+### Current Setup
+- Vite builds with code splitting (6 vendor chunks)
+- vite-plugin-pwa for service worker caching
+- Gzip + Brotli compression
+- R2 for media storage
+
+### Enhancements
+
+a) **Move Static Assets to CDN**
+```
+Vite build output → Cloudflare Pages / R2 / S3 + CloudFront
+Cache-Control: public, max-age=31536000, immutable  (for hashed files)
+```
+
+b) **Implement Image CDN Transformations**
+```javascript
+// Use Cloudinary or imgix for on-the-fly transforms
+// Instead of storing multiple variants:
+const thumb = `https://res.cloudinary.com/.../w_150,h_150/${imageId}`;
+const medium = `https://res.cloudinary.com/.../w_800/${imageId}`;
+```
+
+c) **Preconnect to Critical Origins**
+```html
+<link rel="preconnect" href="https://r2.karuteens.site">
+<link rel="preconnect" href="https://api.karuteens.site">
+<link rel="dns-prefetch" href="https://ably.io">
+```
+
+### Cache Hit Ratio Targets
+- Static JS/CSS: 99% (immutable hashes, long TTL)
+- API responses: 80% (1-5 min TTL on feed/trending)
+- Media files: 95% (long TTL on R2)
+
+---
+
+## 6. REAL-TIME INFRASTRUCTURE
+
+### Current Setup
+- Ably for main real-time (notifications, chat, presence, signaling)
+- WebSocket (homegrown) for supplementary real-time
+
+### Scaling Ably for 10K Users
+
+a) **Connection Estimates**
+- 10,000 users → 10,000 WebSocket connections to Ably
+- Ably charges by concurrent connections and message volume
+- 10K connections × $0.05/connection/month = $500/month (Business plan)
+
+b) **Channel Strategy**
+```
+Private channels:
+  user:{userId}:notifications  — per user
+  user:{userId}:chats          — per user
+  user:{userId}:activity       — per user
+
+Shared channels:
+  campus:presence              — global (rate-limited presence updates)
+  {chatId}:messages            — per conversation
+```
+
+c) **Reduce Presence Churn**
+- Throttle presence enter/leave to max 1 update per 30 seconds per user
+- Use `presence.get()` sparingly (currently called in StudyRoomsPage on every enter/leave)
+
+d) **Fallback: Self-hosted WebSocket**
+If Ably costs are too high, replace with a WebSocket cluster:
+- One Rust WebSocket server per 2,000 connections
+- Redis Pub/Sub for cross-instance message routing
+- 5 instances for 10,000 connections
+
+---
+
+## 7. DATABASE SHARDING STRATEGY
+
+### When MongoDB Replica Set is Not Enough
+
+At 10,000 DAU with heavy write loads:
+
+a) **Shard by user_id (hashed)**
+```
+shardCollection("karuteens.posts", { user_id: "hashed" })
+shardCollection("karuteens.notifications", { user_id: "hashed" })
+shardCollection("karuteens.messages", { conversation_id: "hashed" })
+```
+
+b) **Keep Global Collections Unsharded**
+- Users (small, frequently read)
+- Trending topics (small, aggregated)
+- Config/settings
+
+---
+
+## 8. INFRASTRUCTURE COST ESTIMATE (10K Concurrent Users)
+
+| Component | Instance Type | Nodes | Monthly Cost |
+|-----------|--------------|-------|-------------|
+| Backend (Rust/Axum) | t3.medium (2 vCPU, 4GB) | 3 | ~$90 |
+| MongoDB | t3.medium (2 vCPU, 4GB) | 3 (replica set) | ~$90 |
+| Redis | t3.small (2 vCPU, 2GB) | 2 (cluster) | ~$40 |
+| Load Balancer | Nginx on t3.micro | 2 | ~$20 |
+| Ably Real-time | Business plan, 10K connections | - | ~$500 |
+| R2 Storage | Cloudflare R2, pay-as-you-go | - | ~$50 |
+| CDN (Cloudflare) | Pro plan | - | $20 |
+| **Total** | | | **~$810/month** |
+
+### Optimization: Replace Ably with Self-hosted WebSocket
+| Component | Instance Type | Nodes | Monthly Cost |
+|-----------|--------------|-------|-------------|
+| WebSocket Server | t3.small (2 vCPU, 2GB) | 5 | ~$100 |
+| **Total w/ self-hosted WS** | | | **~$410/month** |
+
+---
+
+## 9. FIRE DRILL: WHAT HAPPENS AT 10,001 USERS?
+
+### Degradation Points (in order)
+1. **Polling endpoints** — 6 polling intervals × 10K users = 60,000 requests/interval → Backend CPU spikes → Request queuing → Timeouts
+2. **MongoDB** — Unindexed queries start taking >100ms → Connection pool exhausted → New requests queue
+3. **Redis** — Rate limiting keys grow unboundedly → Memory pressure → Evictions → Throttling fails
+4. **Frontend** — Large lists (notifications, messages, chat users) without virtualization → DOM > 10,000 nodes → Jank
+
+### Immediate Actions
+1. Kill all polling intervals in frontend, replace with Ably push
+2. Add missing MongoDB indexes (see section 1a)
+3. Cap notification/message list rendering to last 50 items
+4. Enable response compression on load balancer
+5. Scale backend to 5 instances
+
+### Success Indicators
+- API response time < 200ms (p95)
+- Error rate < 0.1%
+- MongoDB CPU < 50%
+- Redis memory < 70% used
+- Frontend Lighthouse score > 80
+- WebSocket reconnection rate < 1%
+
+---
+
+## 10. TESTING THE SCALE
+
+### Load Testing Strategy
+```bash
+# Install k6
+brew install k6  # or: apt install k6
+
+# Test feed endpoint
+k6 run --vus 1000 --duration 300s - <<'EOF'
+import http from 'k6/http';
+import { check } from 'k6';
+
+export const options = {
+    stages: [
+        { duration: '2m', target: 1000 },  // Ramp up to 1,000 VUs
+        { duration: '5m', target: 5000 },  // Ramp to 5,000 VUs
+        { duration: '3m', target: 10000 }, // Ramp to 10,000 VUs
+        { duration: '5m', target: 10000 }, // Hold at 10,000
+        { duration: '2m', target: 0 },     // Ramp down
+    ],
+};
+
+export default function () {
+    const res = http.get('http://localhost:3000/api/posts/feed?page=1', {
+        headers: { Authorization: `Bearer ${__ENV.TEST_TOKEN}` },
+    });
+    check(res, { 'status is 200': (r) => r.status === 200 });
+}
+EOF
+```
+
+### Targets for 10K Users
+- P95 response time: < 500ms
+- P99 response time: < 2s
+- Error rate: < 0.5%
+- Throughput: > 5,000 RPS
+- Zero crashes under sustained load
+
+---
+
+## SUMMARY: TOP 5 IMMEDIATE ACTIONS
+
+1. **Kill polling, use WebSocket push** — reduces backend load by ~95% for 6 endpoints
+2. **Add MongoDB indexes** — prevents full collection scans under load
+3. **Add Redis caching** — for feed, trending, and expensive queries
+4. **Horizontal backend scaling** — 3-5 instances behind Nginx load balancer
+5. **Frontend optimization** — virtualize large lists, deduplicate requests, optimistic updates
+
+These five changes alone would allow the current architecture to handle 5,000-10,000 concurrent users with minimal degradation.

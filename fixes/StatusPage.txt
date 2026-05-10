@@ -1,0 +1,24 @@
+# StatusPage.jsx
+
+## NEED TO DO
+- No error handling for useStories query — missing error destructuring, no error state
+- No empty state when usersWithStories array empty
+- openViewer and handlePrevStory not wrapped in useCallback
+- markViewed mutation called in useEffect without error handling
+- Race condition in progress interval — handleNextStoryRef could have stale data
+- No cleanup for markViewed API call if unmounts mid-flight
+- revealedNsfwStories stored as Set in React state — non-standard, confusing
+- No Suspense boundary
+
+## CAN DO
+- No React.memo on status grid items
+- otherUsersStories.map creates new arrow functions every render
+- shouldBlur(activeStory) called every render — could be memoized
+- Interval step of 50ms (20fps) excessive — 100ms smoother on CPU
+- No lazy loading for CreateStoryModal
+- Loading state is plain text
+
+## MAY DO
+- Reply input has no submit handler
+- Search input purely decorative
+- No keyboard navigation for story viewer

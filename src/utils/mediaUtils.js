@@ -96,10 +96,10 @@ export const getOptimizedMediaUrl = (url, type) => {
  */
 export const inferMediaType = (url) => {
     if (!url) return 'file';
-    const lower = url.toLowerCase().split('?')[0]; // strip query params
-    if (/\.(mp4|webm|mov|avi|mkv|ogv)$/.test(lower)) return 'video';
-    if (/\.(mp3|ogg|wav|flac|aac|m4a)$/.test(lower)) return 'audio';
-    if (/\.(jpg|jpeg|png|gif|webp|avif|svg)$/.test(lower)) return 'image';
+    const lower = url.toLowerCase().split('?')[0];
+    if (/\.(mp4|webm|mov|avi|mkv|ogv)/.test(lower)) return 'video';
+    if (/\.(mp3|ogg|wav|flac|aac|m4a)/.test(lower)) return 'audio';
+    if (/\.(jpg|jpeg|png|gif|webp|avif|svg)/.test(lower)) return 'image';
     return 'file';
 };
 
@@ -109,15 +109,6 @@ export const inferMediaType = (url) => {
  * if the media is served from R2.
  */
 export const getVariantUrl = (url) => {
-    if (!url || !url.includes('/uploads/')) return url;
-    if (url.match(/\.(mp4|webm)$/i)) {
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        const suffix = isMobile ? '_480p' : '_720p';
-
-        if (url.includes('_480p.') || url.includes('_720p.')) return url;
-
-        return url.replace(/(\.[^.]+)$/, `${suffix}$1`);
-    }
     return url;
 };
 
@@ -126,16 +117,7 @@ export const getVariantUrl = (url) => {
  * Returns thumbnail (150px) for mobile, medium (800px) for desktop.
  */
 export const getResponsiveImageUrl = (url) => {
-    if (!url || !url.includes('/uploads/')) return url;
-    if (!url.match(/\.(jpg|jpeg|png|webp|avif)$/i)) return url;
-
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const suffix = isMobile ? '_thumb.webp' : '_medium.webp';
-
-    if (url.includes('_thumb.') || url.includes('_medium.')) return url;
-
-    // Insert variant before the file extension
-    return url.replace(/(\.[^.]+)$/, `_${suffix}$1`);
+    return url;
 };
 
 /**

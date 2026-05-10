@@ -5,6 +5,7 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext.jsx';
 import useDebounce from '../hooks/useDebounce';
 import CreatePageModal from '../components/CreatePageModal.jsx';
+import EmptyState from '../components/EmptyState';
 import '../styles/PagesPage.css';
 
 const PagesPage = () => {
@@ -132,10 +133,11 @@ const PagesPage = () => {
                             </Link>
                         ))
                     ) : (
-                        <div className="empty-pages">
-                            <Globe size={64} />
-                            <p>No pages found matching your search.</p>
-                        </div>
+                        <EmptyState
+                            icon={Globe}
+                            title="No pages found"
+                            message="No pages found matching your search."
+                        />
                     )}
                 </div>
             )}

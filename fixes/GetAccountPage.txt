@@ -1,0 +1,16 @@
+# GetAccountPage.jsx
+
+## NEED TO DO
+- Pro/Alumni card has no role or aria-disabled — not keyboard accessible
+- soon ribbon uses hardcoded pixel values — breaks on different viewports
+- Student card hover/focus state not distinguishable from disabled card
+
+## CAN DO
+- Heavy use of inline styles — move to CSS classes
+- Static page data hardcoded — come from config file
+- No React.memo — re-renders if parent re-renders
+
+## MAY DO
+- No account type comparison table
+- No student testimonials
+- No Notify Me signup for Pro

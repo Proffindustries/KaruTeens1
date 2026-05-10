@@ -59,28 +59,98 @@ const GetAccountPage = () => {
                     <div
                         className="account-type-card disabled"
                         style={{
-                            border: '1px solid #dcdde1',
+                            border: '2px solid #ddd',
                             borderRadius: '8px',
                             padding: '1.5rem',
-                            opacity: 0.7,
-                            position: 'relative',
-                            overflow: 'hidden',
+                            marginBottom: '1rem',
+                            opacity: 0.5,
+                            cursor: 'not-allowed',
                         }}
+                        aria-disabled="true"
+                        role="button"
+                        tabIndex={-1}
                     >
                         <div
                             style={{
-                                position: 'absolute',
-                                top: '10px',
-                                right: '-30px',
-                                background: '#ffa502',
-                                color: 'white',
-                                padding: '2px 30px',
-                                transform: 'rotate(45deg)',
-                                fontSize: '0.7rem',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '0.5rem',
                             }}
                         >
-                            soon
+                            <h3 style={{ color: '#666' }}>Pro Account</h3>
+                            <span
+                                className="soon-badge"
+                                style={{
+                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                    color: 'white',
+                                    borderRadius: '20px',
+                                    padding: '2px 10px',
+                                    fontSize: '0.75rem',
+                                }}
+                            >
+                                SOON
+                            </span>
                         </div>
+                        <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                            Advanced features for power users
+                        </p>
+                    </div>
+
+                    {/* Alumni Account */}
+                    <div
+                        className="account-type-card disabled"
+                        style={{
+                            border: '2px solid #ddd',
+                            borderRadius: '8px',
+                            padding: '1.5rem',
+                            marginBottom: '1rem',
+                            opacity: 0.5,
+                            cursor: 'not-allowed',
+                        }}
+                        aria-disabled="true"
+                        role="button"
+                        tabIndex={-1}
+                    >
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '0.5rem',
+                            }}
+                        >
+                            <h3 style={{ color: '#666' }}>Alumni Account</h3>
+                            <span
+                                className="soon-badge"
+                                style={{
+                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                    color: 'white',
+                                    borderRadius: '20px',
+                                    padding: '2px 10px',
+                                    fontSize: '0.75rem',
+                                }}
+                            >
+                                SOON
+                            </span>
+                        </div>
+                        <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                            Stay connected after graduation
+                        </p>
+                    </div>
+                    {/* Alumni / Guest */}
+                    <div
+                        className="account-type-card disabled"
+                        style={{
+                            border: '2px solid #ddd',
+                            borderRadius: '8px',
+                            padding: '1.5rem',
+                            marginBottom: '1rem',
+                            opacity: 0.5,
+                            cursor: 'not-allowed',
+                        }}
+                        aria-disabled="true"
+                        role="button"
+                        tabIndex={-1}
+                    >
                         <div
                             style={{
                                 display: 'flex',

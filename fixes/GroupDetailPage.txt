@@ -1,0 +1,25 @@
+# GroupDetailPage.jsx
+
+## NEED TO DO
+- No distinction between 'not found' (404) and 'server error' (500) — both show 'Group not found'
+- groupColor fallback uses Math.random() — random color changes on every remount
+- handleAvatarUpload has no isMounted check
+- handleUpdateGroup has no disabled/loading state — double-click risk
+- handleDeleteGroup has no loading indicator between confirm and navigate
+- handleLeaveGroup has no onError callback
+- Menu dropdown does not close on outside click
+- No error state for useGroupPosts
+
+## CAN DO
+- Handlers recreated every render — should use useCallback
+- canEdit recalculated every render — wrap in useMemo
+- Posts list has no virtualization
+- Inline styles mixed with CSS classes throughout
+- shouldBlur imported but not used
+- CustomVideoPlayer/AudioPlayer imported but not used
+
+## MAY DO
+- No member list or count breakdown
+- No group rules display
+- No pinned posts section
+- No Invite Members feature

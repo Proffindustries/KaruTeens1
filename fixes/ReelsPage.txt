@@ -1,0 +1,18 @@
+# ReelsPage.jsx
+
+## NEED TO DO
+- fetchReels useEffect has no cleanup — state update on unmounted component
+- ReelItem NOT wrapped in React.memo — every reel re-renders whenever currentIndex changes
+- Video play() promise rejection silently caught — swallows legitimate errors
+- handleScroll uses Math.round that can produce NaN if container not yet laid out
+- Follow button has no onClick handler — decorative
+- No useEffect cleanup for videoRef — videos continue playing audio if user navigates away
+
+## CAN DO
+- No virtualized rendering — only current reel (+1) should be mounted
+- No lazy loading for reel videos using IntersectionObserver
+
+## MAY DO
+- Add double-tap-to-like for mobile
+- Add swipe-to-navigate gesture
+- Preload next reel video

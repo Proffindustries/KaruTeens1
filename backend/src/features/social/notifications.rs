@@ -110,6 +110,7 @@ pub async fn delete_notification_handler(
 }
 
 // Utility to create notification (not a handler)
+// Batching: same actor+type within 60s window gets merged into one notification
 pub async fn create_notification(
     state: &Arc<AppState>,
     user_id: ObjectId,
@@ -119,7 +120,7 @@ pub async fn create_notification(
     content: &str,
     broadcast: bool,
 ) -> Result<(), mongodb::error::Error> {
-    if user_id == actor_id { return Ok(()); } // Don't notify self
+    if user_id == actor_id { return Ok(()); }
 
     // Block check: don't notify if user (recipient) has blocked the actor
     let profiles = state.mongo.collection::<Profile>("profiles");
@@ -132,42 +133,70 @@ pub async fn create_notification(
     }
 
     let collection = state.mongo.collection::<Notification>("notifications");
-    let new_notif = Notification {
-        id: None,
-        user_id,
-        actor_id,
-        notification_type: notification_type.to_string(),
-        target_id,
-        content: content.to_string(),
-        is_read: false,
-        created_at: mongodb::bson::DateTime::now(),
-    };
+    let batch_key = format!("notif_batch:{}:{}:{}", user_id.to_hex(), notification_type, actor_id.to_hex());
 
-    let result = collection.insert_one(new_notif, None).await?;
-    let notif_id = result.inserted_id.as_object_id().unwrap();
+    let existing: Option<String> = state.cache.get(&batch_key).await;
+    let batched = existing.is_some();
 
-    // Broadcast via WS
-    if broadcast {
-        let actor = profiles.find_one(doc! { "user_id": actor_id }, None).await.unwrap_or(None);
-        let ws_payload = WsPayload {
-            r#type: "notification".to_string(),
-            data: json!(NotificationResponse {
-                id: notif_id.to_hex(),
-                actor_username: actor.as_ref().map(|p| p.username.clone()).unwrap_or_else(|| "Someone".to_string()),
-                actor_avatar_url: actor.and_then(|p| p.avatar_url),
-                notification_type: notification_type.to_string(),
-                target_id: target_id.map(|id| id.to_hex()),
-                content: content.to_string(),
-                is_read: false,
-                created_at: chrono::Utc::now().to_rfc3339(),
-            }),
+    if batched {
+        // Find the most recent unread notification from this actor+type and update content
+        let existing = collection.find_one(
+            doc! {
+                "user_id": user_id,
+                "actor_id": actor_id,
+                "notification_type": notification_type,
+                "is_read": false,
+            },
+            None,
+        ).await?;
+
+        if let Some(notif) = existing {
+            let new_content = format!("{} and others", notif.content.replace(" and others", ""));
+            collection.update_one(
+                doc! { "_id": notif.id.unwrap() },
+                doc! { "$set": { "content": new_content } },
+                None,
+            ).await?;
+        }
+    } else {
+        // Set batch window (60 second TTL)
+        state.cache.set(&batch_key, &String::from("1"), 60).await;
+
+        let new_notif = Notification {
+            id: None,
+            user_id,
+            actor_id,
+            notification_type: notification_type.to_string(),
+            target_id,
+            content: content.to_string(),
+            is_read: false,
+            created_at: mongodb::bson::DateTime::now(),
         };
 
-        send_to_user(state, &user_id, &ws_payload).await;
+        let result = collection.insert_one(new_notif, None).await?;
+        let notif_id = result.inserted_id.as_object_id().unwrap();
 
-        // Publish to Ably for real-time notification alerts
-        let channel = format!("user:{}:notifications", user_id.to_hex());
-        publish_to_ably(&channel, "new_notification", ws_payload.data).await;
+        if broadcast {
+            let actor = profiles.find_one(doc! { "user_id": actor_id }, None).await.unwrap_or(None);
+            let ws_payload = WsPayload {
+                r#type: "notification".to_string(),
+                data: json!(NotificationResponse {
+                    id: notif_id.to_hex(),
+                    actor_username: actor.as_ref().map(|p| p.username.clone()).unwrap_or_else(|| "Someone".to_string()),
+                    actor_avatar_url: actor.and_then(|p| p.avatar_url),
+                    notification_type: notification_type.to_string(),
+                    target_id: target_id.map(|id| id.to_hex()),
+                    content: content.to_string(),
+                    is_read: false,
+                    created_at: chrono::Utc::now().to_rfc3339(),
+                }),
+            };
+
+            send_to_user(state, &user_id, &ws_payload).await;
+
+            let channel = format!("user:{}:notifications", user_id.to_hex());
+            publish_to_ably(&channel, "new_notification", ws_payload.data).await;
+        }
     }
 
     Ok(())

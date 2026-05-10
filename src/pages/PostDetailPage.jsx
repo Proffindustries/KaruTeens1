@@ -68,7 +68,7 @@ const PostDetailPage = () => {
             </div>
 
             <div className="post-detail-content">
-                <PostCard post={post} />
+                <PostCard post={post} defaultOpen={true} />
                 <div className="post-detail-ad" style={{ margin: '2rem 0' }}>
                     <AdComponent page="post-detail" />
                 </div>

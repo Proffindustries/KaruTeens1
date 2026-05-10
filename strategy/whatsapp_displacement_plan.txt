@@ -1,0 +1,443 @@
+## PHASE 0: Feature Audit & Gap Analysis
+
+### Full Feature Inventory of KaruTeens
+
+**Messaging (Replaces WhatsApp Directly):**
+- 1-on-1 chat, group chats, voice notes, voice/video calls (WebRTC)
+- Disappearing messages, view-once media, message reactions, reply threading
+- Message forwarding, polls in chat, location sharing (static + live), contact sharing
+- GIF picker, sticker picker (with save-to-collection), link previews
+- Document viewer inline (PDF, Excel, Word, PPT), file attachments
+- Read receipts, online presence (Ably), mute/block, delete for everyone
+- Chat history search, admin roles in groups, group info editing
+
+**Social Feed (Replaces Instagram/Facebook):**
+- Infinite scroll feed, For You algorithmic feed, Trending feed
+- Post creation with text + media, like/unlike (optimistic), threaded comments, bookmark/save
+- Share, report, hide, polls in posts, anonymous posting, audience targeting
+- Drafts (save, update, publish drafts), hashtag search, trending topics
+- User suggestions ("Who to follow")
+
+**Stories (Replaces Instagram/WhatsApp Status):**
+- Photo/video 24-hour stories, progress bars viewer, view receipts, reply to stories
+- Sensitive content blurring, create story modal
+
+**Reels (Replaces TikTok):**
+- Vertical scroll video feed, auto-play, like/comment/share, follow button
+
+**Community Features:**
+- Groups (create/join/leave with posts feed, categories, invite links, admin roles)
+- Events (create, RSVP, categories, upcoming filter)
+- Pages (Facebook-style: create/follow/unfollow, page feeds)
+- Confessions (anonymous with optional media, pending review + countdown timer, auto-publish after 12h, cancel, like/comment/share/report)
+- Dating/Hookup (anonymous alias, M-Pesa verification Ksh 20, swipe discovery, mutual match)
+- Marketplace (list items, browse by category/search, mark sold, boost 24h, contact seller opens chat)
+- Study Rooms (create/join/leave, collaborative whiteboard, messaging, file sharing, invite links, premium-gated)
+- Study Playlists (curated content)
+- Revision Materials (CAT, Exam, Past Paper categories, academic filters by school/programme/year, locked/paywalled docs)
+- Timetable (class schedule management)
+- Templates (reusable post templates for study groups, exam prep, etc.)
+- Recall (flashcards/spaced repetition, revision materials)
+
+**AI:**
+- AI Assistant page (AI-powered helper)
+
+**User Profile & Identity:**
+- Profile page (avatar, stats, follower/following, bio, school, year of study)
+- Follow/unfollow system
+- Gamification (points, badges, leaderboards)
+- Verification badge
+- Saved posts tab
+
+**Monetization:**
+- Premium (Weekly Star Ksh 10/wk, Campus Pro Ksh 40/mo, Annual Ksh 200/yr)
+- M-Pesa payment integration
+- Premium gates on Study Rooms and other features
+- Ads component with ad management in admin
+- Donate page
+- Locked revision materials (Ksh 5 per doc)
+
+**Admin:**
+- User management (ban, verify, role change), post management
+- Stats dashboard, content moderation tabs (confessions, comments, ads, analytics, events, groups, media, pages, posts, reels, stories, revisions, users, videos)
+
+**Real-Time Infrastructure:**
+- Ably for real-time messaging, presence tracking, signaling for WebRTC
+- WebSocket fallback/parallel for real-time notifications
+
+**Technical Features:**
+- Image compression, R2 storage, batch upload with concurrency
+- Upload progress tracking, cancel, retry logic
+- Responsive design (mobile sidebar toggle), Virtuoso virtualized lists
+- PWA support (vite-plugin-pwa), code splitting (lazy routes)
+- Theme support (dark/light), font size settings
+- NSFW content blurring with reveal on tap
+- Connection quality detection, offline banner, data sweeper
+- Infinite queries with stale time management
+
+---
+
+### Gap Analysis for WhatsApp Displacement
+
+**Present:**
+- Feature parity with WhatsApp ✓
+- Discovery mechanisms that WhatsApp lacks ✓
+- Academic utility that WhatsApp lacks ✓
+- Self-expression tools exceeding WhatsApp ✓
+
+**Missing/Leverageable:**
+1. **Scarcity & entry curation** - can register freely, no invite system
+2. **Public community "vibe" visualization** - no visible ambient presence of what's happening
+3. **Exit barrier / silent signal** - no coordinated migration tactic
+4. **Rationalization hooks** - productivity features exist but aren't positioned as "why you need this app"
+
+---
+
+## THE STRATEGIC PLAN: HOW KARUTEENS EATS WHATSAPP'S LUNCH
+
+### PHASE 1: THE VELVET ROPE (Scarcity & Curated Entry)
+**Leverage:** Scarcity & Curated Entry
+**Timeline:** 2 weeks pre-launch
+
+**What to do:**
+
+**1a. Repurpose Onboarding → "The Vetting"**
+- Current: `/onboarding` is a post-registration tutorial
+- New name: **"The Vetting"** or **"Campus Credentialing"**
+- Add an invitation code field to registration. Every new user gets 3 "witness codes" upon verification.
+- When a witness code is used, the sponsor gets a notification: *"Your witness @username has entered. Your judgment expands the circle."*
+- The word "protégé" is wrong — it sounds like mentorship, a burden. "Witness" implies they are seen, not taught. Less obligation, more status.
+- **UI Metaphor:** A physical key being forged on screen as the code is entered. The key turns in a lock animation on success.
+
+**1b. Physical Scarcity Artifacts**
+- Generate a dynamic "Campus Map" showing dots for each verified student by school.
+- Use a **progressive reveal** counter: *"Founder cohort: Closing at 500. Spots filled: 327."*
+- When 500 is hit, the Founder badge is gone forever — no lie needed.
+- Then open general registration with a minor prestige drop: **Cohort: Pioneer** badge.
+- This creates a genuine hard deadline that early users will brag about.
+
+**1c. The "I Was There" Cohort Badge**
+- First 500 users get a unique badge tier that newer users can NEVER earn.
+- On their profile page, show "Cohort: Class of Alpha" with a special border.
+- Additionally, give them an **immutable join date stamp** on their profile, rendered in a subtle serif font — almost like a library card. No one else will have that exact date. It creates an instant hierarchy of seniority without ranks.
+- **Psychological lever:** Flattery of being an early curator. Loss aversion for non-joiners.
+
+**Why it works on students:** Students are hierarchical. Being in the "inner circle" before everyone else carries massive social currency. The word "invitation" has more gravity than "sign up."
+
+---
+
+### PHASE 2: THE BARBARIAN UPGRADE (Intellectual & Emotional Peacocking)
+**Leverage:** Design for Intellectual & Emotional Peacocking
+**Timeline:** 2-3 weeks post-launch
+
+**What to do:**
+
+**2a. Gradient Reactions → "Spectrum Reactions" (upgrade existing reaction system)**
+- Current: emoji reactions on messages (😂😮😢🔥👍)
+- Upgrade to **"Spectrum Reactions"** where users can send gradient-colored reactions that animate across the chat background briefly before settling as a small dot.
+- Color gradients are tied to mood categories: Intellectual 💜, Passionate ❤️‍🔥, Melancholic 🌊, Witty 💚, Deep 🖤
+- Each gradient type plays a subtle haptic tone on the recipient's phone:
+  - "Deep" = faint piano hammer strike
+  - "Melancholic" = single water droplet
+  - "Witty" = quick crackle
+- The craft is in distinct, low-volume sounds. It must feel like a secret handshake, not a notification.
+- Technical note: `navigator.vibrate` works on mobile web. Use it sparingly.
+- **UI Metaphor:** "Don't just react. *Reverberate.*"
+
+**2b. Layered Voice Notes (simplified from original)**
+- Current: simple voice note with waveform
+- Correction from original: full multi-track recording is technically heavy for a quick build.
+- Simplify: voice notes get an **ambient bed layer** that the user selects from a small curated set — "Under Rain," "Coffee Shop Murmur," "Piano Minimal."
+- Their voice plays over the ambient bed. Still conveys emotional depth without requiring multi-track recording logic.
+- The waveform shows a subtle second color tint to indicate the bed is active.
+- This becomes a premium feature candidate later (expand the bed library).
+- **UI Metaphor:** "Your voice has depth. Show it."
+
+**2c. Threaded Thought Pieces → "Tomes" (upgrade current message reply system)**
+- Current: reply-to creates a small thread
+- New: **"Tomes"** — long-form threaded messages that display as expandable cards. A Tome takes the full chat width, has a title, and collapses into a book icon with a book-closing animation (not a generic accordion).
+- Other users can "annotate" specific paragraphs (highlight + comment)
+- **Critical restriction:** Only users who have been part of the thread for 2+ messages can annotate. This prevents drive-by annotation and makes it a privilege of ongoing engagement.
+- **UI Metaphor:** "Don't text. *Publish.*"
+
+**2d. Templates → "Modes" (repurpose existing Templates page)**
+- Current Templates page is hidden behind `/templates`
+- Reposition as **"Modes"** — when you open a new message, you can choose a Mode: Casual | Scholarly | Passionate | Mysterious
+- Each mode subtly changes font, reaction options, and sends with a visible "tone tag" (like a small badge on the message)
+- **Killer detail:** The mode subtly alters the **typing indicator** on the recipient's screen:
+  - Scholarly mode: three dots pulse calmly
+  - Passionate mode: dots flicker faster
+  - This gives the receiver a split-second emotional context before the message arrives — a tiny, addictive nuance no other app offers.
+
+**Why it works on students:** The current generation craves differentiation. Making their messages feel *more expressive* than WhatsApp creates an immediate felt-sense of superiority. The moment a student screenshots a Spectrum Reaction and posts it on Instagram with "this app hits different," you've won.
+
+---
+
+### PHASE 3: THE INVISIBLE THRONE (Invisible Social Hierarchy & FOMO)
+**Leverage:** Invisible Social Hierarchy
+**Timeline:** Week 3-5 (3 weeks)
+
+**What to do:**
+
+**3a. "The Hum" — Public Ambient Feed (new feature, 1 screen)**
+- A public page at `/pulse`
+- Renamed from "The Resonance" — "Resonance" is on-the-nose. "The Hum" implies a constant, low-frequency truth one must tune into. More mysterious.
+- Shows **NO messages, NO user profiles**. Instead, it visualizes themes:
+  - *"Intellectual heat is rising in Engineering corridor"* — shown as a heatmap
+  - *"The most nuanced conversation this hour happened in the group 'Debate Club'"* — shown as a pulsing node
+  - *"A wave of melancholic reactions just passed through campus"* — shown as color ripples
+- **Critical privacy & technical constraint:** Data is aggregated and time-delayed (15 minutes). Sources are public groups and the social feed only — **never private chats.** The heatmap for "Intellectual heat in Engineering" is based on Tomes, Gradient Reactions, and Scholarly Modes detected in groups tagged with that school. Individual users can never be identified.
+- Uses existing Ably presence data + reaction metadata to generate these.
+- **Psychological effect:** Massive FOMO — "Something important is happening on KaruTeens and I'm not there."
+
+**3b. "The Vault" — Community-Preserved Moments (replaces original 'Salon' constraint)**
+- Current system lacks a preservation mechanic
+- **New feature:** Each week, the community votes on their favorite messages from any public group/feed. The top 3 get "Preserved" — stored permanently in a beautiful **"Vault"** gallery.
+- Preservation costs 1 **"Preservation Token"** per nomination.
+- **Token supply:** Each user gets one token per week, plus one bonus token if they publish a Tome that receives 5+ annotations. This ties earning to valuable contribution, not raw engagement.
+- Tokens are visible on profile. Hoarding them signals influence.
+- **UI Metaphor:** A museum gallery with floating crystalline shapes containing preserved snippets.
+- **Loss aversion:** "If I don't nominate this brilliant thought now, it will be lost forever in the scroll."
+- **Enhancement:** Preserved messages are displayed not with the username but with a **minimalist byline**: "Preserved from the Engineering wing, Tuesday evening." To attach your name, use a special "Sign" action that costs an additional token. This makes personal attribution a deliberate act of vanity.
+
+**3c. Leaderboard → "The Lexicon" (repositioning)**
+- Current leaderboard: gamification points
+- Reposition as **"The Lexicon"** — top users ranked by "Resonance Score" (a composite of: nuance of reactions received, quality of threads started, preservation nominations)
+- **The formula must be opaque.** Never reveal the exact calculation. Show only a relative tier:
+  - Lexicon (top tier)
+  - Codex
+  - Fragment
+  - Whisper (entry tier)
+- Students will obsessively try to reverse-engineer the formula, generating endless speculative conversation. That IS the real engagement game.
+- **UI:** A digital "Hall of Fame" wall with animated portraits of top users.
+- **Psychological lever:** Public intellectual hierarchy without ever saying "you're better than them." It says "your thoughts carry more weight."
+
+**Why it works on students:** Students are obsessed with reputation but hate being seen as wanting status. The Hum makes it about "the community's collective intelligence" while everyone privately checks if THEY are the one driving the heat.
+
+---
+
+### PHASE 4: THE TROJAN BACKPACK (Trojan Horse of Utility)
+**Leverage:** Trojan Horse of Utility
+**Timeline:** 3-4 weeks (overlaps with Phase 3)
+
+**What to do:**
+
+**4a. Collaborative Note Surfaces → "Synapse Outlines" (scoped down from original)**
+- Current: study rooms with messaging and files
+- Original plan called for a full rich-text collaborative editor (Google Docs clone) — **too ambitious for the timeline. Do not ship a broken tool.**
+- **Correction:** Ship a **"Synapse Outline"** — a shared bullet-point list that multiple users can edit in real-time. Much simpler to implement (no CRDT needed: just an array of text items with last-writer-wins via Ably).
+- When two students chat about a subject, a small "+" icon appears. Tapping it creates a shared outline.
+- Outlines auto-save and sync in real-time via Ably.
+- Each outline has a "Flashcard Generator" button that uses the existing AI page to convert items into Recall flashcards.
+- The full rich-text Synapse Board comes in Phase 6 as a premium feature.
+- **UI Metaphor:** "Your conversation just became a study session."
+
+**4b. Timeline Integration (timetable + messages + events merge)**
+- Current: Timetable page is separate
+- New: The timetable migrates to be accessible from the chat sidebar. Chat messages with dates (e.g., "CAT is on Friday") are automatically detected via simple regex (or the AI Assistant endpoint) and show a **tentative card**.
+- **Important: Do not auto-create events.** Require the user to tap "Add to Timeline." The card itself acts as a nudge.
+- A "deadline" shared between two people in a chat shows a countdown in their chat header.
+- **UI Metaphor:** "Your chats are not just words. They're commitments. We help you keep them."
+
+**4c. Focus Mode — In-App Study Do Not Disturb**
+- When a user enters a Synapse Outline or Study Room, they can activate Focus Mode
+- Focus Mode: shows a green "In the Zone" badge on their KaruTeens profile
+- Friends see: *"Studying. Interrupt only if urgent."* (with an "urgent" button that bypasses after 2 min delay)
+- **Token cost for interruption:** If someone sends the "Urgent" bypass, the sender loses 3 Preservation Tokens. This makes the interruption costly and thus honest. Only real emergencies will pierce the zone.
+- **UI Metaphor:** "Every study session is a flex."
+
+**4d. Semester Command Center (timetable integration)**
+- Current: detached timetable page
+- Integrate it into the main navigation. Show "Upcoming" in the sidebar always.
+- When a class period starts, a subtle badge appears: *"Lecture in progress. Mute chats?"*
+- After class ends: *"Quick! Share one thing you learned before you forget."*
+- This prompt creates a **one-tap micro-note** that is automatically saved to the user's private Synapse Outline. Over a semester, the student has built a complete study log from their own fleeting thoughts.
+- That is the ultimate rationalization: *"I reflect after every lecture. This app made me a better student."*
+- **UI Metaphor:** "Your semester, organized. Your friends, close. Your grades, up."
+
+**Why it works on students:** The rationalization is the killer feature. When a student's parent or friend asks "Why are you on this new app?", the answer is: *"It's not social media, it's my study organiser. It just also happens to have chat."* This bypasses the guilt of "wasting time" and provides a defensible reason to stay.
+
+---
+
+### PHASE 5: THE SILENT SIGNAL (Mass Migration Trigger)
+**Leverage:** Mass Migration Trigger
+**Timeline:** 1 week coordinated strike (after Phase 4 foundation is solid)
+
+**What to do:**
+
+**5a. The Rune Badge — Opt-In Only**
+- A specific, exclusive profile badge is **opt-in** and awarded only after the user has genuinely used the app's depth features — created a Tome, earned a Preservation Token, or completed a Synapse Outline.
+- Then, in a private message from the system (not a public announcement), they receive the symbol image and a simple note: *"You've shaped the circle. Now you can signal it."*
+- The badge is a minimalist rune-like symbol: **ᚫ** (Anglo-Saxon Aethel, meaning "noble"). Also provide **three alternative symbols** (ᚾ, ᛟ, ᛉ) with identical meaning so it doesn't look like a coordinated army.
+- The instruction to set it as a WhatsApp DP is whispered, not broadcast. Let early adopters feel they discovered the ritual.
+- Frame it as an **aesthetic choice** ("new profile pic trend"), not a migration signal. The mystery will still work.
+
+**5b. The WhatsApp Wall**
+- When students change their DPs to runes, their WhatsApp contacts will see it and wonder.
+- A few will ask. The instructed response: *"Oh, it's nothing. Just something I'm trying."*
+- This creates curiosity gaps. Humans cannot tolerate unanswered questions about in-group signals they're not part of.
+
+**5c. The "Curiosity" Landing Page (repurpose /explore)**
+- When a curious WhatsApp user googles the symbol or asks around, they land on /explore which has been temporarily redesigned as:
+  - A full-screen prompt: *"See what everyone's talking about."*
+  - Shows The Hum as a preview
+- **Critical:** For unauthenticated visitors, show a **simulated, aesthetically beating Hum** with placeholder university names to convey the feeling without revealing real data. Once they register and verify, the real data appears. This prevents dilution and maintains the "inner circle" veil.
+- Shows "X students from your university are already here"
+- Shows "Y thoughts were Preserved this week" with a sample anonymized preserved thought
+- Register button: "Claim your seat"
+
+**Why it works on students:** The silent signal leverages multiple psychological forces simultaneously:
+1. **Curiosity gap** — people cannot stand not knowing
+2. **Social proof** — "everyone" changing their DP must mean something important
+3. **Exclusion aversion** — the ᚫ becomes an in-group marker; those without it are "out"
+4. **No direct attack on WhatsApp** — the migration doesn't say "WhatsApp bad." It says "I've evolved." This prevents defensive reactions.
+
+---
+
+### PHASE 6: THE MOAT (Lock-in & Network Effects)
+**Timeline:** Ongoing (begins after Phase 5)
+
+**6a. Cross-App Bridging (WhatsApp → KaruTeens link preview)**
+- Every shared KaruTeens link on WhatsApp renders a beautiful card with: "This conversation is happening on KaruTeens. Tap to join the discussion."
+- If the recipient doesn't have the app, they see a preview of The Hum.
+- If they do, they're deep-linked into the specific chat/group/post.
+
+**6b. Periodic Rich Push Notifications (replaces home screen widget)**
+- Original plan: home screen widget (not feasible — iOS PWA doesn't support widgets; Android requires native code).
+- **Correction:** Use periodic rich push notifications via Ably or service worker with summary lines:
+  - *"The Hum is rising in the School of Business. 3 new Preservations tonight."*
+- Tapping opens the app. Technically achievable and just as ambient.
+
+**6c. "The Archive Veil" (replaces "Dark Pattern of Decay")**
+- Original plan: blur messages for non-premium — perceived as ransom.
+- **Correction:** After 30 days, group messages become slightly desaturated and are moved to a separate "Archive" tab. They remain fully readable but feel **distant, like memory.**
+- A single tap offers: "Preserve this conversation for a token" — which restores full color and keeps it in the main chat list.
+- Now it's a choice to honor the conversation, not a threat of loss. The effect is identical (loss aversion drives token usage and premium sign-ups), but framed as curation, not extortion.
+
+---
+
+### THE FIRST 50: THE MISSING INGREDIENT
+
+None of this works without the right initial hands. The invite system will generate curators, but you must manually seed the first 50-100 **"apostles."**
+
+Select them from Karatina University's invisible influencers:
+- The quiet class reps
+- The eloquent anonymous confession writers
+- The students who already run successful campus WhatsApp groups
+- The ones whose opinions people trust but aren't loud about it
+
+Invite them personally, **in person**, with a physical sealed card. That moment of being chosen is the match that lights the entire fire. A digital invite code alone is sterile; the ritual of a **physical artifact** will lodge in their memory.
+
+Each apostle is not just a user — they are a curator of culture. Their behavior sets the norms. If they write Tomes, the app becomes literary. If they Spectrum React, the app becomes emotionally rich. If they use Synapse Outlines, the app becomes serious.
+
+---
+
+### CAMPUS FEDERALISM: CONQUERING THE COUNTRY
+
+Once Karatina is saturated, the Hum can start showing **"neighboring campus activity"** as a locked, blurred feature that unlocks when a user gains 10 verified students from that university.
+
+This creates a gentle federalism of campuses:
+- Each campus has its own inner circle
+- Each is connected by a national Hum
+- No campus feels colonized by another
+- Expansion feels organic, not forced
+
+That is how you conquer a country without ever declaring war on WhatsApp.
+
+---
+
+## REVISED TIMELINE (Reality-Based)
+
+| Phase | Realistic Duration | MVP Features to Ship | Psychological Lever |
+|-------|--------------------|----------------------|-------------------|
+| 1 | 2 wks pre-launch | Invite codes, Founder badge, join date stamp, 3 witness codes per user | Scarcity, Curated Entry, Flattery of being chosen |
+| 2 | 2-3 wks | Spectrum Reactions, Modes (with typing indicator), Voice note ambient bed, Tomes (annotatable longform) | Intellectual Peacocking, Barbaric Comparison |
+| 3 | 3 wks | The Hum (anonymized pulse), The Vault (Preservation Tokens, 1/wk supply), The Lexicon with opaque tiers | Invisible Hierarchy, FOMO, Status Anxiety |
+| 4 | 3-4 wks | Synapse Outline (shared bullet notes, LWW via Ably), Timeline detection (tap-to-add), Focus Mode with token penalty, Semester Command Center prompts | Rationalization (Trojan Horse), Productivity Guilt Bypass |
+| 5 | 1 wk (coordinated) | Rune badge opt-in award + DP change whisper, Curiosity landing page with simulated Hum for outsiders | Silent Signal, Curiosity Gap, In-group/Out-group |
+| 6 | Ongoing | Archive Veil (desaturation + preserve with token), Rich Synapse Boards (premium), Cross-app link previews, Campus federalism expansion | Network Effects, Loss Aversion, Curation, Gentle Conquest |
+
+**Total first wave:** approximately 11-13 weeks to full psychological lock-in. This is honest and builds a stable culture instead of a hype ghost town.
+
+---
+
+## WHAT TO BUILD (REVISED PRIORITY ORDER)
+
+**Phase 1 (Week 1-2):**
+1. Invite code field on registration (modify existing form)
+2. Founder/Cohort badge + immutable join date stamp (existing badge system, new types)
+3. Spectrum Reactions (upgrade existing emoji reaction UI + haptic patterns)
+
+**Phase 2 (Week 3-5):**
+4. Modes on messages (rename + expand Templates) with typing indicator modulation
+5. Voice note ambient bed layer (curated set of 3 ambiences)
+6. Tomes (expandable threaded cards with annotation privilege)
+
+**Phase 3 (Week 5-8):**
+7. "The Hum" public pulse page (new route /pulse with 15-min aggregated, anonymized data)
+8. The Vault + Preservation Token economy (1 base + 1 bonus per valued Tome per week)
+9. The Lexicon (opaque tier system: Lexicon, Codex, Fragment, Whisper)
+
+**Phase 4 (Week 8-11):**
+10. Synapse Outline (shared bullet lists via Ably, LWW, not full rich text)
+11. Timeline detection (regex/AI date parsing + "Add to Timeline" tap)
+12. Focus Mode with token-cost urgent bypass
+13. Semester Command Center (sidebar timetable + post-lecture micro-note)
+
+**Phase 5 (Week 12 — coordinated):**
+14. Rune badge opt-in system (ᚫ, ᚾ, ᛟ, ᛉ) + private DM award ritual
+15. Curiosity landing page (simulated Hum for unauthenticated, real data for verified)
+
+**Phase 6 (Ongoing):**
+16. Archive Veil (desaturation at 30 days + Archive tab + preserve-with-token)
+17. Rich Synapse Boards (premium feature, full rich-text editor)
+18. Periodic rich push notifications (Ably/service worker)
+19. Cross-app link preview cards
+20. Campus federalism expansion protocol (neighboring campus blurred + unlock mechanics)
+
+---
+
+## THE MESSAGING ANGLES
+
+**To Early Adopters / Apostles (Phase 1):**
+> *"You're not joining an app. You're building a culture. The first 500 decide how this campus talks. You've been chosen. Don't waste it."*
+
+**To The Curious (Phase 5 during migration):**
+> *"Everyone's asking what the symbol means. It means you're thinking. It means you're here. Ready to see what the hype is about?"*
+
+**To The Rationalizers (Phase 4):**
+> *"Stop switching between WhatsApp, Google Docs, and your calendar. Your entire semester lives here. Your friends, your notes, your deadlines — one surface. And when class ends, it turns your thoughts into study notes without you lifting a finger."*
+
+**To The Holdouts (Phase 6):**
+> *"Your friends are having conversations that will be forgotten on WhatsApp. On KaruTeens, the best thoughts get preserved. Your lecture notes are on here. Your CAT schedule is on here. Your last reflection after every lecture is on here. Your study group is HERE. What are you still doing on WhatsApp?"*
+
+---
+
+## SUMMARY OF SURGICAL CORRECTIONS APPLIED TO ORIGINAL PLAN
+
+| Element | Original | Corrected |
+|---------|----------|-----------|
+| 1a: Invited person term | "protégé" | "witness" |
+| 1b: Scarcity counter | Soft lie "Only 47 spots remain" | Progressive reveal "Spots filled: 327/500" then Cohort: Pioneer |
+| 1c: Badge | Just cohort badge | + Immutable join date stamp in serif font |
+| 2a: Haptic | Underspecified | Specific sounds per mood + navigator.vibrate |
+| 2b: Voice notes | Multi-track recording | Ambient bed layer (3 ambiences) |
+| 2c: Tomes annotation | Open to all | Restricted to thread participants of 2+ messages |
+| 2d: Mod typing indicator | Not present | Scholarly = calm pulse, Passionate = fast flicker |
+| 3a: Name | "The Resonance" | "The Hum" |
+| 3a: Privacy | Underspecified | 15-min delay, aggregated, public data only, never private chats |
+| 3b: Token supply | Underspecified | 1 base/wk + 1 bonus per valued Tome |
+| 3b: Attribution | Username shown | Anonymous byline, "Sign" costs extra token |
+| 3c: Score | Visible formula | Opaque tiers only (Lexicon, Codex, Fragment, Whisper) |
+| 4a: Synapse | Full rich-text editor (too ambitious) | Synapse Outline: shared bullet list, LWW via Ably |
+| 4b: Timeline | Auto-create events | Tap "Add to Timeline" to confirm |
+| 4c: Urgent bypass | Simple delay | Costs sender 3 Preservation Tokens |
+| 4d: Post-lecture note | Not present | One-tap → private Synapse Outline |
+| 5a: Badge award | Automatic on onboarding + Synapse Board | Opt-in after Tome/Token/Outline, private DM ritual |
+| 5b: Runes | Single symbol (ᚫ) | Four symbols (ᚫ, ᚾ, ᛟ, ᛉ), framed as aesthetic |
+| 5c: Landing page | Shows real data | Simulated Hum for unauthenticated, real data after verification |
+| 6b: Widget | PWA home screen widget (not feasible) | Periodic rich push notifications |
+| 6c: Message decay | Blur + watermark (ransom feel) | Archive Veil: desaturation + Archive tab + preserve to restore |
+| Timeline | Aggressive (4 wks) | Realistic (11-13 wks) |
+| New: First 50 | Not present | Manual physical-card invitation of 50-100 apostles |
+| New: Federalism | Not present | Campus-by-campus expansion with blurred neighbor unlock |

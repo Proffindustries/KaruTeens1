@@ -1,0 +1,13 @@
+# AboutPage.jsx
+
+## NEED TO DO
+_None identified_
+
+## CAN DO
+- Static page — consider lazy loading since not above the fold
+- All content hardcoded; consider fetching from CMS to avoid redeploy
+
+## MAY DO
+- Add entrance animations on hero and cards
+- Add back-to-top button
+- Make email/contact links actionable

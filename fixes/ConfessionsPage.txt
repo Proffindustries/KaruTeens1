@@ -1,0 +1,20 @@
+# ConfessionsPage.jsx
+
+## NEED TO DO
+- isError destructured but NEVER used — failed fetch shows infinite spinner, not error
+- window.prompt() for report reason — poor UX, not accessible, blocks UI thread
+- Array index used as key for comments
+- handleLike has optimistic update but NO error rollback — like count permanently incremented if API fails
+- handleLike has no loading/disabled state — user can spam-click
+
+## CAN DO
+- handleShare swallows errors silently
+- Character count displayed but no maxLength on textarea — user can type past 280
+- handleToggleComments triggers useQuery for comments — no cache timeout, refetches every time
+- commentMutation onSuccess invalidates AND optimistically updates — double work
+
+## MAY DO
+- Add character counter with progress bar
+- Add confession categories/tags with filter tabs
+- Add hot sort by like count
+- Add anonymous media attachments

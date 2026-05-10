@@ -1,0 +1,26 @@
+# MessagesPage.jsx
+
+## NEED TO DO
+- Three console.log debug effects logging sensitive data to console in production
+- No React error boundary around 2059-line component with WebRTC and complex state
+- LinkPreview useEffect has no cleanup
+- handleSend confetti setTimeout never cleaned up
+- uploadProcessRef.current reassigned every render — stale closure risk
+- renderMedia recreates large function every render
+- startRecording creates media stream but cleanup doesn't stop stream.getTracks() — microphone stays active
+- VoiceNotePlayer play() Promise rejection unhandled
+- handleFileUpload overwrites selection with no validation
+
+## CAN DO
+- 2059-line component — refactor into smaller files
+- All event handlers defined inline, recreated every render
+- All modal components eagerly imported — no React.lazy
+- 25+ hooks from useMessages.js add bundle weight
+- Chat list renders all chats with no virtualization
+- Message list renders all messages with no virtualization
+
+## MAY DO
+- Confetti animation very basic (10 hardcoded divs)
+- Voice note waveform uses static random heights
+- No infinite scroll for messages
+- No typing indicators shown

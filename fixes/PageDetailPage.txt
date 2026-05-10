@@ -1,0 +1,19 @@
+# PageDetailPage.jsx
+
+## NEED TO DO
+- No React error boundary
+- handleDeletePage has no loading/disabled state — double-click risk
+- Uses browser confirm() for deletion
+- No loading state for follow/unfollow mutations
+- Media tab filters posts client-side — server-side filtering needed for large datasets
+- Load More not automatically triggered via IntersectionObserver — requires manual click
+
+## CAN DO
+- posts computed as pages.flatMap runs on every render — should use useMemo
+- No React.memo on PostCard
+- Tab content all eagerly rendered — inactive tabs still in DOM
+
+## MAY DO
+- Could use in-app confirmation modal for deletion
+- Could add share functionality
+- Could add related pages suggestions

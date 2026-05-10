@@ -1,0 +1,23 @@
+# GroupManagementTab.jsx
+
+## NEED TO DO
+- CRITICAL: getMemberInfo is async but called synchronously in render — returns Promise, not resolved data
+- CRITICAL: getMemberInfo calls setUserCache inside itself — triggers setState during render
+- CRITICAL: Bulk actions mutate local state only without calling API — changes lost on refresh
+- CRITICAL: handleAddMember, handleRemoveMember, handleMakeAdmin modify local state only
+- Import/Export buttons have no onClick handlers
+- getMemberInfo fetches users with no loading indicator
+- No error boundary
+
+## CAN DO
+- 27 lucide-react icons imported
+- Filter state spread on every keystroke — triggers re-render of entire table
+- No memoization of filtered groups list — recomputes every render
+- userCache grows unboundedly — memory issue with many users
+- No pagination for groups table
+- Refresh buttons are no-ops
+
+## MAY DO
+- Add/Edit modals are UI shells — no actual API submit
+- No keyboard shortcuts for bulk actions
+- No empty state when groups array empty

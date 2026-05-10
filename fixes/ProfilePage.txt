@@ -1,0 +1,17 @@
+# ProfilePage.jsx
+
+## NEED TO DO
+- window.location.href on media grid click — full-page hard navigation, breaks SPA
+- window.location.reload() in error handler — use refetch() instead
+- 26 icons from lucide-react — bundle bloat
+- framer-motion (AnimatePresence, motion.div) for simple fade/slide — heavy dependency for minimal effect
+- editForm (15 fields) fully spread on every keystroke — re-renders entire modal on each input change
+
+## CAN DO
+- No useCallback on handleFollowToggle, handleUpdate, openEditModal
+- No virtualization for infinite-scrolled posts/media/likes
+
+## MAY DO
+- Add confirmation before discarding unsaved edit changes
+- Add error boundaries around PostCard rendering
+- Locked profile could show blurred preview instead of full lock

@@ -1,0 +1,23 @@
+# TimetablePage.jsx
+
+## NEED TO DO
+- No cleanup for in-flight API requests on unmount
+- Stale closure in push notification interval — notifiedClasses captured in closure
+- handleFileUpload uses for...of with await inside reader.onload — state update on unmounted component
+- Optimistic update in handleUpdateClassTasks has NO rollback on API failure
+- handleReportIssue uses window.prompt — blocks main thread
+- selectedTimetable._id vs .id inconsistency — MongoDB document IDs leaking without normalization
+- Exams fetch effect has no cleanup
+
+## CAN DO
+- getClassesForDay called in render path — recomputed every render
+- today recomputed every render — should be in useMemo
+- hasClash memoized but getClassesForDay called inside is re-run every render anyway
+- No useCallback on most handlers
+- framer-motion for class card animations — adds bundle weight
+- Push notification interval runs every 60s even in background
+
+## MAY DO
+- handleCopyOrMerge uses confusing window.confirm message
+- No visual loading for individual operations
+- No error state for exams load failure

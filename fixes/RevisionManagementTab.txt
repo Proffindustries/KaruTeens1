@@ -1,0 +1,16 @@
+# RevisionManagementTab.jsx
+
+## NEED TO DO
+- No empty state when materials list empty — table body renders nothing
+- No delete or edit functionality for individual materials — only Create implemented, partial CRUD
+- All styles inline instead of CSS classes — bloats JS bundle with CSS-in-JS strings
+- No confirmation before closing Add Material modal with unsaved data
+- Modal rendered as plain div without portal — z-index stacking issues
+
+## CAN DO
+- Add pagination for materials table
+
+## MAY DO
+- Add Edit action inline for each material
+- Add Delete with confirmation
+- Use React Portal for modal overlay

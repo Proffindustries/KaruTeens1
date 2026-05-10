@@ -1,0 +1,19 @@
+# AnalyticsTab.jsx
+
+## NEED TO DO
+- timeRange state declared and rendered as select but NEVER sent to API — changing dropdown does nothing
+- useEffect has NO cleanup — state update on unmounted component
+- No error retry mechanism — only toast, no Retry button
+- No empty-state for chart data — reduce on empty array throws TypeError
+
+## CAN DO
+- Data fetched once on mount and never refreshed — add auto-refresh interval
+- tickFormatter inline arrow functions recreated every render — extract to constants
+- Download button has no onClick handler — decorative
+- Chart heights hardcoded at 300px — not responsive
+
+## MAY DO
+- Add date-range picker instead of fixed presets
+- Add CSV/PDF export with actual implementation
+- Add annotations for notable events
+- Add compare periods mode

@@ -20,6 +20,7 @@ import api from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../hooks/useAuth';
 import { useAbly } from '../context/AblyContext';
+import Avatar from '../components/Avatar';
 import '../styles/LiveStreamPage.css';
 
 const ICE_SERVERS = {
@@ -38,40 +39,59 @@ const LiveStreamPage = () => {
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [currentStream, setCurrentStream] = useState(null);
     const [activeStreams, setActiveStreams] = useState([]);
+    const [streamsError, setStreamsError] = useState(null);
     const [viewers, setViewers] = useState(0);
     const [chatMessages, setChatMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [hearts, setHearts] = useState([]);
     const [showSettings, setShowSettings] = useState(false);
-    const [streamTitle, setStreamTitle] = useState(`${user?.username}'s Live`);
+    const [streamTitle, setStreamTitle] = useState('');
     const [gifts, setGifts] = useState([]);
 
     const videoRef = useRef(null);
     const mediaStreamRef = useRef(null);
-    const peerConnections = useRef({}); // For streamer: viewerId -> PC
-    const viewerPc = useRef(null); // For viewer: single PC
+    const peerConnections = useRef({});
+    const viewerPc = useRef(null);
     const chatEndRef = useRef(null);
+    const mountedRef = useRef(true);
 
-    // Fetch active streams on mount
+    const ablyChannels = useRef([]);
+    const heartTimeoutRef = useRef(null);
+
     useEffect(() => {
-        const fetchStreams = async () => {
-            try {
-                const { data } = await api.get('/live/active');
-                setActiveStreams(data);
-            } catch (err) {
-                console.error('Failed to fetch active streams', err);
+        return () => {
+            mountedRef.current = false;
+            if (heartTimeoutRef.current) clearTimeout(heartTimeoutRef.current);
+            ablyChannels.current.forEach((ch) => {
+                try {
+                    ch.unsubscribe();
+                } catch (e) {
+                    /* ignore */
+                }
+            });
+            ablyChannels.current = [];
+            if (mediaStreamRef.current) {
+                mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+                mediaStreamRef.current = null;
+            }
+            Object.values(peerConnections.current).forEach((pc) => pc.close());
+            peerConnections.current = {};
+            if (viewerPc.current) {
+                viewerPc.current.close();
+                viewerPc.current = null;
             }
         };
-        fetchStreams();
-        const interval = setInterval(fetchStreams, 10000);
-        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [chatMessages]);
 
-    // --- Streamer Logic ---
+    useEffect(() => {
+        if (videoRef.current && mediaStreamRef.current) {
+            videoRef.current.srcObject = mediaStreamRef.current;
+        }
+    }, [isPreviewing, isLive, currentStream]);
 
     const startPreview = async () => {
         try {
@@ -84,7 +104,6 @@ const LiveStreamPage = () => {
                 audio: true,
             });
             mediaStreamRef.current = stream;
-            if (videoRef.current) videoRef.current.srcObject = stream;
             setIsPreviewing(true);
         } catch (err) {
             showToast('Could not access camera', 'error');
@@ -93,14 +112,17 @@ const LiveStreamPage = () => {
 
     const goLive = async () => {
         try {
-            const { data } = await api.post('/live/start', { title: streamTitle });
+            const { data } = await api.post('/live/start', {
+                title: streamTitle || `${user?.username}'s Live`,
+            });
             setCurrentStream(data);
             setIsLive(true);
 
-            // Subscribe to streamer's signaling channel
             if (ably) {
-                const channel = ably.channels.get(`live:${user.id}:signaling`);
+                const signalingChannel = ably.channels.get(`live:${user.id}:signaling`);
                 const presenceChannel = ably.channels.get(`live:${user.id}:presence`);
+                const chatChannel = ably.channels.get(`live:${user.id}:chat`);
+                ablyChannels.current = [signalingChannel, presenceChannel, chatChannel];
 
                 presenceChannel.subscribe('enter', () => {
                     presenceChannel.presence.get((err, members) => {
@@ -116,9 +138,8 @@ const LiveStreamPage = () => {
 
                 presenceChannel.presence.enter();
 
-                channel.subscribe('join-request', async (msg) => {
+                signalingChannel.subscribe('join-request', async (msg) => {
                     const viewerId = msg.data.viewerId;
-                    console.log(`Streamer: Received join request from ${viewerId}`);
 
                     const pc = new RTCPeerConnection(ICE_SERVERS);
                     peerConnections.current[viewerId] = pc;
@@ -129,7 +150,7 @@ const LiveStreamPage = () => {
 
                     pc.onicecandidate = (event) => {
                         if (event.candidate) {
-                            channel.publish(`ice-candidate:${viewerId}`, {
+                            signalingChannel.publish(`ice-candidate:${viewerId}`, {
                                 candidate: event.candidate,
                                 from: user.id,
                             });
@@ -139,14 +160,14 @@ const LiveStreamPage = () => {
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
 
-                    channel.publish(`offer:${viewerId}`, {
+                    signalingChannel.publish(`offer:${viewerId}`, {
                         offer,
                         streamerId: user.id,
                         streamerName: user.username,
                     });
                 });
 
-                channel.subscribe('answer', async (msg) => {
+                signalingChannel.subscribe('answer', async (msg) => {
                     const { answer, viewerId } = msg.data;
                     const pc = peerConnections.current[viewerId];
                     if (pc) {
@@ -154,8 +175,6 @@ const LiveStreamPage = () => {
                     }
                 });
 
-                // Chat & Hearts
-                const chatChannel = ably.channels.get(`live:${user.id}:chat`);
                 chatChannel.subscribe('message', (msg) => {
                     setChatMessages((prev) => [...prev.slice(-50), msg.data]);
                 });
@@ -175,10 +194,18 @@ const LiveStreamPage = () => {
 
     const stopLive = async () => {
         if (currentStream) {
-            await api.post(`/live/${currentStream.id}/end`);
+            try {
+                await api.post(`/live/${currentStream.id}/end`);
+            } catch (e) {
+                /* ignore */
+            }
             if (ably) {
-                const presenceChannel = ably.channels.get(`live:${user.id}:presence`);
-                presenceChannel.presence.leave();
+                try {
+                    const presenceChannel = ably.channels.get(`live:${user.id}:presence`);
+                    presenceChannel.presence.leave();
+                } catch (e) {
+                    /* ignore */
+                }
             }
         }
 
@@ -190,12 +217,20 @@ const LiveStreamPage = () => {
             mediaStreamRef.current = null;
         }
 
+        ablyChannels.current.forEach((ch) => {
+            try {
+                ch.unsubscribe();
+            } catch (e) {
+                /* ignore */
+            }
+        });
+        ablyChannels.current = [];
+
         setIsLive(false);
         setIsPreviewing(false);
         setCurrentStream(null);
+        setChatMessages([]);
     };
-
-    // --- Viewer Logic ---
 
     const joinStream = async (stream) => {
         setCurrentStream(stream);
@@ -205,6 +240,7 @@ const LiveStreamPage = () => {
             const signalingChannel = ably.channels.get(`live:${stream.user_id}:signaling`);
             const chatChannel = ably.channels.get(`live:${stream.user_id}:chat`);
             const presenceChannel = ably.channels.get(`live:${stream.user_id}:presence`);
+            ablyChannels.current = [signalingChannel, chatChannel, presenceChannel];
 
             presenceChannel.subscribe('enter', () => {
                 presenceChannel.presence.get((err, members) => {
@@ -263,15 +299,25 @@ const LiveStreamPage = () => {
             viewerPc.current = null;
         }
         if (ably && currentStream) {
-            const presenceChannel = ably.channels.get(`live:${currentStream.user_id}:presence`);
-            presenceChannel.presence.leave();
+            try {
+                const presenceChannel = ably.channels.get(`live:${currentStream.user_id}:presence`);
+                presenceChannel.presence.leave();
+            } catch (e) {
+                /* ignore */
+            }
         }
+        ablyChannels.current.forEach((ch) => {
+            try {
+                ch.unsubscribe();
+            } catch (e) {
+                /* ignore */
+            }
+        });
+        ablyChannels.current = [];
         setCurrentStream(null);
         setIsLive(false);
         setChatMessages([]);
     };
-
-    // --- Interaction Logic ---
 
     const sendMessage = (e) => {
         e.preventDefault();
@@ -291,8 +337,10 @@ const LiveStreamPage = () => {
     const sendHeartLocally = () => {
         const id = Date.now();
         setHearts((prev) => [...prev, id]);
-        setTimeout(() => {
+        if (heartTimeoutRef.current) clearTimeout(heartTimeoutRef.current);
+        heartTimeoutRef.current = setTimeout(() => {
             setHearts((prev) => prev.filter((h) => h !== id));
+            heartTimeoutRef.current = null;
         }, 2000);
     };
 
@@ -316,7 +364,29 @@ const LiveStreamPage = () => {
         }, 4000);
     };
 
-    // --- Render Helpers ---
+    // Fetch active streams
+    useEffect(() => {
+        let cancelled = false;
+        const fetchStreams = async () => {
+            try {
+                const { data } = await api.get('/live/active');
+                if (!cancelled) {
+                    setActiveStreams(data);
+                    setStreamsError(null);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setStreamsError('Failed to load active streams');
+                }
+            }
+        };
+        fetchStreams();
+        const interval = setInterval(fetchStreams, 10000);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, []);
 
     if (isLive && currentStream) {
         const isOwner = currentStream.user_id === user?.id;
@@ -336,14 +406,10 @@ const LiveStreamPage = () => {
                         <div className="stream-overlay">
                             <div className="overlay-top">
                                 <div className="streamer-info">
-                                    <img
-                                        src={
-                                            currentStream.user_avatar ||
-                                            'https://api.dicebear.com/7.x/avataaars/svg?seed=' +
-                                                currentStream.username
-                                        }
+                                    <Avatar
+                                        src={currentStream.user_avatar}
+                                        name={currentStream.username}
                                         className="streamer-avatar"
-                                        alt=""
                                     />
                                     <div>
                                         <div className="streamer-name">
@@ -455,8 +521,8 @@ const LiveStreamPage = () => {
 
                             <div className="overlay-bottom">
                                 <div className="live-chat-preview">
-                                    {chatMessages.map((msg, idx) => (
-                                        <div key={idx} className="chat-bubble">
+                                    {chatMessages.map((msg) => (
+                                        <div key={msg.timestamp} className="chat-bubble">
                                             <span className="chat-user">{msg.user}</span>
                                             {msg.text}
                                         </div>
@@ -560,7 +626,15 @@ const LiveStreamPage = () => {
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button
                                     className="btn btn-outline"
-                                    onClick={() => setIsPreviewing(false)}
+                                    onClick={() => {
+                                        setIsPreviewing(false);
+                                        if (mediaStreamRef.current) {
+                                            mediaStreamRef.current
+                                                .getTracks()
+                                                .forEach((t) => t.stop());
+                                            mediaStreamRef.current = null;
+                                        }
+                                    }}
                                     style={{ flex: 1 }}
                                 >
                                     Cancel
@@ -581,6 +655,17 @@ const LiveStreamPage = () => {
                     <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>
                         🔥 Active Streams
                     </h2>
+                    {streamsError && (
+                        <div style={{ textAlign: 'center', padding: '1rem', color: '#ff4757' }}>
+                            <p>{streamsError}</p>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => setStreamsError(null)}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
                     <div className="streams-grid">
                         {activeStreams.length > 0 ? (
                             activeStreams.map((stream) => (

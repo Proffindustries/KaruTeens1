@@ -1,0 +1,17 @@
+# BlogDetailPage.jsx
+
+## NEED TO DO
+- Share button has NO onClick handler — decorative
+- Array index used as key for paragraph mapping
+
+## CAN DO
+- BLOG_POSTS imported from BlogPage.jsx creates hard coupling — prevents code-splitting
+- Post content split by double-newline — no support for formatting, links, images
+- Hardcoded fallback image URL with no onError handler
+- Related posts filter runs every render — not memoized
+
+## MAY DO
+- Add table of contents sidebar
+- Add estimated read time
+- Add social sharing via Web Share API
+- Add dark mode support

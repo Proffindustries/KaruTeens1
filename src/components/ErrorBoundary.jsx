@@ -17,11 +17,26 @@ class ErrorBoundary extends React.Component {
 
     resetError = () => {
         this.setState({ hasError: false, error: null });
-        window.location.reload();
     };
 
     render() {
         if (this.state.hasError) {
+            if (this.props.lightweight) {
+                return (
+                    <div
+                        className="post-card card post-hidden-overlay"
+                        style={{ minHeight: '120px' }}
+                    >
+                        <AlertTriangle size={24} className="opacity-30" />
+                        <p style={{ fontSize: '0.85rem', margin: '0.5rem 0' }}>
+                            This post couldn't be loaded
+                        </p>
+                        <button className="undo-hide-btn" onClick={this.resetError}>
+                            Retry
+                        </button>
+                    </div>
+                );
+            }
             return (
                 <div
                     style={{

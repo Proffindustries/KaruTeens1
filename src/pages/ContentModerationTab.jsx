@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import EmptyState from '../components/EmptyState';
 import {
     FileText,
     AlertTriangle,
@@ -53,32 +54,27 @@ const ContentModerationTab = ({ stats }) => {
     const reportBreakdown = stats?.report_breakdown || {};
     const totalReports = Object.values(reportBreakdown).reduce((a, b) => a + b, 0) || 1; // avoid div by 0
 
-    const getPercent = (type) => {
-        return Math.round(((reportBreakdown[type] || 0) / totalReports) * 100);
-    };
+    const getPercent = useCallback(
+        (type) => Math.round(((reportBreakdown[type] || 0) / totalReports) * 100),
+        [reportBreakdown, totalReports],
+    );
+
+    const fetchModerationQueue = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data } = await api.get('/admin/moderation', { params: filters });
+            setModerationQueue(data);
+        } catch (error) {
+            console.error('Failed to fetch moderation queue:', error);
+            showToast('Failed to load reports', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        let isMounted = true;
-
-        const fetchModerationQueue = async () => {
-            if (isMounted) setIsLoading(true);
-            try {
-                const { data } = await api.get('/admin/moderation');
-                if (isMounted) setModerationQueue(data);
-            } catch (error) {
-                console.error('Failed to fetch moderation queue:', error);
-                if (isMounted) showToast('Failed to load reports', 'error');
-            } finally {
-                if (isMounted) setIsLoading(false);
-            }
-        };
-
         fetchModerationQueue();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [filters, showToast]);
+    }, [fetchModerationQueue]);
 
     const handleModerationAction = async (itemId, action) => {
         try {
@@ -342,6 +338,7 @@ const ContentModerationTab = ({ stats }) => {
                             <option value="story">Stories</option>
                             <option value="reel">Reels</option>
                             <option value="image">Images</option>
+                            <option value="confession">Confessions</option>
                         </select>
 
                         <select
@@ -367,7 +364,7 @@ const ContentModerationTab = ({ stats }) => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => {}}>
+                    <button className="refresh-btn" onClick={fetchModerationQueue}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
@@ -416,157 +413,183 @@ const ContentModerationTab = ({ stats }) => {
                         </div>
 
                         <div className="queue-list">
-                            {moderationQueue.map((item) => {
-                                const Icon = getTypeIcon(item.type);
-                                return (
-                                    <div key={item.id} className={`moderation-item ${item.status}`}>
-                                        <div className="item-header">
-                                            <div className="item-type">
-                                                <Icon
-                                                    size={20}
-                                                    color={getSeverityColor(item.severity || 'low')}
-                                                />
-                                                <span className="type-label">
-                                                    {(item.content_type || 'post').toUpperCase()}
-                                                </span>
-                                                <span
-                                                    className="severity-badge"
-                                                    style={{
-                                                        backgroundColor: `${getSeverityColor(item.severity || 'low')}20`,
-                                                        color: getSeverityColor(
+                            {moderationQueue.length === 0 ? (
+                                <EmptyState
+                                    icon={Shield}
+                                    title="All clear!"
+                                    message="No items to review. Everything looks clean!"
+                                />
+                            ) : (
+                                moderationQueue.map((item) => {
+                                    const Icon = getTypeIcon(item.type);
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={`moderation-item ${item.status}`}
+                                        >
+                                            <div className="item-header">
+                                                <div className="item-type">
+                                                    <Icon
+                                                        size={20}
+                                                        color={getSeverityColor(
                                                             item.severity || 'low',
-                                                        ),
-                                                    }}
-                                                >
-                                                    {(item.severity || 'low').toUpperCase()}
-                                                </span>
-                                                <span
-                                                    className="status-badge"
-                                                    style={{
-                                                        backgroundColor: `${getStatusColor(item.status)}20`,
-                                                        color: getStatusColor(item.status),
-                                                    }}
-                                                >
-                                                    {item.status.toUpperCase()}
-                                                </span>
+                                                        )}
+                                                    />
+                                                    <span className="type-label">
+                                                        {(
+                                                            item.content_type || 'post'
+                                                        ).toUpperCase()}
+                                                    </span>
+                                                    <span
+                                                        className="severity-badge"
+                                                        style={{
+                                                            backgroundColor: `${getSeverityColor(item.severity || 'low')}20`,
+                                                            color: getSeverityColor(
+                                                                item.severity || 'low',
+                                                            ),
+                                                        }}
+                                                    >
+                                                        {(item.severity || 'low').toUpperCase()}
+                                                    </span>
+                                                    <span
+                                                        className="status-badge"
+                                                        style={{
+                                                            backgroundColor: `${getStatusColor(item.status)}20`,
+                                                            color: getStatusColor(item.status),
+                                                        }}
+                                                    >
+                                                        {item.status.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <div className="action-buttons">
+                                                    <button
+                                                        className="action-btn approve"
+                                                        onClick={() =>
+                                                            handleModerationAction(
+                                                                item.id,
+                                                                'approve',
+                                                            )
+                                                        }
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        className="action-btn reject"
+                                                        onClick={() =>
+                                                            handleModerationAction(
+                                                                item.id,
+                                                                'reject',
+                                                            )
+                                                        }
+                                                    >
+                                                        <XCircle size={16} />
+                                                        Reject
+                                                    </button>
+                                                    <button
+                                                        className="action-btn warn"
+                                                        onClick={() =>
+                                                            handleModerationAction(item.id, 'warn')
+                                                        }
+                                                    >
+                                                        <AlertTriangle size={16} />
+                                                        Warn
+                                                    </button>
+                                                    <button
+                                                        className="action-btn ban"
+                                                        onClick={() =>
+                                                            handleModerationAction(item.id, 'ban')
+                                                        }
+                                                    >
+                                                        <Shield size={16} />
+                                                        Ban User
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="action-buttons">
-                                                <button
-                                                    className="action-btn approve"
-                                                    onClick={() =>
-                                                        handleModerationAction(item.id, 'approve')
-                                                    }
-                                                >
-                                                    <CheckCircle size={16} />
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    className="action-btn reject"
-                                                    onClick={() =>
-                                                        handleModerationAction(item.id, 'reject')
-                                                    }
-                                                >
-                                                    <XCircle size={16} />
-                                                    Reject
-                                                </button>
-                                                <button
-                                                    className="action-btn warn"
-                                                    onClick={() =>
-                                                        handleModerationAction(item.id, 'warn')
-                                                    }
-                                                >
-                                                    <AlertTriangle size={16} />
-                                                    Warn
-                                                </button>
-                                                <button
-                                                    className="action-btn ban"
-                                                    onClick={() =>
-                                                        handleModerationAction(item.id, 'ban')
-                                                    }
-                                                >
-                                                    <Shield size={16} />
-                                                    Ban User
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        <div className="item-main">
-                                            <div className="item-type-badge">
-                                                {item.content_type}
+                                            <div className="item-main">
+                                                <div className="item-type-badge">
+                                                    {item.content_type}
+                                                </div>
+                                                <p className="item-text">
+                                                    {item.content_text
+                                                        ? item.content_text.length > 100
+                                                            ? item.content_text.substring(0, 100) +
+                                                              '...'
+                                                            : item.content_text
+                                                        : 'No content preview'}
+                                                </p>
+                                                <div className="item-reason">
+                                                    <AlertTriangle size={14} />
+                                                    <span>
+                                                        Reason:{' '}
+                                                        {item.reported_reason || 'Not specified'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <p className="item-text">
-                                                {item.content_text
-                                                    ? item.content_text.length > 100
-                                                        ? item.content_text.substring(0, 100) +
-                                                          '...'
-                                                        : item.content_text
-                                                    : 'No content preview'}
-                                            </p>
-                                            <div className="item-reason">
-                                                <AlertTriangle size={14} />
-                                                <span>
-                                                    Reason:{' '}
-                                                    {item.reported_reason || 'Not specified'}
-                                                </span>
-                                            </div>
-                                        </div>
 
-                                        <div className="item-content">
-                                            <div className="content-preview">
-                                                {item.media_url && (
-                                                    <div className="media-preview">
-                                                        <img
-                                                            src={item.media_url}
-                                                            alt="Content media"
-                                                        />
+                                            <div className="item-content">
+                                                <div className="content-preview">
+                                                    {item.media_url && (
+                                                        <div className="media-preview">
+                                                            <img
+                                                                src={item.media_url}
+                                                                alt="Content media"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="content-meta">
+                                                    <div className="meta-item">
+                                                        <User size={16} />
+                                                        <span>
+                                                            Content ID:{' '}
+                                                            {item.content_id || 'Unknown'}
+                                                        </span>
                                                     </div>
-                                                )}
-                                            </div>
-
-                                            <div className="content-meta">
-                                                <div className="meta-item">
-                                                    <User size={16} />
-                                                    <span>
-                                                        Content ID: {item.content_id || 'Unknown'}
-                                                    </span>
-                                                </div>
-                                                <div className="meta-item">
-                                                    <Flag size={16} />
-                                                    <span>
-                                                        Reported by: {item.reported_by || 'System'}
-                                                    </span>
-                                                </div>
-                                                <div className="meta-item">
-                                                    <Calendar size={16} />
-                                                    <span>
-                                                        {item.created_at
-                                                            ? new Date(
-                                                                  item.created_at,
-                                                              ).toLocaleString()
-                                                            : 'Just now'}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {item.flaggedWords && item.flaggedWords.length > 0 && (
-                                                <div className="flagged-words">
-                                                    <strong>Flagged Words:</strong>
-                                                    <div className="words-list">
-                                                        {item.flaggedWords.map((word, index) => (
-                                                            <span
-                                                                key={index}
-                                                                className="flagged-word"
-                                                            >
-                                                                {word}
-                                                            </span>
-                                                        ))}
+                                                    <div className="meta-item">
+                                                        <Flag size={16} />
+                                                        <span>
+                                                            Reported by:{' '}
+                                                            {item.reported_by || 'System'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="meta-item">
+                                                        <Calendar size={16} />
+                                                        <span>
+                                                            {item.created_at
+                                                                ? new Date(
+                                                                      item.created_at,
+                                                                  ).toLocaleString()
+                                                                : 'Just now'}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            )}
+
+                                                {item.flaggedWords &&
+                                                    item.flaggedWords.length > 0 && (
+                                                        <div className="flagged-words">
+                                                            <strong>Flagged Words:</strong>
+                                                            <div className="words-list">
+                                                                {item.flaggedWords.map(
+                                                                    (word, index) => (
+                                                                        <span
+                                                                            key={index}
+                                                                            className="flagged-word"
+                                                                        >
+                                                                            {word}
+                                                                        </span>
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </>
                 )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import api from '../api/client';
 import {
     Users,
@@ -13,7 +13,6 @@ import {
     Image,
     AlertTriangle,
     BarChart3,
-    FileSpreadsheet,
     Video,
     Search,
     Bell,
@@ -22,23 +21,27 @@ import {
     Sun,
     Moon,
     UserCheck,
+    Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../context/ToastContext';
+import { useAuthContext } from '../context/AuthContext';
+import SectionErrorBoundary from '../components/SectionErrorBoundary';
+import Avatar from '../components/Avatar';
 import '../styles/AdminDashboard.css';
 
-// Import management tabs
-import UserManagementTab from './UserManagementTab';
-import PostManagementTab from './PostManagementTab';
-import CommentManagementTab from './CommentManagementTab';
-import EventManagementTab from './EventManagementTab';
-import GroupManagementTab from './GroupManagementTab';
-import AdManagementTab from './AdManagementTab';
-import ReelManagementTab from './ReelManagementTab';
-import RevisionManagementTab from './RevisionManagementTab';
-import ContentModerationTab from './ContentModerationTab';
-import MediaManagementTab from './MediaManagementTab';
-import AnalyticsTab from './AnalyticsTab';
+const UserManagementTab = React.lazy(() => import('./UserManagementTab'));
+const PostManagementTab = React.lazy(() => import('./PostManagementTab'));
+const CommentManagementTab = React.lazy(() => import('./CommentManagementTab'));
+const EventManagementTab = React.lazy(() => import('./EventManagementTab'));
+const GroupManagementTab = React.lazy(() => import('./GroupManagementTab'));
+const AdManagementTab = React.lazy(() => import('./AdManagementTab'));
+const ReelManagementTab = React.lazy(() => import('./ReelManagementTab'));
+const RevisionManagementTab = React.lazy(() => import('./RevisionManagementTab'));
+const ContentModerationTab = React.lazy(() => import('./ContentModerationTab'));
+const ConfessionModerationTab = React.lazy(() => import('./ConfessionModerationTab'));
+const MediaManagementTab = React.lazy(() => import('./MediaManagementTab'));
+const AnalyticsTab = React.lazy(() => import('./AnalyticsTab'));
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -46,6 +49,7 @@ const AdminDashboard = () => {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { showToast } = useToast();
+    const { user } = useAuthContext();
     const [stats, setStats] = useState({
         total_users: 0,
         active_users: 0,
@@ -54,13 +58,15 @@ const AdminDashboard = () => {
         total_revenue: 0,
         growth_rate: 0,
     });
+    const [statsError, setStatsError] = useState(false);
 
     const fetchStats = useCallback(async () => {
         try {
             const { data } = await api.get('/admin/stats');
             return data;
         } catch (error) {
-            console.error('Failed to fetch stats');
+            console.error('Failed to fetch stats', error);
+            setStatsError(true);
             return null;
         }
     }, []);
@@ -68,8 +74,9 @@ const AdminDashboard = () => {
     useEffect(() => {
         let mounted = true;
         const load = async () => {
-            const stats = await fetchStats();
-            if (mounted && stats) setStats((prev) => ({ ...prev, ...stats }));
+            setStatsError(false);
+            const result = await fetchStats();
+            if (mounted && result) setStats((prev) => ({ ...prev, ...result }));
         };
         load();
         return () => {
@@ -83,6 +90,7 @@ const AdminDashboard = () => {
         { id: 'posts', label: 'Post Management', icon: FileText },
         { id: 'comments', label: 'Comment Management', icon: MessageCircle },
         { id: 'moderation', label: 'Moderation', icon: Shield },
+        { id: 'confessions', label: 'Confessions', icon: Eye },
         { id: 'groups', label: 'Groups', icon: Users },
         { id: 'events', label: 'Events', icon: Calendar },
         { id: 'ads', label: 'Ad Management', icon: DollarSign },
@@ -93,8 +101,8 @@ const AdminDashboard = () => {
         { id: 'settings', label: 'System Settings', icon: Settings },
     ];
 
-    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-    const toggleTheme = () => setIsDarkMode(!isDarkMode);
+    const toggleSidebar = useCallback(() => setIsSidebarOpen((prev) => !prev), []);
+    const toggleTheme = useCallback(() => setIsDarkMode((prev) => !prev), []);
 
     return (
         <div className={`admin-container ${isDarkMode ? 'dark' : ''}`}>
@@ -153,7 +161,7 @@ const AdminDashboard = () => {
                             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
                         <div className="admin-profile-mini">
-                            <div className="avatar-placeholder">A</div>
+                            <Avatar src={user?.avatar_url} name={user?.username} size="sm" />
                         </div>
                     </div>
                 </header>
@@ -167,11 +175,14 @@ const AdminDashboard = () => {
                             exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <TabContent
-                                activeTab={activeTab}
-                                stats={stats}
-                                setActiveTab={setActiveTab}
-                            />
+                            <Suspense fallback={<div className="tab-loading">Loading...</div>}>
+                                <TabContent
+                                    activeTab={activeTab}
+                                    stats={stats}
+                                    statsError={statsError}
+                                    setActiveTab={setActiveTab}
+                                />
+                            </Suspense>
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -180,45 +191,118 @@ const AdminDashboard = () => {
     );
 };
 
-const TabContent = ({ activeTab, stats, setActiveTab }) => {
+const TabContent = ({ activeTab, stats, statsError, setActiveTab }) => {
     switch (activeTab) {
         case 'overview':
-            return <OverviewTab stats={stats} setActiveTab={setActiveTab} />;
+            return (
+                <SectionErrorBoundary name="Overview">
+                    <OverviewTab
+                        stats={stats}
+                        statsError={statsError}
+                        setActiveTab={setActiveTab}
+                    />
+                </SectionErrorBoundary>
+            );
         case 'users':
-            return <UserManagementTab />;
+            return (
+                <SectionErrorBoundary name="User Management">
+                    <UserManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'posts':
-            return <PostManagementTab />;
+            return (
+                <SectionErrorBoundary name="Post Management">
+                    <PostManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'comments':
-            return <CommentManagementTab />;
+            return (
+                <SectionErrorBoundary name="Comment Management">
+                    <CommentManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'moderation':
-            return <ContentModerationTab stats={stats} />;
+            return (
+                <SectionErrorBoundary name="Content Moderation">
+                    <ContentModerationTab stats={stats} />
+                </SectionErrorBoundary>
+            );
+        case 'confessions':
+            return (
+                <SectionErrorBoundary name="Confession Moderation">
+                    <ConfessionModerationTab />
+                </SectionErrorBoundary>
+            );
         case 'analytics':
-            return <AnalyticsTab />;
-        case 'academic':
-            return <RevisionManagementTab />;
+            return (
+                <SectionErrorBoundary name="Analytics">
+                    <AnalyticsTab />
+                </SectionErrorBoundary>
+            );
         case 'groups':
-            return <GroupManagementTab />;
+            return (
+                <SectionErrorBoundary name="Group Management">
+                    <GroupManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'events':
-            return <EventManagementTab />;
+            return (
+                <SectionErrorBoundary name="Event Management">
+                    <EventManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'ads':
-            return <AdManagementTab />;
+            return (
+                <SectionErrorBoundary name="Ad Management">
+                    <AdManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'broadcast':
-            return <BroadcastTab />;
+            return (
+                <SectionErrorBoundary name="Broadcast">
+                    <BroadcastTab />
+                </SectionErrorBoundary>
+            );
         case 'videos':
-            return <ReelManagementTab />;
+            return (
+                <SectionErrorBoundary name="Video/Reel Management">
+                    <ReelManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'media':
-            return <MediaManagementTab />;
+            return (
+                <SectionErrorBoundary name="Media Management">
+                    <MediaManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'revision':
-            return <RevisionManagementTab />;
+            return (
+                <SectionErrorBoundary name="Revision Management">
+                    <RevisionManagementTab />
+                </SectionErrorBoundary>
+            );
         case 'settings':
-            return <SettingsTab />;
+            return (
+                <SectionErrorBoundary name="Settings">
+                    <SettingsTab />
+                </SectionErrorBoundary>
+            );
         default:
-            return <OverviewTab stats={stats} />;
+            return (
+                <SectionErrorBoundary name="Overview">
+                    <OverviewTab stats={stats} statsError={statsError} />
+                </SectionErrorBoundary>
+            );
     }
 };
 
-const OverviewTab = ({ stats, setActiveTab }) => (
+const OverviewTab = ({ stats, statsError, setActiveTab }) => (
     <div className="overview-tab">
+        {statsError && (
+            <div className="stats-error-banner">
+                Failed to load live stats. Showing cached data.
+            </div>
+        )}
         <div className="stats-grid">
             <StatCard
                 label="Total Users"
@@ -402,17 +486,21 @@ const SettingsTab = () => {
     const { showToast } = useToast();
 
     useEffect(() => {
+        let mounted = true;
         const fetchSettings = async () => {
             try {
                 const { data } = await api.get('/admin/settings');
-                setSettings(data);
+                if (mounted) setSettings(data);
             } catch (error) {
-                showToast('Failed to load settings', 'error');
+                if (mounted) showToast('Failed to load settings', 'error');
             } finally {
-                setIsLoading(false);
+                if (mounted) setIsLoading(false);
             }
         };
         fetchSettings();
+        return () => {
+            mounted = false;
+        };
     }, [showToast]);
 
     const handleToggle = async (key) => {

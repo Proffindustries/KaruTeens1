@@ -1,0 +1,21 @@
+# MarketplaceItemPage.jsx
+
+## NEED TO DO
+- currentUser.id vs item.seller_id type mismatch — == vs === could fail
+- Error state renders error.message directly — exposes sensitive backend details
+- Loading state is plain text — no skeleton
+- handleContactSeller navigates to /messages with state — verify MessagesPage handles it
+- handleMarkSold/Boost/Delete use window.confirm() — blocks main thread
+- No useCallback on handlers
+- Image thumbnails use index as key
+- No error handling for useMarketplaceItem network errors
+
+## CAN DO
+- All images load eagerly with no loading='lazy'
+- motion imported from framer-motion but no motion.* components used — dead import
+- No memoization of isOwner, isBoosted
+
+## MAY DO
+- Could add lightbox for full-size images
+- Could add Similar Items section
+- Could add Report Listing button

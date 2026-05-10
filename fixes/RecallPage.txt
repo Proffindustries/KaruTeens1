@@ -1,0 +1,15 @@
+# RecallPage.jsx
+
+## NEED TO DO
+- No empty state when materials array is empty — materials-grid renders nothing
+- handleView sets viewingDoc before async fetch — state update on unmounted component if component unmounts
+- handleUnlock is a stub — only shows toast, no actual payment flow
+- showToast in useCallback deps — if showToast identity changes, fetchMaterials recreated and useEffect re-fires
+
+## CAN DO
+- No pagination or infinite scroll for materials grid
+
+## MAY DO
+- Add 'no results' message with suggestion to adjust filters
+- Add PDF preview component
+- Add search debounce on AcademicFilters

@@ -323,68 +323,67 @@ const ReelManagementTab = () => {
         return () => {
             mounted = false;
         };
-    }, [filters]);
+    }, [
+        filters.status,
+        filters.user_id,
+        filters.resolution,
+        filters.transcoding_status,
+        filters.sort_by,
+        filters.sort_order,
+    ]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedReels.length === 0) {
             showToast('Please select reels first', 'warning');
             return;
         }
 
-        if (bulkAction === 'approve') {
-            setReels((prev) =>
-                prev.map((r) =>
-                    selectedReels.includes(r.id) ? { ...r, moderation_status: 'approved' } : r,
-                ),
-            );
-            setSelectedReels([]);
-            setBulkAction('');
-            showToast('Reels approved', 'success');
-        } else if (bulkAction === 'reject') {
-            setReels((prev) =>
-                prev.map((r) =>
-                    selectedReels.includes(r.id) ? { ...r, moderation_status: 'rejected' } : r,
-                ),
-            );
-            setSelectedReels([]);
-            setBulkAction('');
-            showToast('Reels rejected', 'info');
-        } else if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedReels.length} reels? This action cannot be undone.`)) {
-                setReels((prev) => prev.filter((r) => !selectedReels.includes(r.id)));
-                setSelectedReels([]);
-                setBulkAction('');
+        try {
+            if (bulkAction === 'approve') {
+                await Promise.all(
+                    selectedReels.map((id) =>
+                        api.put(`/reels/${id}`, { moderation_status: 'approved' }),
+                    ),
+                );
+                showToast('Reels approved', 'success');
+            } else if (bulkAction === 'reject') {
+                await Promise.all(
+                    selectedReels.map((id) =>
+                        api.put(`/reels/${id}`, { moderation_status: 'rejected' }),
+                    ),
+                );
+                showToast('Reels rejected', 'info');
+            } else if (bulkAction === 'delete') {
+                if (!confirm(`Delete ${selectedReels.length} reels? This action cannot be undone.`))
+                    return;
+                await Promise.all(selectedReels.map((id) => api.delete(`/reels/${id}`)));
                 showToast('Reels deleted', 'success');
+            } else if (bulkAction === 'mark_spam') {
+                await Promise.all(
+                    selectedReels.map((id) =>
+                        api.put(`/reels/${id}`, { moderation_status: 'spam' }),
+                    ),
+                );
+                showToast('Reels marked as spam', 'info');
+            } else if (bulkAction === 'enable_duet') {
+                await Promise.all(
+                    selectedReels.map((id) => api.put(`/reels/${id}`, { duet_enabled: true })),
+                );
+                showToast('Duet enabled for selected reels', 'success');
+            } else if (bulkAction === 'disable_comments') {
+                await Promise.all(
+                    selectedReels.map((id) => api.put(`/reels/${id}`, { comments_enabled: false })),
+                );
+                showToast('Comments disabled for selected reels', 'info');
             }
-        } else if (bulkAction === 'mark_spam') {
-            setReels((prev) =>
-                prev.map((r) =>
-                    selectedReels.includes(r.id) ? { ...r, moderation_status: 'spam' } : r,
-                ),
-            );
             setSelectedReels([]);
             setBulkAction('');
-            showToast('Reels marked as spam', 'info');
-        } else if (bulkAction === 'enable_duet') {
-            setReels((prev) =>
-                prev.map((r) => (selectedReels.includes(r.id) ? { ...r, duet_enabled: true } : r)),
-            );
-            setSelectedReels([]);
-            setBulkAction('');
-            showToast('Duet enabled for selected reels', 'success');
-        } else if (bulkAction === 'disable_comments') {
-            setReels((prev) =>
-                prev.map((r) =>
-                    selectedReels.includes(r.id) ? { ...r, comments_enabled: false } : r,
-                ),
-            );
-            setSelectedReels([]);
-            setBulkAction('');
-            showToast('Comments disabled for selected reels', 'info');
+        } catch (err) {
+            showToast('Failed to perform bulk action', 'error');
         }
     };
 

@@ -89,6 +89,7 @@ const StoryManagementTab = () => {
     const [moderationReason, setModerationReason] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const { showToast } = useToast();
 
@@ -127,7 +128,17 @@ const StoryManagementTab = () => {
         return () => {
             mounted = false;
         };
-    }, [filters]);
+    }, [
+        filters.status,
+        filters.user_id,
+        filters.media_type,
+        filters.story_type,
+        filters.is_highlight,
+        filters.is_private,
+        filters.sort_by,
+        filters.sort_order,
+        refreshTrigger,
+    ]);
 
     const mockUserStats = [{ label: 'Total Stories', value: 0 }];
     const mockHighlights = [];
@@ -138,59 +149,58 @@ const StoryManagementTab = () => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedStories.length === 0) {
             showToast('Please select stories first', 'warning');
             return;
         }
 
-        if (bulkAction === 'approve') {
-            setStories((prev) =>
-                prev.map((s) =>
-                    selectedStories.includes(s.id) ? { ...s, moderation_status: 'approved' } : s,
-                ),
-            );
-            setSelectedStories([]);
-            setBulkAction('');
-            showToast('Stories approved', 'success');
-        } else if (bulkAction === 'reject') {
-            setStories((prev) =>
-                prev.map((s) =>
-                    selectedStories.includes(s.id) ? { ...s, moderation_status: 'rejected' } : s,
-                ),
-            );
-            setSelectedStories([]);
-            setBulkAction('');
-            showToast('Stories rejected', 'info');
-        } else if (bulkAction === 'delete') {
-            if (
-                confirm(`Delete ${selectedStories.length} stories? This action cannot be undone.`)
-            ) {
-                setStories((prev) => prev.filter((s) => !selectedStories.includes(s.id)));
-                setSelectedStories([]);
-                setBulkAction('');
+        try {
+            if (bulkAction === 'approve') {
+                await Promise.all(
+                    selectedStories.map((id) =>
+                        api.put(`/stories/${id}`, { moderation_status: 'approved' }),
+                    ),
+                );
+                showToast('Stories approved', 'success');
+            } else if (bulkAction === 'reject') {
+                await Promise.all(
+                    selectedStories.map((id) =>
+                        api.put(`/stories/${id}`, { moderation_status: 'rejected' }),
+                    ),
+                );
+                showToast('Stories rejected', 'info');
+            } else if (bulkAction === 'delete') {
+                if (
+                    !confirm(
+                        `Delete ${selectedStories.length} stories? This action cannot be undone.`,
+                    )
+                )
+                    return;
+                await Promise.all(selectedStories.map((id) => api.delete(`/stories/${id}`)));
                 showToast('Stories deleted', 'success');
+            } else if (bulkAction === 'mark_spam') {
+                await Promise.all(
+                    selectedStories.map((id) =>
+                        api.put(`/stories/${id}`, { moderation_status: 'spam' }),
+                    ),
+                );
+                showToast('Stories marked as spam', 'info');
+            } else if (bulkAction === 'make_highlight') {
+                await Promise.all(
+                    selectedStories.map((id) =>
+                        api.put(`/stories/${id}`, {
+                            is_highlight: true,
+                            highlight_category: 'General',
+                        }),
+                    ),
+                );
+                showToast('Stories added to highlights', 'success');
             }
-        } else if (bulkAction === 'mark_spam') {
-            setStories((prev) =>
-                prev.map((s) =>
-                    selectedStories.includes(s.id) ? { ...s, moderation_status: 'spam' } : s,
-                ),
-            );
             setSelectedStories([]);
             setBulkAction('');
-            showToast('Stories marked as spam', 'info');
-        } else if (bulkAction === 'make_highlight') {
-            setStories((prev) =>
-                prev.map((s) =>
-                    selectedStories.includes(s.id)
-                        ? { ...s, is_highlight: true, highlight_category: 'General' }
-                        : s,
-                ),
-            );
-            setSelectedStories([]);
-            setBulkAction('');
-            showToast('Stories added to highlights', 'success');
+        } catch (err) {
+            showToast('Failed to perform bulk action', 'error');
         }
     };
 
@@ -445,10 +455,11 @@ const StoryManagementTab = () => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => {}}>
+                    <button className="refresh-btn" onClick={() => setRefreshTrigger((n) => n + 1)}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>
+
                     <button className="btn-secondary" onClick={() => setShowStatsModal(true)}>
                         <BarChart3 size={18} />
                         User Stats
@@ -507,7 +518,10 @@ const StoryManagementTab = () => {
                             </div>
                             <div className="table-actions">
                                 <span className="story-count">{stories.length} stories found</span>
-                                <button className="refresh-btn" onClick={() => {}}>
+                                <button
+                                    className="refresh-btn"
+                                    onClick={() => setRefreshTrigger((n) => n + 1)}
+                                >
                                     <RefreshCw size={18} />
                                     Refresh
                                 </button>

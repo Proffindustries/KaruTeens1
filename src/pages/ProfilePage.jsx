@@ -35,7 +35,6 @@ import '../styles/ProfilePage.css';
 import { useParams } from 'react-router-dom';
 import { useProfile, useUpdateProfile, useFollow, useUnfollow } from '../hooks/useUser';
 import { useMediaUpload } from '../hooks/useMedia';
-import { useUpload } from '../context/UploadContext';
 import { useToast } from '../context/ToastContext';
 import { useAuthContext } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
@@ -52,7 +51,6 @@ const ProfilePage = () => {
     const { mutate: follow, isPending: isFollowingAction } = useFollow();
     const { mutate: unfollow, isPending: isUnfollowingAction } = useUnfollow();
     const { uploadImage, isUploading: isUploadingMedia } = useMediaUpload();
-    const { addUpload, updateUploadProgress, completeUpload, failUpload } = useUpload();
     const { showToast } = useToast();
     const { data: gamificationData } = useGamification(targetUsername);
     const gamificationRes = gamificationData;
@@ -102,18 +100,10 @@ const ProfilePage = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const uploadId = addUpload({
-            fileName: file.name,
-            fileSize: file.size,
-            type: 'image',
-        });
-
         try {
-            const url = await uploadImage(file, (p, l) => updateUploadProgress(uploadId, p, l));
-            completeUpload(uploadId, { url });
+            const url = await uploadImage(file);
             updateProfile({ avatar_url: url });
         } catch (err) {
-            failUpload(uploadId, err);
             showToast('Avatar upload failed. Please try again.', 'error');
         }
     };
@@ -788,6 +778,7 @@ const ProfilePage = () => {
                                                                     objectFit: 'cover',
                                                                 }}
                                                                 muted
+                                                                crossOrigin="anonymous"
                                                             />
                                                         ) : (
                                                             <img
@@ -800,6 +791,7 @@ const ProfilePage = () => {
                                                                 }}
                                                                 loading="lazy"
                                                                 decoding="async"
+                                                                crossOrigin="anonymous"
                                                             />
                                                         )}
                                                         <div

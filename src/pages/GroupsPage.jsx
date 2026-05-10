@@ -9,8 +9,24 @@ import { useToast } from '../context/ToastContext.jsx';
 import ListPage from '../components/ListPage.jsx';
 import useDebounce from '../hooks/useDebounce';
 
+const GROUP_COLORS = [
+    '#3742fa',
+    '#2ed573',
+    '#ff9f43',
+    '#ff4757',
+    '#a29bfe',
+    '#1e90ff',
+    '#e056fd',
+    '#00d2d3',
+];
+let groupColorIndex = 0;
+
 const getGroupColor = (groupId) => {
-    if (!groupId) return `hsl(${Math.random() * 360}, 70%, 80%)`;
+    if (!groupId) {
+        const color = GROUP_COLORS[groupColorIndex % GROUP_COLORS.length];
+        groupColorIndex++;
+        return color;
+    }
     let hash = 0;
     const id = String(groupId);
     for (let i = 0; i < id.length; i++) {

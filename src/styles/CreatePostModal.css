@@ -161,8 +161,8 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
+    background: rgba(var(--background), 0.7);
+    color: rgb(var(--text-main));
     border: none;
     border-radius: 50%;
     width: 24px;
@@ -176,7 +176,7 @@
 }
 
 .remove-preview:hover {
-    background: #ff4757;
+    background: rgb(var(--danger));
 }
 
 .active-tag-badge {
@@ -261,11 +261,10 @@
     }
 }
 
-/* Verification Gate Styles */
 .verification-gate-overlay {
     padding: 3rem 1.5rem;
     text-align: center;
-    background: var(--card-bg);
+    background: rgb(var(--surface));
 }
 
 .gate-content {
@@ -319,8 +318,8 @@
     position: absolute;
     bottom: 100%;
     left: 0;
-    background: white;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    background: rgb(var(--dropdown-bg));
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     border-radius: 8px;
     padding: 0.5rem;
     display: flex;
@@ -515,21 +514,21 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(var(--background), 0.85);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
     z-index: 5;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mini-progress-bar {
     width: 85%;
     height: 6px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(var(--text-main), 0.15);
     border-radius: 10px;
     overflow: hidden;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -564,10 +563,10 @@
 }
 
 .percent-text {
-    color: white;
+    color: rgb(var(--text-main));
     font-size: 0.8rem;
     font-weight: 800;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 4px rgba(var(--background), 0.4);
     font-variant-numeric: tabular-nums;
 }
 
@@ -604,7 +603,7 @@
 }
 
 .error-text {
-    color: white;
+    color: rgb(var(--btn-text));
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -612,7 +611,7 @@
 }
 
 .retry-upload-btn {
-    background: white;
+    background: rgb(var(--text-main));
     color: #ff4757;
     border: none;
     border-radius: 20px;
@@ -625,9 +624,9 @@
 }
 
 .retry-upload-btn:hover {
-    background: #fff;
+    background: rgba(var(--text-main), 0.9);
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 15px rgba(var(--background), 0.3);
 }
 
 .retry-upload-btn:active {
@@ -656,4 +655,30 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.text-formatting-toolbar {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid rgba(var(--border), 0.3);
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.fmt-btn {
+    background: none;
+    border: none;
+    padding: 0.35rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: rgb(var(--text-muted));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fmt-btn:hover {
+    background: rgba(var(--border), 0.3);
+    color: rgb(var(--text-main));
 }

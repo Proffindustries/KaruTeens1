@@ -155,6 +155,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                     <img
                                         src={comment.media_url}
                                         alt="Sticker"
+                                        crossOrigin="anonymous"
                                         style={{
                                             width: '80px',
                                             height: '80px',
@@ -186,6 +187,7 @@ const Comment = React.memo(({ comment, onReply, level = 0, replies = [] }) => {
                                 <img
                                     src={comment.media_url}
                                     alt="Attachment"
+                                    crossOrigin="anonymous"
                                     style={{
                                         maxWidth: '100%',
                                         maxHeight: '200px',

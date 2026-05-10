@@ -6,22 +6,28 @@ const GifPicker = React.memo(({ onSelect, onClose }) => {
     const [search, setSearch] = useState('');
     const [gifs, setGifs] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    // GIPHY Beta API key (often used for public demos/learning)
-    const GIPHY_API_KEY = 'dc6zaTOxFJmzC';
+    const [error, setError] = useState(null);
+    
+    // Use environment variable or fallback to beta key
+    const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY || 'dc6zaTOxFJmzC';
 
     const fetchGifs = async (query = '') => {
         setLoading(true);
+        setError(null);
         try {
             const endpoint = query
                 ? `https://api.giphy.com/1/gifs/search?api_key=${GIPHY_API_KEY}&q=${query}&limit=20`
                 : `https://api.giphy.com/1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20`;
 
             const response = await fetch(endpoint);
+            if (response.status === 403) {
+                throw new Error("GIPHY API Key blocked. Please provide a valid VITE_GIPHY_API_KEY in your .env file.");
+            }
             const data = await response.json();
             setGifs(data.data || []);
         } catch (error) {
             console.error('Error fetching GIFs:', error);
+            setError(error.message);
         } finally {
             setLoading(false);
         }
@@ -61,6 +67,8 @@ const GifPicker = React.memo(({ onSelect, onClose }) => {
                 <div className="gif-results-grid">
                     {loading ? (
                         <div className="gif-loading">Loading...</div>
+                    ) : error ? (
+                        <div className="gif-error">{error}</div>
                     ) : (
                         gifs.map((gif) => (
                             <div

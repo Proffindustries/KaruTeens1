@@ -837,6 +837,14 @@ pub struct ConfessionResponse {
     pub comments: i32,
     pub created_at: String,
     pub updated_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_publish_at: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -855,6 +863,15 @@ pub struct CreateConfessionRequest {
     pub is_anonymous: Option<bool>,
     pub author_id: Option<String>,
     pub author_name: Option<String>,
+    #[serde(default)]
+    pub media_url: Option<String>,
+    #[serde(default)]
+    pub media_type: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateConfessionStatusRequest {
+    pub status: String,
 }
 
 #[derive(Deserialize)]

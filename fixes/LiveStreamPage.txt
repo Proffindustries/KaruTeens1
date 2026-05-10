@@ -1,0 +1,23 @@
+# LiveStreamPage.jsx
+
+## NEED TO DO
+- CRITICAL: goLive subscribes to Ably channels with NO cleanup — subscriptions remain active after unmount
+- CRITICAL: joinStream subscribes with no unsubscribe on unmount
+- CRITICAL: sendHeartLocally setTimeout has no cleanup
+- CRITICAL: No useEffect cleanup that calls stopLive()/leaveStream() on unmount
+- sendMessage accesses currentStream from closure — race condition if stream ref changes
+- No WebRTC error handling for connection drops
+- chatMessages.map uses array index as key — keys shift on every new message
+- fetchStreams has no error UI
+
+## CAN DO
+- No useCallback on sendMessage, sendHeart, sendGift, joinStream, etc.
+- streamTitle defaults to ${user?.username}'s Live — shows 'null's Live' if user loads async
+- gifts/hearts arrays grow but cleaned via setTimeout — good but needs unmount cleanup
+- Active streams poll every 10s — no manual refresh button
+
+## MAY DO
+- Gift animation with AnimatePresence
+- Floating hearts — delightful micro-interactions
+- Stream preview before going live
+- Could add picture-in-picture mode

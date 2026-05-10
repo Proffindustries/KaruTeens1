@@ -1,0 +1,27 @@
+# PostManagementTab.jsx
+
+## NEED TO DO
+- CRITICAL: fetchData depends on filters (new object every render) — useEffect re-fetches on EVERY render (infinite-ish loop)
+- No debouncing on filter changes — every keystroke triggers full API call
+- Refresh buttons are no-ops
+- handleBulkAction sets isLoading(true) hiding table during operation — no visibility into progress
+- isProcessing only tracks single post ID — rapid actions not tracked
+- Bulk action 'make_featured'/'make_premium' have NO case in handleBulkAction — silently do nothing
+- formatEngagementRate calls toFixed on undefined — crashes with NaN%
+- Line 738 accesses post.analytics.engagement_rate — throws if analytics undefined
+- Add/Edit modals are decorative with no onSubmit
+- No pagination — fetches ALL posts at once
+- currentMonth declared but never used
+
+## CAN DO
+- 1548-line component — split into smaller files
+- No useCallback on any handler except fetchData
+- All modals eagerly rendered in main bundle
+- No table virtualization
+- Large lucide-react imports
+
+## MAY DO
+- Import/Export buttons have no click handlers
+- No rich text editor
+- No draft auto-save
+- No scheduling calendar view

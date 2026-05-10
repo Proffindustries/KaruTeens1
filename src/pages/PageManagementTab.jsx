@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 
 import {
@@ -58,113 +58,117 @@ const PageManagementTab = () => {
 
     const { showToast } = useToast();
 
+    const loadPages = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const params = {};
+            if (filters.status !== 'all') params.status = filters.status;
+            if (filters.visibility !== 'all') params.visibility = filters.visibility;
+            if (filters.category !== 'all') params.category = filters.category;
+            if (filters.search) params.search = filters.search;
+            params.sortBy = filters.sortBy;
+            params.sortOrder = filters.sortOrder;
+            const res = await api.get('/pages', { params });
+            setPages(res.data);
+        } catch (error) {
+            console.error('Failed to load pages:', error);
+            setPages([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [
+        filters.status,
+        filters.visibility,
+        filters.category,
+        filters.search,
+        filters.sortBy,
+        filters.sortOrder,
+    ]);
+
     useEffect(() => {
         let mounted = true;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsLoading(true);
-        // Fetch real data from API
-        api.get('/pages')
-            .then((res) => {
-                if (mounted) {
-                    setPages(res.data);
-                }
-            })
-            .catch((error) => {
-                console.error('Failed to load pages:', error);
-                if (mounted) {
-                    setPages([]); // Empty state on error
-                }
-            })
-            .finally(() => {
-                if (mounted) setIsLoading(false);
-            });
+        loadPages()
+            .then(() => {})
+            .catch(() => {});
         return () => {
             mounted = false;
         };
-    }, [filters]);
+    }, [loadPages]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleBulkAction = () => {
+    const handleBulkAction = async () => {
         if (selectedPages.length === 0) {
             showToast('Please select pages first', 'warning');
             return;
         }
 
-        if (bulkAction === 'publish') {
-            setPages((prev) =>
-                prev.map((p) =>
-                    selectedPages.includes(p.id)
-                        ? { ...p, status: 'published', published_at: new Date().toISOString() }
-                        : p,
-                ),
-            );
-            setSelectedPages([]);
-            setBulkAction('');
-            showToast('Pages published', 'success');
-        } else if (bulkAction === 'unpublish') {
-            setPages((prev) =>
-                prev.map((p) =>
-                    selectedPages.includes(p.id)
-                        ? { ...p, status: 'draft', published_at: null }
-                        : p,
-                ),
-            );
-            setSelectedPages([]);
-            setBulkAction('');
-            showToast('Pages unpublished', 'success');
-        } else if (bulkAction === 'make_public') {
-            setPages((prev) =>
-                prev.map((p) =>
-                    selectedPages.includes(p.id) ? { ...p, visibility: 'public' } : p,
-                ),
-            );
-            setSelectedPages([]);
-            setBulkAction('');
-            showToast('Pages made public', 'success');
-        } else if (bulkAction === 'make_private') {
-            setPages((prev) =>
-                prev.map((p) =>
-                    selectedPages.includes(p.id) ? { ...p, visibility: 'private' } : p,
-                ),
-            );
-            setSelectedPages([]);
-            setBulkAction('');
-            showToast('Pages made private', 'success');
-        } else if (bulkAction === 'delete') {
-            if (confirm(`Delete ${selectedPages.length} pages? This action cannot be undone.`)) {
-                setPages((prev) => prev.filter((p) => !selectedPages.includes(p.id)));
-                setSelectedPages([]);
-                setBulkAction('');
+        try {
+            if (bulkAction === 'publish') {
+                await Promise.all(
+                    selectedPages.map((id) => api.put(`/pages/${id}`, { status: 'published' })),
+                );
+                showToast('Pages published', 'success');
+            } else if (bulkAction === 'unpublish') {
+                await Promise.all(
+                    selectedPages.map((id) => api.put(`/pages/${id}`, { status: 'draft' })),
+                );
+                showToast('Pages unpublished', 'success');
+            } else if (bulkAction === 'make_public') {
+                await Promise.all(
+                    selectedPages.map((id) => api.put(`/pages/${id}`, { visibility: 'public' })),
+                );
+                showToast('Pages made public', 'success');
+            } else if (bulkAction === 'make_private') {
+                await Promise.all(
+                    selectedPages.map((id) => api.put(`/pages/${id}`, { visibility: 'private' })),
+                );
+                showToast('Pages made private', 'success');
+            } else if (bulkAction === 'delete') {
+                if (!confirm(`Delete ${selectedPages.length} pages? This action cannot be undone.`))
+                    return;
+                await Promise.all(selectedPages.map((id) => api.delete(`/pages/${id}`)));
                 showToast('Pages deleted', 'success');
             }
+            setSelectedPages([]);
+            setBulkAction('');
+            loadPages();
+        } catch (err) {
+            showToast('Failed to perform bulk action', 'error');
         }
     };
 
-    const handlePublishPage = (pageId) => {
-        setPages((prev) =>
-            prev.map((p) =>
-                p.id === pageId
-                    ? { ...p, status: 'published', published_at: new Date().toISOString() }
-                    : p,
-            ),
-        );
-        showToast('Page published', 'success');
+    const handlePublishPage = async (pageId) => {
+        try {
+            await api.put(`/pages/${pageId}`, { status: 'published' });
+            showToast('Page published', 'success');
+            loadPages();
+        } catch (err) {
+            showToast('Failed to publish page', 'error');
+        }
     };
 
-    const handleUnpublishPage = (pageId) => {
-        setPages((prev) =>
-            prev.map((p) => (p.id === pageId ? { ...p, status: 'draft', published_at: null } : p)),
-        );
-        showToast('Page unpublished', 'success');
+    const handleUnpublishPage = async (pageId) => {
+        try {
+            await api.put(`/pages/${pageId}`, { status: 'draft' });
+            showToast('Page unpublished', 'success');
+            loadPages();
+        } catch (err) {
+            showToast('Failed to unpublish page', 'error');
+        }
     };
 
-    const handleDeletePage = (pageId) => {
-        if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-            setPages((prev) => prev.filter((p) => p.id !== pageId));
+    const handleDeletePage = async (pageId) => {
+        if (!confirm('Are you sure you want to delete this page? This action cannot be undone.'))
+            return;
+        try {
+            await api.delete(`/pages/${pageId}`);
             showToast('Page deleted', 'success');
+            loadPages();
+        } catch (err) {
+            showToast('Failed to delete page', 'error');
         }
     };
 
@@ -280,7 +284,7 @@ const PageManagementTab = () => {
                 </div>
 
                 <div className="filter-actions">
-                    <button className="refresh-btn" onClick={() => {}}>
+                    <button className="refresh-btn" onClick={() => loadPages()}>
                         <RefreshCw size={18} />
                         Refresh
                     </button>

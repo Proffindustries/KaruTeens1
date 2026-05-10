@@ -1,0 +1,21 @@
+# VerificationPage.jsx
+
+## NEED TO DO
+- No cleanup for config fetch effect — state update on unmounted component
+- handleFreeVerify and handleInitiatePayment directly manipulate localStorage — bypasses auth context
+- Polling interval async callback has no cleanup guard — state update on unmounted component
+- If payment polling receives 'failed', setStep('pending') — user may have already been charged
+- Payment could be initiated twice — handleInitiatePayment logic duplicated in onPaymentInitiated
+- Phone regex doesn't cover all M-Pesa prefixes (11xxxxxxxx)
+
+## CAN DO
+- No useCallback on handleInitiatePayment, handleFreeVerify
+- isPaymentEnabled could be shared config context
+- localStorage user update should be mutation that invalidates auth query cache
+- PaymentDrawer always imported — could be lazy-loaded
+
+## MAY DO
+- No countdown for next poll
+- Free verification pulse-anim has no animation definition
+- Checkout ID leaks payment identifier into DOM
+- No haptic feedback on mobile when STK push sent

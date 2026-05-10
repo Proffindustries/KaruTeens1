@@ -1,0 +1,23 @@
+# CommentManagementTab.jsx
+
+## NEED TO DO
+- loadComments calls API with NO filter params — extensive filter UI has zero effect
+- handleBulkAction, confirmModeration, handleDeleteComment only update LOCAL state — no API calls
+- Refresh buttons have empty onClick handlers
+- showSpamRulesModal form fields have NO value/onChange — can never be submitted
+- Error handling uses only console.error — no user-facing error state
+- Massive 50+ icon import from lucide-react
+- User stats section has no loading indicator
+
+## CAN DO
+- 1186-line file should be split into smaller components
+- getStatusBadge, getContentTypeBadge etc. recreated every render — extract outside component
+- getDaysSinceCreated uses new Date() on every render — compute once
+- reports.map uses index as key
+- userStats.length > 0 check missing
+
+## MAY DO
+- Add real-time updates via WebSocket
+- Add moderation audit log
+- Add AI-powered suggested moderation actions
+- Add keyboard shortcuts (j/k, a/r/d)

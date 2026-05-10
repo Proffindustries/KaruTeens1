@@ -17,15 +17,19 @@ const VerificationPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        let mounted = true;
         const fetchConfig = async () => {
             try {
                 const { data } = await api.get('/config');
-                setIsPaymentEnabled(data.is_payment_enabled);
+                if (mounted) setIsPaymentEnabled(data.is_payment_enabled);
             } catch (err) {
-                console.error('Failed to fetch config', err);
+                if (mounted) console.error('Failed to fetch config', err);
             }
         };
         fetchConfig();
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     const handleInitiatePayment = async (e) => {

@@ -1,0 +1,18 @@
+# AiPage.jsx
+
+## NEED TO DO
+- setTimeout in handleCopy not cleaned up on unmount
+- setTimeout(fetchModels, 5000) in handleTriggerPing not cleaned up
+- Array index used as key for messages — breaks AnimatePresence exit animations
+- handleSend reads messages from stale closure — multiple rapid sends could use stale history
+
+## CAN DO
+- Messages array grows unboundedly — implement max 50 message limit
+- fetchModels has no caching — refetches every time tab is visited
+- Verify tree-shaking for lucide-react icons
+
+## MAY DO
+- Add streaming (SSE/WebSocket) for token-by-token reply
+- Add markdown rendering with syntax highlighting
+- Add suggested prompts carousel
+- Add chat history persistence

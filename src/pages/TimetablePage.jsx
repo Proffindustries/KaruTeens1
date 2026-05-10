@@ -1,5 +1,5 @@
 import { parseICS } from '../utils/icsParser';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Calendar,
     Clock,
@@ -56,6 +56,9 @@ const TimetablePage = () => {
     const [activeClass, setActiveClass] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notifiedClasses, setNotifiedClasses] = useState(new Set());
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportingClass, setReportingClass] = useState(null);
+    const [reportType, setReportType] = useState('cancelled');
 
     // Form states
     const [newTimetableName, setNewTimetableName] = useState('');
@@ -96,25 +99,33 @@ const TimetablePage = () => {
 
     useEffect(() => {
         if (viewMode === 'exam') {
+            let mounted = true;
             const fetchExams = async () => {
                 try {
                     const { data } = await api.get('/timetable/exams');
-                    setExams(data);
+                    if (mounted) setExams(data);
                 } catch (err) {
-                    showToast('Failed to load exams', 'error');
+                    if (mounted) showToast('Failed to load exams', 'error');
                 }
             };
             fetchExams();
+            return () => {
+                mounted = false;
+            };
         }
     }, [viewMode, showToast]);
 
     // Push Notifications / Class Alarms (Check every minute)
+    const notifiedRef = useRef(notifiedClasses);
+    useEffect(() => {
+        notifiedRef.current = notifiedClasses;
+    }, [notifiedClasses]);
+
     useEffect(() => {
         if (!selectedTimetable) return;
         const interval = setInterval(() => {
             const now = new Date();
             const currentDayString = days[now.getDay() - 1] || 'Sunday';
-            const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
             const classes = Array.isArray(selectedTimetable.classes)
                 ? selectedTimetable.classes
@@ -135,7 +146,7 @@ const TimetablePage = () => {
                     const diffMins = Math.round((classTimeParams - nowTimeParams) / 60000);
 
                     // Alert 15 minutes before
-                    if (diffMins === 15 && !notifiedClasses.has(cls.id)) {
+                    if (diffMins === 15 && !notifiedRef.current.has(cls.id)) {
                         showToast(
                             `⏳ Up next: ${cls.title} in ${cls.room || 'TBA'} at ${cls.start_time}`,
                             'info',
@@ -161,7 +172,7 @@ const TimetablePage = () => {
         }
 
         return () => clearInterval(interval);
-    }, [selectedTimetable, notifiedClasses, showToast]);
+    }, [selectedTimetable, showToast]);
 
     const handleCreateTimetable = async () => {
         if (!newTimetableName.trim()) {
@@ -206,24 +217,26 @@ const TimetablePage = () => {
     };
 
     const handleReportIssue = async (classItem) => {
-        const report_type = window.prompt(
-            'What is wrong? (cancelled, room_changed, other)',
-            'cancelled',
-        );
-        if (!report_type) return;
+        setReportingClass(classItem);
+        setReportType('cancelled');
+        setShowReportModal(true);
+    };
 
+    const submitReport = async () => {
+        if (!reportingClass || !selectedTimetable) return;
         try {
             await api.post('/timetable/report', {
                 timetable_id: selectedTimetable._id,
-                class_id: classItem.id,
-                report_type,
+                class_id: reportingClass.id,
+                report_type: reportType,
             });
             showToast('Report submitted!', 'success');
-            // Refresh to see update reliability score
             await fetchTimetables();
         } catch (error) {
             showToast('Failed to submit report', 'error');
         }
+        setShowReportModal(false);
+        setReportingClass(null);
     };
 
     const handleCopyTemplate = async (templateId) => {
@@ -334,6 +347,9 @@ const TimetablePage = () => {
     const handleUpdateClassTasks = async (updatedClass) => {
         if (!selectedTimetable) return;
 
+        // Save original state for rollback
+        const originalTimetables = timetables;
+
         // Optimistic UI update
         const updatedTimetables = timetables.map((t) => {
             if (t._id === selectedTimetable._id) {
@@ -354,7 +370,9 @@ const TimetablePage = () => {
             });
         } catch (error) {
             showToast('Failed to save task changes to server', 'error');
-            // In a real app, you might want to rollback the optimistic update here
+            // Rollback optimistic update
+            setTimetables(originalTimetables);
+            setSelectedTimetable(originalTimetables.find((t) => t._id === selectedTimetable._id));
         }
     };
 
@@ -372,16 +390,29 @@ const TimetablePage = () => {
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file || !selectedTimetable) return;
+        let mounted = true;
         const reader = new FileReader();
         reader.onload = async (event) => {
             const events = parseICS(event.target.result);
             for (const cls of events) {
-                await api.post(`/timetable/${selectedTimetable._id}/classes`, cls);
+                try {
+                    await api.post(`/timetable/${selectedTimetable._id}/classes`, cls);
+                } catch (error) {
+                    if (mounted) showToast('Failed to import some classes', 'error');
+                }
             }
-            await fetchTimetables();
-            showToast('Timetable imported!', 'success');
+            if (mounted) {
+                await fetchTimetables();
+                showToast('Timetable imported!', 'success');
+            }
+        };
+        reader.onerror = () => {
+            if (mounted) showToast('Failed to read file', 'error');
         };
         reader.readAsText(file);
+        return () => {
+            mounted = false;
+        };
     };
 
     const handleDeleteTimetable = async (timetableId) => {
@@ -953,6 +984,41 @@ const TimetablePage = () => {
                     onClose={() => setShowClassDetailsModal(false)}
                     onUpdate={handleUpdateClassTasks}
                 />
+            )}
+
+            {/* Report Issue Modal */}
+            {showReportModal && (
+                <div className="modal-overlay" onClick={() => setShowReportModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Report Issue</h3>
+                            <button className="icon-btn" onClick={() => setShowReportModal(false)}>
+                                <X />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ marginBottom: '1rem' }}>What is wrong with this class?</p>
+                            <div className="form-group">
+                                <select
+                                    value={reportType}
+                                    onChange={(e) => setReportType(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.5rem',
+                                        borderRadius: '4px',
+                                    }}
+                                >
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="room_changed">Room Changed</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <button className="btn btn-primary btn-block" onClick={submitReport}>
+                                Submit Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
